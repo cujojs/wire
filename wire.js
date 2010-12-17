@@ -113,12 +113,14 @@ var wire = (function(){
 		return spec.create ? instantiate(module, spec.create) : new module();
 	}
 	
-	function instantiate(ctor, args) {
-		var factory = function Factory(ctor, args) {
+	var Factory = function Factory(ctor, args) {
 			return ctor.apply(this, args);
 		};
-		factory.prototype = ctor.prototype;
-		return new factory(ctor, construct(args));
+	
+	function instantiate(ctor, args) {
+		Factory.prototype = ctor.prototype;
+		Factory.prototype.constructor = ctor;
+		return new Factory(ctor, construct(args));
 	}
 
 	function callInit(target, func, args) {
@@ -146,14 +148,14 @@ var wire = (function(){
 	function processFuncList(list, target, callback) {
 		var func;
 		if(typeof list == "string") {
-			console.log("calling " + list + "()");
+			// console.log("calling " + list + "()");
 			func = target[list];
 			if(typeof func == "function") {
 				callback(target, func, []);
 			}
 		} else {
 			for(var f in list) {
-				console.log("calling " + f + "(" + list[f] + ")");
+				// console.log("calling " + f + "(" + list[f] + ")");
 				func = target[f];
 				if(typeof func == "function") {
 					callback(target, func, list[f]);
@@ -169,12 +171,10 @@ var wire = (function(){
 		// If spec is an object or array, process it
 		if(isArray(spec)) {
 			// If it's an array, construct() each element
-			var len = spec.length;
-		
 			result = [];
-			for (var i=0; i < len; i++) {
+			for (var i=0; i < spec.length; i++) {
 				result.push(construct(spec[i]));
-			};
+			}
 		
 		} else if(typeof spec == 'object') {
 			// If it's a module
@@ -186,15 +186,16 @@ var wire = (function(){
 			if(isModule(spec)) {
 				name = name || spec.name;
 				if(spec.create) {
-					console.log('constructing ' + name + " from " + spec.module);
+					// TODO: Handle calling a factory method and using the return value as result? See constructWithFactory()
+					// console.log('constructing ' + name + " from " + spec.module);
 					result = constructWithNew(spec, name);
 				} else {
-					console.log('setting ' + name + ' as module ' + spec.module + ' directly');
+					// console.log('setting ' + name + ' as module ' + spec.module + ' directly');
 					result = getLoadedModule(spec.module);
 				}
 				
 				if(spec.properties && typeof spec.properties == 'object') {
-					console.log("setting props on " + spec.name);
+					// console.log("setting props on " + spec.name);
 					
 					setProperties(result, spec.properties);
 				}
