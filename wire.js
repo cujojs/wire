@@ -50,7 +50,7 @@ var wire = (function(){
 		return pivoted;
 	}
 	
-	function collectModules(spec, name) {
+	function collectModules(spec) {
 		// Look for modules in objects and arrays.  Skip simple values
 		// in this pass.
 		if(isArray(spec)) {
@@ -58,12 +58,11 @@ var wire = (function(){
 		} else if(typeof spec == 'object') {
 			
 			if(isModule(spec)) {
-				name = spec.name = name || uniqueName(spec.module);
 				requires.push(spec.module);
 				
 				// TODO: REMOVE
 				// For testing only
-				define(name, [], spec.module);
+				// define(name, [], spec.module);
 
 				if(spec.properties) {
 					collectModules(spec.properties);
@@ -111,17 +110,15 @@ var wire = (function(){
 			throw Error("ERROR: no module loaded with name: " + name);
 		}
 		
-		// TODO: This is tricky, probably have to use eval to invoke
-		// the constructor with args.  For now, just punt
-		if(spec.create) {
-			var factory = function Factory(ctor, args) {
-				return ctor.apply(this, args);
-			};
-			factory.prototype = module.prototype;
-			return new factory(module, construct(spec.create));
-		} else {
-			return new module();
-		}
+		return spec.create ? instantiate(module, spec.create) : new module();
+	}
+	
+	function instantiate(ctor, args) {
+		var factory = function Factory(ctor, args) {
+			return ctor.apply(this, args);
+		};
+		factory.prototype = ctor.prototype;
+		return new factory(ctor, construct(args));
 	}
 
 	function callInit(target, func, args) {
@@ -232,16 +229,12 @@ var wire = (function(){
 	}
 
 	// main wire() export
-	var w = function(spec, parent, ready) {
+	var w = function(spec, ready) {
 		// 1. First pass, build module list for require, call require
 		// 2. Second pass, depth first instantiate 
 		
-		ready = typeof parent == "function" ? parent : ready;
-
 		// First pass
-		for(var name in spec) {
-			collectModules(spec[name], name, true);
-		}
+		collectModules(spec);
 		
 		// Second pass happens after modules loaded by require loader
 		require(requires, function() {
