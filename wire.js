@@ -181,6 +181,8 @@ var wire = (function(){
 			//  - if it has a create function, call it, with args and set result
 			//  - if no factory function, invoke new as constructor and set result
 			//  - if init function, invoke after factory or constructor
+			// If it's a reference
+			//  - resolve the reference directly, no recursive construction
 			// If it's not a module
 			//  - recursive construct() and set result
 			if(isModule(spec)) {
