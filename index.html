@@ -1,0 +1,60 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Launcher test</title>
+	<script type="text/javascript">
+		require = {
+			paths: {
+				'test': '../test' 
+			}
+		};
+	</script>
+	<script src="require-0.2/require.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" src="wire.js"></script>
+	<script type="text/javascript">
+		wire({
+			// The particular logger we want.
+			// Pick either the AlertLogger or SilentLogger and reload.
+			// Can inject concrete dependencies without having to modify Controller.
+			logger: {
+				module: 'test/test1/AlertLogger'
+			},
+
+			// Silly, but shows that native values can be declared as usual, and can be wired in
+			name: "Test",
+			number: 10,
+			message: "I'm ready!",
+			
+			// Create and configure a controller
+			controller: {
+				module: 'test/test1/Controller',
+				create: [{ "$ref": "name" }], // Call constructor with no params.  Need better syntax for this
+				
+				// Properties will be set after construction
+				properties: {
+					number: { "$ref": "number" },
+					logger: { "$ref": "logger" }
+				},
+				// Init function (named "ready") will be called after on DomReady
+				// Allows > 1 function to be called
+				init: {
+					// Params, can be a single value/ref/module or a mixed array of them
+					// e.g. [{ "$ref": "message" }] will work just fine here
+					ready: { "$ref": "message" },
+				}
+			}
+		},
+		function(context) {		
+			console.log(context);
+			console.log(wire.resolve("logger"));
+			console.log(context["logger"]);
+			console.log(wire.resolve("controller"));
+			console.log(context["controller"]);
+		});
+	</script>
+</head>
+<body>
+	
+</body>
+</html>
