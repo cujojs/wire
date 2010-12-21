@@ -5,15 +5,22 @@
 	<title>Launcher test</title>
 	<script type="text/javascript">
 		require = {
-			paths: {
-				'test': '../test' 
-			}
+			baseUrl: './'
 		};
 	</script>
 	<script src="require-0.2/require.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript" src="wire.js"></script>
 	<script type="text/javascript">
 		wire({
+			// There is nothing special about this array.  It's just an array of modules
+			// whose only member happens to be a plugin, but we could define it at the top
+			// level or at any depth.  So, the following would work just as well:
+			// dom: { module: 'wire/dom' }
+			// This seems like it could end up being a reasonable convention, tho.
+			wire$plugins: [
+				{ module: 'wire/dom' }
+			],
+
 			// The particular logger we want.
 			// Pick either the AlertLogger or SilentLogger and reload.
 			// Can inject concrete dependencies without having to modify Controller.
@@ -25,59 +32,38 @@
 			name: "Test",
 			number: 10,
 			message: "I'm ready!",
-			
-			// Create and configure a controller
-			controller: {
-				module: 'test/test1/Controller',
-				create: [{ "$ref": "name" }], // Call constructor with no params.  Need better syntax for this
-				
-				// Properties will be set after construction
-				properties: {
-					number: { "$ref": "number" },
-					logger: { "$ref": "logger" }
-				},
-				// Init function (named "ready") will be called after on DomReady
-				// Allows > 1 function to be called
-				init: {
-					// Params, can be a single value/ref/module or a mixed array of them
-					// e.g. [{ "$ref": "message" }] will work just fine here
-					ready: { "$ref": "message" }
-				}
-			}
+
 		},
 		function(context) {
 			console.log(context);
-			console.log(context.get("logger"));
-			console.log(context.get("controller"));
-
 			context.wire({
+				// Create and configure a controller
 				controller: {
 					module: 'test/test1/Controller',
-					create: ["Overridden Controller"], // Call constructor with no params.  Need better syntax for this
+					create: [{ "$ref": "name" }], // Call constructor with no params.  Need better syntax for this
 
 					// Properties will be set after construction
 					properties: {
-						number: 11,
-						logger: { "$ref": "logger" }
+						number: { "$ref": "number" },
+						logger: { "$ref": "logger" },
+						messageNode: { "$ref" : "dom!node1" }
 					},
 					// Init function (named "ready") will be called after on DomReady
 					// Allows > 1 function to be called
 					init: {
 						// Params, can be a single value/ref/module or a mixed array of them
 						// e.g. [{ "$ref": "message" }] will work just fine here
-						ready: "Overridden Controller's message"
+						ready: { "$ref": "message" }
 					}
 				}
-			},
-			function(context) {
-				console.log(context);
-				console.log(context.get("logger"));
-				console.log(context.get("controller"));
+				
 			});
 		});
 	</script>
 </head>
 <body>
-	
+	<div>
+		<p id="node1"></p>
+	</div>
 </body>
 </html>

@@ -1,7 +1,9 @@
 //
 // TODO:
-// 1. Build dependency graph for $refs and process second pass in dependency order
-//
+// 1. Build dependency graph for refs and process second pass in dependency order
+// 2. Plugin infrastructure for loading modules (how to bootstrap??), resolving references,
+//    and setting properties
+//    - Plugins should be simple to write, maybe just an AMD module that returns a function or hash of functions?
 
 var wire = (function(){
 
@@ -22,11 +24,18 @@ var wire = (function(){
 			A unique String name
 	*/
 	function uniqueName(seed) {
-		return '_' + (seed ? seed : 'instance') + '_' + uniqueNameCount++;
+		return '_' + (seed ? seed : 'instance') + uniqueNameCount++;
 	}
 
 	function isArray(it) {
 		return tos.call(it) === arrt;
+	}
+
+	function timer() {
+		var start = new Date().getTime();
+		return function() {
+			return new Date().getTime() - start;
+		};
 	}
 	
 	function isModule(spec) {
@@ -124,39 +133,228 @@ var wire = (function(){
 	}
 	
 	/*
-		Class: Context
-		
-		The IOC container where object wiring occurs.  Contexts are hierarchical
-		and resolve similar to prototypes in that a Context can see and resolve
-		references in its base (ancestors), but not its descendents.
-	 */
-	/*
-		Constructor: Context
+		Function: createContext
 		Creates a new Context with the supplied base Context.
 		
 		Parameters:
+			spec - wiring spec
 			modules - AMD module names loaded in this Context
 			base - base (parent) Context.  Objects in the base are available
 				to this Context.
 	*/
-	var Context = function Context(modules, base) {
-		this.modules = modules;
-		this.base = base;
-		this.version = VERSION;
-	};
-	
-	/*
-		Function: wire
-		Wires a new, child of this Context, and passes it to the supplied
-		ready callback, if provided
+	function createContext(spec, modules, base) {
+		var context = {
+			base: base,
+			modules: modules,
+			/*
+				Function: wire
+				Wires a new, child of this Context, and passes it to the supplied
+				ready callback, if provided
+
+				Parameters:
+					spec - wiring spec
+					ready - Function to call with the newly wired child Context
+			*/
+			wire: function(spec, ready) {
+				wireFromSpec(spec, this, ready);
+			}
+		};
 		
-		Parameters:
-			spec - wiring spec
-			ready - Function to call with the newly wired child Context
-	*/
-	Context.prototype.wire = function wire(spec, ready) {
-		wireFromSpec(spec, this, ready);
-	};
+		return (function wireContext(context) {
+			// TODO: There just has to be a better way to do this and keep
+			// the objects hash private.
+			var objects = {},
+				plugins = registerPlugins(modules);
+				
+			function constructWithFactory(spec, name) {
+				var module = getLoadedModule(name);
+				if(!module) {
+					throw Error("ERROR: no module loaded with name: " + name);
+				}
+
+				var func = spec.create.name,
+					args = spec.create.args ? construct(spec.create.args) : [];
+
+				return module[func].apply(module, args);
+			}
+
+			function constructWithNew(spec, ctor) {
+				return spec.create ? instantiate(ctor, construct(spec.create)) : new ctor();
+			}
+
+			function callInit(target, func, args) {
+				args = args ? construct(args) : [];
+				func.apply(target, isArray(args) ? args : [args]);
+			}
+
+			function addReadyInit(target, func, args) {
+				require.ready(function() {
+					callInit(target, func, args);
+				});
+			}
+
+			function setProperties(target, properties) {
+				// TODO: plugins for property setting?
+				var set = typeof target.set == 'function'
+					? function(key, value) { target.set(key, value); }
+					: function(key, value) { target[key] = value; };
+
+				for(var p in properties) {
+					set(p, construct(properties[p], p));
+				}
+			}
+
+			function processFuncList(list, target, callback) {
+				var func;
+				if(typeof list == "string") {
+					// console.log("calling " + list + "()");
+					func = target[list];
+					if(typeof func == "function") {
+						callback(target, func, []);
+					}
+				} else {
+					for(var f in list) {
+						// console.log("calling " + f + "(" + list[f] + ")");
+						func = target[f];
+						if(typeof func == "function") {
+							callback(target, func, list[f]);
+						}
+					}
+				}
+			}
+
+			function construct(spec, name, depth) {
+				// By default, just return the spec if it's not an object or array
+				var result = spec;
+
+				// If spec is an object or array, process it
+				if(isArray(spec)) {
+					// If it's an array, construct() each element
+					result = [];
+					for (var i=0; i < spec.length; i++) {
+						result.push(construct(spec[i]));
+					}
+
+				} else if(typeof spec == 'object') {
+					// If it's a module
+					//  - if it has a create function, call it, with args and set result
+					//  - if no factory function, invoke new as constructor and set result
+					//  - if init function, invoke after factory or constructor
+					// If it's a reference
+					//  - resolve the reference directly, no recursive construction
+					// If it's not a module
+					//  - recursive construct() and set result
+					if(isModule(spec)) {
+						name = name || spec.name;
+						result = getLoadedModule(spec.module);
+						if(!result) {
+							throw new Error("No module loaded with name: " + name);
+						}
+						
+						if(spec.create) {
+							// TODO: Handle calling a factory method and using the return value as result?
+							// See constructWithFactory()
+							// console.log('constructing ' + name + " from " + spec.module);
+							result = constructWithNew(spec, result);
+						}
+
+						if(spec.properties && typeof spec.properties == 'object') {
+							// console.log("setting props on " + spec.name);
+
+							setProperties(result, spec.properties);
+						}
+
+						// If it has init functions, call it
+						if(spec.init) {
+							processFuncList(spec.init, result, addReadyInit);
+						}
+
+						define(name, result);
+
+					} else if (isRef(spec)) {
+						result = resolve(spec.$ref);
+						if(result === undef) throw new Error("Reference " + spec.$ref + " cannot be resolved");
+
+					} else {
+						result = {};
+						for(var prop in spec) {
+							result[prop] = construct(spec[prop], prop);
+						}
+						
+					}
+				} else {
+					define(name, result);
+				}
+
+				return result;
+			}
+			
+			function define(name, value) {
+				if(name in objects) {
+					throw new Error("Object " + name + " is already defined in this context, cannot overwrite");
+				}
+				
+				name && (objects[name] = value);
+			}
+
+			function resolve(ref) {
+				if(ref.indexOf("!") == -1) {
+					return get(ref);
+					
+				} else {
+					var parts = ref.split("!"),
+						resolved;
+					
+					if(parts.length == 2) {
+						var prefix = parts[0],
+							resolvers = plugins.resolvers;
+
+						if(prefix in resolvers) {
+							var name = parts[1];
+							resolved = resolvers[prefix](name);
+						}
+					}
+					
+					return resolved || base.resolve(ref);
+				}
+			}
+			
+			function get(name) {
+				return objects[name] || base && base.get(name) || undef;
+			}
+			
+			context.resolve = resolve;
+			context.get = get;
+
+			construct(spec);
+
+			return context;
+		})(context);
+	}
+	
+	function registerPlugins(modules) {
+		var plugins = {
+			resolvers: {},
+			setters: []
+		};
+		
+		for (var i=0; i < modules.length; i++) {
+			var newPlugin = getLoadedModule(modules[i]);
+			// console.log("scanning for plugins: " + newPlugin);
+			if(newPlugin.wire$resolvers) {
+				for(var name in newPlugin.wire$resolvers) {
+					// console.log("resolver plugin: " + name);
+					plugins.resolvers[name] = newPlugin.wire$resolvers[name];
+				}
+			}
+			if(newPlugin.wire$setters) {
+				// console.log('setter plugin');
+				plugins.setters.concat(newPlugin.wire$setters);
+			}
+		}
+		
+		return plugins;
+	}
 	
 	/*
 		Function: wireFromSpec
@@ -172,159 +370,21 @@ var wire = (function(){
 	function wireFromSpec(spec, base, ready) {
 		// 1. First pass, build module list for require, call require
 		// 2. Second pass, depth first instantiate 
-		
-		if(typeof base == "function") {
-			ready = base;
-			base = undef;
-		}
-		
+
+		var t = timer();
+
 		// First pass
 		var modules = collectModules(spec);
+		console.log("modules scanned: " + t() + "ms");
 		
 		// Second pass happens after modules loaded
 		loadModules(modules, function() {
-			var start = new Date().getTime();
-
+			console.log("modules loaded: " + t() + "ms");
+			
 			// Second pass, construct context and object instances
-			var context = new Context(modules, base);
+			var context = createContext(spec, modules, base);
 			
-			context.get = (function get() {
-				// TODO: There just has to be a better way to do this and keep
-				// the objects hash private.
-				var objects = {};
-				
-				function constructWithFactory(spec, name) {
-					var module = getLoadedModule(name);
-					if(!module) {
-						throw Error("ERROR: no module loaded with name: " + name);
-					}
-
-					var func = spec.create.name,
-						args = spec.create.args ? construct(spec.create.args) : [];
-
-					return module[func].apply(module, args);
-				}
-
-				function constructWithNew(spec, name) {
-					var module = getLoadedModule(spec.module);
-					if(!module) {
-						throw Error("ERROR: no module loaded with name: " + name);
-					}
-
-					return spec.create ? instantiate(module, construct(spec.create)) : new module();
-				}
-
-				function callInit(target, func, args) {
-					args = args ? construct(args) : [];
-					func.apply(target, isArray(args) ? args : [args]);
-				}
-
-				function addReadyInit(target, func, args) {
-					require.ready(function() {
-						callInit(target, func, args);
-					});
-				}
-
-				function setProperties(target, properties) {
-					// TODO: plugins for property setting?
-					var set = typeof target.set == 'function'
-						? function(key, value) { target.set(key, construct(value)); }
-						: function(key, value) { target[key] = construct(value); };
-
-					for(var p in properties) {
-						set(p, construct(properties[p], p));
-					}
-				}
-
-				function processFuncList(list, target, callback) {
-					var func;
-					if(typeof list == "string") {
-						// console.log("calling " + list + "()");
-						func = target[list];
-						if(typeof func == "function") {
-							callback(target, func, []);
-						}
-					} else {
-						for(var f in list) {
-							// console.log("calling " + f + "(" + list[f] + ")");
-							func = target[f];
-							if(typeof func == "function") {
-								callback(target, func, list[f]);
-							}
-						}
-					}
-				}
-
-				function construct(spec, name) {
-					// By default, just return the spec if it's not an object or array
-					var result = spec;
-
-					// If spec is an object or array, process it
-					if(isArray(spec)) {
-						// If it's an array, construct() each element
-						result = [];
-						for (var i=0; i < spec.length; i++) {
-							result.push(construct(spec[i]));
-						}
-
-					} else if(typeof spec == 'object') {
-						// If it's a module
-						//  - if it has a create function, call it, with args and set result
-						//  - if no factory function, invoke new as constructor and set result
-						//  - if init function, invoke after factory or constructor
-						// If it's a reference
-						//  - resolve the reference directly, no recursive construction
-						// If it's not a module
-						//  - recursive construct() and set result
-						if(isModule(spec)) {
-							name = name || spec.name;
-							if(spec.create) {
-								// TODO: Handle calling a factory method and using the return value as result? See constructWithFactory()
-								// console.log('constructing ' + name + " from " + spec.module);
-								result = constructWithNew(spec, name);
-							} else {
-								// console.log('setting ' + name + ' as module ' + spec.module + ' directly');
-								result = getLoadedModule(spec.module);
-							}
-
-							if(spec.properties && typeof spec.properties == 'object') {
-								// console.log("setting props on " + spec.name);
-
-								setProperties(result, spec.properties);
-							}
-
-							// If it has init functions, call it
-							if(spec.init) {
-								processFuncList(spec.init, result, addReadyInit);
-							}
-
-							if(name) objects[name] = result;
-
-						} else if (isRef(spec)) {
-							result = resolve(spec.$ref);
-						} else {
-							result = {};
-							for(var prop in spec) {
-								result[prop] = construct(spec[prop], prop);
-							}
-						}
-					} else {
-						if(name) objects[name] = result;
-					}
-
-					return result;
-				}
-
-				function resolve(ref) {
-					return objects[ref] || (base && base.get(ref)) || undef;
-				}
-				
-				construct(spec);
-
-				return resolve;
-			})();
-			
-			console.log((new Date().getTime()) - start);
+			console.log("total: " + t() + "ms");
 			
 			// Call callback when entire context is ready
 			// TODO: Return a promise instead?
@@ -337,8 +397,7 @@ var wire = (function(){
 		Variable: rootContext
 		The top-level root of all Contexts.
 	*/
-	var rootContext;
-	wireFromSpec({}, function(context) { rootContext = context; });
+	var rootContext = createContext({}, []);
 
 	/*
 		Function: wire

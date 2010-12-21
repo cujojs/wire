@@ -9,6 +9,7 @@ define(['test/test1/ConsoleLogger'], function(defaultLogger) {
 	
 	Controller.prototype.ready = function(message) {
 		this.logger.log(this.name + " " + this.number + ": " + message);
+		if(this.messageNode) this.messageNode.innerHTML = message;
 	};
 
 	return Controller;
