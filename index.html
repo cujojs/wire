@@ -8,7 +8,7 @@
 			baseUrl: './'
 		};
 	</script>
-	<script src="require-0.2/require.js" type="text/javascript" charset="utf-8"></script>
+	<script src="require.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript" src="wire.js"></script>
 	<script type="text/javascript">
 		wire({
@@ -25,7 +25,7 @@
 			// Pick either the AlertLogger or SilentLogger and reload.
 			// Can inject concrete dependencies without having to modify Controller.
 			logger: {
-				module: 'test/test1/SilentLogger'
+				module: 'test/test1/AlertLogger'
 			},
 
 			// Silly, but shows that native values can be declared as usual, and can be wired in
@@ -33,20 +33,29 @@
 			number: 10,
 			message: "I'm ready!",
 
+			foo: {
+				bar: {
+					baz: 10
+				}
+			}
 		},
 		function(context) {
-			console.log(context);
+			console.log(context.get("foo"));
+			// This is so simple that there's no reason to do it in a child context, but I want to
+			// show how parent/child contexts work.  The child (below) will "inherit" the objects
+			// from its parent (above)
 			context.wire({
-				// Create and configure a controller
+			// 	// Create and configure a controller
 				controller: {
 					module: 'test/test1/Controller',
 					create: [{ "$ref": "name" }], // Call constructor with no params.  Need better syntax for this
-
+			
 					// Properties will be set after construction
 					properties: {
 						number: { "$ref": "number" },
-						logger: { "$ref": "logger" },
-						messageNode: { "$ref" : "dom!node1" }
+						// logger: { "$ref": "logger" },
+						messageNode: { "$ref" : "dom!node1" }, // inject reference to dom node by id
+						foo: { "$ref": "foo" }
 					},
 					// Init function (named "ready") will be called after on DomReady
 					// Allows > 1 function to be called
@@ -56,7 +65,9 @@
 						ready: { "$ref": "message" }
 					}
 				}
-				
+			},
+			function(context2) {
+				console.log(context2.get("controller").foo);
 			});
 		});
 	</script>

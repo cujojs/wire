@@ -1,10 +1,13 @@
 //
 // TODO:
-// 1. Build dependency graph for refs and process second pass in dependency order
-// 2. Plugin infrastructure for loading modules (how to bootstrap??), resolving references,
+// - Build dependency graph for refs and process second pass in dependency order
+// - Plugin infrastructure for loading modules (how to bootstrap??), resolving references,
 //    and setting properties
 //    - Plugins should be simple to write, maybe just an AMD module that returns a function or hash of functions?
-
+// - Use a data attribute on wire.js script tag to load wiring spec?
+// - Allow easier loading of modules that don't actually need to be references, like dijits that
+//    might be used for data-dojo-type
+// 
 var wire = (function(){
 
 	var VERSION = "0.1",
@@ -12,6 +15,25 @@ var wire = (function(){
 		arrt = '[object Array]',
 		uniqueNameCount = 0, // used to generate unique names
 		undef;
+		
+	// WARNING: Unsafe!!! just for testing for now
+	var head = document.getElementsByTagName('head')[0],
+		scripts = document.getElementsByTagName('script');
+	for(var i=0; i<scripts.length; i++) {
+		var script = scripts[i],
+			src = script.src,
+			specUrl;
+			
+		if(/wire\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
+			loadSpec(head, specUrl);
+		}
+	}
+	
+	function loadSpec(head, specUrl) {
+		var script = document.createElement('script');
+		script.src = specUrl;
+		head.appendChild(script);
+	}
 		
 	/*
 		Function: uniqueName
@@ -75,42 +97,45 @@ var wire = (function(){
 	}
 	
 	function collectModules(spec) {
-		return collectModulesFromObject(spec, []);
+		return collectModulesFromObject(spec, [], {});
 	}
-	
-	function collectModulesFromObject(spec, modules) {
+
+	function collectModulesFromObject(spec, modules, uniqueModuleNames) {
 		if(isArray(spec)) {
-			collectModulesFromArray(spec, modules);
+			collectModulesFromArray(spec, modules, uniqueModuleNames);
+			
 		} else if(typeof spec == 'object') {
 
 			if(isModule(spec)) {
-				modules.push(spec.module);
-
-				// TODO: REMOVE
-				// For testing only
-				// define(name, [], spec.module);
+				// For tidiness, ensure that we only put each module id into the modules array
+				// once.  Loaders should handle it ok if they *do* appear more than once, imho, but
+				// I've seen requirejs hit an infinite loop in that case, so better to be tidy here.
+				if(!(spec.module in uniqueModuleNames)) {
+					modules.push(spec.module);
+					uniqueModuleNames[spec.module] = 1;
+				}
 
 				if(spec.properties) {
-					collectModulesFromObject(spec.properties, modules);
-				} else if (spec.args) {
-					collectModulesFromObject(spec.args, modules);
+					collectModulesFromObject(spec.properties, modules, uniqueModuleNames);
+				} else if (spec.create) {
+					collectModulesFromObject(spec.args, modules, uniqueModuleNames);
 				}
 
 			} else {
 				for(var prop in spec) {
-					collectModulesFromObject(spec[prop], modules);
+					collectModulesFromObject(spec[prop], modules, uniqueModuleNames);
 				}
 			}
 		}
-		
+
 		return modules;
 	}
-		
-	function collectModulesFromArray(arr, modules) {
+
+	function collectModulesFromArray(arr, modules, uniqueModuleNames) {
 		for (var i = arr.length - 1; i >= 0; i--){
-			collectModulesFromObject(arr[i], modules);
+			collectModulesFromObject(arr[i], modules, uniqueModuleNames);
 		}
-	}
+	}	
 
 	function loadModules(moduleNames, callback) {
 		// TODO: Plugins for loading/resolving modules?
@@ -142,10 +167,10 @@ var wire = (function(){
 			base - base (parent) Context.  Objects in the base are available
 				to this Context.
 	*/
-	function createContext(spec, modules, base) {
+	function createContext(spec, moduleNames, modules, base) {
 		var context = {
 			base: base,
-			modules: modules,
+			modules: moduleNames,
 			/*
 				Function: wire
 				Wires a new, child of this Context, and passes it to the supplied
@@ -156,7 +181,7 @@ var wire = (function(){
 					ready - Function to call with the newly wired child Context
 			*/
 			wire: function(spec, ready) {
-				wireFromSpec(spec, this, ready);
+				wireContext(spec, this, ready);
 			}
 		};
 		
@@ -164,7 +189,7 @@ var wire = (function(){
 			// TODO: There just has to be a better way to do this and keep
 			// the objects hash private.
 			var objects = {},
-				plugins = registerPlugins(modules);
+				plugins = registerPlugins(modules || []);
 				
 			function constructWithFactory(spec, name) {
 				var module = getLoadedModule(name);
@@ -194,13 +219,20 @@ var wire = (function(){
 			}
 
 			function setProperties(target, properties) {
-				// TODO: plugins for property setting?
-				var set = typeof target.set == 'function'
-					? function(key, value) { target.set(key, value); }
-					: function(key, value) { target[key] = value; };
-
+				var setters = plugins.setters;
 				for(var p in properties) {
-					set(p, construct(properties[p], p));
+					var success = false,
+						i = 0,
+						value = construct(properties[p], p);
+					// Try all the registered setters until we find one that reports success
+					while(i++ < setters.length && !success) {
+						success = setters[i](target, p, value);
+					}
+					
+					// If none succeeded, fall back to plain property value
+					if(!success) {
+						target[p] = value;
+					}
 				}
 			}
 
@@ -222,8 +254,22 @@ var wire = (function(){
 					}
 				}
 			}
+			
+			function constructContext(spec) {
+				for(var prop in spec) {
+					defineObject(prop, construct(spec[prop], prop));
+				}
+			}
+			
+			function defineObject(name, value) {
+				if(name in objects) {
+					throw new Error("Object " + name + " is already defined in this context, cannot overwrite");
+				}
+				
+				name && (objects[name] = value);
+			}
 
-			function construct(spec, name, depth) {
+			function construct(spec, name) {
 				// By default, just return the spec if it's not an object or array
 				var result = spec;
 
@@ -269,8 +315,6 @@ var wire = (function(){
 							processFuncList(spec.init, result, addReadyInit);
 						}
 
-						define(name, result);
-
 					} else if (isRef(spec)) {
 						result = resolve(spec.$ref);
 						if(result === undef) throw new Error("Reference " + spec.$ref + " cannot be resolved");
@@ -282,40 +326,46 @@ var wire = (function(){
 						}
 						
 					}
-				} else {
-					define(name, result);
 				}
 
 				return result;
 			}
 			
-			function define(name, value) {
-				if(name in objects) {
-					throw new Error("Object " + name + " is already defined in this context, cannot overwrite");
-				}
-				
-				name && (objects[name] = value);
-			}
-
 			function resolve(ref) {
+				var resolved,
+					resolvers = plugins.resolvers;
 				if(ref.indexOf("!") == -1) {
-					return get(ref);
+					resolved = get(ref);
+					
+					// TODO: Move this code to a plugin somehow?
+					// This will attempt to resolve a non-prefixed reference using all
+					// registered resolvers.  Seems simultaneously useful and dangerous.
+					// I don't think it belongs in the core, but maybe a resolver plugin
+					// so that the user can decide whether to allow it or not.
+					// if(resolved === undef) {
+					// 	for(prefix in resolvers) {
+					// 		resolved = resolvers[prefix](ref, context);
+					// 		if(resolved !== undef) {
+					// 			break;
+					// 		}
+					// 	}
+					// }
+					
+					return resolved;
 					
 				} else {
-					var parts = ref.split("!"),
-						resolved;
+					var parts = ref.split("!");
 					
 					if(parts.length == 2) {
-						var prefix = parts[0],
-							resolvers = plugins.resolvers;
+						var prefix = parts[0];
 
 						if(prefix in resolvers) {
 							var name = parts[1];
-							resolved = resolvers[prefix](name);
+							resolved = resolvers[prefix](name, context);
 						}
 					}
-					
-					return resolved || base.resolve(ref);
+
+					return resolved || base && base.resolve(ref) || undef;
 				}
 			}
 			
@@ -326,7 +376,7 @@ var wire = (function(){
 			context.resolve = resolve;
 			context.get = get;
 
-			construct(spec);
+			constructContext(spec);
 
 			return context;
 		})(context);
@@ -339,7 +389,7 @@ var wire = (function(){
 		};
 		
 		for (var i=0; i < modules.length; i++) {
-			var newPlugin = getLoadedModule(modules[i]);
+			var newPlugin = modules[i];
 			// console.log("scanning for plugins: " + newPlugin);
 			if(newPlugin.wire$resolvers) {
 				for(var name in newPlugin.wire$resolvers) {
@@ -350,6 +400,10 @@ var wire = (function(){
 			if(newPlugin.wire$setters) {
 				// console.log('setter plugin');
 				plugins.setters.concat(newPlugin.wire$setters);
+			}
+			
+			if(typeof newPlugin.wire$init == 'function') {
+				newPlugin.wire$init();
 			}
 		}
 		
@@ -367,7 +421,7 @@ var wire = (function(){
 				to this Context.
 			ready - Function to call with the newly wired Context
 	*/
-	function wireFromSpec(spec, base, ready) {
+	function wireContext(spec, base, ready) {
 		// 1. First pass, build module list for require, call require
 		// 2. Second pass, depth first instantiate 
 
@@ -376,13 +430,14 @@ var wire = (function(){
 		// First pass
 		var modules = collectModules(spec);
 		console.log("modules scanned: " + t() + "ms");
+		console.log(modules);
 		
 		// Second pass happens after modules loaded
 		loadModules(modules, function() {
 			console.log("modules loaded: " + t() + "ms");
 			
 			// Second pass, construct context and object instances
-			var context = createContext(spec, modules, base);
+			var context = createContext(spec, modules, arguments, base);
 			
 			console.log("total: " + t() + "ms");
 			

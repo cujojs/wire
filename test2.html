@@ -1,0 +1,31 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Launcher test</title>
+	<script type="text/javascript">
+		(function() {
+			var baseUrl = './',
+				paths = {
+					'dojo': 'dojo',
+					'dijit': 'dijit',
+					'test': 'test'
+				};
+				
+				djConfig = {
+					baseUrl: baseUrl,
+					modulePaths: paths
+				};
+		})();
+	</script>
+	<script src="require.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" src="wire.js" data-wire-spec="test2.js"></script>
+</head>
+<body>
+	
+	<div>
+		<input id="widgetNode">
+		<input id="widget" data-dojo-type="dijit.form.TextBox">
+	</div>
+</body>
+</html>
