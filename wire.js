@@ -4,6 +4,8 @@
 // - Plugin infrastructure for loading modules (how to bootstrap??), resolving references,
 //    and setting properties
 //    - Plugins should be simple to write, maybe just an AMD module that returns a function or hash of functions?
+//    - Object processor plugins that get a chance to handle an object at various points in its lifecycle?  such as
+//       just after: load, creation, prop setting, init?
 // - Use a data attribute on wire.js script tag to load wiring spec?
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
 //    might be used for data-dojo-type
@@ -397,6 +399,7 @@ var wire = (function(){
 					plugins.resolvers[name] = newPlugin.wire$resolvers[name];
 				}
 			}
+			
 			if(newPlugin.wire$setters) {
 				// console.log('setter plugin');
 				plugins.setters.concat(newPlugin.wire$setters);
@@ -430,7 +433,6 @@ var wire = (function(){
 		// First pass
 		var modules = collectModules(spec);
 		console.log("modules scanned: " + t() + "ms");
-		console.log(modules);
 		
 		// Second pass happens after modules loaded
 		loadModules(modules, function() {
