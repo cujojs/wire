@@ -25,7 +25,7 @@
 			// Pick either the AlertLogger or SilentLogger and reload.
 			// Can inject concrete dependencies without having to modify Controller.
 			logger: {
-				module: 'test/test1/AlertLogger'
+				module: 'test/test1/ConsoleLogger'
 			},
 
 			// Silly, but shows that native values can be declared as usual, and can be wired in
@@ -55,7 +55,8 @@
 						number: { "$ref": "number" },
 						// logger: { "$ref": "logger" },
 						messageNode: { "$ref" : "dom!node1" }, // inject reference to dom node by id
-						foo: { "$ref": "foo" }
+						foo: { "$ref": "foo" },
+						logger: { $ref: "logger" }
 					},
 					// Init function (named "ready") will be called after on DomReady
 					// Allows > 1 function to be called
@@ -67,7 +68,7 @@
 				}
 			},
 			function(context2) {
-				console.log(context2.get("controller").foo);
+				console.log(context2.get("controller"));
 			});
 		});
 	</script>

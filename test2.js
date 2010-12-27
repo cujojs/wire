@@ -5,7 +5,6 @@ wire({
 	// dom: { module: 'wire/dom' }
 	// This seems like it could end up being a reasonable convention, tho.
 	wire$plugins: [
-		{ module: 'dojo' },
 		{ module: 'dijit/form/TextBox' },
 		{ module: 'wire/dijit' }, // Calls dojo.parser.parse
 		{ module: 'wire/dom' }
@@ -16,14 +15,19 @@ wire({
 		module: 'test/test2/Controller',
 		create: [],
 		properties: {
-			name: "controller1",
-			widget: { 
-				module: 'dijit/form/TextBox',
-				create: [{}, { $ref: 'dom!widgetNode' }]
-			}
+			name: { '$ref': 'name' },
+			widget: { '$ref': 'widget1' }
 		},
 		init: {
 			ready: []
+		}
+	},
+	name: 'controller1',
+	widget1: { 
+		module: 'dijit/form/TextBox',
+		create: [{}, { $ref: 'dom!widgetNode' }],
+		properties: {
+			value: "Initial Value!"
 		}
 	},
 	// Create a controller, and inject a dijit.form.TextBox that is simply

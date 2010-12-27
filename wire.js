@@ -1,14 +1,15 @@
 //
 // TODO:
-// - Build dependency graph for refs and process second pass in dependency order
+// - Plugins for afterConstruct/beforeProperties, afterProperties/beforeInit, afterInit.
 // - Plugin infrastructure for loading modules (how to bootstrap??), resolving references,
 //    and setting properties
 //    - Plugins should be simple to write, maybe just an AMD module that returns a function or hash of functions?
 //    - Object processor plugins that get a chance to handle an object at various points in its lifecycle?  such as
 //       just after: load, creation, prop setting, init?
-// - Use a data attribute on wire.js script tag to load wiring spec?
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
 //    might be used for data-dojo-type
+// - It's easy to forget the "create" property which triggers calling a module as a constructor.  Need better syntax, or
+//    maybe create should be the default?
 // 
 var wire = (function(){
 
@@ -16,27 +17,9 @@ var wire = (function(){
 		tos = Object.prototype.toString,
 		arrt = '[object Array]',
 		uniqueNameCount = 0, // used to generate unique names
+		d = document,
 		undef;
-		
-	// WARNING: Unsafe!!! just for testing for now
-	var head = document.getElementsByTagName('head')[0],
-		scripts = document.getElementsByTagName('script');
-	for(var i=0; i<scripts.length; i++) {
-		var script = scripts[i],
-			src = script.src,
-			specUrl;
-			
-		if(/wire\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
-			loadSpec(head, specUrl);
-		}
-	}
-	
-	function loadSpec(head, specUrl) {
-		var script = document.createElement('script');
-		script.src = specUrl;
-		head.appendChild(script);
-	}
-		
+
 	/*
 		Function: uniqueName
 		Generates a unique name.  The unique name will contain seed, if provided.
@@ -67,37 +50,19 @@ var wire = (function(){
 	}
 	
 	function isRef(spec) {
-		return spec.$ref !== undef;
+		return spec && spec.$ref !== undef;
 	}
 	
 	/*
-		Function: pivot
-		Pivots a map of key -> array
+		Function: collectModules
+		Recursively collects all the AMD modules to be loaded before wiring the spec
 		
 		Parameters:
-			map - hash of key -> array pairs
+			spec - wiring spec
 			
 		Returns:
-			Pivoted version of map
+			Array of AMD module identifiers
 	*/
-	function pivot(map) {
-		var pivoted = {};
-		
-		for(var p in map) {
-			var arr = map[p];
-			for (var i = arr.length - 1; i >= 0; i--){
-				var key = arr[i];
-				if(!pivoted[key]) {
-					pivoted[key] = [];
-				}
-				
-				pivoted[key].push(p);
-			};
-		}
-		
-		return pivoted;
-	}
-	
 	function collectModules(spec) {
 		return collectModulesFromObject(spec, [], {});
 	}
@@ -191,7 +156,9 @@ var wire = (function(){
 			// TODO: There just has to be a better way to do this and keep
 			// the objects hash private.
 			var objects = {},
-				plugins = registerPlugins(modules || []);
+				plugins = registerPlugins(modules || []),
+				objectInitQueue = [],
+				refCache = {};
 				
 			function constructWithFactory(spec, name) {
 				var module = getLoadedModule(name);
@@ -200,40 +167,69 @@ var wire = (function(){
 				}
 
 				var func = spec.create.name,
-					args = spec.create.args ? construct(spec.create.args) : [];
+					args = spec.create.args ? createObjects(spec.create.args) : [];
 
 				return module[func].apply(module, args);
 			}
 
+			/*
+				Function: constructWithNew
+				Invokes the supplied constructor to create a new object
+				
+				Parameters:
+					spec - The wiring spec of the object to be constructed containing
+						parameters to be passed to the constructor.
+					ctor - The constructor function to be invoked.
+					
+				Returns:
+					The newly constructed object
+			*/
 			function constructWithNew(spec, ctor) {
-				return spec.create ? instantiate(ctor, construct(spec.create)) : new ctor();
+				return spec.create ? instantiate(ctor, createObjects(spec.create)) : new ctor();
 			}
 
-			function callInit(target, func, args) {
-				args = args ? construct(args) : [];
-				func.apply(target, isArray(args) ? args : [args]);
-			}
-
-			function addReadyInit(target, func, args) {
-				require.ready(function() {
-					callInit(target, func, args);
-				});
-			}
-
+			/*
+				Function: setProperties
+				Sets the supplied properties on the supplied target object.  This function attempts to
+				use registered setter plugins, but if none succeed, falls back to standard Javascript
+				property setting, e.g. target[prop] = value.
+				
+				Parameters:
+					target - Object on which to set properties
+					properties - Hash of properties to set, may contain references, wiring specs, etc.
+				
+			*/
 			function setProperties(target, properties) {
-				var setters = plugins.setters;
+				var setters = plugins.setters,
+					cachedSetter;
 				for(var p in properties) {
 					var success = false,
-						i = 0,
-						value = construct(properties[p], p);
-					// Try all the registered setters until we find one that reports success
-					while(i++ < setters.length && !success) {
-						success = setters[i](target, p, value);
+						value = resolveObject(properties[p]);
+						// value = initObject(properties[p], p);
+
+					if(cachedSetter) {
+						// If we previously found a working setter for this target, use it
+						success = cachedSetter(target, p, value);
 					}
 					
-					// If none succeeded, fall back to plain property value
+					// If no cachedSetter, or cachedSetter failed, try all setters
 					if(!success) {
-						target[p] = value;
+						// Try all the registered setters until we find one that reports success
+						for(var i = 0; i < setters.length && !success; i++) {
+							success = setters[i](target, p, value);
+							if(success) {
+								cachedSetter = setters[i];
+								break;
+							}
+						}
+					}
+					
+					// If we still haven't succeeded, fall back to plain property value
+					if(!success) {
+						cachedSetter = function(target, prop, value) {
+							target[prop] = value;
+						};
+						cachedSetter(target, p, value);
 					}
 				}
 			}
@@ -256,31 +252,55 @@ var wire = (function(){
 					}
 				}
 			}
-			
-			function constructContext(spec) {
-				for(var prop in spec) {
-					defineObject(prop, construct(spec[prop], prop));
-				}
-			}
-			
-			function defineObject(name, value) {
-				if(name in objects) {
-					throw new Error("Object " + name + " is already defined in this context, cannot overwrite");
+
+			function callInit(target, func, args) {
+				// Resolve all the args
+				var resolvedArgs = [];
+				if(isArray(args)) {
+					for(var i=0; i<args.length; i++) {
+						resolvedArgs.push(resolveObject(args[i]));
+					}
+				} else {
+					resolvedArgs[0] = resolveObject(args);
 				}
 				
-				name && (objects[name] = value);
+				func.apply(target, resolvedArgs);
 			}
 
-			function construct(spec, name) {
+			function addReadyInit(target, func, args) {
+				require.ready(function() {
+					callInit(target, func, args);
+				});
+			}
+
+			/*
+				Function: constructContext
+				Fully constructs and initializes all objects, and resolves all references in the supplied
+				wiring spec.
+				
+				Parameters:
+					spec - wiring spec
+			*/
+			function constructContext(spec) {
+				for(var prop in spec) {
+					createObjects(spec[prop], prop);
+				}
+
+				for(var i=0; i<objectInitQueue.length; i++) {
+					objectInitQueue[i]();
+				}
+			}
+			
+			function createObjects(spec, name) {
 				// By default, just return the spec if it's not an object or array
 				var result = spec;
 
 				// If spec is an object or array, process it
 				if(isArray(spec)) {
-					// If it's an array, construct() each element
+					// If it's an array, createObjects() each element
 					result = [];
 					for (var i=0; i < spec.length; i++) {
-						result.push(construct(spec[i]));
+						result.push(createObjects(spec[i]));
 					}
 
 				} else if(typeof spec == 'object') {
@@ -291,7 +311,7 @@ var wire = (function(){
 					// If it's a reference
 					//  - resolve the reference directly, no recursive construction
 					// If it's not a module
-					//  - recursive construct() and set result
+					//  - recursive createObjects() and set result
 					if(isModule(spec)) {
 						name = name || spec.name;
 						result = getLoadedModule(spec.module);
@@ -305,78 +325,119 @@ var wire = (function(){
 							// console.log('constructing ' + name + " from " + spec.module);
 							result = constructWithNew(spec, result);
 						}
-
-						if(spec.properties && typeof spec.properties == 'object') {
-							// console.log("setting props on " + spec.name);
-
-							setProperties(result, spec.properties);
-						}
-
-						// If it has init functions, call it
-						if(spec.init) {
-							processFuncList(spec.init, result, addReadyInit);
-						}
-
+						
+						// Cache the actual object
+						spec._ = result;
+						
+						if(spec.properties) createObjects(spec.properties);
+						if(spec.init) createObjects(spec.init);
+						
 					} else if (isRef(spec)) {
 						result = resolve(spec.$ref);
-						if(result === undef) throw new Error("Reference " + spec.$ref + " cannot be resolved");
-
+						
 					} else {
+						// Recursively create sub-objects
 						result = {};
 						for(var prop in spec) {
-							result[prop] = construct(spec[prop], prop);
+							result[prop] = createObjects(spec[prop], prop);
 						}
 						
 					}
+
+					// Queue a function to initialize the object later, after all
+					// objects have been created
+					objectInitQueue.push(function() {
+						initObject(spec, name);
+					});
 				}
 
 				return result;
 			}
 			
+			function initObject(spec, name) {
+				var result = spec;
+				// if(typeof spec != 'object') {
+				//	console.log("found non-object!");
+				// 	return result;
+				// }
+				
+				if(typeof spec._ == 'object') {
+					result = spec._;
+					if(spec.properties && typeof spec.properties == 'object') {
+						// console.log("setting props on " + spec.name);
+						setProperties(result, spec.properties);
+					}
+
+					// If it has init functions, call it
+					if(spec.init) {
+						processFuncList(spec.init, result, addReadyInit);
+					}
+				} else if (isRef(spec)) {
+					result = resolve(spec.$ref);
+
+				} else {
+					result = {};
+					for(var prop in spec) {
+						result[prop] = resolveObject(spec[prop]);
+					}
+					
+				}
+				
+				return result;
+			}
+			
+			function resolveObject(refObj) {
+				return isRef(refObj) ? resolve(refObj.$ref) : getObject(refObj);
+			}
+			
 			function resolve(ref) {
 				var resolved,
 					resolvers = plugins.resolvers;
-				if(ref.indexOf("!") == -1) {
-					resolved = get(ref);
-					
-					// TODO: Move this code to a plugin somehow?
-					// This will attempt to resolve a non-prefixed reference using all
-					// registered resolvers.  Seems simultaneously useful and dangerous.
-					// I don't think it belongs in the core, but maybe a resolver plugin
-					// so that the user can decide whether to allow it or not.
-					// if(resolved === undef) {
-					// 	for(prefix in resolvers) {
-					// 		resolved = resolvers[prefix](ref, context);
-					// 		if(resolved !== undef) {
-					// 			break;
-					// 		}
-					// 	}
-					// }
-					
-					return resolved;
+				if(ref in refCache) {
+					resolved = refCache[ref];
 					
 				} else {
-					var parts = ref.split("!");
-					
-					if(parts.length == 2) {
-						var prefix = parts[0];
+					if(ref.indexOf("!") == -1) {
+						resolved = (ref in spec) ? getObject(spec[ref]) : undef;
 
-						if(prefix in resolvers) {
-							var name = parts[1];
-							resolved = resolvers[prefix](name, context);
+					} else {
+						var parts = ref.split("!");
+
+						if(parts.length == 2) {
+							var prefix = parts[0];
+
+							if(prefix in resolvers) {
+								var name = parts[1];
+								resolved = resolvers[prefix](name, context);
+							}
 						}
+
 					}
 
-					return resolved || base && base.resolve(ref) || undef;
+					if(resolved === undef) {
+						resolved = (base && base.get(ref)) || undef;
+					}
+					
+					if(isRef(resolved)) {
+						throw new Error("Recursive $refs not allowed: $ref " + ref + " refers to $ref " + resolved.$ref);
+
+					} else if(resolved === undef) {
+						throw new Error("Reference " + ref + " cannot be resolved");
+						
+					} else {
+						// Cache the resolved reference
+						refCache[ref] = resolved;
+					}
 				}
+				
+				return getObject(resolved);
+			}
+
+			function getObject(spec) {
+				return spec._ || spec;
 			}
 			
-			function get(name) {
-				return objects[name] || base && base.get(name) || undef;
-			}
-			
-			context.resolve = resolve;
-			context.get = get;
+			context.get = resolve;
 
 			constructContext(spec);
 
@@ -384,6 +445,16 @@ var wire = (function(){
 		})(context);
 	}
 	
+	/*
+		Function: registerPlugins
+		Inspects all modules for plugins and registers any it finds
+		
+		Parameters:
+			modules - Array of loaded modules
+			
+		Returns:
+			Registered plugins
+	*/
 	function registerPlugins(modules) {
 		var plugins = {
 			resolvers: {},
@@ -401,11 +472,11 @@ var wire = (function(){
 			}
 			
 			if(newPlugin.wire$setters) {
-				// console.log('setter plugin');
-				plugins.setters.concat(newPlugin.wire$setters);
+				plugins.setters = plugins.setters.concat(newPlugin.wire$setters);
 			}
 			
 			if(typeof newPlugin.wire$init == 'function') {
+				// Have to init plugins immediately, so they can be used during wiring
 				newPlugin.wire$init();
 			}
 		}
@@ -414,7 +485,7 @@ var wire = (function(){
 	}
 	
 	/*
-		Function: wireFromSpec
+		Function: wireContext
 		Does all the steps of parsing, module loading, object instantiation, and
 		reference wiring necessary to create a new Context.
 		
@@ -469,6 +540,26 @@ var wire = (function(){
 	};
 	
 	w.version = VERSION;
+	
+	// WARNING: Probably unsafe. Just for testing right now.
+	// TODO: Only do this for browser env
+	var head = d.getElementsByTagName('head')[0],
+		scripts = d.getElementsByTagName('script');
+	for(var i=0; i<scripts.length; i++) {
+		var script = scripts[i],
+			src = script.src,
+			specUrl;
+
+		if(/wire\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
+			loadSpec(head, specUrl);
+		}
+	}
+
+	function loadSpec(head, specUrl) {
+		var script = document.createElement('script');
+		script.src = specUrl;
+		head.appendChild(script);
+	}
 	
 	return w;
 })();

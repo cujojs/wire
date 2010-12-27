@@ -1,4 +1,4 @@
-define(['test/test1/ConsoleLogger'], function(defaultLogger) {
+define(['test/test1/AlertLogger'], function(defaultLogger) {
 
 	var Controller = function(name) {
 		// Defaults, these will get rewired
