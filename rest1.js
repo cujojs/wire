@@ -1,7 +1,9 @@
 wire({
 	wire$plugins: [
-		{ module: 'wire/rest' }
+		{ module: 'wire/rest' },
+		{ module: 'wire/debug' }
 	],
+	// These two constrollers are equivalent.  The rest! resolver makes life easier.
 	controller: {
 		module: 'test/rest1/Controller',
 		create: [],

@@ -333,7 +333,7 @@ var wire = (function(){
 						if(spec.init) createObjects(spec.init);
 						
 					} else if (isRef(spec)) {
-						result = resolve(spec.$ref);
+						result = resolveName(spec.$ref);
 						
 					} else {
 						// Recursively create sub-objects
@@ -347,6 +347,7 @@ var wire = (function(){
 					// Queue a function to initialize the object later, after all
 					// objects have been created
 					objectInitQueue.push(function() {
+						if(!isRef(spec)) plugins.callAfterPlugin('afterCreate', result, spec, resolveName);
 						initObject(spec, name);
 					});
 				}
@@ -356,24 +357,22 @@ var wire = (function(){
 			
 			function initObject(spec, name) {
 				var result = spec;
-				// if(typeof spec != 'object') {
-				//	console.log("found non-object!");
-				// 	return result;
-				// }
 				
 				if(typeof spec._ == 'object') {
 					result = spec._;
 					if(spec.properties && typeof spec.properties == 'object') {
 						// console.log("setting props on " + spec.name);
 						setProperties(result, spec.properties);
+						plugins.callAfterPlugin('afterProperties', result, spec, resolveName);
 					}
-
+					
 					// If it has init functions, call it
 					if(spec.init) {
 						processFuncList(spec.init, result, addReadyInit);
+						plugins.callAfterPlugin('afterInit', result, spec, resolveName);
 					}
 				} else if (isRef(spec)) {
-					result = resolve(spec.$ref);
+					result = resolveName(spec.$ref);
 
 				} else {
 					result = {};
@@ -387,10 +386,10 @@ var wire = (function(){
 			}
 			
 			function resolveObject(refObj) {
-				return isRef(refObj) ? resolve(refObj.$ref) : getObject(refObj);
+				return isRef(refObj) ? resolveName(refObj.$ref) : getObject(refObj);
 			}
 			
-			function resolve(ref) {
+			function resolveName(ref) {
 				var resolved,
 					resolvers = plugins.resolvers;
 				if(ref in refCache) {
@@ -437,7 +436,7 @@ var wire = (function(){
 				return spec._ || spec;
 			}
 			
-			context.get = resolve;
+			context.get = resolveName;
 
 			constructContext(spec);
 
@@ -458,7 +457,16 @@ var wire = (function(){
 	function registerPlugins(modules) {
 		var plugins = {
 			resolvers: {},
-			setters: []
+			setters: [],
+			afterCreate: [],
+			afterProperties: [],
+			afterInit: [],
+			callAfterPlugin: function(name, target, spec, resolver) {
+				var pluginsToCall = plugins[name];
+				for(var i=0; i<pluginsToCall.length; i++) {
+					pluginsToCall[i](target, spec, resolver);
+				}
+			}
 		};
 		
 		for (var i=0; i < modules.length; i++) {
@@ -478,6 +486,15 @@ var wire = (function(){
 			if(typeof newPlugin.wire$init == 'function') {
 				// Have to init plugins immediately, so they can be used during wiring
 				newPlugin.wire$init();
+			}
+			
+			var afters = ['afterCreate', 'afterProperties', 'afterInit'];
+			for(var j = afters.length-1; j >= 0; --j) {
+				var after = afters[j],
+					wireAfter = newPlugin['wire$' + after];
+				if(typeof wireAfter == 'function') {
+					plugins[after].push(wireAfter);
+				}
 			}
 		}
 		
