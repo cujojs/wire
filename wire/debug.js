@@ -4,12 +4,15 @@ define([], function() {
 	return {
 		wire$setters: [
 			function(object, property, value) {
-				console.log('Setting property: ', object, property, value);
+				log('Setting property: ', object, property, value);
 			}
 		],
 		// Overall context lifecycle callbacks
 		wire$onContextInit: function(modules, moduleNames) {
 			log("Context init: ", moduleNames, modules);
+		},
+		wire$onContextError: function(msg, data) {
+			log("Context ERROR: " + msg, data);
 		},
 		wire$onContextReady: function(context) {
 			log("Context ready: ", context);

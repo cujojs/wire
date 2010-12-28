@@ -187,10 +187,15 @@ var wire = (function(){
 				objectInitQueue = [],
 				refCache = {};
 				
+			function error(msg, data) {
+				plugins.callPlugins("onContextError", msg, data);
+				throw Error(msg);
+			}
+				
 			function constructWithFactory(spec, name) {
 				var module = getLoadedModule(name);
 				if(!module) {
-					throw Error("ERROR: no module loaded with name: " + name);
+					error("ERROR: no module loaded for name", name);
 				}
 
 				var func = spec.create.name,
@@ -355,7 +360,7 @@ var wire = (function(){
 						name = name || spec.name;
 						result = getLoadedModule(spec.module);
 						if(!result) {
-							throw new Error("No module loaded with name: " + name);
+							error("No module loaded with name", name);
 						}
 						
 						if(spec.create) {
@@ -406,7 +411,7 @@ var wire = (function(){
 					result = resolveName(spec.$ref);
 					// EXPERIMENTAL: Setting properties and calling initializers on a reference.
 					// Useful in some cases, such as dijits, but dangerous for plain objects!
-					initTargetObject(result, spec);
+					result = initTargetObject(result, spec);
 					
 				} else {
 					result = {};
@@ -423,7 +428,6 @@ var wire = (function(){
 				if(!spec.initialized) {
 				
 					if(spec.properties && typeof spec.properties == 'object') {
-						// console.log("setting props on " + spec.name);
 						setProperties(target, spec.properties);
 						plugins.callPlugins('afterProperties', target, spec, resolveName);
 					}
@@ -440,10 +444,37 @@ var wire = (function(){
 				return target;
 			}
 			
+			/*
+				Function: resolveObject
+				Resolves the supplied object, which is either a reference object (e.g. { '$ref': 'name' })
+				or an already-created spec object, to a concrete object.
+				
+				Parameters:
+					refObj - either a reference object (e.g. { '$ref': 'name' }) or an
+						already-created spec object.
+						
+				Returns:
+					Concrete object.
+			*/
 			function resolveObject(refObj) {
 				return isRef(refObj) ? resolveName(refObj.$ref, refObj) : getObject(refObj);
 			}
 			
+			/*
+				Function: resolveName
+				Resolves the supplied ref name to a concrete object in this context, or any
+				ancestor contexts, using registered resolvers if necessary.
+				
+				Parameters:
+					ref - String name of the reference, including any leading plugin name
+					refObj - (optional) Actual ref object (e.g. { '$ref': 'name' }) which
+						specified the ref name to resolve.  This will be passed to resolver
+						plugins to allow them to do extra processing on the reference if
+						they want
+						
+				Returns:
+					Concrete object to which ref refers.
+			*/
 			function resolveName(ref, refObj) {
 				var resolved,
 					resolvers = plugins.resolvers;
@@ -475,10 +506,10 @@ var wire = (function(){
 					
 					if(resolved === undef) {
 						// Still unresolved
-						throw new Error("Reference " + ref + " cannot be resolved");
+						error("Reference " + ref + " cannot be resolved", name);
 					} else if(isRef(resolved)) {
-						// Check for recursive $refs
-						throw new Error("Recursive $refs not allowed: $ref " + ref + " refers to $ref " + resolved.$ref);
+						// Check for recursive 
+						error("Recursive $refs not allowed: " + ref + " refers to $ref " + resolved.$ref, { name: ref, resolved: resolved });
 					} else {
 						// Resolved, cache the resolved reference
 						refCache[ref] = resolved;
@@ -490,7 +521,7 @@ var wire = (function(){
 			}
 
 			function getObject(spec) {
-				return spec._ || spec;
+				return (spec && spec._) || spec;
 			}
 			
 			context.get = resolveName;
@@ -520,6 +551,7 @@ var wire = (function(){
 			resolvers: {},
 			setters: [],
 			onContextInit: [],
+			onContextError: [],
 			onContextReady: [],
 			afterCreate: [],
 			afterProperties: [],
@@ -555,7 +587,7 @@ var wire = (function(){
 				newPlugin.wire$init();
 			}
 			
-			var afters = ['onContextInit', 'onContextReady', 'afterCreate', 'afterProperties', 'afterInit'];
+			var afters = ['onContextInit', 'onContextError', 'onContextReady', 'afterCreate', 'afterProperties', 'afterInit'];
 			for(var j = afters.length-1; j >= 0; --j) {
 				var after = afters[j],
 					wireAfter = newPlugin['wire$' + after];
@@ -596,7 +628,7 @@ var wire = (function(){
 			// Second pass, construct context and object instances
 			var context = createContext(spec, modules, arguments, base);
 			
-			console.log("total: " + t());
+			console.log("context ready: " + t());
 			
 			// Call callback when entire context is ready
 			// TODO: Return a promise instead?
