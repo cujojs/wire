@@ -347,7 +347,7 @@ var wire = (function(){
 					// Queue a function to initialize the object later, after all
 					// objects have been created
 					objectInitQueue.push(function() {
-						if(!isRef(spec)) plugins.callAfterPlugin('afterCreate', result, spec, resolveName);
+						if(!isRef(spec)) plugins.callAfterPlugins('afterCreate', result, spec, resolveName);
 						initObject(spec, name);
 					});
 				}
@@ -363,13 +363,13 @@ var wire = (function(){
 					if(spec.properties && typeof spec.properties == 'object') {
 						// console.log("setting props on " + spec.name);
 						setProperties(result, spec.properties);
-						plugins.callAfterPlugin('afterProperties', result, spec, resolveName);
+						plugins.callAfterPlugins('afterProperties', result, spec, resolveName);
 					}
 					
 					// If it has init functions, call it
 					if(spec.init) {
 						processFuncList(spec.init, result, addReadyInit);
-						plugins.callAfterPlugin('afterInit', result, spec, resolveName);
+						plugins.callAfterPlugins('afterInit', result, spec, resolveName);
 					}
 				} else if (isRef(spec)) {
 					result = resolveName(spec.$ref);
@@ -461,7 +461,7 @@ var wire = (function(){
 			afterCreate: [],
 			afterProperties: [],
 			afterInit: [],
-			callAfterPlugin: function(name, target, spec, resolver) {
+			callAfterPlugins: function(name, target, spec, resolver) {
 				var pluginsToCall = plugins[name];
 				for(var i=0; i<pluginsToCall.length; i++) {
 					pluginsToCall[i](target, spec, resolver);
