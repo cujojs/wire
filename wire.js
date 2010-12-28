@@ -1,11 +1,8 @@
 //
 // TODO:
 // - Plugins for afterConstruct/beforeProperties, afterProperties/beforeInit, afterInit.
-// - Plugin infrastructure for loading modules (how to bootstrap??), resolving references,
-//    and setting properties
-//    - Plugins should be simple to write, maybe just an AMD module that returns a function or hash of functions?
-//    - Object processor plugins that get a chance to handle an object at various points in its lifecycle?  such as
-//       just after: load, creation, prop setting, init?
+// - Plugins for overall context lifecycle: onContextInit, onContextReady, onContextDestroy
+// - Support for destroying contexts, and their objects
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
 //    might be used for data-dojo-type
 // - It's easy to forget the "create" property which triggers calling a module as a constructor.  Need better syntax, or
