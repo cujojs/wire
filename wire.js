@@ -34,44 +34,6 @@ var wire = (function(){
 	function isArray(it) {
 		return tos.call(it) === arrt;
 	}
-
-	/*
-		Function: timer
-		Creates a timer function that, when called, returns an object containing
-		the total elapsed time since the timer was created, and the split time
-		since the last time the timer was called.  All times in milliseconds
-		
-		Returns:
-			Timer function
-	*/
-	function timer() {
-		var start = new Date().getTime(),
-			split = start;
-			
-		/*
-			Function: getTime
-			Returns the total elapsed time since this timer was created, and the
-			split time since this getTime was last called.
-			
-			Returns:
-				Object containing total and split times in milliseconds, plus a
-				toString() function that is useful in logging the time.
-		*/
-		return function getTime() {
-			var now = new Date().getTime(),
-				total = now - start,
-				splitTime = now - split;
-			split = now;
-			
-			return {
-				total: total,
-				split: splitTime,
-				toString: function() {
-					return 'total: ' + total + 'ms, split: ' + splitTime + 'ms';
-				}
-			};
-		};
-	}
 	
 	function isModule(spec) {
 		return spec.module;
@@ -615,20 +577,13 @@ var wire = (function(){
 		// 1. First pass, build module list for require, call require
 		// 2. Second pass, depth first instantiate 
 
-		var t = timer();
-
 		// First pass
 		var modules = collectModules(spec);
-		console.log("modules scanned: " + t());
-		
+
 		// Second pass happens after modules loaded
 		loadModules(modules, function() {
-			console.log("modules loaded: " + t());
-			
 			// Second pass, construct context and object instances
 			var context = createContext(spec, modules, arguments, base);
-			
-			console.log("context ready: " + t());
 			
 			// Call callback when entire context is ready
 			// TODO: Return a promise instead?
