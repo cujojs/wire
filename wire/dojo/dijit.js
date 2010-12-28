@@ -1,7 +1,7 @@
 define(['dojo'], function(dojo) {
 	return {
 		wire$resolvers: {
-			dijit: function(name, context) {
+			dijit: function(name, refObj, context) {
 				return dijit.byId(name);
 			}
 		},

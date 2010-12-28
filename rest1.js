@@ -1,6 +1,6 @@
 wire({
 	wire$plugins: [
-		{ module: 'wire/rest' },
+		{ module: 'wire/dojo/store' },
 		{ module: 'wire/debug' }
 	],
 	// These two constrollers are equivalent.  The rest! resolver makes life easier.

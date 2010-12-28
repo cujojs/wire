@@ -6,7 +6,7 @@ wire({
 	// This seems like it could end up being a reasonable convention, tho.
 	wire$plugins: [
 		{ module: 'dijit/form/TextBox' },
-		{ module: 'wire/dijit' }, // Calls dojo.parser.parse
+		{ module: 'wire/dojo/dijit' }, // Calls dojo.parser.parse
 		{ module: 'wire/dom' }
 	],
 	// Create a controller, and inject a dijit.form.TextBox that is also

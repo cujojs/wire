@@ -38,10 +38,41 @@ var wire = (function(){
 		return tos.call(it) === arrt;
 	}
 
+	/*
+		Function: timer
+		Creates a timer function that, when called, returns an object containing
+		the total elapsed time since the timer was created, and the split time
+		since the last time the timer was called.  All times in milliseconds
+		
+		Returns:
+			Timer function
+	*/
 	function timer() {
-		var start = new Date().getTime();
-		return function() {
-			return new Date().getTime() - start;
+		var start = new Date().getTime(),
+			split = start;
+			
+		/*
+			Function: getTime
+			Returns the total elapsed time since this timer was created, and the
+			split time since this getTime was last called.
+			
+			Returns:
+				Object containing total and split times in milliseconds, plus a
+				toString() function that is useful in logging the time.
+		*/
+		return function getTime() {
+			var now = new Date().getTime(),
+				total = now - start,
+				splitTime = now - split;
+			split = now;
+			
+			return {
+				total: total,
+				split: splitTime,
+				toString: function() {
+					return 'total: ' + total + 'ms, split: ' + splitTime + 'ms';
+				}
+			};
 		};
 	}
 	
@@ -85,7 +116,7 @@ var wire = (function(){
 				if(spec.properties) {
 					collectModulesFromObject(spec.properties, modules, uniqueModuleNames);
 				} else if (spec.create) {
-					collectModulesFromObject(spec.args, modules, uniqueModuleNames);
+					collectModulesFromObject(spec.create, modules, uniqueModuleNames);
 				}
 
 			} else {
@@ -147,7 +178,7 @@ var wire = (function(){
 					spec - wiring spec
 					ready - Function to call with the newly wired child Context
 			*/
-			wire: function(spec, ready) {
+			wire: function wire(spec, ready) {
 				wireContext(spec, this, ready);
 			}
 		};
@@ -155,8 +186,7 @@ var wire = (function(){
 		return (function wireContext(context) {
 			// TODO: There just has to be a better way to do this and keep
 			// the objects hash private.
-			var objects = {},
-				plugins = registerPlugins(modules || []),
+			var plugins = registerPlugins(modules || []),
 				objectInitQueue = [],
 				refCache = {};
 				
@@ -205,7 +235,6 @@ var wire = (function(){
 				for(var p in properties) {
 					var success = false,
 						value = resolveObject(properties[p]);
-						// value = initObject(properties[p], p);
 
 					if(cachedSetter) {
 						// If we previously found a working setter for this target, use it
@@ -291,6 +320,19 @@ var wire = (function(){
 				}
 			}
 			
+			/*
+				Function: createObjects
+				Recursively instantiate and cache objects, and resolve references (if they can
+				be resolved at this point) in the wiring spec, and queue tasks to set properties
+				and invoke initializer functions after all objects have been instantiated.
+				
+				Parameters:
+					spec - wiring spec
+					name - current scope name
+					
+				Returns:
+					Object created for spec
+			*/
 			function createObjects(spec, name) {
 				// By default, just return the spec if it's not an object or array
 				var result = spec;
@@ -329,9 +371,6 @@ var wire = (function(){
 						// Cache the actual object
 						spec._ = result;
 						
-						if(spec.properties) createObjects(spec.properties);
-						if(spec.init) createObjects(spec.init);
-						
 					} else if (isRef(spec)) {
 						result = resolveName(spec.$ref);
 						
@@ -341,39 +380,37 @@ var wire = (function(){
 						for(var prop in spec) {
 							result[prop] = createObjects(spec[prop], prop);
 						}
-						
 					}
+
+					// EXPERIMENTAL: Creating sub-objects on a reference.
+					// Useful in some cases, such as a dijit reference, but useless/dangerous
+					// in the case of a plain object!
+					if(spec.properties) createObjects(spec.properties);
+					if(spec.init) createObjects(spec.init);
 
 					// Queue a function to initialize the object later, after all
 					// objects have been created
 					objectInitQueue.push(function() {
-						if(!isRef(spec)) plugins.callAfterPlugins('afterCreate', result, spec, resolveName);
-						initObject(spec, name);
+						if(!isRef(spec)) plugins.callPlugins('afterCreate', result, spec, resolveName);
+						initObject(spec);
 					});
 				}
 
 				return result;
 			}
 			
-			function initObject(spec, name) {
+			function initObject(spec) {
 				var result = spec;
 				
 				if(typeof spec._ == 'object') {
-					result = spec._;
-					if(spec.properties && typeof spec.properties == 'object') {
-						// console.log("setting props on " + spec.name);
-						setProperties(result, spec.properties);
-						plugins.callAfterPlugins('afterProperties', result, spec, resolveName);
-					}
-					
-					// If it has init functions, call it
-					if(spec.init) {
-						processFuncList(spec.init, result, addReadyInit);
-						plugins.callAfterPlugins('afterInit', result, spec, resolveName);
-					}
+					result = initTargetObject(spec._, spec);
+
 				} else if (isRef(spec)) {
 					result = resolveName(spec.$ref);
-
+					// EXPERIMENTAL: Setting properties and calling initializers on a reference.
+					// Useful in some cases, such as dijits, but dangerous for plain objects!
+					initTargetObject(result, spec);
+					
 				} else {
 					result = {};
 					for(var prop in spec) {
@@ -385,11 +422,32 @@ var wire = (function(){
 				return result;
 			}
 			
-			function resolveObject(refObj) {
-				return isRef(refObj) ? resolveName(refObj.$ref) : getObject(refObj);
+			function initTargetObject(target, spec) {
+				if(!spec.initialized) {
+				
+					if(spec.properties && typeof spec.properties == 'object') {
+						// console.log("setting props on " + spec.name);
+						setProperties(target, spec.properties);
+						plugins.callPlugins('afterProperties', target, spec, resolveName);
+					}
+				
+					// If it has init functions, call it
+					if(spec.init) {
+						processFuncList(spec.init, target, addReadyInit);
+						plugins.callPlugins('afterInit', target, spec, resolveName);
+					}
+				
+					spec.initialized = true;
+				}
+				
+				return target;
 			}
 			
-			function resolveName(ref) {
+			function resolveObject(refObj) {
+				return isRef(refObj) ? resolveName(refObj.$ref, refObj) : getObject(refObj);
+			}
+			
+			function resolveName(ref, refObj) {
 				var resolved,
 					resolvers = plugins.resolvers;
 				if(ref in refCache) {
@@ -407,28 +465,30 @@ var wire = (function(){
 
 							if(prefix in resolvers) {
 								var name = parts[1];
-								resolved = resolvers[prefix](name, context);
+								resolved = resolvers[prefix](name, refObj, context);
 							}
 						}
 
 					}
 
+					// Still unresolved, ask base context to try to resolve
 					if(resolved === undef) {
 						resolved = (base && base.get(ref)) || undef;
 					}
 					
-					if(isRef(resolved)) {
-						throw new Error("Recursive $refs not allowed: $ref " + ref + " refers to $ref " + resolved.$ref);
-
-					} else if(resolved === undef) {
+					if(resolved === undef) {
+						// Still unresolved
 						throw new Error("Reference " + ref + " cannot be resolved");
-						
+					} else if(isRef(resolved)) {
+						// Check for recursive $refs
+						throw new Error("Recursive $refs not allowed: $ref " + ref + " refers to $ref " + resolved.$ref);
 					} else {
-						// Cache the resolved reference
+						// Resolved, cache the resolved reference
 						refCache[ref] = resolved;
 					}
 				}
 				
+				// Return the actual object
 				return getObject(resolved);
 			}
 
@@ -438,7 +498,11 @@ var wire = (function(){
 			
 			context.get = resolveName;
 
+			plugins.callPlugins("onContextInit", modules, moduleNames);
+				
 			constructContext(spec);
+
+			plugins.callPlugins("onContextReady", context);
 
 			return context;
 		})(context);
@@ -458,13 +522,19 @@ var wire = (function(){
 		var plugins = {
 			resolvers: {},
 			setters: [],
+			onContextInit: [],
+			onContextReady: [],
 			afterCreate: [],
 			afterProperties: [],
 			afterInit: [],
-			callAfterPlugins: function(name, target, spec, resolver) {
-				var pluginsToCall = plugins[name];
+			callPlugins: function call() {
+				var args = Array.prototype.slice.call(arguments),
+					name = args.shift(),
+					pluginsToCall = plugins[name];
+					
 				for(var i=0; i<pluginsToCall.length; i++) {
-					pluginsToCall[i](target, spec, resolver);
+					var plugin = pluginsToCall[i];
+					plugin.apply(plugin, args);
 				}
 			}
 		};
@@ -488,7 +558,7 @@ var wire = (function(){
 				newPlugin.wire$init();
 			}
 			
-			var afters = ['afterCreate', 'afterProperties', 'afterInit'];
+			var afters = ['onContextInit', 'onContextReady', 'afterCreate', 'afterProperties', 'afterInit'];
 			for(var j = afters.length-1; j >= 0; --j) {
 				var after = afters[j],
 					wireAfter = newPlugin['wire$' + after];
@@ -520,16 +590,16 @@ var wire = (function(){
 
 		// First pass
 		var modules = collectModules(spec);
-		console.log("modules scanned: " + t() + "ms");
+		console.log("modules scanned: " + t());
 		
 		// Second pass happens after modules loaded
 		loadModules(modules, function() {
-			console.log("modules loaded: " + t() + "ms");
+			console.log("modules loaded: " + t());
 			
 			// Second pass, construct context and object instances
 			var context = createContext(spec, modules, arguments, base);
 			
-			console.log("total: " + t() + "ms");
+			console.log("total: " + t());
 			
 			// Call callback when entire context is ready
 			// TODO: Return a promise instead?
