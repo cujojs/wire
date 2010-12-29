@@ -578,7 +578,7 @@ var wire = (function(global, undef){
 		
 		if(/wire\S*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
 			// Use a script tag to load the wiring spec
-			var specScript = document.createElement('script');
+			var specScript = d.createElement('script');
 			specScript.src = specUrl;
 			head.appendChild(specScript);
 		}
