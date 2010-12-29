@@ -174,7 +174,17 @@ var wire = (function(global, undef){
 				return plugins;
 			}
 			
-			function callPlugins() {
+			/*
+				Function: callPlugins
+				Invokes the set of plugins registered under the name (first param), e.g. "onContextInit", and
+				passes all subsequent parameters as parameters to each plugin in the set.  This not only
+				invokes plugins registered with this context, but with all ancestor contexts as well.
+				
+				Parameters:
+					name - First argument is the name of the plugin type to call, e.g. "onContextInit"
+					args - Arguments to be passed to plugins
+			*/
+			function callPlugins(/* name, arg1, arg2... */) {
 				var args = Array.prototype.slice.call(arguments),
 					name = args.shift(),
 					pluginsToCall = plugins[name];
