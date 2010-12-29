@@ -4,17 +4,26 @@
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
 	<script type="text/javascript">
-		djConfig = {
-			baseUrl: './',
-			modulePaths:  {
-				'dojo': 'dojo',
-				'dijit': 'dijit',
-				'test': 'test'
-			}
-		};
+		(function(global) {
+			global.djConfig = {
+				baseUrl: './',
+				modulePaths:  {
+					'dojo': 'dojo',
+					'dijit': 'dijit',
+					'test': 'test'
+				}
+			};
+			
+			// global.wire = {
+			// 	plugins: [
+			// 		{ module: 'wire/debug' }
+			// 	]
+			// };
+			
+		})(window);
 	</script>
 	<script src="require.js" type="text/javascript" charset="utf-8"></script>
-	<script type="text/javascript" src="wire.js" data-wire-spec="rest1.js"></script>
+	<script type="text/javascript" src="wire.js" data-wire-spec="rest1.js" data-wire-config="debug: true"></script>
 </head>
 <body>
 

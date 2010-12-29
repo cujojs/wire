@@ -45,6 +45,6 @@ wire({
 	}
 },
 function(context) {
-	console.log(context.get('controller'));
-	console.log(context.get('controller2'));
+	console.log(context.controller);
+	console.log(context.controller2);
 });

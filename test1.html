@@ -7,6 +7,15 @@
 		require = {
 			baseUrl: './'
 		};
+		
+
+		// Either of these works
+		// wire = { module: 'wire/debug' };
+		// wire = {
+		// 	plugins: [
+		// 		{ module: 'wire/debug' }
+		// 	]
+		// };
 	</script>
 	<script src="require.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript" src="wire.js"></script>
@@ -17,7 +26,8 @@
 			// level or at any depth.  So, the following would work just as well:
 			// dom: { module: 'wire/dom' }
 			// This seems like it could end up being a reasonable convention, tho.
-			wire$plugins: [
+			plugins: [
+				{ module: 'wire/debug' },
 				{ module: 'wire/dom' }
 			],
 
@@ -40,7 +50,7 @@
 			}
 		},
 		function(context) {
-			console.log(context.get("foo"));
+			console.log(context.foo);
 			// This is so simple that there's no reason to do it in a child context, but I want to
 			// show how parent/child contexts work.  The child (below) will "inherit" the objects
 			// from its parent (above)
@@ -68,7 +78,7 @@
 				}
 			},
 			function(context2) {
-				console.log(context2.get("controller"));
+				console.log(context2.controller);
 			});
 		});
 	</script>

@@ -1,7 +1,6 @@
 wire({
 	wire$plugins: [
-		{ module: 'wire/dojo/store' },
-		{ module: 'wire/debug' }
+		{ module: 'wire/dojo/store' }
 	],
 	// These two constrollers are equivalent.  The rest! resolver makes life easier.
 	controller: {
@@ -25,6 +24,5 @@ wire({
 	}
 },
 function(context) {
-	console.log(context.get('controller'));
-	console.log(context.get('controller2'));
+	console.log(context);
 });

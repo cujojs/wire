@@ -8,14 +8,17 @@
 // - It's easy to forget the "create" property which triggers calling a module as a constructor.  Need better syntax, or
 //    maybe create should be the default?
 // 
-var wire = (function(){
+var wire = (function(global, undef){
 
 	var VERSION = "0.1",
 		tos = Object.prototype.toString,
 		arrt = '[object Array]',
 		uniqueNameCount = 0, // used to generate unique names
 		d = document,
-		undef;
+		head = d.getElementsByTagName('head')[0],
+		scripts = d.getElementsByTagName('script'),
+		rootSpec = global.wire || {},
+		rootContext; /* Variable: rootContext Top-level context */
 
 	/*
 		Function: uniqueName
@@ -104,14 +107,14 @@ var wire = (function(){
 		return require(name);
 	}
 
-	var Factory = function Factory(ctor, args) {
+	var F = function F(ctor, args) {
 			return ctor.apply(this, args);
 		};
 
 	function instantiate(ctor, args) {
-		Factory.prototype = ctor.prototype;
-		Factory.prototype.constructor = ctor;
-		return new Factory(ctor, args);
+		F.prototype = ctor.prototype;
+		F.prototype.constructor = ctor;
+		return new F(ctor, args);
 	}
 	
 	/*
@@ -125,45 +128,85 @@ var wire = (function(){
 				to this Context.
 	*/
 	function createContext(spec, moduleNames, modules, base) {
-		var context = {
-			base: base,
-			modules: moduleNames,
-			/*
-				Function: wire
-				Wires a new, child of this Context, and passes it to the supplied
-				ready callback, if provided
-
-				Parameters:
-					spec - wiring spec
-					ready - Function to call with the newly wired child Context
-			*/
-			wire: function wire(spec, ready) {
-				wireContext(spec, this, ready);
-			}
-		};
 		
-		return (function wireContext(context) {
+		return (function doWire() {
 			// TODO: There just has to be a better way to do this and keep
 			// the objects hash private.
-			var plugins = registerPlugins(modules || []),
+			var wirePrefix = 'wire$',
+				plugins = registerPlugins(modules || []),
 				objectInitQueue = [],
 				refCache = {};
 				
 			function error(msg, data) {
-				plugins.callPlugins("onContextError", msg, data);
+				callPlugins("onContextError", msg, data);
 				throw Error(msg);
 			}
-				
-			function constructWithFactory(spec, name) {
-				var module = getLoadedModule(name);
-				if(!module) {
-					error("ERROR: no module loaded for name", name);
+
+			/*
+				Function: registerPlugins
+				Inspects all modules for plugins and registers any it finds
+
+				Parameters:
+					modules - Array of loaded modules
+
+				Returns:
+					Registered plugins
+			*/
+			function registerPlugins(modules) {
+				var resolvers = {},
+					setters = [],
+					plugins = {
+						onContextInit: [],
+						onContextError: [],
+						onContextReady: [],
+						afterCreate: [],
+						afterProperties: [],
+						afterInit: []
+					};
+
+				for (var i=0; i < modules.length; i++) {
+					var newPlugin = modules[i];
+					// console.log("scanning for plugins: " + newPlugin);
+					if(newPlugin.wire$resolvers) {
+						for(var name in newPlugin.wire$resolvers) {
+							// console.log("resolver plugin: " + name);
+							resolvers[name] = newPlugin.wire$resolvers[name];
+						}
+					}
+
+					if(newPlugin.wire$setters) {
+						setters = setters.concat(newPlugin.wire$setters);
+					}
+
+					if(typeof newPlugin.wire$init == 'function') {
+						// Have to init plugins immediately, so they can be used during wiring
+						newPlugin.wire$init();
+					}
+
+					for(var p in plugins) {
+						if(typeof newPlugin[wirePrefix + p] == 'function') {
+							plugins[p].push(newPlugin);
+						}
+					}
 				}
 
-				var func = spec.create.name,
-					args = spec.create.args ? createObjects(spec.create.args) : [];
+				plugins.setters = setters;
+				plugins.resolvers = resolvers;
+				
+				return plugins;
+			}
+			
+			function callPlugins() {
+				var args = Array.prototype.slice.call(arguments),
+					name = args.shift(),
+					pluginsToCall = plugins[name];
 
-				return module[func].apply(module, args);
+				for(var i=0; i<pluginsToCall.length; i++) {
+					var plugin = pluginsToCall[i];
+					plugin[wirePrefix + name].apply(plugin, args);
+				}
+				
+				if(base && base.callPlugins) base.callPlugins.apply(base, arguments);
 			}
 
 			/*
@@ -179,7 +222,7 @@ var wire = (function(){
 					The newly constructed object
 			*/
 			function constructWithNew(spec, ctor) {
-				return spec.create ? instantiate(ctor, createObjects(spec.create)) : new ctor();
+				return instantiate(ctor, createObjects(spec.create));
 			}
 
 			/*
@@ -355,7 +398,7 @@ var wire = (function(){
 					// Queue a function to initialize the object later, after all
 					// objects have been created
 					objectInitQueue.push(function() {
-						if(!isRef(spec)) plugins.callPlugins('afterCreate', result, spec, resolveName);
+						if(!isRef(spec)) callPlugins('afterCreate', result, spec, resolveName);
 						initObject(spec);
 					});
 				}
@@ -391,13 +434,13 @@ var wire = (function(){
 				
 					if(spec.properties && typeof spec.properties == 'object') {
 						setProperties(target, spec.properties);
-						plugins.callPlugins('afterProperties', target, spec, resolveName);
+						callPlugins('afterProperties', target, spec, resolveName);
 					}
 				
 					// If it has init functions, call it
 					if(spec.init) {
 						processFuncList(spec.init, target, addReadyInit);
-						plugins.callPlugins('afterInit', target, spec, resolveName);
+						callPlugins('afterInit', target, spec, resolveName);
 					}
 				
 					spec.initialized = true;
@@ -463,7 +506,7 @@ var wire = (function(){
 
 					// Still unresolved, ask base context to try to resolve
 					if(resolved === undef) {
-						resolved = (base && base.get(ref)) || undef;
+						resolved = (base && base.resolveName(ref)) || undef;
 					}
 					
 					if(resolved === undef) {
@@ -485,81 +528,35 @@ var wire = (function(){
 			function getObject(spec) {
 				return (spec && spec._) || spec;
 			}
-			
-			context.get = resolveName;
 
-			plugins.callPlugins("onContextInit", modules, moduleNames);
-				
+			var context = {};
+			for(var p in spec) {
+				context[p] = getObject(spec[p]);
+			}
+
+			/*
+				Function: wire
+				Wires a new, child of this Context, and passes it to the supplied
+				ready callback, if provided
+
+				Parameters:
+					spec - wiring spec
+					ready - Function to call with the newly wired child Context
+			*/
+			context.wire = function wire(spec, ready) {
+				wireContext(spec, { resolveName: resolveName, callPlugins: callPlugins }, ready);
+			};
+
+			context.resolve = resolveName;
+
+			callPlugins("onContextInit", modules, moduleNames);
+
 			constructContext(spec);
 
-			plugins.callPlugins("onContextReady", context);
+			callPlugins("onContextReady", context);
 
 			return context;
-		})(context);
-	}
-	
-	/*
-		Function: registerPlugins
-		Inspects all modules for plugins and registers any it finds
-		
-		Parameters:
-			modules - Array of loaded modules
-			
-		Returns:
-			Registered plugins
-	*/
-	function registerPlugins(modules) {
-		var plugins = {
-			resolvers: {},
-			setters: [],
-			onContextInit: [],
-			onContextError: [],
-			onContextReady: [],
-			afterCreate: [],
-			afterProperties: [],
-			afterInit: [],
-			callPlugins: function call() {
-				var args = Array.prototype.slice.call(arguments),
-					name = args.shift(),
-					pluginsToCall = plugins[name];
-					
-				for(var i=0; i<pluginsToCall.length; i++) {
-					var plugin = pluginsToCall[i];
-					plugin.apply(plugin, args);
-				}
-			}
-		};
-		
-		for (var i=0; i < modules.length; i++) {
-			var newPlugin = modules[i];
-			// console.log("scanning for plugins: " + newPlugin);
-			if(newPlugin.wire$resolvers) {
-				for(var name in newPlugin.wire$resolvers) {
-					// console.log("resolver plugin: " + name);
-					plugins.resolvers[name] = newPlugin.wire$resolvers[name];
-				}
-			}
-			
-			if(newPlugin.wire$setters) {
-				plugins.setters = plugins.setters.concat(newPlugin.wire$setters);
-			}
-			
-			if(typeof newPlugin.wire$init == 'function') {
-				// Have to init plugins immediately, so they can be used during wiring
-				newPlugin.wire$init();
-			}
-			
-			var afters = ['onContextInit', 'onContextError', 'onContextReady', 'afterCreate', 'afterProperties', 'afterInit'];
-			for(var j = afters.length-1; j >= 0; --j) {
-				var after = afters[j],
-					wireAfter = newPlugin['wire$' + after];
-				if(typeof wireAfter == 'function') {
-					plugins[after].push(wireAfter);
-				}
-			}
-		}
-		
-		return plugins;
+		})();
 	}
 	
 	/*
@@ -591,12 +588,23 @@ var wire = (function(){
 		});
 
 	};
+
+	// WARNING: Probably unsafe. Just for testing right now.
+	// TODO: Only do this for browser env
 	
-	/*
-		Variable: rootContext
-		The top-level root of all Contexts.
-	*/
-	var rootContext = createContext({}, []);
+	// Find our script tag and look for data attrs
+	for(var i=0; i<scripts.length; i++) {
+		var script = scripts[i],
+			src = script.src,
+			specUrl;
+			
+		if(/wire\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
+			// Use a script tag to load the wiring spec
+			var specScript = document.createElement('script');
+			specScript.src = specUrl;
+			head.appendChild(specScript);
+		}
+	}
 
 	/*
 		Function: wire
@@ -607,30 +615,17 @@ var wire = (function(){
 			ready - Function to call with the newly wired Context
 	*/
 	var w = function wire(spec, ready) {
-		rootContext.wire(spec, ready);
+		if(rootContext === undef) {
+			wireContext(rootSpec, null, function(context) {
+				rootContext = context;
+				rootContext.wire(spec, ready);
+			});
+		} else {
+			rootContext.wire(spec, ready);
+		}
 	};
 	
 	w.version = VERSION;
-	
-	// WARNING: Probably unsafe. Just for testing right now.
-	// TODO: Only do this for browser env
-	var head = d.getElementsByTagName('head')[0],
-		scripts = d.getElementsByTagName('script');
-	for(var i=0; i<scripts.length; i++) {
-		var script = scripts[i],
-			src = script.src,
-			specUrl;
-
-		if(/wire\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
-			loadSpec(head, specUrl);
-		}
-	}
-
-	function loadSpec(head, specUrl) {
-		var script = document.createElement('script');
-		script.src = specUrl;
-		head.appendChild(script);
-	}
-	
+		
 	return w;
-})();
+})(window);
