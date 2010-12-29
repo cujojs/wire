@@ -13,7 +13,6 @@ var wire = (function(global, undef){
 	var VERSION = "0.1",
 		tos = Object.prototype.toString,
 		arrt = '[object Array]',
-		uniqueNameCount = 0, // used to generate unique names
 		d = document,
 		head = d.getElementsByTagName('head')[0],
 		scripts = d.getElementsByTagName('script'),
@@ -22,20 +21,6 @@ var wire = (function(global, undef){
 		rootContext; /* Variable: rootContext Top-level context */
 		
 	var getLoadedModule = loadModules;
-
-	/*
-		Function: uniqueName
-		Generates a unique name.  The unique name will contain seed, if provided.
-		
-		Parameters:
-			seed - (optional) If provided, the returned name will contain the String seed.
-			
-		Returns:
-			A unique String name
-	*/
-	function uniqueName(seed) {
-		return '_' + (seed ? seed : 'instance') + uniqueNameCount++;
-	}
 
 	function isArray(it) {
 		return tos.call(it) === arrt;
