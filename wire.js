@@ -7,7 +7,7 @@
 //    might be used for data-dojo-type
 // - It's easy to forget the "create" property which triggers calling a module as a constructor.  Need better syntax, or
 //    maybe create should be the default?
-// 
+//
 var wire = (function(global, undef){
 
 	var VERSION = "0.1",
@@ -590,8 +590,8 @@ var wire = (function(global, undef){
 		var script = scripts[i],
 			src = script.src,
 			specUrl;
-			
-		if(/wire\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
+		
+		if(/wire\S*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
 			// Use a script tag to load the wiring spec
 			var specScript = document.createElement('script');
 			specScript.src = specUrl;
