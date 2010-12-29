@@ -17,8 +17,11 @@ var wire = (function(global, undef){
 		d = document,
 		head = d.getElementsByTagName('head')[0],
 		scripts = d.getElementsByTagName('script'),
+		loadModules = window['require'],
 		rootSpec = global.wire || {},
 		rootContext; /* Variable: rootContext Top-level context */
+		
+	var getLoadedModule = loadModules;
 
 	/*
 		Function: uniqueName
@@ -96,16 +99,6 @@ var wire = (function(global, undef){
 			collectModulesFromObject(arr[i], modules, uniqueModuleNames);
 		}
 	}	
-
-	function loadModules(moduleNames, callback) {
-		// TODO: Plugins for loading/resolving modules?
-		require(moduleNames, callback);
-	}
-	
-	function getLoadedModule(name) {
-		// TODO: Plugins for loading/resolving modules?
-		return require(name);
-	}
 
 	var F = function F(ctor, args) {
 			return ctor.apply(this, args);
