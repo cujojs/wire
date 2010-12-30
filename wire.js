@@ -549,6 +549,7 @@
 				resolve: resolveName
 			};
 
+			// EXPERIMENTAL: Make ancestor objects available as direct properties
 			// First, mixin base objects
 			var p;
 			if(base) {
@@ -564,6 +565,7 @@
 
 			constructContext(spec);
 			
+			// EXPERIMENTAL: Make this context's objects available as direct properties
 			// Add current context objects, overriding base objects with the same names
 			for(p in spec) {
 				context[p] = getObject(spec[p]);

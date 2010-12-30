@@ -1,8 +1,7 @@
 define(['dojo'], function(dojo) {
 	var parsed = false,
 		dijits = [],
-		dijitsRecursive = [],
-		undef;
+		dijitsRecursive = [];
 	
 	return {
 		wire$resolvers: {
@@ -28,7 +27,7 @@ define(['dojo'], function(dojo) {
 				parsed = true;
 			}
 		},
-		wire$onContextDestroy: function(target) {
+		wire$onContextDestroy: function(context) {
 			for (var i = dijits.length - 1; i >= 0; i--){
 				dijits[i].destroy();
 			}
@@ -38,6 +37,7 @@ define(['dojo'], function(dojo) {
 		},
 		wire$onCreate: function(target) {
 			if(typeof target.declaredClass == 'string') {
+				// Prefer destroyRecursive over destroy
 				if(typeof target.destroyRecursive == 'function') {
 					dijitsRecursive.push(target);
 				} else if(typeof target.destroy == 'function') {
