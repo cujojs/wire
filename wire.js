@@ -119,7 +119,8 @@
 			var wirePrefix = 'wire$',
 				plugins = registerPlugins(modules || []),
 				objectInitQueue = [],
-				refCache = {};
+				refCache = {},
+				context;
 				
 			function error(msg, data) {
 				callPlugins("onContextError", context, msg, data);
@@ -236,32 +237,34 @@
 				var setters = plugins.setters,
 					cachedSetter;
 				for(var p in properties) {
-					var success = false,
-						value = resolveObject(properties[p]);
+					if(p !== '_') { // Prevent cached instances from being set as properties
+						var success = false,
+							value = resolveObject(properties[p]);
 
-					if(cachedSetter) {
-						// If we previously found a working setter for this target, use it
-						success = cachedSetter(target, p, value);
-					}
-					
-					// If no cachedSetter, or cachedSetter failed, try all setters
-					if(!success) {
-						// Try all the registered setters until we find one that reports success
-						for(var i = 0; i < setters.length && !success; i++) {
-							success = setters[i](target, p, value);
-							if(success) {
-								cachedSetter = setters[i];
-								break;
+						if(cachedSetter) {
+							// If we previously found a working setter for this target, use it
+							success = cachedSetter(target, p, value);
+						}
+
+						// If no cachedSetter, or cachedSetter failed, try all setters
+						if(!success) {
+							// Try all the registered setters until we find one that reports success
+							for(var i = 0; i < setters.length && !success; i++) {
+								success = setters[i](target, p, value);
+								if(success) {
+									cachedSetter = setters[i];
+									break;
+								}
 							}
 						}
-					}
-					
-					// If we still haven't succeeded, fall back to plain property value
-					if(!success) {
-						cachedSetter = function(target, prop, value) {
-							target[prop] = value;
-						};
-						cachedSetter(target, p, value);
+
+						// If we still haven't succeeded, fall back to plain property value
+						if(!success) {
+							cachedSetter = function(target, prop, value) {
+								target[prop] = value;
+							};
+							cachedSetter(target, p, value);
+						}
 					}
 				}
 			}
@@ -317,13 +320,36 @@
 					spec - wiring spec
 			*/
 			function constructContext(spec) {
-				for(var prop in spec) {
-					createObjects(spec[prop], prop);
-				}
+				createObjects(spec);
 
 				for(var i=0; i<objectInitQueue.length; i++) {
 					objectInitQueue[i]();
 				}
+				
+				// EXPERIMENTAL: Make this context's objects available as direct properties
+				// Add current context objects, overriding base objects with the same names
+				var context = spec._ || {};
+				
+				context.wire = function wire(spec, ready) {
+					wireContext(spec, { context: this, resolveName: resolveName, callPlugins: callPlugins }, ready);
+				};
+				context.destroy = function destroy() {
+					callPlugins("onContextDestroy", this);
+				};
+				context.resolve = resolveName;
+
+				// EXPERIMENTAL: Make this ancestor context objects available as direct properties
+				var p;
+				if(base) {
+					var baseContext = base.context;
+						for(p in baseContext) {
+							if(!(p in context)) {
+								context[p] = baseContext[p];
+							}
+						}
+				}
+				
+				return context;
 			}
 			
 			/*
@@ -432,19 +458,14 @@
 			}
 			
 			function initTargetObject(target, spec) {
-				if(!spec.propertiesSet) {
-				
-					if(spec.properties && typeof spec.properties == 'object') {
-						setProperties(target, spec.properties);
-						callPlugins('onProperties', target, spec, resolveName);
-					}
-					
-					spec.propertiesSet = true;
-				
-					// If it has init functions, call it
-					if(spec.init) {
-						processFuncList(spec.init, target, spec, addReadyInit);
-					}
+				if(spec.properties && typeof spec.properties == 'object') {
+					setProperties(target, spec.properties);
+					callPlugins('onProperties', target, spec, resolveName);
+				}
+
+				// If it has init functions, call it
+				if(spec.init) {
+					processFuncList(spec.init, target, spec, addReadyInit);
 				}
 				
 				return target;
@@ -530,46 +551,9 @@
 				return (spec && spec._) ? spec._ : spec;
 			}
 
-			/*
-				Function: wire
-				Wires a new, child of this Context, and passes it to the supplied
-				ready callback, if provided
-
-				Parameters:
-					spec - wiring spec
-					ready - Function to call with the newly wired child Context
-			*/
-			var context = {
-				wire: function wire(spec, ready) {
-					wireContext(spec, { context: this, resolveName: resolveName, callPlugins: callPlugins }, ready);
-				},
-				destroy: function destroy() {
-					callPlugins("onContextDestroy", this);
-				},
-				resolve: resolveName
-			};
-
-			// EXPERIMENTAL: Make ancestor objects available as direct properties
-			// First, mixin base objects
-			var p;
-			if(base) {
-				var baseContext = base.context;
-					for(p in baseContext) {
-						if(!(p in context)) {
-							context[p] = baseContext[p];
-						}
-					}
-			}
-
 			callPlugins("onContextInit", modules, moduleNames);
 
-			constructContext(spec);
-			
-			// EXPERIMENTAL: Make this context's objects available as direct properties
-			// Add current context objects, overriding base objects with the same names
-			for(p in spec) {
-				context[p] = getObject(spec[p]);
-			}
+			context = constructContext(spec, base);
 
 			callPlugins("onContextReady", context);
 
