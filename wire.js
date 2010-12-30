@@ -300,7 +300,6 @@
 				}
 				
 				func.apply(target, resolvedArgs);
-				spec.initialized = true;
 
 				callPlugins('onInit', target, spec, resolveName);
 			}
@@ -338,7 +337,7 @@
 				};
 				context.resolve = resolveName;
 
-				// EXPERIMENTAL: Make this ancestor context objects available as direct properties
+				// EXPERIMENTAL: Make ancestor context objects available as direct properties
 				var p;
 				if(base) {
 					var baseContext = base.context;
