@@ -6,9 +6,6 @@
 
 //
 // TODO:
-// - Plugins for afterConstruct/beforeProperties, afterProperties/beforeInit, afterInit.
-// - Plugins for overall context lifecycle: onContextInit, onContextReady, onContextDestroy
-// - Support for destroying contexts, and their objects
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
 //    might be used for data-dojo-type
 // - It's easy to forget the "create" property which triggers calling a module as a constructor.  Need better syntax, or
@@ -30,6 +27,14 @@
 		
 	function isArray(it) {
 		return tos.call(it) === arrt;
+	}
+
+	function mixin(dst, src) {
+		for(var p in src) {
+			dst[p] = src[p];
+		}
+
+		return dst;
 	}
 	
 	function isModule(spec) {
@@ -325,9 +330,8 @@
 					objectInitQueue[i]();
 				}
 				
-				// EXPERIMENTAL: Make this context's objects available as direct properties
-				// Add current context objects, overriding base objects with the same names
-				var context = spec._ || {};
+				// EXPERIMENTAL: Make ancestor context objects available as direct properties
+				var context = base ? mixin({}, base.context) : {};
 				
 				context.wire = function wire(spec, ready) {
 					wireContext(spec, { context: this, resolveName: resolveName, callPlugins: callPlugins }, ready);
@@ -336,19 +340,10 @@
 					callPlugins("onContextDestroy", this);
 				};
 				context.resolve = resolveName;
-
-				// EXPERIMENTAL: Make ancestor context objects available as direct properties
-				var p;
-				if(base) {
-					var baseContext = base.context;
-						for(p in baseContext) {
-							if(!(p in context)) {
-								context[p] = baseContext[p];
-							}
-						}
-				}
 				
-				return context;
+				// EXPERIMENTAL: Make this context's objects available as direct properties
+				// Add current context objects, overriding base objects with the same names
+				return mixin(context, spec._);
 			}
 			
 			/*
@@ -554,6 +549,10 @@
 			context = constructContext(spec, base);
 
 			callPlugins("onContextReady", context);
+
+			// TODO: Should the context should be frozen?
+			// var freeze = Object.freeze || function(){};
+			// freeze(context);
 
 			return context;
 		})();
