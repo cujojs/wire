@@ -441,10 +441,9 @@
 					result = initTargetObject(spec._, spec);
 
 				} else if (isRef(spec)) {
-					result = resolveName(spec.$ref);
 					// EXPERIMENTAL: Setting properties and calling initializers on a reference.
 					// Useful in some cases, such as dijits, but dangerous for plain objects!
-					result = initTargetObject(result, spec);
+					result = initTargetObject(resolveName(spec.$ref), spec);
 					
 				} else {
 					result = {};
