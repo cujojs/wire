@@ -3,20 +3,6 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
-	<script type="text/javascript">
-		require = {
-			baseUrl: './'
-		};
-		
-
-		// Either of these works
-		// wire = { module: 'wire/debug' };
-		// wire = {
-		// 	plugins: [
-		// 		{ module: 'wire/debug' }
-		// 	]
-		// };
-	</script>
 	<script src="require.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript" src="wire.js"></script>
 	<script type="text/javascript">
@@ -50,15 +36,16 @@
 			}
 		},
 		function(context) {
-			console.log(context.foo);
+			console.log(context);
 			// This is so simple that there's no reason to do it in a child context, but I want to
 			// show how parent/child contexts work.  The child (below) will "inherit" the objects
 			// from its parent (above)
 			context.wire({
-			// 	// Create and configure a controller
+				name: "Test 2",
+				// Create and configure a controller
 				controller: {
 					module: 'test/test1/Controller',
-					create: [{ "$ref": "name" }], // Call constructor with no params.  Need better syntax for this
+					create: [{ "$ref": "name" }],
 			
 					// Properties will be set after construction
 					properties: {
@@ -78,7 +65,7 @@
 				}
 			},
 			function(context2) {
-				console.log(context2.controller);
+				console.log(context2);
 			});
 		});
 	</script>

@@ -5,6 +5,7 @@ wire({
 	// dom: { module: 'wire/dom' }
 	// This seems like it could end up being a reasonable convention, tho.
 	wire$plugins: [
+		{ module: 'wire/debug' },
 		{ module: 'dijit/form/TextBox' },
 		{ module: 'wire/dojo/dijit' }, // Calls dojo.parser.parse
 		{ module: 'wire/dom' }

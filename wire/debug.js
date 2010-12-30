@@ -1,8 +1,12 @@
 define([], function() {
 	var timer = createTimer();
+	
+	function msg(text) {
+		return "DEBUG: " + text;
+	}
 
 	function time(text) {
-		return "DEBUG: " + text + " (" + timer() + ")";
+		return msg(text) + " (" + timer() + ")";
 	}
 
 	console.log(time("Debug plugin loaded"));
@@ -46,31 +50,32 @@ define([], function() {
 	}
 	
 	return {
-		wire$setters: [
-			function(object, property, value) {
-				console.log('Setting property: ', object, property, value);
-			}
-		],
 		// Overall context lifecycle callbacks
 		wire$onContextInit: function(modules, moduleNames) {
 			console.log(time("Context init"), moduleNames, modules);
 		},
-		wire$onContextError: function(msg, data) {
+		wire$onContextError: function(context, msg, data) {
 			console.log(time("Context ERROR") + msg, data);
 		},
 		wire$onContextReady: function(context) {
 			console.log(time("Context ready"), context);
 		},
+		wire$onContextDestroy: function(context) {
+			console.log(time("Context destroy"), context);
+		},
 		// Individual object lifecycle callbacks
 		// Don't time these
-		wire$afterCreate: function(target, spec, resolver) {
-			console.log('After create', target, spec, resolver.name);
+		wire$onCreate: function(target, spec, resolver) {
+			console.log(msg('create'), target, spec, resolver.name);
 		},
-		wire$afterProperties: function(target, spec, resolver) {
-			console.log('After properties', target, spec, resolver.name);
+		wire$onProperties: function(target, spec, resolver) {
+			console.log(msg('properties'), target, spec, resolver.name);
 		},
-		wire$afterInit: function(target, spec, resolver) {
-			console.log('After init', target, spec, resolver.name);
+		wire$onInit: function(target, spec, resolver) {
+			console.log(msg('init'), target, spec, resolver.name);
+		},
+		wire$onDestroy: function(target) {
+			console.log(msg('destroy'), target);
 		},
 		// Init for this plugin
 		wire$init: function() {

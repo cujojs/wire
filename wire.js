@@ -1,3 +1,9 @@
+/**
+ * @license Copyright (c) 2010 Brian Cavalier
+ * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
+ * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
+ */
+
 //
 // TODO:
 // - Plugins for afterConstruct/beforeProperties, afterProperties/beforeInit, afterInit.
@@ -8,20 +14,20 @@
 // - It's easy to forget the "create" property which triggers calling a module as a constructor.  Need better syntax, or
 //    maybe create should be the default?
 //
-var wire = (function(global, undef){
+(function(global, undef){
+	"use strict";
 
 	var VERSION = "0.1",
 		tos = Object.prototype.toString,
 		arrt = '[object Array]',
-		d = document,
-		head = d.getElementsByTagName('head')[0],
-		scripts = d.getElementsByTagName('script'),
+		doc = document,
+		head = doc.getElementsByTagName('head')[0],
+		scripts = doc.getElementsByTagName('script'),
 		loadModules = window['require'],
+		getLoadedModule = loadModules,
 		rootSpec = global.wire || {},
 		rootContext; /* Variable: rootContext Top-level context */
 		
-	var getLoadedModule = loadModules;
-
 	function isArray(it) {
 		return tos.call(it) === arrt;
 	}
@@ -42,7 +48,7 @@ var wire = (function(global, undef){
 			spec - wiring spec
 			
 		Returns:
-			Array of AMD module identifiers
+			Array of unique AMD module identifiers
 	*/
 	function collectModules(spec) {
 		return collectModulesFromObject(spec, [], {});
@@ -116,7 +122,7 @@ var wire = (function(global, undef){
 				refCache = {};
 				
 			function error(msg, data) {
-				callPlugins("onContextError", msg, data);
+				callPlugins("onContextError", context, msg, data);
 				throw Error(msg);
 			}
 
@@ -137,9 +143,11 @@ var wire = (function(global, undef){
 						onContextInit: [],
 						onContextError: [],
 						onContextReady: [],
-						afterCreate: [],
-						afterProperties: [],
-						afterInit: []
+						onContextDestroy: [],
+						onCreate: [],
+						onProperties: [],
+						onInit: [],
+						onDestroy: []
 					};
 
 				for (var i=0; i < modules.length; i++) {
@@ -258,26 +266,26 @@ var wire = (function(global, undef){
 				}
 			}
 
-			function processFuncList(list, target, callback) {
+			function processFuncList(list, target, spec, callback) {
 				var func;
 				if(typeof list == "string") {
 					// console.log("calling " + list + "()");
 					func = target[list];
 					if(typeof func == "function") {
-						callback(target, func, []);
+						callback(target, spec, func, []);
 					}
 				} else {
 					for(var f in list) {
 						// console.log("calling " + f + "(" + list[f] + ")");
 						func = target[f];
 						if(typeof func == "function") {
-							callback(target, func, list[f]);
+							callback(target, spec, func, list[f]);
 						}
 					}
 				}
 			}
 
-			function callInit(target, func, args) {
+			function callInit(target, spec, func, args) {
 				// Resolve all the args
 				var resolvedArgs = [];
 				if(isArray(args)) {
@@ -289,11 +297,14 @@ var wire = (function(global, undef){
 				}
 				
 				func.apply(target, resolvedArgs);
+				spec.initialized = true;
+
+				callPlugins('onInit', target, spec, resolveName);
 			}
 
-			function addReadyInit(target, func, args) {
+			function addReadyInit(target, spec, func, args) {
 				require.ready(function() {
-					callInit(target, func, args);
+					callInit(target, spec, func, args);
 				});
 			}
 
@@ -339,6 +350,7 @@ var wire = (function(global, undef){
 					for (var i=0; i < spec.length; i++) {
 						result.push(createObjects(spec[i]));
 					}
+					spec._ = result;
 
 				} else if(typeof spec == 'object') {
 					// If it's a module
@@ -375,6 +387,7 @@ var wire = (function(global, undef){
 						for(var prop in spec) {
 							result[prop] = createObjects(spec[prop], prop);
 						}
+						spec._ = result;
 					}
 
 					// EXPERIMENTAL: Creating sub-objects on a reference.
@@ -383,10 +396,11 @@ var wire = (function(global, undef){
 					if(spec.properties) createObjects(spec.properties);
 					if(spec.init) createObjects(spec.init);
 
+					if(!isRef(spec)) callPlugins('onCreate', result, spec, resolveName);
+
 					// Queue a function to initialize the object later, after all
 					// objects have been created
 					objectInitQueue.push(function() {
-						if(!isRef(spec)) callPlugins('afterCreate', result, spec, resolveName);
 						initObject(spec);
 					});
 				}
@@ -397,7 +411,7 @@ var wire = (function(global, undef){
 			function initObject(spec) {
 				var result = spec;
 				
-				if(typeof spec._ == 'object') {
+				if(spec._) {
 					result = initTargetObject(spec._, spec);
 
 				} else if (isRef(spec)) {
@@ -418,20 +432,19 @@ var wire = (function(global, undef){
 			}
 			
 			function initTargetObject(target, spec) {
-				if(!spec.initialized) {
+				if(!spec.propertiesSet) {
 				
 					if(spec.properties && typeof spec.properties == 'object') {
 						setProperties(target, spec.properties);
-						callPlugins('afterProperties', target, spec, resolveName);
+						callPlugins('onProperties', target, spec, resolveName);
 					}
+					
+					spec.propertiesSet = true;
 				
 					// If it has init functions, call it
 					if(spec.init) {
-						processFuncList(spec.init, target, addReadyInit);
-						callPlugins('afterInit', target, spec, resolveName);
+						processFuncList(spec.init, target, spec, addReadyInit);
 					}
-				
-					spec.initialized = true;
 				}
 				
 				return target;
@@ -514,12 +527,7 @@ var wire = (function(global, undef){
 			}
 
 			function getObject(spec) {
-				return (spec && spec._) || spec;
-			}
-
-			var context = {};
-			for(var p in spec) {
-				context[p] = getObject(spec[p]);
+				return (spec && spec._) ? spec._ : spec;
 			}
 
 			/*
@@ -531,15 +539,35 @@ var wire = (function(global, undef){
 					spec - wiring spec
 					ready - Function to call with the newly wired child Context
 			*/
-			context.wire = function wire(spec, ready) {
-				wireContext(spec, { resolveName: resolveName, callPlugins: callPlugins }, ready);
+			var context = {
+				wire: function wire(spec, ready) {
+					wireContext(spec, { context: this, resolveName: resolveName, callPlugins: callPlugins }, ready);
+				},
+				destroy: function destroy() {
+					callPlugins("onContextDestroy", this);
+				},
+				resolve: resolveName
 			};
 
-			context.resolve = resolveName;
+			// First, mixin base objects
+			var p;
+			if(base) {
+				var baseContext = base.context;
+					for(p in baseContext) {
+						if(!(p in context)) {
+							context[p] = baseContext[p];
+						}
+					}
+			}
 
 			callPlugins("onContextInit", modules, moduleNames);
 
 			constructContext(spec);
+			
+			// Add current context objects, overriding base objects with the same names
+			for(p in spec) {
+				context[p] = getObject(spec[p]);
+			}
 
 			callPlugins("onContextReady", context);
 
@@ -588,7 +616,7 @@ var wire = (function(global, undef){
 		
 		if(/wire\S*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
 			// Use a script tag to load the wiring spec
-			var specScript = d.createElement('script');
+			var specScript = doc.createElement('script');
 			specScript.src = specUrl;
 			head.appendChild(specScript);
 		}
@@ -602,7 +630,7 @@ var wire = (function(global, undef){
 			spec - wiring spec
 			ready - Function to call with the newly wired Context
 	*/
-	var w = function wire(spec, ready) {
+	var w = global['wire'] = function wire(spec, ready) {
 		if(rootContext === undef) {
 			wireContext(rootSpec, null, function(context) {
 				rootContext = context;
@@ -614,6 +642,5 @@ var wire = (function(global, undef){
 	};
 	
 	w.version = VERSION;
-		
-	return w;
+
 })(window);
