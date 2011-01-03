@@ -122,13 +122,22 @@
 			// TODO: There just has to be a better way to do this and keep
 			// the objects hash private.
 			var wirePrefix = 'wire$',
-				plugins = registerPlugins(modules || []),
+				plugins = {
+					onContextInit: [],
+					onContextError: [],
+					onContextReady: [],
+					onContextDestroy: [],
+					onCreate: [],
+					onProperties: [],
+					onInit: [],
+					onDestroy: []
+				},
 				objectInitQueue = [],
 				refCache = {},
 				context;
 				
 			function error(msg, data) {
-				callPlugins("onContextError", context, msg, data);
+				fireEvent("onContextError", context, msg, data);
 				throw Error(msg);
 			}
 
@@ -144,17 +153,7 @@
 			*/
 			function registerPlugins(modules) {
 				var resolvers = {},
-					setters = [],
-					plugins = {
-						onContextInit: [],
-						onContextError: [],
-						onContextReady: [],
-						onContextDestroy: [],
-						onCreate: [],
-						onProperties: [],
-						onInit: [],
-						onDestroy: []
-					};
+					setters = [];
 
 				for (var i=0; i < modules.length; i++) {
 					var newPlugin = modules[i];
@@ -170,26 +169,28 @@
 						setters = setters.concat(newPlugin.wire$setters);
 					}
 
+					addEventListener(newPlugin);
+
 					if(typeof newPlugin.wire$init == 'function') {
 						// Have to init plugins immediately, so they can be used during wiring
 						newPlugin.wire$init();
-					}
-
-					for(var p in plugins) {
-						if(typeof newPlugin[wirePrefix + p] == 'function') {
-							plugins[p].push(newPlugin);
-						}
 					}
 				}
 
 				plugins.setters = setters;
 				plugins.resolvers = resolvers;
-				
-				return plugins;
+			}
+			
+			function addEventListener(listener) {
+				for(var p in plugins) {
+					if(typeof listener[wirePrefix + p] == 'function') {
+						plugins[p].push(listener);
+					}
+				}
 			}
 			
 			/*
-				Function: callPlugins
+				Function: fireEvent
 				Invokes the set of plugins registered under the name (first param), e.g. "onContextInit", and
 				passes all subsequent parameters as parameters to each plugin in the set.  This not only
 				invokes plugins registered with this context, but with all ancestor contexts as well.
@@ -198,7 +199,7 @@
 					name - First argument is the name of the plugin type to call, e.g. "onContextInit"
 					args - Arguments to be passed to plugins
 			*/
-			function callPlugins(/* name, arg1, arg2... */) {
+			function fireEvent(/* name, arg1, arg2... */) {
 				var args = Array.prototype.slice.call(arguments),
 					name = args.shift(),
 					pluginsToCall = plugins[name];
@@ -207,8 +208,6 @@
 					var plugin = pluginsToCall[i];
 					plugin[wirePrefix + name].apply(plugin, args);
 				}
-				
-				if(base && base.callPlugins) base.callPlugins.apply(base, arguments);
 			}
 
 			/*
@@ -306,7 +305,7 @@
 				
 				func.apply(target, resolvedArgs);
 
-				callPlugins('onInit', target, spec, resolveName);
+				fireEvent('onInit', target, spec, resolveName);
 			}
 
 			function addReadyInit(target, spec, func, args) {
@@ -330,14 +329,20 @@
 					objectInitQueue[i]();
 				}
 				
-				// EXPERIMENTAL: Make ancestor context objects available as direct properties
-				var context = base ? mixin({}, base.context) : {};
+				var context;
+				if(base) {
+					// EXPERIMENTAL: Make ancestor context objects available as direct properties
+					context = mixin({}, base.context);
+					base.addEventListener({ wire$onContextDestroy: context.destroy });
+				} else {
+					context = {};
+				}
 				
 				context.wire = function wire(spec, ready) {
-					wireContext(spec, { context: this, resolveName: resolveName, callPlugins: callPlugins }, ready);
+					wireContext(spec, { context: this, resolveName: resolveName, addEventListener: addEventListener }, ready);
 				};
 				context.destroy = function destroy() {
-					callPlugins("onContextDestroy", this);
+					fireEvent("onContextDestroy", this);
 				};
 				context.resolve = resolveName;
 				
@@ -416,7 +421,7 @@
 					if(spec.properties) createObjects(spec.properties);
 					if(spec.init) createObjects(spec.init);
 
-					if(!isRef(spec)) callPlugins('onCreate', result, spec, resolveName);
+					if(!isRef(spec)) fireEvent('onCreate', result, spec, resolveName);
 
 					// Queue a function to initialize the object later, after all
 					// objects have been created
@@ -453,7 +458,7 @@
 			function initTargetObject(target, spec) {
 				if(spec.properties && typeof spec.properties == 'object') {
 					setProperties(target, spec.properties);
-					callPlugins('onProperties', target, spec, resolveName);
+					fireEvent('onProperties', target, spec, resolveName);
 				}
 
 				// If it has init functions, call it
@@ -543,12 +548,14 @@
 			function getObject(spec) {
 				return (spec && spec._) ? spec._ : spec;
 			}
+			
+			if(modules.length > 0) registerPlugins(modules);
 
-			callPlugins("onContextInit", modules, moduleNames);
+			fireEvent("onContextInit", modules, moduleNames);
 
 			context = constructContext(spec, base);
 
-			callPlugins("onContextReady", context);
+			fireEvent("onContextReady", context);
 
 			// TODO: Should the context should be frozen?
 			// var freeze = Object.freeze || function(){};
