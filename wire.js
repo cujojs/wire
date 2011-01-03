@@ -333,16 +333,21 @@
 				if(base) {
 					// EXPERIMENTAL: Make ancestor context objects available as direct properties
 					context = mixin({}, base.context);
-					base.addEventListener({ wire$onContextDestroy: context.destroy });
+					base.addEventListener({ wire$onContextDestroy: function() { context.destroy(); } });
 				} else {
 					context = {};
 				}
 				
 				context.wire = function wire(spec, ready) {
-					wireContext(spec, { context: this, resolveName: resolveName, addEventListener: addEventListener }, ready);
+					wireContext(spec, ready,
+						{
+							context: context,
+							resolveName: resolveName,
+							addEventListener: addEventListener
+						});
 				};
 				context.destroy = function destroy() {
-					fireEvent("onContextDestroy", this);
+					fireEvent("onContextDestroy", context);
 				};
 				context.resolve = resolveName;
 				
@@ -576,7 +581,7 @@
 				to this Context.
 			ready - Function to call with the newly wired Context
 	*/
-	function wireContext(spec, base, ready) {
+	function wireContext(spec, ready, base) {
 		// 1. First pass, build module list for require, call require
 		// 2. Second pass, depth first instantiate 
 
@@ -622,7 +627,7 @@
 	*/
 	var w = global['wire'] = function wire(spec, ready) {
 		if(rootContext === undef) {
-			wireContext(rootSpec, null, function(context) {
+			wireContext(rootSpec, function(context) {
 				rootContext = context;
 				rootContext.wire(spec, ready);
 			});
