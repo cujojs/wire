@@ -10,6 +10,8 @@
 //    might be used for data-dojo-type
 // - It's easy to forget the "create" property which triggers calling a module as a constructor.  Need better syntax, or
 //    maybe create should be the default?
+// - "destroy" property similar to init, that specifies what function to call on an object when its context is
+//    destroyed.
 //
 (function(global, undef){
 	"use strict";
@@ -133,6 +135,7 @@
 					onDestroy: []
 				},
 				objectInitQueue = [],
+				objectDestroyQueue = [],
 				refCache = {},
 				context;
 				
@@ -347,6 +350,9 @@
 						});
 				};
 				context.destroy = function destroy() {
+					for(var j=0; j<objectDestroyQueue.length; j++) {
+						objectDestroyQueue[j]();
+					}
 					fireEvent("onContextDestroy", context);
 				};
 				context.resolve = resolveName;
@@ -408,8 +414,14 @@
 						// Cache the actual object
 						spec._ = result;
 						
+						if(spec.destroy) {
+							objectDestroyQueue.push(function() {
+								destroyObject(result, spec);
+							});
+						}
+						
 					} else if (isRef(spec)) {
-						result = resolveName(spec.$ref);
+						result = resolveNameDuringWire(spec.$ref);
 						
 					} else {
 						// Recursively create sub-objects
@@ -447,7 +459,7 @@
 				} else if (isRef(spec)) {
 					// EXPERIMENTAL: Setting properties and calling initializers on a reference.
 					// Useful in some cases, such as dijits, but dangerous for plain objects!
-					result = initTargetObject(resolveName(spec.$ref), spec);
+					result = initTargetObject(resolveNameDuringWire(spec.$ref), spec);
 					
 				} else {
 					result = {};
@@ -474,6 +486,13 @@
 				return target;
 			}
 			
+			function destroyObject(target, spec) {
+				var destroy = spec.destroy;
+				processFuncList(spec.destroy, target, spec, function(target, spec, func, args) {
+					func.apply(target, []); // no args for destroy
+				});
+			}
+			
 			/*
 				Function: resolveObject
 				Resolves the supplied object, which is either a reference object (e.g. { '$ref': 'name' })
@@ -487,7 +506,7 @@
 					Concrete object.
 			*/
 			function resolveObject(refObj) {
-				return isRef(refObj) ? resolveName(refObj.$ref, refObj) : getObject(refObj);
+				return isRef(refObj) ? resolveNameDuringWire(refObj.$ref, refObj) : getObject(refObj);
 			}
 			
 			/*
@@ -534,20 +553,30 @@
 						resolved = (base && base.resolveName(ref)) || undef;
 					}
 					
-					if(resolved === undef) {
-						// Still unresolved
-						error("Reference " + ref + " cannot be resolved", name);
-					} else if(isRef(resolved)) {
-						// Check for recursive 
-						error("Recursive $refs not allowed: " + ref + " refers to $ref " + resolved.$ref, { name: ref, resolved: resolved });
-					} else {
-						// Resolved, cache the resolved reference
-						refCache[ref] = resolved;
-					}
 				}
 				
-				// Return the actual object
-				return getObject(resolved);
+				if(resolved !== undef) {
+					// Resolved, cache the resolved reference
+					refCache[ref] = resolved;
+					// Return the actual object
+					return getObject(resolved);
+				}
+				
+				return undef;
+			}
+			
+			function resolveNameDuringWire(ref, refObj) {
+				var resolved = resolveName(ref, refObj);
+				
+				if(resolved === undef) {
+					// Still unresolved
+					error("Reference " + ref + " cannot be resolved", name);
+				} else if(isRef(resolved)) {
+					// Check for recursive 
+					error("Recursive $refs not allowed: " + ref + " refers to $ref " + resolved.$ref, { name: ref, resolved: resolved });
+				}
+				 
+				return resolved;
 			}
 
 			function getObject(spec) {
@@ -587,7 +616,7 @@
 
 		// First pass
 		var modules = collectModules(spec);
-
+		
 		// Second pass happens after modules loaded
 		loadModules(modules, function() {
 			// Second pass, construct context and object instances
@@ -597,7 +626,7 @@
 			// TODO: Return a promise instead?
 			if(ready) ready(context);
 		});
-
+		
 	};
 
 	// WARNING: Probably unsafe. Just for testing right now.
@@ -625,7 +654,7 @@
 			spec - wiring spec
 			ready - Function to call with the newly wired Context
 	*/
-	var w = global['wire'] = function wire(spec, ready) {
+	var w = global['wire'] = function wire(spec, ready) { // global['wire'] for closure compiler export
 		if(rootContext === undef) {
 			wireContext(rootSpec, function(context) {
 				rootContext = context;

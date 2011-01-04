@@ -11,6 +11,10 @@ define([], function() {
 			});
 		}
 	};
+	
+	Controller.prototype.destroy = function() {
+		console.log(this.name + " destroyed");
+	};
 
 	return Controller;
 });

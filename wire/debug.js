@@ -55,7 +55,7 @@ define([], function() {
 			console.log(time("Context init"), moduleNames, modules);
 		},
 		wire$onContextError: function(context, msg, data) {
-			console.log(time("Context ERROR") + msg, data);
+			console.log(time("Context ERROR: " + msg), data);
 		},
 		wire$onContextReady: function(context) {
 			console.log(time("Context ready"), context);

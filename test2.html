@@ -12,6 +12,10 @@
 				'test': 'test'
 			}
 		};
+		
+		wire = {
+			initialValue: "Initial Value from page!"
+		};
 	</script>
 	<script src="require.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript" src="wire.js" data-wire-spec="test2.js"></script>
@@ -20,6 +24,7 @@
 	<div>
 		<input id="widgetNode">
 		<input id="widget" data-dojo-type="dijit.form.TextBox">
+		<button id="destroy">Destroy</button>
 	</div>
 </body>
 </html>

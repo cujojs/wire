@@ -19,16 +19,15 @@ wire({
 			name: { '$ref': 'name' },
 			widget: { '$ref': 'widget1' }
 		},
-		init: {
-			ready: []
-		}
+		init: 'ready',
+		destroy: 'destroy'
 	},
 	name: 'controller1',
 	widget1: { 
 		module: 'dijit/form/TextBox',
 		create: [{}, { $ref: 'dom!widgetNode' }],
 		properties: {
-			value: "Initial Value!"
+			value: { '$ref': 'initialValue' }
 		}
 	},
 	// Create a controller, and inject a dijit.form.TextBox that is simply
@@ -40,12 +39,20 @@ wire({
 			name: "controller2",
 			widget: { $ref: 'dijit!widget' }
 		},
-		init: {
-			ready: []
-		}
-	}
+		init: 'ready',
+		destroy: 'destroy'
+	},
+	destroyButton: { $ref: 'dom!destroy' }
 },
 function(context) {
 	console.log(context.controller);
 	console.log(context.controller2);
+	
+	// When the button is clicked, cleanup everything by
+	// destroying the context
+	var d = context.destroyButton;
+	d.onclick = function() {
+		context.destroy();
+		d.onclick = null;
+	};
 });
