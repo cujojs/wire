@@ -10,12 +10,25 @@
 			number: 10,
 			string: "This is a string",
 			object1: {
-				module: "test/test1/Controller"
+				module: "test/test1/Controller",
+				create: ["test3 Controller"],
+				properties: {
+					number: { $ref: "number" },
+					logger: { $ref: "logger" }
+				}
+			},
+			logger: {
+				module: "test/test1/ConsoleLogger"
 			}
-		}).then(function(context) {
-			console.log("Done", context);
-			context.destroy();
-		});
+		}).then(
+			function(context) {
+				console.log("Done", context);
+				context.destroy();
+			},
+			function(err) {
+				console.log(err);
+			}
+		);
 	</script>
 </head>
 <body>
