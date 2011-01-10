@@ -12,6 +12,7 @@ wire({
 	],
 	// Create a controller, and inject a dijit.form.TextBox that is also
 	// created and wired to a dom node here in the spec.
+	initialValue: "Initial Value from page!",
 	controller: {
 		module: 'test/test2/Controller',
 		create: [],
@@ -43,10 +44,8 @@ wire({
 		destroy: 'destroy'
 	},
 	destroyButton: { $ref: 'dom!destroy' }
-},
-function(context) {
-	console.log(context.controller);
-	console.log(context.controller2);
+}).then(function(context) {
+	console.log("Done!",context);
 	
 	// When the button is clicked, cleanup everything by
 	// destroying the context

@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Launcher test</title>
+	<script src="require.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" src="wire.js"></script>
+	<script type="text/javascript">
+		wire({
+			number: 10,
+			string: "This is a string",
+			object1: {
+				module: "test/test1/Controller"
+			}
+		}).then(function(context) {
+			console.log("Done", context);
+			context.destroy();
+		});
+	</script>
+</head>
+<body>
+	<div>
+		<p id="node1"></p>
+	</div>
+</body>
+</html>

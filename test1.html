@@ -34,9 +34,8 @@
 					baz: 10
 				}
 			}
-		},
-		function(context) {
-			console.log(context);
+		}).then(function(context) {
+			console.log("Done1",context);
 			// This is so simple that there's no reason to do it in a child context, but I want to
 			// show how parent/child contexts work.  The child (below) will "inherit" the objects
 			// from its parent (above)
@@ -62,9 +61,8 @@
 						ready: { "$ref": "message" }
 					}
 				}
-			},
-			function(context2) {
-				console.log(context2);
+			}).then(function(context2) {
+				console.log("Done2", context2);
 				context.destroy();
 			});
 		});

@@ -47,6 +47,220 @@
 		return spec && spec.$ref !== undef;
 	}
 	
+	function newPromisor() {
+		var result,
+			completed = 0,
+			chain = [];
+			
+		function then(resolved, rejected) {
+			var p = newPromisor();
+			if(completed < 0) {
+				p.then(resolved, rejected);
+				// return reject(rejected);
+				p.reject(result);
+			} else if(completed > 0) {
+				p.then(resolved, rejected);
+				// return resolve(resolved);
+				p.resolve(result);
+			} else {
+				chain.push({ resolve: resolved, reject: rejected, promisor: p });
+			}
+
+			return p;
+		}
+		
+		function resolve(value) {
+			return complete('resolve', value, 1);
+		}
+		
+		function reject(value) {
+			return complete('reject', value, -1);
+		}
+		
+		function complete(action, value, completeType) {
+			if(completed) throw Error("Promise already completed");
+			
+			completed = completeType;
+			var res = result = value;
+		
+			for(var i=0; i<chain.length; i++) {
+				try {
+					var c = chain[i],
+						newResult = c[action](res);
+					if(newResult !== undef) {
+						if(typeof newResult.then == 'function') {
+							newResult.then(c.promisor.resolve, c.promisor.reject);
+						} else if(newResult instanceof Error) {
+							action = 'reject';
+							complete = -1;
+							res = newResult;
+						} else {
+							res = newResult;
+						}
+					}
+				} catch(e) {
+					res = e;
+					action = 'reject';
+				}
+			}
+			
+			return result;
+		}
+		
+		return {
+			resolve: resolve,
+			reject: reject,
+			then: then,
+			promise: function() {
+				return {
+					then: then
+				};
+			}
+		};
+	}
+	
+	function resolveRef(ref) {
+		var p = newPromisor();
+		p.resolve(ref.$ref);
+		return p;
+	}
+	
+	function createObject(spec, module) {
+		var p = newPromisor();
+		p.resolve(spec);
+		return p;
+	}
+	
+	function loadModule(moduleId) {
+		var p = newPromisor();
+
+		if(!uniqueModuleNames[moduleId]) {
+			uniqueModuleNames[moduleId] = 1;
+			moduleIds.push(moduleId);
+		}
+
+		modulesReady.then(function() {
+			p.resolve(getLoadedModule(moduleId));
+		});
+		
+		return p;
+	}
+	
+	var moduleIds = [],
+		uniqueModuleNames = {},
+		modulesReady = newPromisor();
+	
+	function wireContext(spec, ready, base) {
+		var contextReady = newPromisor();
+		try {
+			parse(spec).then(function(context) {
+				contextReady.resolve(context);
+			});
+
+			loadModules(moduleIds, function() {
+				modulesReady.resolve(Array.prototype.slice.call(arguments));
+			});
+			
+		} catch(e) {
+			console.log(e);
+			contextReady.reject(e);
+		}
+		
+		return contextReady;
+	};
+	
+	function parse(spec) {
+		
+		var processed = spec,
+			promisor = newPromisor(),
+			count,
+			len;
+		
+		if(isArray(spec)) {
+			// console.log("Array", spec);
+			processed = [];
+			
+			len = spec.length;
+			var arrCount = 0;
+			for(var i=0; i<len; i++) {
+				var resolveArray = (function() {
+					var index = i; // Capture array index
+					return function arrayResolver(result) {
+						processed[index] = result;
+						arrCount++;
+						if(arrCount === len) {
+							console.log("Resolving array", processed);
+							promisor.resolve(processed);
+						}
+					};
+				})();
+				parse(spec[i]).then(resolveArray);
+			}
+			
+			
+		} else if(typeof spec == 'object') {
+			// module, reference, or simple object
+			if(isModule(spec)) {
+				// console.log("Module", spec);
+				// Create object from module
+				loadModule(spec.module).then(function(module) {
+					return createObject(spec, module);
+				}).then(function(created) {
+					promisor.resolve(created);
+				});
+
+			} else if(isRef(spec)) {
+				// console.log("Ref", spec);
+				// Resolve reference
+				resolveRef(spec).then(
+					function(target) {
+						promisor[target === undef ? 'reject' : 'resolve'](target);
+					}
+				);
+				
+			} else {
+				console.log("POJO", spec);
+				
+				// Recurse on plain object properties
+				processed = {};
+				var props = [];
+				for(var prop in spec) {
+					props.push(prop);
+				}
+				len = props.length;
+				if(len == 0) {
+					promisor.resolve(processed);
+					// console.log("empty", spec);
+				} else {
+					console.log("resolving POJO", len, spec);
+					propCount = 0;
+					for(var j=0; j<len; j++) {
+						var resolveObject = (function() {
+							var index = j; // Capture property index
+							return function objectResolver(result) {
+								console.log("INNER resolving prop " + props[index], index, result, spec);
+								processed[props[index]] = result;
+								propCount++;
+								if(propCount === len) {
+									console.log("all props resolved", result, spec);
+									promisor.resolve(processed);
+								}
+							};
+						})();
+						
+						console.log("OUTER resolving prop", props[j], spec[props[j]], spec);
+						parse(spec[props[j]]).then(resolveObject);
+					}
+				}
+			}
+		} else {
+			// console.log("Something else", spec);
+			promisor.resolve(processed);
+		}
+		
+		return promisor;
+	}
+
 	/*
 		Function: collectModules
 		Recursively collects all the AMD modules to be loaded before wiring the spec
@@ -598,36 +812,7 @@
 			return context;
 		})();
 	}
-	
-	/*
-		Function: wireContext
-		Does all the steps of parsing, module loading, object instantiation, and
-		reference wiring necessary to create a new Context.
-		
-		Parameters:
-			spec - wiring spec
-			base - base (parent) Context.  Objects in the base are available
-				to this Context.
-			ready - Function to call with the newly wired Context
-	*/
-	function wireContext(spec, ready, base) {
-		// 1. First pass, build module list for require, call require
-		// 2. Second pass, depth first instantiate 
 
-		// First pass
-		var modules = collectModules(spec);
-		
-		// Second pass happens after modules loaded
-		loadModules(modules, function() {
-			// Second pass, construct context and object instances
-			var context = createContext(spec, modules, arguments, base);
-			
-			// Call callback when entire context is ready
-			// TODO: Return a promise instead?
-			if(ready) ready(context);
-		});
-		
-	};
 
 	// WARNING: Probably unsafe. Just for testing right now.
 	// TODO: Only do this for browser env
@@ -654,15 +839,22 @@
 			spec - wiring spec
 			ready - Function to call with the newly wired Context
 	*/
-	var w = global['wire'] = function wire(spec, ready) { // global['wire'] for closure compiler export
-		if(rootContext === undef) {
-			wireContext(rootSpec, function(context) {
-				rootContext = context;
-				rootContext.wire(spec, ready);
-			});
-		} else {
-			rootContext.wire(spec, ready);
-		}
+	var w = global['wire'] = function wire(spec) { // global['wire'] for closure compiler export
+		// if(rootContext === undef) {
+		// 	var promisor = newPromisor();
+		// 	wireContext(rootSpec).then(function(context) {
+		// 		console.log("rootContext", context);
+		// 		rootContext = context;
+		// 		// rootContext.wire(spec).then(ready);
+		// 		wireContext(spec).then(function(child) {
+		// 			console.log("child", child);
+		// 			promisor.resolve(child);
+		// 		});
+		// 	});
+		// 	return promisor.promise();
+		// } else {
+			return wireContext(spec).promise();
+		// }
 	};
 	
 	w.version = VERSION;

@@ -22,7 +22,8 @@ wire({
 		},
 		init: 'ready'
 	}
-},
-function(context) {
-	console.log(context);
-});
+}).then(
+	function(context) {
+		console.log("Done!", context);
+	}
+);
