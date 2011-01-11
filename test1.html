@@ -44,11 +44,11 @@
 				// Create and configure a controller
 				controller: {
 					module: 'test/test1/Controller',
-					create: [],
+					create: [{ "$ref": "name" }],
 			
 					// Properties will be set after construction
 					properties: {
-						name: { "$ref": "name" },
+						// name: { "$ref": "name" },
 						number: { "$ref": "number" },
 						messageNode: { "$ref" : "dom!node1" }, // inject reference to dom node by id
 						foo: { "$ref": "foo" },

@@ -17,6 +17,7 @@
 	"use strict";
 
 	var VERSION = "0.1",
+		wirePrefix = 'wire$',
 		tos = Object.prototype.toString,
 		arrt = '[object Array]',
 		doc = document,
@@ -24,10 +25,22 @@
 		scripts = doc.getElementsByTagName('script'),
 		loadModules = window['require'],
 		getLoadedModule = loadModules,
-		rootSpec = global.wire || {};
+		rootSpec = global.wire || {},
+		rootContext;
 		
 	function isArray(it) {
 		return tos.call(it) === arrt;
+	}
+	
+	function keys(obj) {
+		var k = [];
+		for(var p in obj) {
+			if(obj.hasOwnProperty(p)) {
+				k.push(p);
+			}
+		}
+		
+		return k;
 	}
 
 	function mixin(dst, src) {
@@ -131,7 +144,16 @@
 		this.objectsCreated = new Promise();
 		this.setters = [];
 		this.resolvers = {};
-		this.listeners = {};
+		this.listeners = {
+			onContextInit: [],
+			onContextError: [],
+			onContextReady: [],
+			onContextDestroy: [],
+			onCreate: [],
+			onProperties: [],
+			onInit: [],
+			onDestroy: []
+		};
 		this.objectsToCreate = 0;
 		
 		this.context = {};
@@ -149,19 +171,31 @@
 		},
 
 		resolveRef: function(ref) {
+			// console.log("Trying to resolve", ref);
 			var p = new Promise(),
 				self = this;
 			if(!isRef(ref)) {
+				// console.log("Not a json ref, resolving to supplied value", ref);
 				p.resolve(ref);
 			} else {
-				this.objectsCreated.then(function() {
-					var resolved = self.resolveName(ref.$ref);
-					if(resolved !== undef) {
-						p.resolve(resolved);
-					} else {
-						p.reject({ ref: ref, message: "Ref " + ref.$ref + " could not be resolved" });
-					}
-				}, this.reject);
+				// Try to resolve immediately.  If that fails, defer resolution until
+				// objects have been instantiated
+				// console.log("Trying to resolve immediately", ref);
+				var resolved = self.resolveName(ref.$ref);
+				if(resolved !== undef) {
+					// console.log("Resolved " + ref.$ref + " immediately, deferring", resolved);
+					p.resolve(resolved);
+				} else {
+					// console.log("Could not resolve " + ref.$ref + " immediately, deferring");
+					this.objectsCreated.then(function() {
+						var resolved = self.resolveName(ref.$ref);
+						if(resolved !== undef) {
+							p.resolve(resolved);
+						} else {
+							p.reject({ ref: ref, message: "Ref " + ref.$ref + " could not be resolved" });
+						}
+					}, this.reject);
+				}
 			}
 			return p;
 		},
@@ -170,23 +204,37 @@
 			var p = new Promise(),
 				object = module,
 				self = this;
+				
+			function objectFailed(err, promise) {
+				promise.reject(err);
+			}
 
-			function resolveObject(obj, promise) {
+			function objectCreated(obj, promise) {
 				self.modulesReady.then(function() {
 					promise.resolve(obj);
 				}, self.reject);
 			}
-
-			if(typeof module == 'function') {
-				var args = isArray(spec.create) ? spec.create : [spec.create];
-				this.parse(args).then(function(resolvedArgs) {
-					resolveObject(instantiate(module, resolvedArgs), p);
-				}, this.reject);
-			} else {
-				resolveObject(object, p);
+			
+			try {
+				// console.log("Creating", spec);
+				if(spec.create && typeof module == 'function') {
+					var args = isArray(spec.create) ? spec.create : [spec.create];
+					// console.log("createObject ", spec, args);
+					this.parse(args).then(
+						function(resolvedArgs) {
+							// console.log("Instantiating module", spec);
+							objectCreated(instantiate(module, resolvedArgs), p);
+						},
+						objectFailed
+					);
+				} else {
+					objectCreated(object, p);
+				}
+				
+			} catch(e) {
+				objectFailed(e);
 			}
-			
-			
+
 			return p;
 		},
 		
@@ -196,16 +244,13 @@
 			
 			if(spec.properties) {
 				var props = spec.properties,
-					propsArr = [];
-				for(var p in props) {
-					propsArr.push(p);
-				}
+					propsArr = keys(props);
 				
 				var count = propsArr.length;
 				for(var i=0; i<propsArr.length; i++) {
 					(function() {
 						var p = propsArr[i];
-						self.resolveRef(props[p]).then(function(resolved) {
+						self.parse(props[p]).then(function(resolved) {
 							object[p] = resolved;
 							if(--count == 0) {
 								promisor.resolved(object);
@@ -234,9 +279,52 @@
 			return p;
 		},
 		
+		scanPlugins: function(modules) {
+			var p = new Promise();
+			
+			var setters = this.setters,
+				resolvers = this.resolvers;
+
+			for (var i=0; i < modules.length; i++) {
+				var newPlugin = modules[i];
+				// console.log("scanning for plugins: " + newPlugin);
+				if(newPlugin.wire$resolvers) {
+					for(var name in newPlugin.wire$resolvers) {
+						// console.log("resolver plugin: " + name);
+						resolvers[name] = newPlugin.wire$resolvers[name];
+					}
+				}
+
+				if(newPlugin.wire$setters) {
+					setters = setters.concat(newPlugin.wire$setters);
+				}
+
+				if(newPlugin.wire$listeners) {
+					this.addEventListeners(newPlugin);
+				}
+
+				if(typeof newPlugin.wire$init == 'function') {
+					// Have to init plugins immediately, so they can be used during wiring
+					newPlugin.wire$init();
+				}
+			}
+
+			p.resolve();
+			return p;
+		},
+		
+		addEventListeners: function(listener) {
+			var listeners = this.listeners;
+			for(var p in listeners) {
+				if(typeof listener[p] == 'function') {
+					listeners[p].push(listener);
+				}
+			}
+		},
+		
 		reject: function(err) {
 			console.log("ERROR", err);
-			throw err;
+			// throw err;
 		},
 
 		wire: function(spec) {
@@ -260,8 +348,11 @@
 				}, this.reject);
 
 				loadModules(moduleIds, function() {
-					modulesReady.resolve(arguments);
-				}, this.reject);
+					var modules = arguments;
+					self.scanPlugins(modules).then(function() {
+						modulesReady.resolve(modules);
+					}, self.reject);
+				});
 
 			} catch(e) {
 				contextReady.reject(e);
@@ -306,18 +397,15 @@
 				if(isModule(spec)) {
 					// console.log("Module", spec);
 					// Create object from module
-					self.objectsToCreate++;
+					this.objectsToCreate++;
+					// console.log("New module to create, total now: " + this.objectsToCreate, spec);
 					this.loadModule(spec.module).then(function(module) {
 						self.createObject(spec, module).then(function(created) {
 							promisor.resolve(created);
 							
 							self.objectsCreated.then(function() {
 								return self.initObject(spec, created);
-							});
-							
-							if(--self.objectsToCreate === 0) {
-								self.objectsCreated.resolve();
-							}
+							}, self.reject);
 							
 						});
 					}, this.reject);
@@ -338,16 +426,20 @@
 
 					// Recurse on plain object properties
 					processed = result||{};
-					var props = [];
-					for(var prop in spec) {
-						props.push(prop);
-					}
+					var props = keys(spec);
+
 					len = props.length;
 					if(len == 0) {
 						promisor.resolve(processed);
 						// console.log("empty", spec);
 					} else {
 						// console.log("resolving POJO", len, spec);
+						function checkObjects(action) {
+							if(--self.objectsToCreate === 0) {
+								self.objectsCreated[action]();
+							}
+						}
+
 						var propCount = len;
 						for(var j=0; j<len; j++) {
 							var resolveObject = (function() {
@@ -358,11 +450,19 @@
 									if(--propCount == 0) {
 										promisor.resolve(processed);
 									}
+									
+									checkObjects('resolve');
 								};
 							})();
 
 							// console.log("OUTER resolving prop", props[j], spec[props[j]], spec);
-							this.parse(spec[props[j]]).then(resolveObject, this.reject);
+							this.parse(spec[props[j]]).then(
+								resolveObject, 
+								function(err) {
+									this.reject(err);
+									checkObjects('reject');
+								}
+							);
 						}
 					}
 				}
@@ -887,37 +987,28 @@
 			ready - Function to call with the newly wired Context
 	*/
 	var w = global['wire'] = function wire(spec) { // global['wire'] for closure compiler export
-		// if(rootContext === undef) {
-		// 	var promisor = newPromisor();
-		// 	wireContext(rootSpec).then(function(context) {
-		// 		console.log("rootContext", context);
-		// 		rootContext = context;
-		// 		// rootContext.wire(spec).then(ready);
-		// 		wireContext(spec).then(function(child) {
-		// 			console.log("child", child);
-		// 			promisor.resolve(child);
-		// 		});
-		// 	});
-		// 	return promisor.promise();
-		// } else {
-		if(rootSpec) {
-			var p = new Promise();
+		var promise;
+		if(rootContext === undef) {
+			// No root context yet, so wire it first, then wire the requested spec as
+			// a child.  Subsequent wire() calls will reuse the existing root context.
+			promise = new Promise();
 			
-			new ContextFactory().wire(rootSpec).then(function(rootContext) {
+			new ContextFactory().wire(rootSpec).then(function(context) {
+				rootContext = context;
 				rootContext.wire(spec).then(
 					function(context) {
-						p.resolve(context);
+						promise.resolve(context);
 					},
 					function(err) {
-						p.reject(err);
+						promise.reject(err);
 					}
 				);
 			});
-			
-			return p;
+		} else {
+			promise = rootContext.wire(spec);
 		}
-		return new ContextFactory().wire(spec);
-		// }
+		
+		return promise.promise(); // Return restricted promise
 	};
 	
 	w.version = VERSION;

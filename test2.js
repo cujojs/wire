@@ -12,7 +12,6 @@ wire({
 	],
 	// Create a controller, and inject a dijit.form.TextBox that is also
 	// created and wired to a dom node here in the spec.
-	initialValue: "Initial Value from page!",
 	controller: {
 		module: 'test/test2/Controller',
 		create: [],
@@ -26,13 +25,16 @@ wire({
 	name: 'controller1',
 	widget1: { 
 		module: 'dijit/form/TextBox',
-		create: [{}, { $ref: 'dom!widgetNode' }],
+		create: [{}],
 		properties: {
 			value: { '$ref': 'initialValue' }
+		},
+		init: {
+			placeAt: { $ref: 'dom!widgetNode' }
 		}
 	},
-	// Create a controller, and inject a dijit.form.TextBox that is simply
-	// referenced using the dijit resolver
+	// // Create a controller, and inject a dijit.form.TextBox that is simply
+	// // referenced using the dijit resolver
 	controller2: {
 		module: 'test/test2/Controller',
 		create: [],
@@ -44,14 +46,18 @@ wire({
 		destroy: 'destroy'
 	},
 	destroyButton: { $ref: 'dom!destroy' }
-}).then(function(context) {
+}).then(
+function(context) {
 	console.log("Done!",context);
 	
 	// When the button is clicked, cleanup everything by
 	// destroying the context
-	var d = context.destroyButton;
-	d.onclick = function() {
-		context.destroy();
-		d.onclick = null;
-	};
+	// var d = context.destroyButton;
+	// d.onclick = function() {
+	// 	context.destroy();
+	// 	d.onclick = null;
+	// };
+},
+function(err) {
+	console.log(err);
 });
