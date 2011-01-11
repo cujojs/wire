@@ -24,8 +24,7 @@
 		scripts = doc.getElementsByTagName('script'),
 		loadModules = window['require'],
 		getLoadedModule = loadModules,
-		rootSpec = global.wire || {},
-		rootContext; /* Variable: rootContext Top-level context */
+		rootSpec = global.wire || {};
 		
 	function isArray(it) {
 		return tos.call(it) === arrt;
@@ -47,13 +46,27 @@
 		return spec && spec.$ref !== undef;
 	}
 	
-	function newPromisor() {
-		var result,
-			completed = 0,
-			chain = [];
-			
-		function then(resolved, rejected) {
-			var p = newPromisor();
+	var Promise = function() {
+		this.completed = 0;
+		this.chain = [];
+	};
+	
+	Promise.prototype = {
+		
+		promise: function() {
+			var self = this;
+			return {
+				then: function(resolved, rejected) {
+					self.then(resolved, rejected);
+				}
+			};
+		},
+		
+		then: function(resolved, rejected) {
+			var p = new Promise(),
+				completed = this.completed,
+				result = this.result;
+				
 			if(completed < 0) {
 				p.then(resolved, rejected);
 				// return reject(rejected);
@@ -63,25 +76,26 @@
 				// return resolve(resolved);
 				p.resolve(result);
 			} else {
-				chain.push({ resolve: resolved, reject: rejected, promisor: p });
+				this.chain.push({ resolve: resolved, reject: rejected, promisor: p });
 			}
 
 			return p;
-		}
+		},
 		
-		function resolve(value) {
-			return complete('resolve', value, 1);
-		}
+		resolve: function(value) {
+			return this.complete('resolve', value, 1);
+		},
 		
-		function reject(value) {
-			return complete('reject', value, -1);
-		}
+		reject: function(value) {
+			return this.complete('reject', value, -1);
+		},
 		
-		function complete(action, value, completeType) {
-			if(completed) throw Error("Promise already completed");
+		complete: function(action, value, completeType) {
+			if(this.completed) throw Error("Promise already completed");
 			
-			completed = completeType;
-			var res = result = value;
+			this.completed = completeType;
+			var res = this.result = value,
+				chain = this.chain;
 		
 			for(var i=0; i<chain.length; i++) {
 				try {
@@ -92,7 +106,7 @@
 							newResult.then(c.promisor.resolve, c.promisor.reject);
 						} else if(newResult instanceof Error) {
 							action = 'reject';
-							complete = -1;
+							this.completed = -1;
 							res = newResult;
 						} else {
 							res = newResult;
@@ -104,26 +118,17 @@
 				}
 			}
 			
-			return result;
+			return this.result;
 		}
 		
-		return {
-			resolve: resolve,
-			reject: reject,
-			then: then,
-			promise: function() {
-				return {
-					then: then
-				};
-			}
-		};
-	}
-	
-	var ContextFactory = function() {
+	};
+
+	var ContextFactory = function(parent) {
+		this.parent = parent;
 		this.moduleIds = [];
 		this.uniqueModuleNames = {};
-		this.modulesReady = newPromisor();
-		this.objectsCreated = newPromisor();
+		this.modulesReady = new Promise();
+		this.objectsCreated = new Promise();
 		this.setters = [];
 		this.resolvers = {};
 		this.listeners = {};
@@ -133,44 +138,60 @@
 	};
 	
 	ContextFactory.prototype = {
+		
+		resolveName: function(name) {
+			var resolved = this.context[name];
+			if(resolved == undef && this.parent) {
+				resolved = this.parent.resolveName(name);
+			}
+			
+			return resolved;
+		},
 
 		resolveRef: function(ref) {
-			var p = newPromisor(),
+			var p = new Promise(),
 				self = this;
 			if(!isRef(ref)) {
 				p.resolve(ref);
 			} else {
-				ref = ref.$ref || ref;
-
 				this.objectsCreated.then(function() {
-					var resolved = self.context[ref];
+					var resolved = self.resolveName(ref.$ref);
 					if(resolved !== undef) {
 						p.resolve(resolved);
 					} else {
-						p.reject({ ref: ref, message: "Ref " + ref + " could not be resolved" });
+						p.reject({ ref: ref, message: "Ref " + ref.$ref + " could not be resolved" });
 					}
-				});
+				}, this.reject);
 			}
 			return p;
 		},
 
 		createObject: function(spec, module) {
-			var p = newPromisor(),
-				object = module;
-			
+			var p = new Promise(),
+				object = module,
+				self = this;
+
+			function resolveObject(obj, promise) {
+				self.modulesReady.then(function() {
+					promise.resolve(obj);
+				}, self.reject);
+			}
+
 			if(typeof module == 'function') {
-				object = instantiate(module, spec.create);
+				var args = isArray(spec.create) ? spec.create : [spec.create];
+				this.parse(args).then(function(resolvedArgs) {
+					resolveObject(instantiate(module, resolvedArgs), p);
+				}, this.reject);
+			} else {
+				resolveObject(object, p);
 			}
 			
-			this.modulesReady.then(function() {
-				p.resolve(object);
-			});
-
+			
 			return p;
 		},
 		
 		initObject: function(spec, object) {
-			var promisor = newPromisor(),
+			var promisor = new Promise(),
 				self = this;
 			
 			if(spec.properties) {
@@ -180,14 +201,13 @@
 					propsArr.push(p);
 				}
 				
-				var count = propsArr.length-1;
+				var count = propsArr.length;
 				for(var i=0; i<propsArr.length; i++) {
 					(function() {
 						var p = propsArr[i];
 						self.resolveRef(props[p]).then(function(resolved) {
 							object[p] = resolved;
-							count--;
-							if(count == 0) {
+							if(--count == 0) {
 								promisor.resolved(object);
 							}
 						}, self.reject);
@@ -200,7 +220,7 @@
 		},
 
 		loadModule: function(moduleId) {
-			var p = newPromisor();
+			var p = new Promise();
 
 			if(!this.uniqueModuleNames[moduleId]) {
 				this.uniqueModuleNames[moduleId] = 1;
@@ -209,7 +229,7 @@
 
 			this.modulesReady.then(function() {
 				p.resolve(getLoadedModule(moduleId));
-			});
+			}, this.reject);
 
 			return p;
 		},
@@ -220,14 +240,22 @@
 		},
 
 		wire: function(spec) {
-			var contextReady = newPromisor(),
+			var contextReady = new Promise(),
 				modulesReady = this.modulesReady,
-				moduleIds = this.moduleIds;
+				moduleIds = this.moduleIds,
+				self = this;
 
 			try {
-				var self = this;
 				this.parse(spec, this.context).then(function(context) {
 					// self.context = context;
+					context.wire = function wire(spec) {
+						return new ContextFactory(self).wire(spec);
+					};
+					
+					context.resolve = function resolve(ref) {
+						return self.resolveName(ref);
+					};
+					
 					contextReady.resolve(context);
 				}, this.reject);
 
@@ -245,30 +273,31 @@
 		parse: function(spec, result) {
 
 			var processed = spec,
-				promisor = newPromisor(),
+				promisor = new Promise(),
 				self = this,
 				count,
 				len;
 
 			if(isArray(spec)) {
+				len = spec.length;
+				if(len == 0) {
+					promisor.resolve(processed);
+				}
 				// console.log("Array", spec);
 				processed = result||[];
 
-				len = spec.length;
-				var arrCount = 0;
+				var arrCount = len;
 				for(var i=0; i<len; i++) {
 					var resolveArray = (function() {
 						var index = i; // Capture array index
 						return function arrayResolver(result) {
 							processed[index] = result;
-							arrCount++;
-							if(arrCount === len) {
-								console.log("Resolving array", processed);
+							if(--arrCount == 0) {
 								promisor.resolve(processed);
 							}
 						};
 					})();
-					this.parse(spec[i]).then(resolveArray);
+					this.parse(spec[i]).then(resolveArray, this.reject);
 				}
 
 
@@ -281,16 +310,17 @@
 					this.loadModule(spec.module).then(function(module) {
 						self.createObject(spec, module).then(function(created) {
 							promisor.resolve(created);
+							
 							self.objectsCreated.then(function() {
 								return self.initObject(spec, created);
 							});
 							
-							self.objectsToCreate--;
-							if(self.objectsToCreate == 0) {
+							if(--self.objectsToCreate === 0) {
 								self.objectsCreated.resolve();
 							}
+							
 						});
-					});
+					}, this.reject);
 					
 
 				} else if(isRef(spec)) {
@@ -318,23 +348,21 @@
 						// console.log("empty", spec);
 					} else {
 						// console.log("resolving POJO", len, spec);
-						propCount = 0;
+						var propCount = len;
 						for(var j=0; j<len; j++) {
 							var resolveObject = (function() {
 								var index = j; // Capture property index
 								return function objectResolver(result) {
 									// console.log("INNER resolving prop " + props[index], index, result, spec);
 									processed[props[index]] = result;
-									propCount++;
-									if(propCount === len) {
-										// console.log("all props resolved", result, spec);
+									if(--propCount == 0) {
 										promisor.resolve(processed);
 									}
 								};
 							})();
 
 							// console.log("OUTER resolving prop", props[j], spec[props[j]], spec);
-							this.parse(spec[props[j]]).then(resolveObject);
+							this.parse(spec[props[j]]).then(resolveObject, this.reject);
 						}
 					}
 				}
@@ -346,57 +374,6 @@
 			return promisor;
 		}		
 	};
-
-	/*
-		Function: collectModules
-		Recursively collects all the AMD modules to be loaded before wiring the spec
-		
-		Parameters:
-			spec - wiring spec
-			
-		Returns:
-			Array of unique AMD module identifiers
-	*/
-	function collectModules(spec) {
-		return collectModulesFromObject(spec, [], {});
-	}
-
-	function collectModulesFromObject(spec, modules, uniqueModuleNames) {
-		if(isArray(spec)) {
-			collectModulesFromArray(spec, modules, uniqueModuleNames);
-			
-		} else if(typeof spec == 'object') {
-
-			if(isModule(spec)) {
-				// For tidiness, ensure that we only put each module id into the modules array
-				// once.  Loaders should handle it ok if they *do* appear more than once, imho, but
-				// I've seen requirejs hit an infinite loop in that case, so better to be tidy here.
-				if(!(spec.module in uniqueModuleNames)) {
-					modules.push(spec.module);
-					uniqueModuleNames[spec.module] = 1;
-				}
-
-				if(spec.properties) {
-					collectModulesFromObject(spec.properties, modules, uniqueModuleNames);
-				} else if (spec.create) {
-					collectModulesFromObject(spec.create, modules, uniqueModuleNames);
-				}
-
-			} else {
-				for(var prop in spec) {
-					collectModulesFromObject(spec[prop], modules, uniqueModuleNames);
-				}
-			}
-		}
-
-		return modules;
-	}
-
-	function collectModulesFromArray(arr, modules, uniqueModuleNames) {
-		for (var i = arr.length - 1; i >= 0; i--){
-			collectModulesFromObject(arr[i], modules, uniqueModuleNames);
-		}
-	}	
 
 	var F = function F(ctor, args) {
 			return ctor.apply(this, args);
@@ -511,22 +488,6 @@
 					var plugin = pluginsToCall[i];
 					plugin[wirePrefix + name].apply(plugin, args);
 				}
-			}
-
-			/*
-				Function: constructWithNew
-				Invokes the supplied constructor to create a new object
-				
-				Parameters:
-					spec - The wiring spec of the object to be constructed containing
-						parameters to be passed to the constructor.
-					ctor - The constructor function to be invoked.
-					
-				Returns:
-					The newly constructed object
-			*/
-			function constructWithNew(spec, ctor) {
-				return instantiate(ctor, createObjects(spec.create));
 			}
 
 			/*
@@ -939,8 +900,23 @@
 		// 	});
 		// 	return promisor.promise();
 		// } else {
-		var factory = new ContextFactory();
-		return factory.wire(spec);
+		if(rootSpec) {
+			var p = new Promise();
+			
+			new ContextFactory().wire(rootSpec).then(function(rootContext) {
+				rootContext.wire(spec).then(
+					function(context) {
+						p.resolve(context);
+					},
+					function(err) {
+						p.reject(err);
+					}
+				);
+			});
+			
+			return p;
+		}
+		return new ContextFactory().wire(spec);
 		// }
 	};
 	
