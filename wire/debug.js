@@ -52,11 +52,11 @@ define([], function() {
 	return {
 		wire$listeners: {
 			// Overall context lifecycle callbacks
-			onContextInit: function(modules, moduleNames) {
-				console.log(time("Context init"), moduleNames, modules);
+			onContextInit: function(modules) {
+				console.log(time("Context init"), modules);
 			},
 			onContextError: function(context, msg, data) {
-				console.log(time("Context ERROR: " + msg), data);
+				console.log(time("Context ERROR: "), msg, data);
 			},
 			onContextReady: function(context) {
 				console.log(time("Context ready"), context);
@@ -67,13 +67,13 @@ define([], function() {
 			// Individual object lifecycle callbacks
 			// Don't time these
 			onCreate: function(target, spec, resolver) {
-				console.log(msg('create'), target, spec, resolver.name);
+				console.log(msg('created'), target, spec);
 			},
 			onProperties: function(target, spec, resolver) {
-				console.log(msg('properties'), target, spec, resolver.name);
+				console.log(msg('properties'), target, spec);
 			},
 			onInit: function(target, spec, resolver) {
-				console.log(msg('init'), target, spec, resolver.name);
+				console.log(msg('init'), target, spec);
 			},
 			onDestroy: function(target) {
 				console.log(msg('destroy'), target);

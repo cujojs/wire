@@ -59,5 +59,5 @@ function(context) {
 	// };
 },
 function(err) {
-	console.log(err);
+	console.log("wire failed", err);
 });

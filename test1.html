@@ -7,16 +7,6 @@
 	<script type="text/javascript" src="wire.js"></script>
 	<script type="text/javascript">
 		wire({
-			// There is nothing special about this array.  It's just an array of modules
-			// whose only member happens to be a plugin, but we could define it at the top
-			// level or at any depth.  So, the following would work just as well:
-			// dom: { module: 'wire/dom' }
-			// This seems like it could end up being a reasonable convention, tho.
-			plugins: [
-				{ module: 'wire/debug' },
-				{ module: 'wire/dom' }
-			],
-
 			// The particular logger we want.
 			// Pick either the AlertLogger or SilentLogger and reload.
 			// Can inject concrete dependencies without having to modify Controller.
@@ -40,6 +30,15 @@
 			// show how parent/child contexts work.  The child (below) will "inherit" the objects
 			// from its parent (above)
 			context.wire({
+				// There is nothing special about this array.  It's just an array of modules
+				// whose only member happens to be a plugin, but we could define it at the top
+				// level or at any depth.  So, the following would work just as well:
+				// dom: { module: 'wire/dom' }
+				// This seems like it could end up being a reasonable convention, tho.
+				plugins: [
+					{ module: 'wire/debug' },
+					{ module: 'wire/dom' }
+				],
 				name: "Test 2",
 				// Create and configure a controller
 				controller: {
