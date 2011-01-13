@@ -77,21 +77,22 @@
 			};
 		},
 		
-		then: function(resolved, rejected) {
+		then: function(resolved, rejected, progress) {
 			var p = new Promise(),
 				completed = this.completed,
 				result = this.result;
 				
 			if(completed < 0) {
 				p.then(resolved, rejected);
-				// return reject(rejected);
 				p.reject(result);
+
 			} else if(completed > 0) {
 				p.then(resolved, rejected);
-				// return resolve(resolved);
 				p.resolve(result);
+
 			} else {
-				this.chain.push({ resolve: resolved, reject: rejected, promisor: p });
+				this.chain.push({ resolve: resolved, reject: rejected, progress: progress, promisor: p });
+
 			}
 
 			return p;
@@ -134,9 +135,29 @@
 			}
 			
 			return this.result;
-		}
+		},
 		
+		progress: function(statusObject) {
+			var chain = this.chain;
+			
+			for(var i=0; i<chain.length; i++) {
+				try {
+					var c = chain[i];
+					if(c.progress) {
+						c.progress(statusObject);
+					}
+				} catch(e) {
+					this.reject(e);
+				}
+			}
+		}
 	};
+	
+	function reject(promise) {
+		return function(err) {
+			promise.reject(err);
+		};
+	}
 
 	var ContextFactory = function(parent) {
 		this.parent = parent;
@@ -144,6 +165,7 @@
 		this.uniqueModuleNames = {};
 		this.modulesReady = new Promise();
 		this.objectsCreated = new Promise();
+		this.contextReady = new Promise();
 		this.contextDestroyed = new Promise();
 		this.domReady = new Promise();
 
@@ -161,6 +183,7 @@
 			onInit: [],
 			onDestroy: []
 		};
+		this.destroyers = [];
 		this.objectsToCreate = 0;
 		
 	};
@@ -190,7 +213,6 @@
 						resolved = resolvers[prefix](name, refObj, this.context);
 					}
 				}
-
 			}
 
 			// Still unresolved, ask base context to try to resolve
@@ -218,52 +240,60 @@
 					p.resolve(resolved);
 				} else {
 					// console.log("Could not resolve " + ref.$ref + " immediately, deferring");
-					console.log("deferring ref resolution until objectsCreated", ref);
+					// console.log("deferring ref resolution until objectsCreated", ref);
 					this.objectsCreated.then(
 						function() {
-							console.log("objectsCreated resolveRef", ref);
+							// console.log("objectsCreated resolveRef", ref);
 							var resolved = self.resolveRefObj(ref);
 							if(resolved === undef) {
-								console.log("deferring ref resolution until domReady", ref);
+								// console.log("deferring ref resolution until domReady", ref);
 								self.domReady.then(
 									function() {
-										console.log("Resolving ref on domReady", ref);
+										// console.log("Resolving ref on domReady", ref);
 										var resolved = self.resolveRefObj(ref);
 										if(resolved === undef) {
 											p.reject({ ref: ref, message: "Ref " + ref.$ref + " could not be resolved" });
 										} else {
 											p.resolve(resolved);
 										}
-									},
-									this.reject()
+									}
 								);
 							} else {
 								p.resolve(resolved);
 							}
-						},
-						this.reject()
+						}
 					);
 				}
 			}
 			return p;
 		},
-
+		
 		createObject: function(spec, module) {
 			var p = new Promise(),
 				object = module,
+				objectsCreated = this.objectsCreated,
 				self = this;
 				
+			function checkObjects(action) {
+				if(--self.objectsToCreate === 0) {
+					objectsCreated[action]();
+				}
+			}
 			function objectFailed(err, promise) {
 				promise.reject(err);
+				checkObjects('reject');
 			}
 
 			function objectCreated(obj, promise) {
 				self.modulesReady.then(function() {
+					objectsCreated.progress({ object: obj, remaining: self.objectsToCreate });
 					promise.resolve(obj);
-					self.fireEvent('onCreate', obj, spec);
-				}, self.reject());
+					
+					checkObjects('resolve');
+				});
 			}
 			
+			this.objectsToCreate++;
 			try {
 				// console.log("Creating", spec);
 				if(spec.create && typeof module == 'function') {
@@ -289,6 +319,7 @@
 		
 		initObject: function(spec, object) {
 			var promisor = new Promise(),
+				domReady = this.domReady,
 				self = this;
 			
 			if(spec.properties) {
@@ -306,13 +337,64 @@
 								promisor.resolved(object);
 								self.fireEvent('onProperties', object, spec);
 							}
-						}, self.reject());
-						
+						}, reject(self.contextReady));
 					})();
 				}
 			}
 			
+			if(spec.init) {
+				this.processFuncList(spec.init, object, spec,
+					function(target, spec, func, args) {
+						domReady.then(function() {
+							self.callInit(target, spec, func, args);
+						});
+					}
+				);
+			}
+			
+			if(spec.destroy) {
+				this.destroyers.push(function() {
+					self.processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
+						func.apply(target, []); // no args for destroy
+					});
+				});
+			}
+			
 			return promisor;
+		},
+		
+		processFuncList: function(list, target, spec, callback) {
+			var func;
+			if(typeof list == "string") {
+				// console.log("calling " + list + "()");
+				func = target[list];
+				if(typeof func == "function") {
+					callback(target, spec, func, []);
+				}
+			} else {
+				for(var f in list) {
+					// console.log("calling " + f + "(" + list[f] + ")");
+					func = target[f];
+					if(typeof func == "function") {
+						callback(target, spec, func, list[f]);
+					}
+				}
+			}
+		},
+
+		callInit: function(target, spec, func, args) {
+			var self = this;
+			this.parse(args).then(function(processedArgs) {
+				func.apply(target, isArray(processedArgs) ? processedArgs : [processedArgs]);
+				self.fireEvent('onInit', target, spec);
+			});
+		},
+
+		addReadyInit: function(target, spec, func, args) {
+			var self = this;
+			this.domReady.then(function() {
+				self.callInit(target, spec, func, args);
+			});
 		},
 
 		loadModule: function(moduleId) {
@@ -325,8 +407,8 @@
 
 			this.modulesReady.then(function() {
 				p.resolve(getLoadedModule(moduleId));
-			}, this.reject());
-
+			});
+			
 			return p;
 		},
 		
@@ -383,45 +465,62 @@
 				plugin[name].apply(plugin, args);
 			}
 		},
-		
-		reject: function(err, data) {
-			var self = this;
-			return function handleRejected(err) {
-				self.fireEvent("onContextError", self.context, err, data);
-				// console.log("ERROR", err);
-				// throw err;
-			};
-		},
 
 		wire: function(spec) {
-			var contextReady = new Promise(),
+			var contextReady = this.contextReady,
 				modulesReady = this.modulesReady,
 				objectsCreated = this.objectsCreated,
 				domReady = this.domReady,
 				moduleIds = this.moduleIds,
 				myContext = this.context,
 				parent = this.parent,
-				self = this;
-				
-			modulesReady.then(function resolveModulesReady(modules) {
-				self.fireEvent('onContextInit', modules);
+				self = this,
+				rejectPromise = function rejectAndFireEvent(promise, message, err) {
+					self.fireEvent('onContextError', context, message, err);
+					rejectPromise(promise, err);
+				};
+
+			// domReady must resolve after contextReady, but have to register this
+			// with onDomReady as early as possible because requirejs doesn't fire
+			// domReady callbacks after the dom is actually ready!
+			onDomReady(function resolveDomReady() {
+				contextReady.then(function(context) {
+					domReady.resolve(context);
+				});
 			});
+
+			modulesReady.then(
+				function resolveModulesReady(modules) {
+					self.fireEvent('onContextInit', modules);
+				},
+				function rejectModulesReady() {
+					rejectPromise(objectsCreated, "Module loading failed");
+				});
+
+			objectsCreated.then(
+				function resolveObjectsCreated() {
+					// console.log("All objects created");
+				},
+				function rejectObjectsCreated() {
+					rejectPromise(contextReady, "Object creation failed");
+				},
+				function progressObjectsCreated(status) {
+					self.fireEvent("onCreate", status.object);
+				}
+			);
 
 			contextReady.then(
 				function resolveContextReady(context) {
 					self.fireEvent('onContextReady', context);
 				},
 				function rejectContextReady() {
-					domReady.reject();
+					rejectPromise(domReady, "Context creation failed");
 				}
 			);
-
-			onDomReady(function resolveDomReady() {
-				domReady.resolve(myContext);
-			});
-
+			
 			if(parent) {
 				mixin(myContext, parent.context);
+				parent.contextDestroyed.then(function() { self.destroy(); });
 			}
 
 			try {
@@ -431,21 +530,21 @@
 					};
 
 					context.resolve = function resolve(ref) {
-							return self.resolveName(ref).promise();
-						};
+						return self.resolveName(ref).promise();
+					};
 
 					context.destroy = function destroy() {
-							return self.destroy();
-						};
+						return self.destroy().promise();
+					};
 					
 					contextReady.resolve(context);
-				}, this.reject("Parsing spec failed", spec));
+				}, reject(objectsCreated));
 
 				loadModules(moduleIds, function() {
 					var modules = arguments;
 					self.scanPlugins(modules).then(function() {
 						modulesReady.resolve(modules);
-					}, self.reject());
+					});
 				});
 
 			} catch(e) {
@@ -456,22 +555,24 @@
 		},
 		
 		destroy: function() {
-			var context = this.context;
-			for(var p in context) {
-				if(context.hasOwnProperty(p)) {
-					this.destroyObject(context);
+			var self = this;
+						
+			this.contextReady.then(
+				function(context) {
+					var destroyers = self.destroyers;
+					for(var i=0; i<destroyers.length; i++) {
+						destroyers[i]();
+					}
+
+					self.contextDestroyed.resolve();
+					self.fireEvent('onContextDestroy', context);
 				}
-			}
+			);
 			
-			this.contextDestroyed.resolve();
-			
-			return this.contextDestroyed.promise();
+			this.domReady.reject("Context destroyed");
+			return this.contextDestroyed;
 		},
 		
-		destroyObject: function(object) {
-			
-		},
-
 		parse: function(spec, result) {
 
 			var processed = spec,
@@ -499,7 +600,7 @@
 							}
 						};
 					})();
-					this.parse(spec[i]).then(resolveArray, this.reject());
+					this.parse(spec[i]).then(resolveArray, reject(self.objectsCreated));
 				}
 
 
@@ -509,16 +610,24 @@
 					// console.log("Module", spec);
 					// Create object from module
 					// console.log("New module to create, total now: " + this.objectsToCreate, spec);
-					this.loadModule(spec.module).then(function(module) {
-						self.createObject(spec, module).then(function(created) {
-							promisor.resolve(created);
+					this.loadModule(spec.module).then(
+						function(module) {
+							self.createObject(spec, module).then(
+								function(created) {
+									promisor.resolve(created);
 							
-							self.objectsCreated.then(function() {
-								return self.initObject(spec, created);
-							}, self.reject());
-							
-						});
-					}, this.reject());
+									self.objectsCreated.then(function() {
+										return self.initObject(spec, created);
+									}, reject(self.objectsCreated));
+
+								},
+								function(err) {
+									self.objectsCreated.reject();
+								}
+							);
+						},
+						reject(this.modulesReady)
+					);
 					
 
 				} else if(isRef(spec)) {
@@ -528,7 +637,7 @@
 						function(target) {
 							promisor[target === undef ? 'reject' : 'resolve'](target);
 						},
-						this.reject()
+						reject(this.objectsCreated)
 					);
 
 				} else {
@@ -545,12 +654,6 @@
 						// console.log("empty", spec);
 					} else {
 						// console.log("resolving POJO", len, spec);
-						function checkObjects(action, isModule) {
-							if(--self.objectsToCreate === 0) {
-								self.objectsCreated[action]();
-							}
-						}
-
 						var propCount = len;
 						for(var j=0; j<len; j++) {
 							var propToCreate = spec[props[j]],
@@ -562,21 +665,14 @@
 										if(--propCount == 0) {
 											promisor.resolve(processed);
 										}
-										checkObjects('resolve');
 									};
 								})();
 
-							
-							if(isModule(propToCreate)) {
-								this.objectsToCreate++;
-							}
+
 							// console.log("OUTER resolving prop", props[j], spec[props[j]], spec);
 							this.parse(spec[props[j]]).then(
 								resolveObject, 
-								function(err) {
-									self.reject(err);
-									checkObjects('reject');
-								}
+								reject(this.objectsCreated)
 							);
 						}
 					}
@@ -689,216 +785,6 @@
 				}
 			}
 
-			function processFuncList(list, target, spec, callback) {
-				var func;
-				if(typeof list == "string") {
-					// console.log("calling " + list + "()");
-					func = target[list];
-					if(typeof func == "function") {
-						callback(target, spec, func, []);
-					}
-				} else {
-					for(var f in list) {
-						// console.log("calling " + f + "(" + list[f] + ")");
-						func = target[f];
-						if(typeof func == "function") {
-							callback(target, spec, func, list[f]);
-						}
-					}
-				}
-			}
-
-			function callInit(target, spec, func, args) {
-				// Resolve all the args
-				var resolvedArgs = [];
-				if(isArray(args)) {
-					for(var i=0; i<args.length; i++) {
-						resolvedArgs.push(resolveObject(args[i]));
-					}
-				} else {
-					resolvedArgs[0] = resolveObject(args);
-				}
-				
-				func.apply(target, resolvedArgs);
-
-				fireEvent('onInit', target, spec, resolveName);
-			}
-
-			function addReadyInit(target, spec, func, args) {
-				require.ready(function() {
-					callInit(target, spec, func, args);
-				});
-			}
-
-			/*
-				Function: constructContext
-				Fully constructs and initializes all objects, and resolves all references in the supplied
-				wiring spec.
-				
-				Parameters:
-					spec - wiring spec
-			*/
-			function constructContext(spec) {
-				createObjects(spec);
-
-				for(var i=0; i<objectInitQueue.length; i++) {
-					objectInitQueue[i]();
-				}
-				
-				var context;
-				if(base) {
-					// EXPERIMENTAL: Make ancestor context objects available as direct properties
-					context = mixin({}, base.context);
-					base.addEventListener({ wire$onContextDestroy: function() { context.destroy(); } });
-				} else {
-					context = {};
-				}
-				
-				context.wire = function wire(spec, ready) {
-					wireContext(spec, ready,
-						{
-							context: context,
-							resolveName: resolveName,
-							addEventListener: addEventListener
-						});
-				};
-				context.destroy = function destroy() {
-					for(var j=0; j<objectDestroyQueue.length; j++) {
-						objectDestroyQueue[j]();
-					}
-					fireEvent("onContextDestroy", context);
-				};
-				context.resolve = resolveName;
-				
-				// EXPERIMENTAL: Make this context's objects available as direct properties
-				// Add current context objects, overriding base objects with the same names
-				return mixin(context, spec._);
-			}
-			
-			/*
-				Function: createObjects
-				Recursively instantiate and cache objects, and resolve references (if they can
-				be resolved at this point) in the wiring spec, and queue tasks to set properties
-				and invoke initializer functions after all objects have been instantiated.
-				
-				Parameters:
-					spec - wiring spec
-					name - current scope name
-					
-				Returns:
-					Object created for spec
-			*/
-			function createObjects(spec, name) {
-				// By default, just return the spec if it's not an object or array
-				var result = spec;
-
-				// If spec is an object or array, process it
-				if(isArray(spec)) {
-					// If it's an array, createObjects() each element
-					result = [];
-					for (var i=0; i < spec.length; i++) {
-						result.push(createObjects(spec[i]));
-					}
-					spec._ = result;
-
-				} else if(typeof spec == 'object') {
-					// If it's a module
-					//  - if it has a create function, call it, with args and set result
-					//  - if no factory function, invoke new as constructor and set result
-					//  - if init function, invoke after factory or constructor
-					// If it's a reference
-					//  - resolve the reference directly, no recursive construction
-					// If it's not a module
-					//  - recursive createObjects() and set result
-					if(isModule(spec)) {
-						name = name || spec.name;
-						result = getLoadedModule(spec.module);
-						if(!result) {
-							error("No module loaded with name", name);
-						}
-						
-						if(spec.create) {
-							// TODO: Handle calling a factory method and using the return value as result?
-							// See constructWithFactory()
-							// console.log('constructing ' + name + " from " + spec.module);
-							result = constructWithNew(spec, result);
-						}
-						
-						// Cache the actual object
-						spec._ = result;
-						
-						if(spec.destroy) {
-							objectDestroyQueue.push(function() {
-								destroyObject(result, spec);
-							});
-						}
-						
-					} else if (isRef(spec)) {
-						result = resolveNameDuringWire(spec.$ref);
-						
-					} else {
-						// Recursively create sub-objects
-						result = {};
-						for(var prop in spec) {
-							result[prop] = createObjects(spec[prop], prop);
-						}
-						spec._ = result;
-					}
-
-					// EXPERIMENTAL: Creating sub-objects on a reference.
-					// Useful in some cases, such as a dijit reference, but useless/dangerous
-					// in the case of a plain object!
-					if(spec.properties) createObjects(spec.properties);
-					if(spec.init) createObjects(spec.init);
-
-					if(!isRef(spec)) fireEvent('onCreate', result, spec, resolveName);
-
-					// Queue a function to initialize the object later, after all
-					// objects have been created
-					objectInitQueue.push(function() {
-						initObject(spec);
-					});
-				}
-
-				return result;
-			}
-			
-			function initObject(spec) {
-				var result = spec;
-				
-				if(spec._) {
-					result = initTargetObject(spec._, spec);
-
-				} else if (isRef(spec)) {
-					// EXPERIMENTAL: Setting properties and calling initializers on a reference.
-					// Useful in some cases, such as dijits, but dangerous for plain objects!
-					result = initTargetObject(resolveNameDuringWire(spec.$ref), spec);
-					
-				} else {
-					result = {};
-					for(var prop in spec) {
-						result[prop] = resolveObject(spec[prop]);
-					}
-					
-				}
-				
-				return result;
-			}
-			
-			function initTargetObject(target, spec) {
-				if(spec.properties && typeof spec.properties == 'object') {
-					setProperties(target, spec.properties);
-					fireEvent('onProperties', target, spec, resolveName);
-				}
-
-				// If it has init functions, call it
-				if(spec.init) {
-					processFuncList(spec.init, target, spec, addReadyInit);
-				}
-				
-				return target;
-			}
-			
 			function destroyObject(target, spec) {
 				var destroy = spec.destroy;
 				processFuncList(spec.destroy, target, spec, function(target, spec, func, args) {
@@ -906,91 +792,6 @@
 				});
 			}
 			
-			/*
-				Function: resolveObject
-				Resolves the supplied object, which is either a reference object (e.g. { '$ref': 'name' })
-				or an already-created spec object, to a concrete object.
-				
-				Parameters:
-					refObj - either a reference object (e.g. { '$ref': 'name' }) or an
-						already-created spec object.
-						
-				Returns:
-					Concrete object.
-			*/
-			function resolveObject(refObj) {
-				return isRef(refObj) ? resolveNameDuringWire(refObj.$ref, refObj) : getObject(refObj);
-			}
-			
-			/*
-				Function: resolveName
-				Resolves the supplied ref name to a concrete object in this context, or any
-				ancestor contexts, using registered resolvers if necessary.
-				
-				Parameters:
-					ref - String name of the reference, including any leading plugin name
-					refObj - (optional) Actual ref object (e.g. { '$ref': 'name' }) which
-						specified the ref name to resolve.  This will be passed to resolver
-						plugins to allow them to do extra processing on the reference if
-						they want
-						
-				Returns:
-					Concrete object to which ref refers.
-			*/
-			function resolveName(ref, refObj) {
-				var resolved,
-					resolvers = plugins.resolvers;
-				if(ref in refCache) {
-					resolved = refCache[ref];
-					
-				} else {
-					if(ref.indexOf("!") == -1) {
-						resolved = (ref in spec) ? getObject(spec[ref]) : undef;
-
-					} else {
-						var parts = ref.split("!");
-
-						if(parts.length == 2) {
-							var prefix = parts[0];
-
-							if(prefix in resolvers) {
-								var name = parts[1];
-								resolved = resolvers[prefix](name, refObj, context);
-							}
-						}
-
-					}
-
-					// Still unresolved, ask base context to try to resolve
-					if(resolved === undef) {
-						resolved = (base && base.resolveName(ref)) || undef;
-					}
-					
-				}
-				
-				if(resolved !== undef) {
-					// Resolved, cache the resolved reference
-					refCache[ref] = resolved;
-					// Return the actual object
-					return getObject(resolved);
-				}
-				
-				return undef;
-			}
-			
-			function resolveNameDuringWire(ref, refObj) {
-				var resolved = resolveName(ref, refObj);
-				
-				if(resolved === undef) {
-					// Still unresolved
-					error("Reference " + ref + " cannot be resolved", name);
-				} else if(isRef(resolved)) {
-					// Check for recursive 
-					error("Recursive $refs not allowed: " + ref + " refers to $ref " + resolved.$ref, { name: ref, resolved: resolved });
-				}
-				 
-				return resolved;
-			}
 
 			function getObject(spec) {
 				return (spec && spec._) ? spec._ : spec;
