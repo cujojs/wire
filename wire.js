@@ -28,6 +28,7 @@
 		getLoadedModule = loadModules, // this may be requirejs specific
 		onDomReady = loadModules.ready, // this is requirejs specific
 		rootSpec = global.wire || {},
+		defaultModules = ['wire/base'],
 		rootContext;
 		
 	function isArray(it) {
@@ -61,6 +62,16 @@
 		return spec && spec.$ref !== undef;
 	}
 	
+	var F = function F(ctor, args) {
+			return ctor.apply(this, args);
+		};
+
+	function instantiate(ctor, args) {
+		F.prototype = ctor.prototype;
+		F.prototype.constructor = ctor;
+		return new F(ctor, args);
+	}
+	
 	var Promise = function() {
 		this.completed = 0;
 		this.chain = [];
@@ -91,7 +102,7 @@
 				p.resolve(result);
 
 			} else {
-				this.chain.push({ resolve: resolved, reject: rejected, progress: progress, promisor: p });
+				this.chain.push({ resolve: resolved, reject: rejected, progress: progress, promise: p });
 
 			}
 
@@ -111,7 +122,8 @@
 			
 			this.completed = completeType;
 			var res = this.result = value,
-				chain = this.chain;
+				chain = this.chain,
+				self = this;
 		
 			for(var i=0; i<chain.length; i++) {
 				try {
@@ -119,7 +131,14 @@
 						newResult = c[action](res);
 					if(newResult !== undef) {
 						if(typeof newResult.then == 'function') {
-							newResult.then(c.promisor.resolve, c.promisor.reject);
+							newResult.then(
+								function(result) {
+									c.promise.resolve(result);
+								},
+								function(err) {
+									c.promise.reject(err);
+								}
+							);
 						} else if(newResult instanceof Error) {
 							action = 'reject';
 							this.completed = -1;
@@ -130,6 +149,7 @@
 					}
 				} catch(e) {
 					res = e;
+					this.completed = -1;
 					action = 'reject';
 				}
 			}
@@ -185,7 +205,6 @@
 		};
 		this.destroyers = [];
 		this.objectsToCreate = 0;
-		
 	};
 	
 	ContextFactory.prototype = {
@@ -210,7 +229,7 @@
 
 					if(prefix in resolvers) {
 						var name = parts[1];
-						resolved = resolvers[prefix](name, refObj, this.context);
+						resolved = resolvers[prefix](name, refObj, this);
 					}
 				}
 			}
@@ -295,7 +314,6 @@
 			
 			this.objectsToCreate++;
 			try {
-				// console.log("Creating", spec);
 				if(spec.create && typeof module == 'function') {
 					var args = isArray(spec.create) ? spec.create : [spec.create];
 					// console.log("createObject ", spec, args);
@@ -318,28 +336,12 @@
 		},
 		
 		initObject: function(spec, object) {
-			var promisor = new Promise(),
+			var promise = new Promise(),
 				domReady = this.domReady,
 				self = this;
 			
 			if(spec.properties) {
-				var props = spec.properties,
-					propsArr = keys(props);
-				
-				var count = propsArr.length;
-				for(var i=0; i<propsArr.length; i++) {
-					(function() {
-						var p = propsArr[i];
-						self.parse(props[p]).then(function(resolved) {
-							//TODO: Support setter plugins
-							object[p] = resolved;
-							if(--count == 0) {
-								promisor.resolved(object);
-								self.fireEvent('onProperties', object, spec);
-							}
-						}, reject(self.contextReady));
-					})();
-				}
+				this.setProperties(spec, object, promise);
 			}
 			
 			if(spec.init) {
@@ -360,8 +362,49 @@
 				});
 			}
 			
-			return promisor;
+			return promise;
 		},
+		
+		setProperties: function(spec, object, promise) {
+			var props = spec.properties,
+				propsArr = keys(props),
+				self = this,
+				setters = this.setters,
+				cachedSetter;
+			
+			var count = propsArr.length;
+			for(var i=0; i<propsArr.length; i++) {
+				(function() {
+					var p = propsArr[i];
+					self.parse(props[p]).then(function(value) {
+						var success = false;
+
+						if(cachedSetter) {
+							// If we previously found a working setter for this target, use it
+							success = cachedSetter(object, p, value);
+						}
+
+						// If no cachedSetter, or cachedSetter failed, try all setters
+						if(!success) {
+							// Try all the registered setters until we find one that reports success
+							for(var i = 0; i < setters.length && !success; i++) {
+								success = setters[i](object, p, value);
+								if(success) {
+									cachedSetter = setters[i];
+								}
+							}
+						}
+
+						if(--count == 0) {
+							promise.resolved(object);
+							self.fireEvent('onProperties', object, spec);
+						}
+					}, reject(self.contextReady));
+				})();
+			}
+			
+		},
+		
 		
 		processFuncList: function(list, target, spec, callback) {
 			var func;
@@ -415,7 +458,7 @@
 		scanPlugins: function(modules) {
 			var p = new Promise();
 			
-			var setters = this.setters,
+			var setters = [],
 				resolvers = this.resolvers;
 
 			for (var i=0; i < modules.length; i++) {
@@ -441,6 +484,8 @@
 					newPlugin.wire$init();
 				}
 			}
+			
+			this.setters = setters;
 
 			p.resolve();
 			return p;
@@ -493,16 +538,16 @@
 				function resolveModulesReady(modules) {
 					self.fireEvent('onContextInit', modules);
 				},
-				function rejectModulesReady() {
-					rejectPromise(objectsCreated, "Module loading failed");
+				function rejectModulesReady(err) {
+					rejectPromise(objectsCreated, "Module loading failed", err);
 				});
 
 			objectsCreated.then(
 				function resolveObjectsCreated() {
 					// console.log("All objects created");
 				},
-				function rejectObjectsCreated() {
-					rejectPromise(contextReady, "Object creation failed");
+				function rejectObjectsCreated(err) {
+					rejectPromise(contextReady, "Object creation failed", err);
 				},
 				function progressObjectsCreated(status) {
 					self.fireEvent("onCreate", status.object);
@@ -513,8 +558,8 @@
 				function resolveContextReady(context) {
 					self.fireEvent('onContextReady', context);
 				},
-				function rejectContextReady() {
-					rejectPromise(domReady, "Context creation failed");
+				function rejectContextReady(err) {
+					rejectPromise(domReady, "Context creation failed", err);
 				}
 			);
 			
@@ -539,6 +584,10 @@
 					
 					contextReady.resolve(context);
 				}, reject(objectsCreated));
+				
+				for (var i = defaultModules.length - 1; i >= 0; i--){
+					this.loadModule(defaultModules[i]);
+				};
 
 				loadModules(moduleIds, function() {
 					var modules = arguments;
@@ -551,26 +600,7 @@
 				contextReady.reject(e);
 			}
 
-			return contextReady.promise();
-		},
-		
-		destroy: function() {
-			var self = this;
-						
-			this.contextReady.then(
-				function(context) {
-					var destroyers = self.destroyers;
-					for(var i=0; i<destroyers.length; i++) {
-						destroyers[i]();
-					}
-
-					self.contextDestroyed.resolve();
-					self.fireEvent('onContextDestroy', context);
-				}
-			);
-			
-			this.domReady.reject("Context destroyed");
-			return this.contextDestroyed;
+			return contextReady;
 		},
 		
 		parse: function(spec, result) {
@@ -621,9 +651,7 @@
 									}, reject(self.objectsCreated));
 
 								},
-								function(err) {
-									self.objectsCreated.reject();
-								}
+								reject(self.objectsCreated)
 							);
 						},
 						reject(this.modulesReady)
@@ -683,137 +711,28 @@
 			}
 
 			return promisor;
-		}		
-	};
-
-	var F = function F(ctor, args) {
-			return ctor.apply(this, args);
-		};
-
-	function instantiate(ctor, args) {
-		F.prototype = ctor.prototype;
-		F.prototype.constructor = ctor;
-		return new F(ctor, args);
-	}
-	
-	/*
-		Function: createContext
-		Creates a new Context with the supplied base Context.
+		},
 		
-		Parameters:
-			spec - wiring spec
-			modules - AMD module names loaded in this Context
-			base - base (parent) Context.  Objects in the base are available
-				to this Context.
-	*/
-	function createContext(spec, moduleNames, modules, base) {
-		
-		return (function doWire() {
-			// TODO: There just has to be a better way to do this and keep
-			// the objects hash private.
-			var wirePrefix = 'wire$',
-				plugins = {
-					onContextInit: [],
-					onContextError: [],
-					onContextReady: [],
-					onContextDestroy: [],
-					onCreate: [],
-					onProperties: [],
-					onInit: [],
-					onDestroy: []
-				},
-				objectInitQueue = [],
-				objectDestroyQueue = [],
-				refCache = {},
-				context;
-				
-			/*
-				Function: fireEvent
-				Invokes the set of plugins registered under the name (first param), e.g. "onContextInit", and
-				passes all subsequent parameters as parameters to each plugin in the set.  This not only
-				invokes plugins registered with this context, but with all ancestor contexts as well.
-				
-				Parameters:
-					name - First argument is the name of the plugin type to call, e.g. "onContextInit"
-					args - Arguments to be passed to plugins
-			*/
-
-			/*
-				Function: setProperties
-				Sets the supplied properties on the supplied target object.  This function attempts to
-				use registered setter plugins, but if none succeed, falls back to standard Javascript
-				property setting, e.g. target[prop] = value.
-				
-				Parameters:
-					target - Object on which to set properties
-					properties - Hash of properties to set, may contain references, wiring specs, etc.
-				
-			*/
-			function setProperties(target, properties) {
-				var setters = plugins.setters,
-					cachedSetter;
-				for(var p in properties) {
-					if(p !== '_') { // Prevent cached instances from being set as properties
-						var success = false,
-							value = resolveObject(properties[p]);
-
-						if(cachedSetter) {
-							// If we previously found a working setter for this target, use it
-							success = cachedSetter(target, p, value);
-						}
-
-						// If no cachedSetter, or cachedSetter failed, try all setters
-						if(!success) {
-							// Try all the registered setters until we find one that reports success
-							for(var i = 0; i < setters.length && !success; i++) {
-								success = setters[i](target, p, value);
-								if(success) {
-									cachedSetter = setters[i];
-									break;
-								}
-							}
-						}
-
-						// If we still haven't succeeded, fall back to plain property value
-						if(!success) {
-							cachedSetter = function(target, prop, value) {
-								target[prop] = value;
-							};
-							cachedSetter(target, p, value);
-						}
+		destroy: function() {
+			var self = this;
+						
+			this.contextReady.then(
+				function(context) {
+					var destroyers = self.destroyers;
+					for(var i=0; i<destroyers.length; i++) {
+						destroyers[i]();
 					}
+
+					self.contextDestroyed.resolve();
+					self.fireEvent('onContextDestroy', context);
 				}
-			}
-
-			function destroyObject(target, spec) {
-				var destroy = spec.destroy;
-				processFuncList(spec.destroy, target, spec, function(target, spec, func, args) {
-					func.apply(target, []); // no args for destroy
-				});
-			}
+			);
 			
-
-			function getObject(spec) {
-				return (spec && spec._) ? spec._ : spec;
-			}
-			
-			if(modules.length > 0) registerPlugins(modules);
-
-			fireEvent("onContextInit", modules, moduleNames);
-
-			context = constructContext(spec, base);
-
-			fireEvent("onContextReady", context);
-
-			// TODO: Should the context should be frozen?
-			// var freeze = Object.freeze || function(){};
-			// freeze(context);
-
-			return context;
-		})();
-	}
-
-
+			this.domReady.reject("Context destroyed");
+			return this.contextDestroyed;
+		}
+	};
+	
 	// WARNING: Probably unsafe. Just for testing right now.
 	// TODO: Only do this for browser env
 	

@@ -25,12 +25,9 @@ wire({
 	name: 'controller1',
 	widget1: { 
 		module: 'dijit/form/TextBox',
-		create: [{}],
+		create: [{}, { $ref: 'dom!widgetNode' }],
 		properties: {
 			value: { '$ref': 'initialValue' }
-		},
-		init: {
-			placeAt: { $ref: 'dom!widgetNode' }
 		}
 	},
 	// // Create a controller, and inject a dijit.form.TextBox that is simply
@@ -52,11 +49,11 @@ function(context) {
 	
 	// When the button is clicked, cleanup everything by
 	// destroying the context
-	// var d = context.destroyButton;
-	// d.onclick = function() {
-	// 	context.destroy();
-	// 	d.onclick = null;
-	// };
+	var d = context.destroyButton;
+	d.onclick = function() {
+		context.destroy();
+		d.onclick = null;
+	};
 },
 function(err) {
 	console.log("wire failed", err);
