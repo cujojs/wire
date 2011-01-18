@@ -7,7 +7,7 @@ wire({
 		module: 'test/rest1/Controller',
 		create: [],
 		properties: {
-			store: { '$ref': 'rest!test/rest1/person.json' }
+			store: { '$ref': 'resource!test/rest1/person.json' }
 		},
 		init: 'ready'
 	},

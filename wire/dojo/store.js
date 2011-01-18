@@ -1,9 +1,8 @@
 define(['dojo/store/JsonRest'], function(JsonRest) {
 	return {
 		wire$resolvers: {
-			rest: function(name, refObj, context) {
-				// name must be a valid rest url
-				return new JsonRest({ target: name });
+			resource: function(promise, name, refObj, factory) {
+				promise.resolve(new JsonRest({ target: name }));
 			}
 		}
 	};

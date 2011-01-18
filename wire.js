@@ -120,6 +120,8 @@
 		complete: function(action, value, completeType) {
 			if(this.completed) throw Error("Promise already completed");
 			
+			// console.log("Completing promise", this);
+			
 			this.completed = completeType;
 			var res = this.result = value,
 				chain = this.chain,
@@ -128,26 +130,37 @@
 			for(var i=0; i<chain.length; i++) {
 				try {
 					var c = chain[i],
-						newResult = c[action](res);
-					if(newResult !== undef) {
-						if(typeof newResult.then == 'function') {
-							newResult.then(
-								function(result) {
-									c.promise.resolve(result);
-								},
-								function(err) {
-									c.promise.reject(err);
-								}
-							);
-						} else if(newResult instanceof Error) {
-							action = 'reject';
-							this.completed = -1;
-							res = newResult;
-						} else {
-							res = newResult;
+						func = c[action],
+						newResult;
+						
+					if(typeof func == 'function') {
+						
+						newRes = func(res);
+						
+						if(newResult !== undef) {
+							if(typeof newResult.then == 'function') {
+								newResult.then(
+									function(result) {
+										c.promise.resolve(result);
+									},
+									function(err) {
+										c.promise.reject(err);
+									}
+								);
+
+							} else if(newResult instanceof Error) {
+								action = 'reject';
+								this.completed = -1;
+								res = newResult;
+
+							} else {
+								res = newResult;
+							}
 						}
 					}
+					
 				} catch(e) {
+					console.log("Promise ERROR", e, this);
 					res = e;
 					this.completed = -1;
 					action = 'reject';
@@ -208,81 +221,62 @@
 	};
 	
 	ContextFactory.prototype = {
-		
-		resolveName: function(name) {
-			return this.context[name];
-		},
-		
-		resolveRefObj: function(refObj) {
+
+		resolveRefObj: function(refObj, promise) {
 			var ref = refObj.$ref,
+				resolvers = this.resolvers,
 				parent = this.parent,
-				resolved;
+				context = this.context,
+				domReady = this.domReady,
+				contextReady = this.contextReady,
+				self = this,
+				prefix = "_",
+				name = ref;
+
+			if(ref.indexOf("!") >= 0) {
+				var parts = ref.split("!");
+				prefix = parts[0];
+			    name = parts[1];
+			}
 			
-			if(ref.indexOf("!") == -1) {
-				return this.resolveName(refObj.$ref);
-			} else {
-				var parts = ref.split("!"),
-					resolvers = this.resolvers;
-
-				if(parts.length == 2) {
-					var prefix = parts[0];
-
-					if(prefix in resolvers) {
-						var name = parts[1];
-						resolved = resolvers[prefix](name, refObj, this);
-					}
+			var tryParent = (parent)
+				? function tryParent() {
+					parent.resolveRefObj(refObj, promise);
 				}
+				: function rejectPromise() {
+					console.log("Rejecting via rejectPromise", promise);
+					promise.reject("Can't resolve reference " + name);
+				};
+			
+			if(prefix in resolvers) {
+				var resolution = {
+					getObject: function(name) {
+						return context[name];
+					},
+					resolve: function(result) {
+						// console.log('resolved', refObj, result);
+						promise.resolve(result);
+					},
+					unresolved: tryParent,
+					objectsCreated: contextReady,
+					domReady: domReady
+				};
+				// console.log("resolving", refObj);
+				resolved = resolvers[prefix](resolution, name, refObj);
+			} else {
+				tryParent();
 			}
-
-			// Still unresolved, ask base context to try to resolve
-			if(resolved === undef && parent) {
-				resolved = parent.resolveRefObj(refObj);
-			}
-
-			return resolved;
 		},
 
 		resolveRef: function(ref) {
 			// console.log("Trying to resolve", ref);
 			var p = new Promise(),
 				self = this;
-			if(!isRef(ref)) {
-				// console.log("Not a json ref, resolving to supplied value", ref);
-				p.resolve(ref);
+				
+			if(isRef(ref)) {
+				this.resolveRefObj(ref, p);
 			} else {
-				// Try to resolve immediately.  If that fails, defer resolution until
-				// objects have been instantiated
-				// console.log("Trying to resolve immediately", ref);
-				var resolved = this.resolveRefObj(ref);
-				if(resolved !== undef) {
-					// console.log("Resolved " + ref.$ref + " immediately, deferring", resolved);
-					p.resolve(resolved);
-				} else {
-					// console.log("Could not resolve " + ref.$ref + " immediately, deferring");
-					// console.log("deferring ref resolution until objectsCreated", ref);
-					this.objectsCreated.then(
-						function() {
-							// console.log("objectsCreated resolveRef", ref);
-							var resolved = self.resolveRefObj(ref);
-							if(resolved === undef) {
-								// console.log("deferring ref resolution until domReady", ref);
-								self.domReady.then(
-									function() {
-										// console.log("Resolving ref on domReady", ref);
-										var resolved = self.resolveRefObj(ref);
-										if(resolved === undef) {
-											p.reject({ ref: ref, message: "Ref " + ref.$ref + " could not be resolved" });
-										} else {
-											p.resolve(resolved);
-										}
-									}
-								);
-							} else {
-								p.resolve(resolved);
-							}
-						}
-					);
-				}
+				p.resolve(ref);
 			}
 			return p;
 		},
@@ -290,46 +284,33 @@
 		createObject: function(spec, module) {
 			var p = new Promise(),
 				object = module,
-				objectsCreated = this.objectsCreated,
+				contextReady = this.contextReady,
 				self = this;
-				
-			function checkObjects(action) {
-				if(--self.objectsToCreate === 0) {
-					objectsCreated[action]();
-				}
-			}
-			function objectFailed(err, promise) {
-				promise.reject(err);
-				checkObjects('reject');
-			}
 
 			function objectCreated(obj, promise) {
-				self.modulesReady.then(function() {
-					objectsCreated.progress({ object: obj, remaining: self.objectsToCreate });
+				self.modulesReady.then(function handleModulesReady() {
+					contextReady.progress({ object: obj/*, remaining: self.objectsToCreate */});
 					promise.resolve(obj);
-					
-					checkObjects('resolve');
 				});
 			}
 			
-			this.objectsToCreate++;
 			try {
 				if(spec.create && typeof module == 'function') {
 					var args = isArray(spec.create) ? spec.create : [spec.create];
 					// console.log("createObject ", spec, args);
 					this.parse(args).then(
-						function(resolvedArgs) {
+						function handleCreateParsed(resolvedArgs) {
 							// console.log("Instantiating module", spec);
 							objectCreated(instantiate(module, resolvedArgs), p);
 						},
-						objectFailed
+						reject(p)
 					);
 				} else {
 					objectCreated(object, p);
 				}
 				
 			} catch(e) {
-				objectFailed(e);
+				p.reject(e);
 			}
 
 			return p;
@@ -341,21 +322,29 @@
 				self = this;
 			
 			if(spec.properties) {
-				this.setProperties(spec, object, promise);
-			}
-			
-			if(spec.init) {
-				this.processFuncList(spec.init, object, spec,
-					function(target, spec, func, args) {
-						domReady.then(function() {
-							self.callInit(target, spec, func, args);
-						});
-					}
+				this.setProperties(spec, object).then(
+					function() {
+						if(spec.init) {
+							self.processFuncList(spec.init, object, spec,
+								function handleProcessFuncList(target, spec, func, args) {
+									self.callInit(target, spec, func, args).then(
+										function() {
+											promise.resolve(object);
+										}
+									);
+								}
+							);
+						} else {
+							promise.resolve(object);
+						}
+					},
+					reject(promise)
 				);
 			}
 			
+			
 			if(spec.destroy) {
-				this.destroyers.push(function() {
+				this.destroyers.push(function doDestroy() {
 					self.processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
 						func.apply(target, []); // no args for destroy
 					});
@@ -365,58 +354,52 @@
 			return promise;
 		},
 		
-		setProperties: function(spec, object, promise) {
-			var props = spec.properties,
-				propsArr = keys(props),
+		setProperties: function(spec, object) {
+			var promise = new Promise(),
+				props = spec.properties,
+				keyArr = keys(props),
 				self = this,
 				setters = this.setters,
 				cachedSetter;
 			
-			var count = propsArr.length;
-			for(var i=0; i<propsArr.length; i++) {
-				(function() {
-					var p = propsArr[i];
-					self.parse(props[p]).then(function(value) {
-						var success = false;
-
-						if(cachedSetter) {
-							// If we previously found a working setter for this target, use it
-							success = cachedSetter(object, p, value);
-						}
-
-						// If no cachedSetter, or cachedSetter failed, try all setters
-						if(!success) {
+			var count = keyArr.length;
+			for(var i=0; i<keyArr.length; i++) {
+				(function(remaining, name, prop) {
+					self.parse(prop).then(function handlePropertiesParsed(value) {
+						// If we previously found a working setter for this target, use it
+						if(!(cachedSetter && cachedSetter(object, name, value))) {
+							var success = false;
 							// Try all the registered setters until we find one that reports success
 							for(var i = 0; i < setters.length && !success; i++) {
-								success = setters[i](object, p, value);
+								var setter = setters[i];
+								success = setter(object, name, value);
 								if(success) {
-									cachedSetter = setters[i];
+									cachedSetter = setter;
 								}
 							}
 						}
 
-						if(--count == 0) {
-							promise.resolved(object);
+						if(remaining == 0) {
+							promise.resolve(object);
 							self.fireEvent('onProperties', object, spec);
 						}
 					}, reject(self.contextReady));
-				})();
+				})(--count, keyArr[i], props[keyArr[i]]);
 			}
 			
+			return promise;
 		},
 		
 		
 		processFuncList: function(list, target, spec, callback) {
 			var func;
 			if(typeof list == "string") {
-				// console.log("calling " + list + "()");
 				func = target[list];
 				if(typeof func == "function") {
 					callback(target, spec, func, []);
 				}
 			} else {
 				for(var f in list) {
-					// console.log("calling " + f + "(" + list[f] + ")");
 					func = target[f];
 					if(typeof func == "function") {
 						callback(target, spec, func, list[f]);
@@ -427,7 +410,7 @@
 
 		callInit: function(target, spec, func, args) {
 			var self = this;
-			this.parse(args).then(function(processedArgs) {
+			return this.parse(args).then(function handleInitParsed(processedArgs) {
 				func.apply(target, isArray(processedArgs) ? processedArgs : [processedArgs]);
 				self.fireEvent('onInit', target, spec);
 			});
@@ -448,7 +431,7 @@
 				this.moduleIds.push(moduleId);
 			}
 
-			this.modulesReady.then(function() {
+			this.modulesReady.then(function handleModulesReady() {
 				p.resolve(getLoadedModule(moduleId));
 			});
 			
@@ -521,17 +504,16 @@
 				parent = this.parent,
 				self = this,
 				rejectPromise = function rejectAndFireEvent(promise, message, err) {
-					self.fireEvent('onContextError', context, message, err);
-					rejectPromise(promise, err);
+					self.fireEvent('onContextError', myContext, message, err);
+					reject(promise);
 				};
 
 			// domReady must resolve after contextReady, but have to register this
 			// with onDomReady as early as possible because requirejs doesn't fire
 			// domReady callbacks after the dom is actually ready!
 			onDomReady(function resolveDomReady() {
-				contextReady.then(function(context) {
-					domReady.resolve(context);
-				});
+				// console.log('domReady');
+				domReady.resolve();
 			});
 
 			modulesReady.then(
@@ -544,7 +526,7 @@
 
 			objectsCreated.then(
 				function resolveObjectsCreated() {
-					// console.log("All objects created");
+					console.log("All objects created");
 				},
 				function rejectObjectsCreated(err) {
 					rejectPromise(contextReady, "Object creation failed", err);
@@ -556,6 +538,7 @@
 
 			contextReady.then(
 				function resolveContextReady(context) {
+					// console.log("contextReady");
 					self.fireEvent('onContextReady', context);
 				},
 				function rejectContextReady(err) {
@@ -565,7 +548,7 @@
 			
 			if(parent) {
 				mixin(myContext, parent.context);
-				parent.contextDestroyed.then(function() { self.destroy(); });
+				parent.contextDestroyed.then(function handleParentDestroyed() { self.destroy(); });
 			}
 
 			try {
@@ -573,11 +556,9 @@
 					context.wire = function wire(spec) {
 						return new ContextFactory(self).wire(spec);
 					};
-
 					context.resolve = function resolve(ref) {
 						return self.resolveName(ref).promise();
 					};
-
 					context.destroy = function destroy() {
 						return self.destroy().promise();
 					};
@@ -589,9 +570,9 @@
 					this.loadModule(defaultModules[i]);
 				};
 
-				loadModules(moduleIds, function() {
+				loadModules(moduleIds, function handleModulesLoaded() {
 					var modules = arguments;
-					self.scanPlugins(modules).then(function() {
+					self.scanPlugins(modules).then(function handlePluginsScanned() {
 						modulesReady.resolve(modules);
 					});
 				});
@@ -603,10 +584,20 @@
 			return contextReady;
 		},
 		
+		createResolver: function(remaining, object, prop, promise) {
+			return function resolver(result) {
+				object[prop] = result;
+				if(remaining == 0) {
+					promise.resolve(object);
+				}
+			};
+		},
+		
+		
 		parse: function(spec, result) {
 
 			var processed = spec,
-				promisor = new Promise(),
+				promise = new Promise(),
 				self = this,
 				count,
 				len;
@@ -614,103 +605,66 @@
 			if(isArray(spec)) {
 				len = spec.length;
 				if(len == 0) {
-					promisor.resolve(processed);
+					promise.resolve(processed);
 				}
-				// console.log("Array", spec);
 				processed = result||[];
 
 				var arrCount = len;
 				for(var i=0; i<len; i++) {
-					var resolveArray = (function() {
-						var index = i; // Capture array index
-						return function arrayResolver(result) {
-							processed[index] = result;
-							if(--arrCount == 0) {
-								promisor.resolve(processed);
-							}
-						};
-					})();
-					this.parse(spec[i]).then(resolveArray, reject(self.objectsCreated));
+					this.parse(spec[i]).then(this.createResolver(--arrCount, processed, i, promise), reject(self.objectsCreated));
 				}
-
 
 			} else if(typeof spec == 'object') {
 				// module, reference, or simple object
 				if(isModule(spec)) {
-					// console.log("Module", spec);
 					// Create object from module
-					// console.log("New module to create, total now: " + this.objectsToCreate, spec);
 					this.loadModule(spec.module).then(
-						function(module) {
+						function handleModuleLoaded(module) {
 							self.createObject(spec, module).then(
-								function(created) {
-									promisor.resolve(created);
-							
-									self.objectsCreated.then(function() {
-										return self.initObject(spec, created);
-									}, reject(self.objectsCreated));
-
+								function handleObjectCreated(created) {
+									promise.resolve(created);
+									self.initObject(spec, created);
 								},
-								reject(self.objectsCreated)
+								reject(self.contextReady)
 							);
-						},
-						reject(this.modulesReady)
+						}
 					);
-					
 
 				} else if(isRef(spec)) {
-					// console.log("Ref", spec);
 					// Resolve reference
 					this.resolveRef(spec).then(
-						function(target) {
-							promisor[target === undef ? 'reject' : 'resolve'](target);
+						function handleResolveRef(target) {
+							promise[target === undef ? 'reject' : 'resolve'](target);
 						},
-						reject(this.objectsCreated)
+						reject(this.contextReady)
 					);
 
 				} else {
-					// console.log("POJO", spec);
-					// this.objectsToCreate++;
-
 					// Recurse on plain object properties
 					processed = result||{};
 					var props = keys(spec);
 
 					len = props.length;
 					if(len == 0) {
-						promisor.resolve(processed);
-						// console.log("empty", spec);
+						promise.resolve(processed);
 					} else {
 						// console.log("resolving POJO", len, spec);
 						var propCount = len;
 						for(var j=0; j<len; j++) {
-							var propToCreate = spec[props[j]],
-								resolveObject = (function() {
-									var index = j; // Capture property index
-									return function objectResolver(result) {
-										// console.log("INNER resolving prop " + props[index], index, result, spec);
-										processed[props[index]] = result;
-										if(--propCount == 0) {
-											promisor.resolve(processed);
-										}
-									};
-								})();
-
-
-							// console.log("OUTER resolving prop", props[j], spec[props[j]], spec);
-							this.parse(spec[props[j]]).then(
-								resolveObject, 
-								reject(this.objectsCreated)
+							var p = props[j];
+							this.parse(spec[p]).then(
+								this.createResolver(--propCount, processed, p, promise),
+								reject(this.contextReady)
 							);
 						}
 					}
 				}
+				
 			} else {
-				// console.log("Something else", spec);
-				promisor.resolve(processed);
+				promise.resolve(processed);
 			}
 
-			return promisor;
+			return promise;
 		},
 		
 		destroy: function() {
@@ -728,7 +682,9 @@
 				}
 			);
 			
-			this.domReady.reject("Context destroyed");
+			// if(!this.domReady.completed) {
+			// 	this.domReady.reject("Context destroyed");
+			// }
 			return this.contextDestroyed;
 		}
 	};

@@ -1,16 +1,24 @@
 define(['dojo'], function(dojo) {
 	var parsed = false,
-		dijits = [],
-		dijitsRecursive = [];
+		destroyFuncs = [];
 	
 	return {
 		wire$resolvers: {
-			dijit: function(name, refObj, context) {
-				return dijit.byId(name);
+			dijit: function(resolution, name, refObj) {
+				// console.log("dijit resolver", name);
+				resolution.domReady.then(function() {
+					// console.log("dijit resolver domReady", name);
+					var resolved = dijit.byId(name);
+					if(resolved) {
+						resolution.resolve(resolved);
+					} else {
+						resolution.unresolved();
+					}
+				});
 			}
 		},
 		wire$setters: [
-			function(object, property, value) {
+			function setDijitProperty(object, property, value) {
 				if(typeof object.set == 'function') {
 					object.set(property, value);
 					return true;
@@ -24,25 +32,26 @@ define(['dojo'], function(dojo) {
 				// Only ever parse the page once, even if other child
 				// contexts are created with this plugin present.
 				if(!parsed) {
-					dojo.parser.parse();
 					parsed = true;
+					dojo.ready(function() { dojo.parser.parse(); });
 				}
 			},
 			onContextDestroy: function(context) {
-				for (var i = dijits.length - 1; i >= 0; i--){
-					dijits[i].destroy();
-				}
-				for (i = dijitsRecursive.length - 1; i >= 0; i--){
-					dijitsRecursive[i].destroy();
+				for (var i = 0; i < destroyFuncs.length; i++){
+					destroyFuncs[i]();
 				}
 			},
 			onCreate: function(target) {
 				if(typeof target.declaredClass == 'string') {
 					// Prefer destroyRecursive over destroy
 					if(typeof target.destroyRecursive == 'function') {
-						dijitsRecursive.push(target);
+						destroyFuncs.push(function destroyDijit() {
+							target.destroyRecursive();
+						});
 					} else if(typeof target.destroy == 'function') {
-						dijits.push(target);
+						destroyFuncs.push(function destroyDijit() {
+							target.destroy();
+						});
 					}
 				}
 			}

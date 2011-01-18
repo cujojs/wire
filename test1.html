@@ -36,15 +36,15 @@
 				// dom: { module: 'wire/dom' }
 				// This seems like it could end up being a reasonable convention, tho.
 				plugins: [
-					{ module: 'wire/debug' },
-					{ module: 'wire/dom' }
+				{ module: 'wire/debug' },
+				{ module: 'wire/dom' }
 				],
 				name: "Test 2",
 				// Create and configure a controller
 				controller: {
 					module: 'test/test1/Controller',
 					create: [{ "$ref": "name" }],
-			
+
 					// Properties will be set after construction
 					properties: {
 						// name: { "$ref": "name" },
@@ -63,7 +63,7 @@
 				}
 			}).then(function(context2) {
 				console.log("Done2", context2);
-				// context.destroy().then(function() { console.log("contexts destroyed"); });
+				context.destroy().then(function() { console.log("contexts destroyed"); });
 			});
 		});
 	</script>
