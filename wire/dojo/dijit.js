@@ -6,8 +6,9 @@ define(['dojo'], function(dojo) {
 		wire$resolvers: {
 			dijit: function(resolution, name, refObj) {
 				// console.log("dijit resolver", name);
-				resolution.domReady.then(function() {
-					// console.log("dijit resolver domReady", name);
+				// resolution.domReady.then(
+				dojo.ready(
+					function() {
 					var resolved = dijit.byId(name);
 					if(resolved) {
 						resolution.resolve(resolved);

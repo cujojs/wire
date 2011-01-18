@@ -9,8 +9,6 @@ define([], function() {
 		return msg(text) + " (" + timer() + ")";
 	}
 
-	console.log(time("Debug plugin loaded"));
-	
 	/*
 		Function: createTimer
 		Creates a timer function that, when called, returns an object containing
@@ -67,16 +65,16 @@ define([], function() {
 			// Individual object lifecycle callbacks
 			// Don't time these
 			onCreate: function(target, spec, resolver) {
-				console.log(msg('created'), target, spec);
+				console.log(msg('Object created'), target, spec);
 			},
 			onProperties: function(target, spec, resolver) {
-				console.log(msg('properties'), target, spec);
+				console.log(msg('Object properties'), target, spec);
 			},
 			onInit: function(target, spec, resolver) {
-				console.log(msg('init'), target, spec);
+				console.log(msg('Object init'), target, spec);
 			},
 			onDestroy: function(target) {
-				console.log(msg('destroy'), target);
+				console.log(msg('Object destroy'), target);
 			}
 		},
 		// Init for this plugin

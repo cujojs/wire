@@ -32,7 +32,11 @@
 		rootContext;
 		
 	function isArray(it) {
-		return tos.call(it) === arrt;
+		return tos.call(it) === '[object Array]';
+	}
+	
+	function isFunction(it) {
+		return typeof it == 'function';
 	}
 	
 	function keys(obj) {
@@ -133,12 +137,12 @@
 						func = c[action],
 						newResult;
 						
-					if(typeof func == 'function') {
+					if(isFunction(func)) {
 						
 						newRes = func(res);
 						
 						if(newResult !== undef) {
-							if(typeof newResult.then == 'function') {
+							if(isFunction(newResult.then)) {
 								newResult.then(
 									function(result) {
 										c.promise.resolve(result);
@@ -244,7 +248,6 @@
 					parent.resolveRefObj(refObj, promise);
 				}
 				: function rejectPromise() {
-					console.log("Rejecting via rejectPromise", promise);
 					promise.reject("Can't resolve reference " + name);
 				};
 			
@@ -274,7 +277,9 @@
 				self = this;
 				
 			if(isRef(ref)) {
-				this.resolveRefObj(ref, p);
+				this.modulesReady.then(function() {
+					self.resolveRefObj(ref, p);
+				});
 			} else {
 				p.resolve(ref);
 			}
@@ -295,12 +300,11 @@
 			}
 			
 			try {
-				if(spec.create && typeof module == 'function') {
+				if(spec.create && isFunction(module)) {
 					var args = isArray(spec.create) ? spec.create : [spec.create];
 					// console.log("createObject ", spec, args);
 					this.parse(args).then(
 						function handleCreateParsed(resolvedArgs) {
-							// console.log("Instantiating module", spec);
 							objectCreated(instantiate(module, resolvedArgs), p);
 						},
 						reject(p)
@@ -365,7 +369,7 @@
 			var count = keyArr.length;
 			for(var i=0; i<keyArr.length; i++) {
 				(function(remaining, name, prop) {
-					self.parse(prop).then(function handlePropertiesParsed(value) {
+					self.parse(prop, undef).then(function handlePropertiesParsed(value) {
 						// If we previously found a working setter for this target, use it
 						if(!(cachedSetter && cachedSetter(object, name, value))) {
 							var success = false;
@@ -395,13 +399,13 @@
 			var func;
 			if(typeof list == "string") {
 				func = target[list];
-				if(typeof func == "function") {
+				if(isfunction(func)) {
 					callback(target, spec, func, []);
 				}
 			} else {
 				for(var f in list) {
 					func = target[f];
-					if(typeof func == "function") {
+					if(isFunction(func)) {
 						callback(target, spec, func, list[f]);
 					}
 				}
@@ -413,13 +417,6 @@
 			return this.parse(args).then(function handleInitParsed(processedArgs) {
 				func.apply(target, isArray(processedArgs) ? processedArgs : [processedArgs]);
 				self.fireEvent('onInit', target, spec);
-			});
-		},
-
-		addReadyInit: function(target, spec, func, args) {
-			var self = this;
-			this.domReady.then(function() {
-				self.callInit(target, spec, func, args);
 			});
 		},
 
@@ -449,7 +446,6 @@
 				// console.log("scanning for plugins: " + newPlugin);
 				if(newPlugin.wire$resolvers) {
 					for(var name in newPlugin.wire$resolvers) {
-						// console.log("resolver plugin: " + name);
 						resolvers[name] = newPlugin.wire$resolvers[name];
 					}
 				}
@@ -462,7 +458,7 @@
 					this.addEventListeners(newPlugin.wire$listeners);
 				}
 
-				if(typeof newPlugin.wire$init == 'function') {
+				if(isFunction(newPlugin.wire$init)) {
 					// Have to init plugins immediately, so they can be used during wiring
 					newPlugin.wire$init();
 				}
@@ -477,7 +473,7 @@
 		addEventListeners: function(listener) {
 			var listeners = this.listeners;
 			for(var p in listeners) {
-				if(typeof listener[p] == 'function') {
+				if(isFunction(listener[p])) {
 					listeners[p].push(listener);
 				}
 			}
@@ -524,18 +520,6 @@
 					rejectPromise(objectsCreated, "Module loading failed", err);
 				});
 
-			objectsCreated.then(
-				function resolveObjectsCreated() {
-					console.log("All objects created");
-				},
-				function rejectObjectsCreated(err) {
-					rejectPromise(contextReady, "Object creation failed", err);
-				},
-				function progressObjectsCreated(status) {
-					self.fireEvent("onCreate", status.object);
-				}
-			);
-
 			contextReady.then(
 				function resolveContextReady(context) {
 					// console.log("contextReady");
@@ -543,6 +527,9 @@
 				},
 				function rejectContextReady(err) {
 					rejectPromise(domReady, "Context creation failed", err);
+				},
+				function progressObjectsCreated(status) {
+					self.fireEvent("onCreate", status.object);
 				}
 			);
 			
@@ -595,7 +582,6 @@
 		
 		
 		parse: function(spec, result) {
-
 			var processed = spec,
 				promise = new Promise(),
 				self = this,

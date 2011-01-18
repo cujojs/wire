@@ -25,9 +25,12 @@ wire({
 	name: 'controller1',
 	widget1: { 
 		module: 'dijit/form/TextBox',
-		create: [{}, { $ref: 'dom!widgetNode' }],
+		create: [{}],
 		properties: {
 			value: { '$ref': 'initialValue' }
+		},
+		init: {
+			placeAt: [{ $ref: 'dom!container' }, 'first']
 		}
 	},
 	// // Create a controller, and inject a dijit.form.TextBox that is simply
