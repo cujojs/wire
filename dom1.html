@@ -1,0 +1,32 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Launcher test</title>
+	<script src="require.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" src="wire.js"></script>
+	<script type="text/javascript">
+		wire({
+			plugins: [
+				{ module: 'wire/debug' },
+				{ module: 'wire/dom' }
+			],
+			node: { $ref: 'dom!node1' }
+		}).then(
+			function(context) {
+				context.node.innerHTML = 'success';
+				console.log("Done", context);
+				// context.destroy();
+			},
+			function(err) {
+				console.log(err);
+			}
+		);
+	</script>
+</head>
+<body>
+	<div>
+		<p id="node1"></p>
+	</div>
+</body>
+</html>
