@@ -139,7 +139,7 @@
 						
 					if(isFunction(func)) {
 						
-						newRes = func(res);
+						newResult = func(res);
 						
 						if(newResult !== undef) {
 							if(isFunction(newResult.then)) {
@@ -265,7 +265,7 @@
 					domReady: domReady
 				};
 				// console.log("resolving", refObj);
-				resolved = resolvers[prefix](resolution, name, refObj);
+				resolvers[prefix](resolution, name, refObj);
 			} else {
 				tryParent();
 			}
@@ -399,7 +399,7 @@
 			var func;
 			if(typeof list == "string") {
 				func = target[list];
-				if(isfunction(func)) {
+				if(isFunction(func)) {
 					callback(target, spec, func, []);
 				}
 			} else {
@@ -421,16 +421,21 @@
 		},
 
 		loadModule: function(moduleId) {
-			var p = new Promise();
+			var p = new Promise(),
+				uniques = this.uniqueModuleNames;
 
-			if(!this.uniqueModuleNames[moduleId]) {
-				this.uniqueModuleNames[moduleId] = 1;
+			if(!uniques[moduleId]) {
+				uniques[moduleId] = 1;
 				this.moduleIds.push(moduleId);
+				loadModules([moduleId], function(module) {
+					uniques[moduleId] = module;
+					p.resolve(module);
+				});
+			} else {
+				this.modulesReady.then(function handleModulesReady() {
+					p.resolve(uniques[moduleId]);
+				});
 			}
-
-			this.modulesReady.then(function handleModulesReady() {
-				p.resolve(getLoadedModule(moduleId));
-			});
 			
 			return p;
 		},
@@ -443,24 +448,26 @@
 
 			for (var i=0; i < modules.length; i++) {
 				var newPlugin = modules[i];
-				// console.log("scanning for plugins: " + newPlugin);
-				if(newPlugin.wire$resolvers) {
-					for(var name in newPlugin.wire$resolvers) {
-						resolvers[name] = newPlugin.wire$resolvers[name];
+				if(typeof newPlugin == 'object') {
+					// console.log("scanning for plugins: " + newPlugin);
+					if(newPlugin.wire$resolvers) {
+						for(var name in newPlugin.wire$resolvers) {
+							resolvers[name] = newPlugin.wire$resolvers[name];
+						}
 					}
-				}
 
-				if(newPlugin.wire$setters) {
-					setters = setters.concat(newPlugin.wire$setters);
-				}
+					if(newPlugin.wire$setters) {
+						setters = setters.concat(newPlugin.wire$setters);
+					}
 
-				if(newPlugin.wire$listeners) {
-					this.addEventListeners(newPlugin.wire$listeners);
-				}
+					if(newPlugin.wire$listeners) {
+						this.addEventListeners(newPlugin.wire$listeners);
+					}
 
-				if(isFunction(newPlugin.wire$init)) {
-					// Have to init plugins immediately, so they can be used during wiring
-					newPlugin.wire$init();
+					if(isFunction(newPlugin.wire$init)) {
+						// Have to init plugins immediately, so they can be used during wiring
+						newPlugin.wire$init();
+					}
 				}
 			}
 			
@@ -493,7 +500,7 @@
 		wire: function(spec) {
 			var contextReady = this.contextReady,
 				modulesReady = this.modulesReady,
-				objectsCreated = this.objectsCreated,
+				// objectsCreated = this.objectsCreated,
 				domReady = this.domReady,
 				moduleIds = this.moduleIds,
 				myContext = this.context,
@@ -517,7 +524,7 @@
 					self.fireEvent('onContextInit', modules);
 				},
 				function rejectModulesReady(err) {
-					rejectPromise(objectsCreated, "Module loading failed", err);
+					rejectPromise(contextReady, "Module loading failed", err);
 				});
 
 			contextReady.then(
@@ -551,12 +558,12 @@
 					};
 					
 					contextReady.resolve(context);
-				}, reject(objectsCreated));
+				}, reject(contextReady));
 				
 				for (var i = defaultModules.length - 1; i >= 0; i--){
 					this.loadModule(defaultModules[i]);
 				};
-
+				
 				loadModules(moduleIds, function handleModulesLoaded() {
 					var modules = arguments;
 					self.scanPlugins(modules).then(function handlePluginsScanned() {
@@ -675,23 +682,6 @@
 		}
 	};
 	
-	// WARNING: Probably unsafe. Just for testing right now.
-	// TODO: Only do this for browser env
-	
-	// Find our script tag and look for data attrs
-	for(var i=0; i<scripts.length; i++) {
-		var script = scripts[i],
-			src = script.src,
-			specUrl;
-		
-		if(/wire\S*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
-			// Use a script tag to load the wiring spec
-			var specScript = doc.createElement('script');
-			specScript.src = specUrl;
-			head.appendChild(specScript);
-		}
-	}
-
 	/*
 		Function: wire
 		Global wire function that is the starting point for wiring applications.
@@ -726,5 +716,23 @@
 	};
 	
 	w.version = VERSION;
+	
+	// WARNING: Probably unsafe. Just for testing right now.
+	// TODO: Only do this for browser env
+	
+	// Find our script tag and look for data attrs
+	for(var i=0; i<scripts.length; i++) {
+		var script = scripts[i],
+			src = script.src,
+			specUrl;
+		
+		// if(/wire[^\/]*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
+		if(specUrl = script.getAttribute('data-wire-spec')) {
+			// Use a script tag to load the wiring spec
+			var specScript = doc.createElement('script');
+			specScript.src = specUrl;
+			head.appendChild(specScript);
+		}
+	}
 
 })(window);

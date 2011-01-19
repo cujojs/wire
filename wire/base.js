@@ -1,4 +1,4 @@
-define(['dojo/store/JsonRest'], function(JsonRest) {
+define([], function(JsonRest) {
 	var undef;
 	
 	return {

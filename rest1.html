@@ -5,20 +5,27 @@
 	<title>Launcher test</title>
 	<script type="text/javascript">
 		(function(global) {
+			var paths = {
+				'dojo': 'dojo',
+				'dijit': 'dijit',
+				'test': 'test'
+			};
 			global.djConfig = {
 				baseUrl: './',
-				modulePaths:  {
-					'dojo': 'dojo',
-					'dijit': 'dijit',
-					'test': 'test'
-				}
+				modulePaths: paths
 			};
+			// global.require = {
+			// 	paths: paths
+			// };
 		})(window);
 	</script>
-	<script src="require.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" src="require.js"></script>
 	<script type="text/javascript" src="wire.js" data-wire-spec="rest1.js"></script>
 </head>
 <body>
-
+	<div id="container1">
+	</div>
+	<div id="container2">
+	</div>
 </body>
 </html>
