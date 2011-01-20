@@ -1,4 +1,4 @@
-define([], function(JsonRest) {
+define([], function() {
 	var undef;
 	
 	return {

@@ -42,8 +42,10 @@
 				name: "Test 2",
 				// Create and configure a controller
 				controller: {
-					module: 'test/test1/Controller',
-					create: [{ "$ref": "name" }],
+					create: {
+						module: 'test/test1/Controller',
+						args: [{ "$ref": "name" }]
+					},
 
 					// Properties will be set after construction
 					properties: {

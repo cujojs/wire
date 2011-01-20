@@ -9,13 +9,15 @@
 		wire({
 			plugins: [
 				{ module: 'wire/debug'},
-				{ module: 'wire/base'},
+				{ module: 'wire/base'}
 			],
 			number: 10,
 			name: "test3 Controller",
 			object1: {
-				module: "test/test1/Controller",
-				create: ["test3 Controller"],
+				create: {
+					module: "test/test1/Controller",
+					args: "test3 Controller"
+				},
 				properties: {
 					number: { $ref: "number" },
 					logger: { $ref: "logger" }

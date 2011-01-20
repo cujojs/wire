@@ -58,8 +58,14 @@
 		return dst;
 	}
 	
-	function isModule(spec) {
-		return spec.module;
+	// function isModule(spec) {
+	// 	return spec.module;
+	// }
+	// 
+	function getModule(spec) {
+		return spec.create
+			? (typeof spec.create == 'string' ? spec.create : spec.create.module)
+			: spec.module;
 	}
 	
 	function isRef(spec) {
@@ -97,37 +103,30 @@
 				completed = this.completed,
 				result = this.result;
 				
-			if(completed < 0) {
-				p.then(resolved, rejected);
-				p.reject(result);
-
-			} else if(completed > 0) {
-				p.then(resolved, rejected);
-				p.resolve(result);
-
-			} else {
+			if(completed == 0) {
 				this.chain.push({ resolve: resolved, reject: rejected, progress: progress, promise: p });
-
+			} else {
+				p.then(resolved, rejected);
+				p.complete(result, completed);
 			}
 
 			return p;
 		},
 		
 		resolve: function(value) {
-			return this.complete('resolve', value, 1);
+			return this.complete(value, 1);
 		},
 		
 		reject: function(value) {
-			return this.complete('reject', value, -1);
+			return this.complete(value, -1);
 		},
 		
-		complete: function(action, value, completeType) {
+		complete: function(value, completeType) {
 			if(this.completed) throw Error("Promise already completed");
 			
-			// console.log("Completing promise", this);
-			
 			this.completed = completeType;
-			var res = this.result = value,
+			var action = completeType > 0 ? 'resolve' : 'reject',
+				res = this.result = value,
 				chain = this.chain,
 				self = this;
 		
@@ -144,18 +143,14 @@
 						if(newResult !== undef) {
 							if(isFunction(newResult.then)) {
 								newResult.then(
-									function(result) {
-										c.promise.resolve(result);
-									},
-									function(err) {
-										c.promise.reject(err);
-									}
+									function(result) { c.promise.resolve(result); },
+									function(err)    { c.promise.reject(err); }
 								);
 
-							} else if(newResult instanceof Error) {
-								action = 'reject';
-								this.completed = -1;
-								res = newResult;
+							// } else if(newResult instanceof Error) {
+							// 	action = 'reject';
+							// 	this.completed = -1;
+							// 	res = newResult;
 
 							} else {
 								res = newResult;
@@ -164,7 +159,7 @@
 					}
 					
 				} catch(e) {
-					console.log("Promise ERROR", e, this);
+					// console.log("Promise ERROR", e, this);
 					res = e;
 					this.completed = -1;
 					action = 'reject';
@@ -176,7 +171,6 @@
 		
 		progress: function(statusObject) {
 			var chain = this.chain;
-			
 			for(var i=0; i<chain.length; i++) {
 				try {
 					var c = chain[i];
@@ -201,7 +195,6 @@
 		this.moduleIds = [];
 		this.uniqueModuleNames = {};
 		this.modulesReady = new Promise();
-		this.objectsCreated = new Promise();
 		this.contextReady = new Promise();
 		this.contextDestroyed = new Promise();
 		this.domReady = new Promise();
@@ -251,21 +244,21 @@
 					promise.reject("Can't resolve reference " + name);
 				};
 			
-			if(prefix in resolvers) {
+			if(isFunction(resolvers[prefix])) {
 				var resolution = {
 					getObject: function(name) {
 						return context[name];
 					},
 					resolve: function(result) {
-						// console.log('resolved', refObj, result);
 						promise.resolve(result);
 					},
 					unresolved: tryParent,
 					objectsCreated: contextReady,
 					domReady: domReady
 				};
-				// console.log("resolving", refObj);
+				
 				resolvers[prefix](resolution, name, refObj);
+				
 			} else {
 				tryParent();
 			}
@@ -294,14 +287,18 @@
 
 			function objectCreated(obj, promise) {
 				self.modulesReady.then(function handleModulesReady() {
-					contextReady.progress({ object: obj/*, remaining: self.objectsToCreate */});
+					contextReady.progress({ object: obj, spec: spec });
 					promise.resolve(obj);
 				});
 			}
 			
 			try {
 				if(spec.create && isFunction(module)) {
-					var args = isArray(spec.create) ? spec.create : [spec.create];
+					var args = [];
+					if(typeof spec.create == 'object' && spec.create.args) {
+						args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
+					}
+					// var args = isArray(spec.create) ? spec.create : [spec.create];
 					// console.log("createObject ", spec, args);
 					this.parse(args).then(
 						function handleCreateParsed(resolvedArgs) {
@@ -500,7 +497,6 @@
 		wire: function(spec) {
 			var contextReady = this.contextReady,
 				modulesReady = this.modulesReady,
-				// objectsCreated = this.objectsCreated,
 				domReady = this.domReady,
 				moduleIds = this.moduleIds,
 				myContext = this.context,
@@ -533,10 +529,10 @@
 					self.fireEvent('onContextReady', context);
 				},
 				function rejectContextReady(err) {
-					rejectPromise(domReady, "Context creation failed", err);
+					// rejectPromise(domReady, "Context creation failed", err);
 				},
 				function progressObjectsCreated(status) {
-					self.fireEvent("onCreate", status.object);
+					self.fireEvent("onCreate", status.object, status.spec);
 				}
 			);
 			
@@ -546,6 +542,11 @@
 			}
 
 			try {
+				
+				for (var i = defaultModules.length - 1; i >= 0; i--){
+					this.loadModule(defaultModules[i]);
+				};
+				
 				this.parse(spec, myContext).then(function(context) {
 					context.wire = function wire(spec) {
 						return new ContextFactory(self).wire(spec);
@@ -557,12 +558,15 @@
 						return self.destroy().promise();
 					};
 					
-					contextReady.resolve(context);
+					modulesReady.then(function() {
+						// domReady.then(function() {
+							setTimeout(function() {
+								contextReady.resolve(context);
+							}, 0);
+						// });
+					});
 				}, reject(contextReady));
-				
-				for (var i = defaultModules.length - 1; i >= 0; i--){
-					this.loadModule(defaultModules[i]);
-				};
+
 				
 				loadModules(moduleIds, function handleModulesLoaded() {
 					var modules = arguments;
@@ -604,14 +608,16 @@
 
 				var arrCount = len;
 				for(var i=0; i<len; i++) {
-					this.parse(spec[i]).then(this.createResolver(--arrCount, processed, i, promise), reject(self.objectsCreated));
+					this.parse(spec[i]).then(this.createResolver(--arrCount, processed, i, promise), reject(self.contextReady));
 				}
 
 			} else if(typeof spec == 'object') {
 				// module, reference, or simple object
-				if(isModule(spec)) {
+				var moduleToLoad = getModule(spec);
+				if(moduleToLoad) {
+				// if(isModule(spec)) {
 					// Create object from module
-					this.loadModule(spec.module).then(
+					this.loadModule(moduleToLoad).then(
 						function handleModuleLoaded(module) {
 							self.createObject(spec, module).then(
 								function handleObjectCreated(created) {
@@ -727,7 +733,7 @@
 			specUrl;
 		
 		// if(/wire[^\/]*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
-		if(specUrl = script.getAttribute('data-wire-spec')) {
+		if((specUrl = script.getAttribute('data-wire-spec'))) {
 			// Use a script tag to load the wiring spec
 			var specScript = doc.createElement('script');
 			specScript.src = specUrl;

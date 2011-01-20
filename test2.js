@@ -13,8 +13,7 @@ wire({
 	// Create a controller, and inject a dijit.form.TextBox that is also
 	// created and wired to a dom node here in the spec.
 	controller: {
-		module: 'test/test2/Controller',
-		create: [],
+		create: 'test/test2/Controller',
 		properties: {
 			name: { '$ref': 'name' },
 			widget: { '$ref': 'widget1' }
@@ -24,8 +23,10 @@ wire({
 	},
 	name: 'controller1',
 	widget1: { 
-		module: 'dijit/form/TextBox',
-		create: [{}],
+		create: {
+			module: 'dijit/form/TextBox',
+			args: {}
+		},
 		properties: {
 			value: { '$ref': 'initialValue' }
 		},
@@ -36,8 +37,7 @@ wire({
 	// // Create a controller, and inject a dijit.form.TextBox that is simply
 	// // referenced using the dijit resolver
 	controller2: {
-		module: 'test/test2/Controller',
-		create: [],
+		create: 'test/test2/Controller',
 		properties: {
 			name: "controller2",
 			widget: { $ref: 'dijit!widget' }
