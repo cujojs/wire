@@ -588,18 +588,17 @@
 						}
 						
 						if(self.objectsToInit === 0) {
-							// objectsReady.resolve(context);
-							contextReady.resolve(context);
+							objectsReady.resolve(context);
 						}
 
-						// objectsReady.then(function finalizeContext(context) {
-						// 	// It should be possible not to have to wait for domReady
-						// 	// here, but rely on promise resolution.  For now, just wait
-						// 	// for it.
-						// 	domReady.then(function() {
-						// 		contextReady.resolve(context);
-						// 	})
-						// });
+						objectsReady.then(function finalizeContext(context) {
+							// It should be possible not to have to wait for domReady
+							// here, but rely on promise resolution.  For now, just wait
+							// for it.
+							domReady.then(function() {
+								contextReady.resolve(context);
+							});
+						});
 					},
 					reject(contextReady)
 				);
@@ -657,7 +656,7 @@
 										function handleObjectInited(object) {
 											if(++self.objectInitCount === self.objectsToInit) {
 												self.domReady.then(function() {
-													self.contextReady.resolve(self.context);
+													self.objectsReady.resolve(self.context);
 												});
 											}
 										});
