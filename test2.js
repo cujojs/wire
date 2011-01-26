@@ -34,8 +34,8 @@ wire({
 			placeAt: [{ $ref: 'dom!container' }, 'first']
 		}
 	},
-	// // Create a controller, and inject a dijit.form.TextBox that is simply
-	// // referenced using the dijit resolver
+	// Create a controller, and inject a dijit.form.TextBox that is simply
+	// referenced using the dijit resolver
 	controller2: {
 		create: 'test/test2/Controller',
 		properties: {

@@ -8,8 +8,7 @@
 	<script type="text/javascript">
 		wire({
 			plugins: [
-				{ module: 'wire/debug'},
-				{ module: 'wire/base'}
+				{ module: 'wire/debug'}
 			],
 			number: 10,
 			name: "test3 Controller",
@@ -29,7 +28,7 @@
 		}).then(
 			function(context) {
 				console.log("Done", context);
-				// context.destroy();
+				context.destroy();
 			},
 			function(err) {
 				console.log(err);

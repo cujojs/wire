@@ -82,6 +82,16 @@
 		return new F(ctor, args);
 	}
 	
+		
+	function createResolver(remaining, object, prop, promise) {
+		return function resolver(result) {
+			object[prop] = result;
+			if(remaining == 0) {
+				promise.resolve(object);
+			}
+		};
+	}
+	
 	var Promise = function() {
 		this.completed = 0;
 		this.chain = [];
@@ -99,18 +109,21 @@
 		},
 		
 		then: function(resolved, rejected, progress) {
-			var p = new Promise(),
-				completed = this.completed,
+			var completed = this.completed,
 				result = this.result;
 				
-			if(completed == 0) {
-				this.chain.push({ resolve: resolved, reject: rejected, progress: progress, promise: p });
+			if(completed > 0) {
+				if(resolved) resolved(result);
+				
+			} else if(completed < 0) {
+				if(rejected) rejected(result);
+				
 			} else {
-				p.then(resolved, rejected);
-				p.complete(result, completed);
+				this.chain.push({ resolve: resolved, reject: rejected, progress: progress });
+
 			}
 
-			return p;
+			return this;
 		},
 		
 		resolve: function(value) {
@@ -128,36 +141,21 @@
 			var action = completeType > 0 ? 'resolve' : 'reject',
 				res = this.result = value,
 				chain = this.chain,
-				self = this;
+				self = this,
+				newResult;
 		
 			for(var i=0; i<chain.length; i++) {
 				try {
 					var c = chain[i],
-						func = c[action],
-						newResult;
+						func = c[action];
 						
 					if(isFunction(func)) {
-						
 						newResult = func(res);
 						
 						if(newResult !== undef) {
-							if(isFunction(newResult.then)) {
-								newResult.then(
-									function(result) { c.promise.resolve(result); },
-									function(err)    { c.promise.reject(err); }
-								);
-
-							// } else if(newResult instanceof Error) {
-							// 	action = 'reject';
-							// 	this.completed = -1;
-							// 	res = newResult;
-
-							} else {
-								res = newResult;
-							}
+							res = newResult;
 						}
 					}
-					
 				} catch(e) {
 					// console.log("Promise ERROR", e, this);
 					res = e;
@@ -192,9 +190,13 @@
 
 	var ContextFactory = function(parent) {
 		this.parent = parent;
-		this.moduleIds = [];
-		this.uniqueModuleNames = {};
+		var uniques = this.uniqueModuleNames = {};
+		for(var i=0; i<defaultModules.length; i++) {
+			uniques[defaultModules[i]] = 1;
+		}
 		this.modulesReady = new Promise();
+		this.objectsCreated = new Promise();
+		this.objectsReady = new Promise();
 		this.contextReady = new Promise();
 		this.contextDestroyed = new Promise();
 		this.domReady = new Promise();
@@ -215,6 +217,28 @@
 		};
 		this.destroyers = [];
 		this.objectsToCreate = 0;
+		this.objectCreateCount = 0;
+		this.objectsToInit = 0;
+		this.objectInitCount = 0;
+		
+		var self = this;
+		this.pluginProxy = {
+			modulesReady: this.modulesReady.promise(),
+			objectsCreated: this.objectsCreated.promise(),
+			objectsReady: this.objectsReady.promise(),
+			contextReady: this.contextReady.promise(),
+			domReady: this.domReady.promise(),
+			contextDestroyed: this.contextDestroyed.promise(),
+			resolveName: function(name) {
+				return self.context[name];
+			},
+			resolveRef: function(ref) {
+				return self.resolveRef(ref);
+			},
+			setProperties: function(object, props) {
+				return self.setProperties(object, props);
+			}
+		};
 	};
 	
 	ContextFactory.prototype = {
@@ -223,9 +247,6 @@
 			var ref = refObj.$ref,
 				resolvers = this.resolvers,
 				parent = this.parent,
-				context = this.context,
-				domReady = this.domReady,
-				contextReady = this.contextReady,
 				self = this,
 				prefix = "_",
 				name = ref;
@@ -236,7 +257,13 @@
 			    name = parts[1];
 			}
 			
-			var tryParent = (parent)
+			var promiseProxy = {
+				resolve: function resolvePromise(resolved) {
+					promise.resolve(resolved);
+				}
+			};
+			
+			promiseProxy.unresolved = (parent)
 				? function tryParent() {
 					parent.resolveRefObj(refObj, promise);
 				}
@@ -244,23 +271,12 @@
 					promise.reject("Can't resolve reference " + name);
 				};
 			
-			if(isFunction(resolvers[prefix])) {
-				var resolution = {
-					getObject: function(name) {
-						return context[name];
-					},
-					resolve: function(result) {
-						promise.resolve(result);
-					},
-					unresolved: tryParent,
-					objectsCreated: contextReady,
-					domReady: domReady
-				};
-				
-				resolvers[prefix](resolution, name, refObj);
+			if(resolvers[prefix]) {
+				resolvers[prefix](this.pluginProxy, name, refObj, promiseProxy);
 				
 			} else {
-				tryParent();
+				promiseProxy.unresolved();
+				
 			}
 		},
 
@@ -270,7 +286,7 @@
 				self = this;
 				
 			if(isRef(ref)) {
-				this.modulesReady.then(function() {
+				this.modulesReady.then(function resolveRefAfterModulesReady() {
 					self.resolveRefObj(ref, p);
 				});
 			} else {
@@ -282,12 +298,12 @@
 		createObject: function(spec, module) {
 			var p = new Promise(),
 				object = module,
-				contextReady = this.contextReady,
+				objectsCreated = this.objectsCreated,
 				self = this;
 
 			function objectCreated(obj, promise) {
 				self.modulesReady.then(function handleModulesReady() {
-					contextReady.progress({ object: obj, spec: spec });
+					objectsCreated.progress({ object: obj, spec: spec });
 					promise.resolve(obj);
 				});
 			}
@@ -321,26 +337,30 @@
 			var promise = new Promise(),
 				domReady = this.domReady,
 				self = this;
-			
-			if(spec.properties) {
-				this.setProperties(spec, object).then(
-					function() {
-						if(spec.init) {
-							self.processFuncList(spec.init, object, spec,
-								function handleProcessFuncList(target, spec, func, args) {
-									self.callInit(target, spec, func, args).then(
-										function() {
-											promise.resolve(object);
-										}
-									);
+				
+			function resolveObjectInit() {
+				if(spec.init) {
+					self.processFuncList(spec.init, object, spec,
+						function handleProcessFuncList(target, spec, func, args) {
+							self.callInit(target, spec, func, args).then(
+								function() {
+									promise.resolve(object);
 								}
 							);
-						} else {
-							promise.resolve(object);
 						}
-					},
+					);
+				} else {
+					promise.resolve(object);
+				}
+			}
+			
+			if(spec.properties) {
+				this.setProperties(object, spec.properties).then(
+					resolveObjectInit,
 					reject(promise)
 				);
+			} else {
+				resolveObjectInit();
 			}
 			
 			
@@ -355,9 +375,13 @@
 			return promise;
 		},
 		
-		setProperties: function(spec, object) {
+		callObjectInit: function(spec, object) {
+			
+		},
+		
+		
+		setProperties: function(object, props) {
 			var promise = new Promise(),
-				props = spec.properties,
 				keyArr = keys(props),
 				self = this,
 				setters = this.setters,
@@ -369,10 +393,11 @@
 					self.parse(prop, undef).then(function handlePropertiesParsed(value) {
 						// If we previously found a working setter for this target, use it
 						if(!(cachedSetter && cachedSetter(object, name, value))) {
-							var success = false;
-							// Try all the registered setters until we find one that reports success
-							for(var i = 0; i < setters.length && !success; i++) {
-								var setter = setters[i];
+							var success = false,
+								i = 0;
+								// Try all the registered setters until we find one that reports success
+							while(!success && i<setters.length) {
+								var setter = setters[i++];
 								success = setter(object, name, value);
 								if(success) {
 									cachedSetter = setter;
@@ -380,9 +405,9 @@
 							}
 						}
 
-						if(remaining == 0) {
+						if(remaining === 0) {
+							self.fireEvent('onProperties', object, props);
 							promise.resolve(object);
-							self.fireEvent('onProperties', object, spec);
 						}
 					}, reject(self.contextReady));
 				})(--count, keyArr[i], props[keyArr[i]]);
@@ -420,11 +445,13 @@
 		loadModule: function(moduleId) {
 			var p = new Promise(),
 				uniques = this.uniqueModuleNames;
+				// self = this;
 
 			if(!uniques[moduleId]) {
+				// console.log("Loading module", moduleId);
 				uniques[moduleId] = 1;
-				this.moduleIds.push(moduleId);
-				loadModules([moduleId], function(module) {
+				loadModules([moduleId], function handleModulesLoaded(module) {
+					// console.log("Loaded module", moduleId);
 					uniques[moduleId] = module;
 					p.resolve(module);
 				});
@@ -438,6 +465,7 @@
 		},
 		
 		scanPlugins: function(modules) {
+			// console.log("scanning for plugins", modules);
 			var p = new Promise();
 			
 			var setters = [],
@@ -445,8 +473,8 @@
 
 			for (var i=0; i < modules.length; i++) {
 				var newPlugin = modules[i];
+				// console.log("scanning for plugins: " + newPlugin);
 				if(typeof newPlugin == 'object') {
-					// console.log("scanning for plugins: " + newPlugin);
 					if(newPlugin.wire$resolvers) {
 						for(var name in newPlugin.wire$resolvers) {
 							resolvers[name] = newPlugin.wire$resolvers[name];
@@ -454,7 +482,7 @@
 					}
 
 					if(newPlugin.wire$setters) {
-						setters = setters.concat(newPlugin.wire$setters);
+						setters = newPlugin.wire$setters.concat(setters);
 					}
 
 					if(newPlugin.wire$listeners) {
@@ -470,7 +498,7 @@
 			
 			this.setters = setters;
 
-			p.resolve();
+			p.resolve(modules);
 			return p;
 		},
 		
@@ -497,8 +525,9 @@
 		wire: function(spec) {
 			var contextReady = this.contextReady,
 				modulesReady = this.modulesReady,
+				objectsCreated = this.objectsCreated,
+				objectsReady = this.objectsReady,
 				domReady = this.domReady,
-				moduleIds = this.moduleIds,
 				myContext = this.context,
 				parent = this.parent,
 				self = this,
@@ -507,9 +536,6 @@
 					reject(promise);
 				};
 
-			// domReady must resolve after contextReady, but have to register this
-			// with onDomReady as early as possible because requirejs doesn't fire
-			// domReady callbacks after the dom is actually ready!
 			onDomReady(function resolveDomReady() {
 				// console.log('domReady');
 				domReady.resolve();
@@ -520,19 +546,22 @@
 					self.fireEvent('onContextInit', modules);
 				},
 				function rejectModulesReady(err) {
-					rejectPromise(contextReady, "Module loading failed", err);
+					rejectPromise(objectsCreated, "Module loading failed", err);
 				});
-
-			contextReady.then(
-				function resolveContextReady(context) {
-					// console.log("contextReady");
-					self.fireEvent('onContextReady', context);
-				},
-				function rejectContextReady(err) {
-					// rejectPromise(domReady, "Context creation failed", err);
+				
+			objectsCreated.then(
+				null,
+				function rejectObjectsCreated(err) {
+					rejectPromise(objectsReady, "Object creation failed", err);
 				},
 				function progressObjectsCreated(status) {
 					self.fireEvent("onCreate", status.object, status.spec);
+				}
+			);
+
+			contextReady.then(
+				function resolveContextReady(context) {
+					self.fireEvent('onContextReady', context);
 				}
 			);
 			
@@ -540,38 +569,44 @@
 				mixin(myContext, parent.context);
 				parent.contextDestroyed.then(function handleParentDestroyed() { self.destroy(); });
 			}
-
+			
 			try {
-				
-				for (var i = defaultModules.length - 1; i >= 0; i--){
-					this.loadModule(defaultModules[i]);
-				};
-				
-				this.parse(spec, myContext).then(function(context) {
-					context.wire = function wire(spec) {
-						return new ContextFactory(self).wire(spec);
-					};
-					context.resolve = function resolve(ref) {
-						return self.resolveName(ref).promise();
-					};
-					context.destroy = function destroy() {
-						return self.destroy().promise();
-					};
-					
-					modulesReady.then(function() {
-						// domReady.then(function() {
-							setTimeout(function() {
-								contextReady.resolve(context);
-							}, 0);
-						// });
-					});
-				}, reject(contextReady));
+				this.parse(spec, myContext).then(
+					function handleParsedContext(context) {
+						context.wire = function wire(spec) {
+							return new ContextFactory(self).wire(spec);
+						};
+						context.resolve = function resolve(ref) {
+							return self.resolveName(ref).promise();
+						};
+						context.destroy = function destroy() {
+							return self.destroy().promise();
+						};
 
+						if(self.objectsToCreate === 0) {
+							objectsCreated.resolve(context);
+						}
+						
+						if(self.objectsToInit === 0) {
+							// objectsReady.resolve(context);
+							contextReady.resolve(context);
+						}
+
+						// objectsReady.then(function finalizeContext(context) {
+						// 	// It should be possible not to have to wait for domReady
+						// 	// here, but rely on promise resolution.  For now, just wait
+						// 	// for it.
+						// 	domReady.then(function() {
+						// 		contextReady.resolve(context);
+						// 	})
+						// });
+					},
+					reject(contextReady)
+				);
 				
-				loadModules(moduleIds, function handleModulesLoaded() {
-					var modules = arguments;
-					self.scanPlugins(modules).then(function handlePluginsScanned() {
-						modulesReady.resolve(modules);
+				loadModules(keys(this.uniqueModuleNames), function handleModulesLoaded() {
+					self.scanPlugins(arguments).then(function handlePluginsScanned(scanned) {
+						modulesReady.resolve(scanned);
 					});
 				});
 
@@ -581,16 +616,6 @@
 
 			return contextReady;
 		},
-		
-		createResolver: function(remaining, object, prop, promise) {
-			return function resolver(result) {
-				object[prop] = result;
-				if(remaining == 0) {
-					promise.resolve(object);
-				}
-			};
-		},
-		
 		
 		parse: function(spec, result) {
 			var processed = spec,
@@ -608,21 +633,34 @@
 
 				var arrCount = len;
 				for(var i=0; i<len; i++) {
-					this.parse(spec[i]).then(this.createResolver(--arrCount, processed, i, promise), reject(self.contextReady));
+					this.parse(spec[i]).then(
+						createResolver(--arrCount, processed, i, promise),
+						reject(promise));
 				}
 
 			} else if(typeof spec == 'object') {
 				// module, reference, or simple object
 				var moduleToLoad = getModule(spec);
 				if(moduleToLoad) {
-				// if(isModule(spec)) {
+					self.objectsToCreate++;
+					self.objectsToInit++;
 					// Create object from module
 					this.loadModule(moduleToLoad).then(
 						function handleModuleLoaded(module) {
 							self.createObject(spec, module).then(
 								function handleObjectCreated(created) {
 									promise.resolve(created);
-									self.initObject(spec, created);
+									if(++self.objectCreateCount === self.objectsToCreate) {
+										self.objectsCreated.resolve(self.context);
+									}
+									self.initObject(spec, created).then(
+										function handleObjectInited(object) {
+											if(++self.objectInitCount === self.objectsToInit) {
+												self.domReady.then(function() {
+													self.contextReady.resolve(self.context);
+												});
+											}
+										});
 								},
 								reject(self.contextReady)
 							);
@@ -635,7 +673,7 @@
 						function handleResolveRef(target) {
 							promise[target === undef ? 'reject' : 'resolve'](target);
 						},
-						reject(this.contextReady)
+						reject(promise)
 					);
 
 				} else {
@@ -652,8 +690,8 @@
 						for(var j=0; j<len; j++) {
 							var p = props[j];
 							this.parse(spec[p]).then(
-								this.createResolver(--propCount, processed, p, promise),
-								reject(this.contextReady)
+								createResolver(--propCount, processed, p, promise),
+								reject(promise)
 							);
 						}
 					}

@@ -1,12 +1,16 @@
 wire({
-	wire$plugins: [
-		{ module: 'wire/dom' },
+	plugins: [
+		{ module: 'wire/debug' },
 		{ module: 'wire/dojo/pubsub' }
 	],
+	logger: {
+		create: 'test/test1/AlertLogger'
+	},
 	thing1: {
 		create: "test/pubsub1/Thing",
 		properties: {
-			name: "Thing 1"
+			name: "Thing 1",
+			logger: { $ref: 'logger' }
 		},
 		publish: {
 			"doSomething": "thing/did-something"
@@ -15,7 +19,8 @@ wire({
 	thing2: {
 		create: "test/pubsub1/Thing",
 		properties: {
-			name: "Thing 2"
+			name: "Thing 2",
+			logger: { $ref: 'logger' }
 		},
 		subscribe: {
 			"thing/did-something": "doSomething"
@@ -23,6 +28,7 @@ wire({
 	}
 }).then(
 	function(context) {
+		console.log(context);
 		context.thing1.doSomething("hello!");
 	}
 );

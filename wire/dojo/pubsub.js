@@ -9,6 +9,7 @@ define(['dojo'], function(pubsub) {
 				target[f] = function publishProxy() {
 					var result = orig.apply(target, arguments);
 					pubsub.publish(topic, [result]);
+					return result;
 				};
 			}
 		}
@@ -31,7 +32,7 @@ define(['dojo'], function(pubsub) {
 				if(typeof spec.publish == 'object') {
 					proxyPublish(target, spec.publish);
 				}
-				
+
 				if(typeof spec.subscribe == 'object') {
 					proxySubscribe(target, spec.subscribe);
 				}

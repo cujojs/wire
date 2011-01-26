@@ -1,14 +1,10 @@
 define([], function() {
 
-	var me = function(name) {
-		this.name = name;
-	};
+	var me = function() {};
 	
-	me.prototype = {
-		doSomething: function(message) {
-			alert(this.name + ": " + message);
-			return message;
-		}
+	me.prototype.doSomething = function(message) {
+		this.logger.log(this.name + ": " + message);
+		return message;
 	};
 	
 	return me;

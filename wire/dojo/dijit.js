@@ -4,16 +4,16 @@ define(['dojo'], function(dojo) {
 	
 	return {
 		wire$resolvers: {
-			dijit: function(resolution, name, refObj) {
+			dijit: function(factory, name, refObj, promise) {
 				// console.log("dijit resolver", name);
 				// resolution.domReady.then(
 				dojo.ready(
 					function() {
 					var resolved = dijit.byId(name);
 					if(resolved) {
-						resolution.resolve(resolved);
+						promise.resolve(resolved);
 					} else {
-						resolution.unresolved();
+						promise.unresolved();
 					}
 				});
 			}

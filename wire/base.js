@@ -3,24 +3,24 @@ define([], function() {
 	
 	return {
 		wire$resolvers: {
-			_: function defaultResolver(resolution, name, refObj) {
+			_: function defaultResolver(factory, name, refObj, promise) {
 				// console.log('base trying to resolve', name);
-				var resolved = resolution.getObject(name);
+				var resolved = factory.resolveName(name);
 				
 				if(resolved !== undef) {
 					// console.log('base resolved', name);
-					resolution.resolve(resolved);
+					promise.resolve(resolved);
 				} else {
 					// console.log('base defering resolution', name);
-					resolution.objectsCreated.then(function() {
+					factory.objectsCreated.then(function() {
 						// console.log('base resolvING later', name)
-						var resolved = resolution.getObject(name);
+						var resolved = factory.resolveName(name);
 						if(resolved !== undef) {
 							// console.log('base resolvED later', name)
-							resolution.resolve(resolved);
+							promise.resolve(resolved);
 						} else {
 							// console.log('base UNresolved later', name)
-							resolution.unresolved();
+							promise.unresolved();
 						}
 					});
 				}
