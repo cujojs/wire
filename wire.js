@@ -172,6 +172,8 @@
 						if(newResult !== undef) {
 							res = newResult;
 						}
+					} else if(action === 'reject') {
+						throw res;
 					}
 				} catch(e) {
 					// console.log("Promise ERROR", e, this);
@@ -207,14 +209,16 @@
 	
 	function contextFactory(parent) {
 		return (function(parent) {
-			var uniqueModuleNames = {},
+			var context = {},
+				uniqueModuleNames = {},
+				// Top-level promises
 				modulesReady = new Promise(),
 				objectsCreated = new Promise(),
 				objectsReady = new Promise(),
 				contextReady = new Promise(),
 				contextDestroyed = new Promise(),
 				domReady = new Promise(),
-				context = {},
+				// Plugins
 				setters = [],
 				resolvers = {},
 				listeners = {
@@ -227,11 +231,7 @@
 					onInit: [],
 					onDestroy: []
 				},
-				destroyers = [],
-				objectsToCreate = 0,
-				objectCreateCount = 0,
-				objectsToInit = 0,
-				objectInitCount = 0,
+				// Proxy of this factory that can safely be passed to plugins
 				pluginProxy = {
 					modulesReady: modulesReady.promise(),
 					objectsCreated: objectsCreated.promise(),
@@ -248,8 +248,18 @@
 					setProperties: function(object, props) {
 						return setProperties(object, props);
 					}
-				};
-				
+				},
+				// Track destroy functions to be called when context is destroyed
+				destroyers = [],
+				// Counters for objects to create and init so that promises
+				// can be resolved when all are complete
+				objectsToCreate = 0,
+				objectCreateCount = 0,
+				objectsToInit = 0,
+				objectInitCount = 0;
+
+			
+			// Mixin default modules
 			for(var i=0; i<defaultModules.length; i++) {
 				uniqueModuleNames[defaultModules[i]] = 1;
 			}
@@ -422,17 +432,17 @@
 				var p = new Promise();
 
 				if(!uniqueModuleNames[moduleId]) {
-					// console.log("Loading module", moduleId);
 					uniqueModuleNames[moduleId] = 1;
 					loadModules([moduleId], function handleModulesLoaded(module) {
-						// console.log("Loaded module", moduleId);
 						uniqueModuleNames[moduleId] = module;
 						p.resolve(module);
 					});
+
 				} else {
 					modulesReady.then(function handleModulesReady() {
 						p.resolve(uniqueModuleNames[moduleId]);
 					});
+
 				}
 
 				return p;
@@ -490,7 +500,12 @@
 				}
 			}
 
-			function wire(spec) {
+			function initFromParent(parent) {
+				mixin(context, parent.context);
+				parent.contextDestroyed.then(function handleParentDestroyed() { destroy(); });
+			}
+			
+			function initPromiseStages() {
 				function rejectPromise(promise, message, err) {
 					fireEvent('onContextError', context, message, err);
 					reject(promise);
@@ -524,62 +539,41 @@
 						fireEvent('onContextReady', context);
 					}
 				);
+			}
+			
+			function finalizeContext(parsedContext) {
+				parsedContext.wire = function wire(spec) {
+					var newParent = {
+						wire: wire,
+						context: context,
+						resolveRefObj: resolveRefObj,
+						contextDestroyed: contextDestroyed
+					};
+					return contextFactory(newParent).wire(spec);
+				};
+				parsedContext.resolve = function resolve(ref) {
+					return resolveName(ref).promise();
+				};
+				parsedContext.destroy = function destroyContext() {
+					return destroy().promise();
+				};
 
-				if(parent) {
-					mixin(context, parent.context);
-					parent.contextDestroyed.then(function handleParentDestroyed() { destroy(); });
+				if(objectsToCreate === 0) {
+					objectsCreated.resolve(parsedContext);
 				}
 
-				try {
-					parse(spec, context).then(
-						function handleParsedContext(parsedContext) {
-							parsedContext.wire = function wire(spec) {
-								var newParent = {
-									wire: wire,
-									context: context,
-									resolveRefObj: resolveRefObj,
-									contextDestroyed: contextDestroyed
-								};
-								return contextFactory(newParent).wire(spec);
-							};
-							parsedContext.resolve = function resolve(ref) {
-								return resolveName(ref).promise();
-							};
-							parsedContext.destroy = function destroyContext() {
-								return destroy().promise();
-							};
+				if(objectsToInit === 0) {
+					objectsReady.resolve(parsedContext);
+				}
 
-							if(objectsToCreate === 0) {
-								objectsCreated.resolve(parsedContext);
-							}
-
-							if(objectsToInit === 0) {
-								objectsReady.resolve(parsedContext);
-							}
-
-							objectsReady.then(function finalizeContext(readyContext) {
-								// It should be possible not to have to wait for domReady
-								// here, but rely on promise resolution.  For now, just wait
-								// for it.
-								domReady.then(function() {
-									contextReady.resolve(readyContext);
-								});
-							});
-						},
-						reject(contextReady)
-					);
-
-					loadModules(keys(uniqueModuleNames), function handleModulesLoaded() {
-						scanPlugins(arguments).then(function handlePluginsScanned(scanned) {
-							modulesReady.resolve(scanned);
-						});
+				objectsReady.then(function finalizeContextReady(readyContext) {
+					// It should be possible not to have to wait for domReady
+					// here, but rely on promise resolution.  For now, just wait
+					// for it.
+					domReady.then(function() {
+						contextReady.resolve(readyContext);
 					});
-
-				} catch(e) {
-					contextReady.reject(e);
-				}
-
-				return contextReady;
+				});
 			}
 
 			function parse(spec, result) {
@@ -680,6 +674,32 @@
 				);
 
 				return contextDestroyed;
+			}
+			
+			function wire(spec) {
+				initPromiseStages();
+				
+				if(parent) {
+					initFromParent(parent);
+				}
+
+				try {
+					parse(spec, context).then(
+						finalizeContext,
+						reject(contextReady)
+					);
+
+					loadModules(keys(uniqueModuleNames), function handleModulesLoaded() {
+						scanPlugins(arguments).then(function handlePluginsScanned(scanned) {
+							modulesReady.resolve(scanned);
+						});
+					});
+
+				} catch(e) {
+					contextReady.reject(e);
+				}
+
+				return contextReady;
 			}
 			
 			return {
