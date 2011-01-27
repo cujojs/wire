@@ -31,7 +31,8 @@ wire({
 			value: { '$ref': 'initialValue' }
 		},
 		init: {
-			placeAt: [{ $ref: 'dom!container' }, 'first']
+			placeAt: [{ $ref: 'dom!container' }, 'first'],
+			focus: []
 		}
 	},
 	// Create a controller, and inject a dijit.form.TextBox that is simply

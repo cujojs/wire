@@ -394,15 +394,17 @@
 
 				var count = keyArr.length;
 				for(var i=0; i<keyArr.length; i++) {
-					(function(remaining, name, prop) {
-						parse(prop, undef).then(function handlePropertiesParsed(value) {
+					var name = keyArr[i];
+					(function(name, prop) {
+						parse(prop).then(function handlePropertiesParsed(value) {
 							// If we previously found a working setter for this target, use it
 							if(!(cachedSetter && cachedSetter(object, name, value))) {
 								var success = false,
-									i = 0;
-									// Try all the registered setters until we find one that reports success
-								while(!success && i<setters.length) {
-									var setter = setters[i++];
+									s = 0;
+
+								// Try all the registered setters until we find one that reports success
+								while(!success && s<setters.length) {
+									var setter = setters[s++];
 									success = setter(object, name, value);
 									if(success) {
 										cachedSetter = setter;
@@ -410,12 +412,12 @@
 								}
 							}
 
-							if(remaining === 0) {
+							if(--count === 0) {
 								fireEvent('onProperties', object, props);
 								promise.resolve(object);
 							}
 						}, reject(promise));
-					})(--count, keyArr[i], props[keyArr[i]]);
+					})(name, props[name]);
 				}
 
 				return promise;
