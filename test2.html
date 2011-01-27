@@ -4,18 +4,20 @@
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
 	<script type="text/javascript">
-		djConfig = {
-			baseUrl: './',
-			modulePaths:  {
-				'dojo': 'dojo',
-				'dijit': 'dijit',
-				'test': 'test'
-			}
-		};
-		
-		wire = {
-			initialValue: "Initial Value from page!"
-		};
+		(function(global) {
+			global.djConfig = {
+				baseUrl: './',
+				modulePaths:  {
+					'dojo': 'dojo',
+					'dijit': 'dijit',
+					'test': 'test'
+				}
+			};
+
+			global.wire = {
+				initialValue: "Initial Value from page!"
+			};
+		})(window);
 	</script>
 	<script src="require.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript" src="wire.js" data-wire-spec="test2.js"></script>

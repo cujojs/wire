@@ -8,10 +8,6 @@
 // TODO:
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
 //    might be used for data-dojo-type
-// - It's easy to forget the "create" property which triggers calling a module as a constructor.  Need better syntax, or
-//    maybe create should be the default?
-// - "destroy" property similar to init, that specifies what function to call on an object when its context is
-//    destroyed.
 //
 (function(global, undef){
 	"use strict";
@@ -20,11 +16,11 @@
 		wirePrefix = 'wire$',
 		tos = Object.prototype.toString,
 		arrt = '[object Array]',
-		doc = document,
+		doc = global.document,
 		head = doc.getElementsByTagName('head')[0],
 		scripts = doc.getElementsByTagName('script'),
 		// Hook up to require
-		loadModules = window['require'],
+		loadModules = global['require'],
 		getLoadedModule = loadModules, // this may be requirejs specific
 		onDomReady = loadModules.ready, // this is requirejs specific
 		rootSpec = global.wire || {},
@@ -82,7 +78,6 @@
 		return new F(ctor, args);
 	}
 	
-		
 	function createResolver(remaining, object, prop, promise) {
 		return function resolver(result) {
 			object[prop] = result;
@@ -112,18 +107,17 @@
 	var Promise = function() {
 		this.completed = 0;
 		this.chain = [];
+		
+		var self = this;
+		// Promise proxy that can be exposed safely outside wire.js
+		this.safe = {
+			then: function(resolved, rejected) {
+				self.then(resolved, rejected);
+			}
+		};
 	};
 	
 	Promise.prototype = {
-		
-		promise: function() {
-			var self = this;
-			return {
-				then: function(resolved, rejected) {
-					self.then(resolved, rejected);
-				}
-			};
-		},
 		
 		then: function(resolved, rejected, progress) {
 			var completed = this.completed,
@@ -233,12 +227,12 @@
 				},
 				// Proxy of this factory that can safely be passed to plugins
 				pluginProxy = {
-					modulesReady: modulesReady.promise(),
-					objectsCreated: objectsCreated.promise(),
-					objectsReady: objectsReady.promise(),
-					contextReady: contextReady.promise(),
-					domReady: domReady.promise(),
-					contextDestroyed: contextDestroyed.promise(),
+					modulesReady: modulesReady.safe,
+					objectsCreated: objectsCreated.safe,
+					objectsReady: objectsReady.safe,
+					contextReady: contextReady.safe,
+					domReady: domReady.safe,
+					contextDestroyed: contextDestroyed.safe,
 					resolveName: function(name) {
 						return context[name];
 					},
@@ -554,10 +548,10 @@
 					return contextFactory(newParent).wire(spec);
 				};
 				parsedContext.resolve = function resolve(ref) {
-					return resolveName(ref).promise();
+					return resolveName(ref).safe;
 				};
 				parsedContext.destroy = function destroyContext() {
-					return destroy().promise();
+					return destroy().safe;
 				};
 
 				if(objectsToCreate === 0) {
@@ -740,7 +734,7 @@
 			promise = rootContext.wire(spec);
 		}
 		
-		return promise.promise(); // Return restricted promise
+		return promise.safe; // Return restricted promise
 	};
 	
 	w.version = VERSION;
