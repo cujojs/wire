@@ -73,9 +73,14 @@
 		};
 
 	function instantiate(ctor, args) {
-		F.prototype = ctor.prototype;
-		F.prototype.constructor = ctor;
-		return new F(ctor, args);
+		var k = keys(ctor.prototype);
+		if(k.length === 0) {
+			return ctor.apply(null, args);
+		} else {
+			F.prototype = ctor.prototype;
+			F.prototype.constructor = ctor;
+			return new F(ctor, args);
+		}
 	}
 	
 	function createResolver(remaining, object, prop, promise) {
@@ -107,14 +112,6 @@
 	var Promise = function() {
 		this.completed = 0;
 		this.chain = [];
-		
-		var self = this;
-		// Promise proxy that can be exposed safely outside wire.js
-		this.safe = {
-			then: function(resolved, rejected) {
-				self.then(resolved, rejected);
-			}
-		};
 	};
 	
 	Promise.prototype = {
@@ -195,6 +192,14 @@
 		}
 	};
 	
+	function safe(promise) {
+		return {
+			then: function safeThen(resolve, reject, progress) {
+				return promise.then(resolve, reject, progress);
+			}
+		};
+	}
+	
 	function reject(promise) {
 		return function(err) {
 			promise.reject(err);
@@ -227,12 +232,12 @@
 				},
 				// Proxy of this factory that can safely be passed to plugins
 				pluginProxy = {
-					modulesReady: modulesReady.safe,
-					objectsCreated: objectsCreated.safe,
-					objectsReady: objectsReady.safe,
-					contextReady: contextReady.safe,
-					domReady: domReady.safe,
-					contextDestroyed: contextDestroyed.safe,
+					modulesReady: safe(modulesReady),
+					objectsCreated: safe(objectsCreated),
+					objectsReady: safe(objectsReady),
+					contextReady: safe(contextReady),
+					domReady: safe(domReady),
+					contextDestroyed: safe(contextDestroyed),
 					resolveName: function(name) {
 						return context[name];
 					},
@@ -597,7 +602,7 @@
 					var moduleToLoad = getModule(spec);
 					if(moduleToLoad) {
 						objectsToCreate++;
-						objectsToInit++;
+						if(spec.init) objectsToInit++;
 						// Create object from module
 						loadModule(moduleToLoad).then(
 							function handleModuleLoaded(module) {
@@ -734,7 +739,7 @@
 			promise = rootContext.wire(spec);
 		}
 		
-		return promise.safe; // Return restricted promise
+		return safe(promise); // Return restricted promise
 	};
 	
 	w.version = VERSION;
