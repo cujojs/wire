@@ -49,14 +49,6 @@
 		
 		return k;
 	}
-
-	function mixin(dst, src) {
-		for(var p in src) {
-			dst[p] = src[p];
-		}
-
-		return dst;
-	}
 	
 	function getModule(spec) {
 		return spec.create
@@ -507,7 +499,6 @@
 			}
 
 			function initFromParent(parent) {
-				// mixin(context, parent.context);
 				parent.contextDestroyed.then(function handleParentDestroyed() { destroy(); });
 			}
 			
