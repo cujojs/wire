@@ -61,8 +61,8 @@
 	}
 	
 	var F = function F(ctor, args) {
-			return ctor.apply(this, args);
-		};
+		return ctor.apply(this, args);
+	};
 
 	function instantiate(ctor, args) {
 		var k = keys(ctor.prototype);
