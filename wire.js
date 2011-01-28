@@ -83,7 +83,7 @@
 		}
 	}
 	
-	function createResolver(remaining, object, prop, promise, checkWaitQ) {
+	function createResolver(remaining, object, prop, promise) {
 		return function resolver(result) {
 			object[prop] = result;
 			if(remaining == 0) {
