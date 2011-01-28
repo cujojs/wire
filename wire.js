@@ -204,7 +204,7 @@
 		return (function(parent) {
 			// Use the prototype chain for context parent-child
 			// relationships
-			if(parent) Context.prototype = parent.context;
+			Context.prototype = parent ? parent.context : undef;
 			var context = new Context(),
 				uniqueModuleNames = {},
 				// Top-level promises
