@@ -83,7 +83,7 @@
 		}
 	}
 	
-	function createResolver(remaining, object, prop, promise) {
+	function createResolver(remaining, object, prop, promise, checkWaitQ) {
 		return function resolver(result) {
 			object[prop] = result;
 			if(remaining == 0) {
@@ -93,20 +93,34 @@
 	}
 	
 	function processFuncList(list, target, spec, callback) {
-		var func;
+		var func,
+			p = new Promise();
+			
 		if(typeof list == "string") {
 			func = target[list];
 			if(isFunction(func)) {
 				callback(target, spec, func, []);
+				p.resolve(target);
+			} else {
+				p.reject(target);
 			}
+			
 		} else {
+			var k = keys(list),
+				count = k.length;
+				
 			for(var f in list) {
+				console.log("PROCESS", f);
 				func = target[f];
 				if(isFunction(func)) {
 					callback(target, spec, func, list[f]);
 				}
 			}
+			
+			p.resolve(target);
 		}
+		
+		return p;
 	}
 	
 	var Promise = function() {
@@ -212,11 +226,12 @@
 				uniqueModuleNames = {},
 				// Top-level promises
 				modulesReady = new Promise(),
-				objectsCreated = new Promise(),
+				// objectsCreated = new Promise(),
 				objectsReady = new Promise(),
 				contextReady = new Promise(),
 				contextDestroyed = new Promise(),
 				domReady = new Promise(),
+				refWaitQ = {},
 				// Plugins
 				setters = [],
 				resolvers = {},
@@ -233,9 +248,9 @@
 				// Proxy of this factory that can safely be passed to plugins
 				pluginProxy = {
 					modulesReady: safe(modulesReady),
-					objectsCreated: safe(objectsCreated),
+					// objectsCreated: safe(objectsCreated),
 					objectsReady: safe(objectsReady),
-					contextReady: safe(contextReady),
+					// contextReady: safe(contextReady),
 					domReady: safe(domReady),
 					contextDestroyed: safe(contextDestroyed),
 					resolveName: function(name) {
@@ -246,6 +261,9 @@
 					},
 					setProperties: function(object, props) {
 						return setProperties(object, props);
+					},
+					refReady: function(name) {
+						return refWaitQ[name];
 					}
 				},
 				// Track destroy functions to be called when context is destroyed
@@ -267,7 +285,12 @@
 				var ref = refObj.$ref,
 					prefix = "_",
 					name = ref;
-
+					
+				var q = refWaitQ[ref];
+				if(!q) {
+					q = refWaitQ[ref] = new Promise();
+				}
+				
 				if(ref.indexOf("!") >= 0) {
 					var parts = ref.split("!");
 					prefix = parts[0];
@@ -317,7 +340,8 @@
 
 				function objectCreated(obj, promise) {
 					modulesReady.then(function handleModulesReady() {
-						objectsCreated.progress({ object: obj, spec: spec });
+						// objectsCreated.progress({ object: obj, spec: spec });
+						contextReady.progress({ object: obj, spec: spec });
 						promise.resolve(obj);
 					});
 				}
@@ -353,11 +377,11 @@
 					if(spec.init) {
 						processFuncList(spec.init, object, spec,
 							function handleProcessFuncList(target, spec, func, args) {
-								callInit(target, spec, func, args).then(
-									function() {
-										promise.resolve(object);
-									}
-								);
+								callInit(target, spec, func, args);
+							}
+						).then(
+							function() {
+								promise.resolve(object);
 							}
 						);
 					} else {
@@ -415,6 +439,7 @@
 								fireEvent('onProperties', object, props);
 								promise.resolve(object);
 							}
+							console.log("++++PROPS", count, props);
 						}, reject(promise));
 					})(name, props[name]);
 				}
@@ -430,21 +455,23 @@
 			}
 
 			function loadModule(moduleId) {
-				var p = new Promise();
 
-				if(!uniqueModuleNames[moduleId]) {
-					uniqueModuleNames[moduleId] = 1;
+				var p = uniqueModuleNames[moduleId];
+
+				if(!p) {
+					p = uniqueModuleNames[moduleId] = new Promise();
 					loadModules([moduleId], function handleModulesLoaded(module) {
-						uniqueModuleNames[moduleId] = module;
 						p.resolve(module);
 					});
-
-				} else {
-					modulesReady.then(function handleModulesReady() {
-						p.resolve(uniqueModuleNames[moduleId]);
-					});
-
-				}
+				} // else {
+				 // 					modulesReady.then(function handleModulesReady() {
+				 // 						if(!p.completed) {
+				 // 							console.log("***loaded modulesReady", moduleId);
+				 // 							p.resolve(loadModules(moduleId));
+				 // 						}
+				 // 					});
+				 // 
+				 // 				}
 
 				return p;
 			}
@@ -522,22 +549,27 @@
 						fireEvent('onContextInit', modules);
 					},
 					function rejectModulesReady(err) {
-						rejectPromise(objectsCreated, "Module loading failed", err);
+						// rejectPromise(objectsCreated, "Module loading failed", err);
+						rejectPromise(contextReady, "Module loading failed", err);
 					});
 
-				objectsCreated.then(
-					null,
-					function rejectObjectsCreated(err) {
-						rejectPromise(objectsReady, "Object creation failed", err);
-					},
-					function progressObjectsCreated(status) {
-						fireEvent("onCreate", status.object, status.spec);
-					}
-				);
+				// objectsCreated.then(
+				// 	null,
+				// 	function rejectObjectsCreated(err) {
+				// 		rejectPromise(objectsReady, "Object creation failed", err);
+				// 	},
+				// 	function progressObjectsCreated(status) {
+				// 		fireEvent("onCreate", status.object, status.spec);
+				// 	}
+				// );
 
 				contextReady.then(
 					function resolveContextReady(context) {
 						fireEvent('onContextReady', context);
+					},
+					null,
+					function progressObjectsCreated(status) {
+						fireEvent("onCreate", status.object, status.spec);
 					}
 				);
 			}
@@ -553,17 +585,13 @@
 					return contextFactory(newParent).wire(spec);
 				};
 				parsedContext.resolve = function resolve(ref) {
-					return resolveName(ref).safe;
+					return safe(resolveName(ref));
 				};
 				parsedContext.destroy = function destroyContext() {
-					return destroy().safe;
+					return safe(destroy());
 				};
 
-				if(objectsToCreate === 0) {
-					objectsCreated.resolve(parsedContext);
-				}
-
-				if(objectsToInit === 0) {
+				if(objectsToInit === 0 && !objectsToInit.completed) {
 					objectsReady.resolve(parsedContext);
 				}
 
@@ -572,6 +600,7 @@
 					// here, but rely on promise resolution.  For now, just wait
 					// for it.
 					domReady.then(function() {
+						console.log("ref queue", refWaitQ);
 						contextReady.resolve(readyContext);
 					});
 				});
@@ -601,19 +630,22 @@
 					// module, reference, or simple object
 					var moduleToLoad = getModule(spec);
 					if(moduleToLoad) {
-						objectsToCreate++;
-						if(spec.init) objectsToInit++;
+						// objectsToCreate++;
+						objectsToInit++;
+						console.log("init count", objectsToInit, spec);
 						// Create object from module
 						loadModule(moduleToLoad).then(
 							function handleModuleLoaded(module) {
 								createObject(spec, module).then(
 									function handleObjectCreated(created) {
-										promise.resolve(created);
-										if(++objectCreateCount === objectsToCreate) {
-											objectsCreated.resolve(context);
-										}
+										// promise.resolve(created);
+										// if(++objectCreateCount === objectsToCreate) {
+										// 	objectsCreated.resolve(context);
+										// }
+										
 										initObject(spec, created).then(
 											function handleObjectInited(object) {
+												promise.resolve(created);
 												if(++objectInitCount === objectsToInit) {
 													domReady.then(function() {
 														objectsReady.resolve(context);
@@ -645,11 +677,23 @@
 						} else {
 							var propCount = len;
 							for(var j=0; j<len; j++) {
-								var p = props[j];
-								parse(spec[p]).then(
+								var refPromise = refWaitQ[p];
+								if(!refPromise) {
+									refPromise = refWaitQ[p] = new Promise();
+								}
+								
+								var p = props[j],
+									propPromise = parse(spec[p]);
+								propPromise.then(
 									createResolver(--propCount, processed, p, promise),
 									reject(promise)
 								);
+								(function(name, promise) {
+									propPromise.then(function(parsed) {
+										console.log("completed", name, parsed);
+										refPromise.resolve(parsed);
+									});
+								})(p, refPromise);
 							}
 						}
 					}
@@ -659,22 +703,6 @@
 				}
 
 				return promise;
-			}
-
-			function destroy() {
-				contextReady.then(
-					function(context) {
-						for(var i=0; i < destroyers.length; i++) {
-							destroyers[i]();
-						}
-
-						fireEvent('onContextDestroy', context);
-						contextDestroyed.resolve();
-					},
-					reject(contextDestroyed)
-				);
-
-				return contextDestroyed;
 			}
 			
 			function wire(spec) {
@@ -701,6 +729,25 @@
 				}
 
 				return contextReady;
+			}
+			
+			function destroy() {
+				function doDestroy() {
+					for(var i=0; i < destroyers.length; i++) {
+						try {
+							destroyers[i]();
+						} catch(e) {
+							/* squelch? */
+							console.log(e);
+						}
+					}
+
+					fireEvent('onContextDestroy', context);
+					contextDestroyed.resolve();
+				}
+				contextReady.then(doDestroy, doDestroy);
+
+				return contextDestroyed;
 			}
 			
 			return {
