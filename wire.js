@@ -102,7 +102,6 @@
 				count = k.length;
 				
 			for(var f in list) {
-				console.log("PROCESS", f);
 				func = target[f];
 				if(isFunction(func)) {
 					callback(target, spec, func, list[f]);
@@ -283,11 +282,6 @@
 					prefix = "_",
 					name = ref;
 					
-				var q = refWaitQ[ref];
-				if(!q) {
-					q = refWaitQ[ref] = new Promise();
-				}
-				
 				if(ref.indexOf("!") >= 0) {
 					var parts = ref.split("!");
 					prefix = parts[0];
@@ -318,7 +312,6 @@
 			}
 
 			function resolveRef(ref) {
-				// console.log("Trying to resolve", ref);
 				var p = new Promise();
 
 				if(isRef(ref)) {
@@ -436,7 +429,6 @@
 								fireEvent('onProperties', object, props);
 								promise.resolve(object);
 							}
-							console.log("++++PROPS", count, props);
 						}, reject(promise));
 					})(name, props[name]);
 				}
@@ -460,21 +452,12 @@
 					loadModules([moduleId], function handleModulesLoaded(module) {
 						p.resolve(module);
 					});
-				} // else {
-				 // 					modulesReady.then(function handleModulesReady() {
-				 // 						if(!p.completed) {
-				 // 							console.log("***loaded modulesReady", moduleId);
-				 // 							p.resolve(loadModules(moduleId));
-				 // 						}
-				 // 					});
-				 // 
-				 // 				}
+				}
 
 				return p;
 			}
 
 			function scanPlugins(modules) {
-				// console.log("scanning for plugins", modules);
 				var p = new Promise();
 
 				for (var i=0; i < modules.length; i++) {
@@ -549,16 +532,6 @@
 						rejectPromise(contextReady, "Module loading failed", err);
 					});
 
-				// objectsCreated.then(
-				// 	null,
-				// 	function rejectObjectsCreated(err) {
-				// 		rejectPromise(objectsReady, "Object creation failed", err);
-				// 	},
-				// 	function progressObjectsCreated(status) {
-				// 		fireEvent("onCreate", status.object, status.spec);
-				// 	}
-				// );
-
 				contextReady.then(
 					function resolveContextReady(context) {
 						fireEvent('onContextReady', context);
@@ -596,7 +569,6 @@
 					// here, but rely on promise resolution.  For now, just wait
 					// for it.
 					domReady.then(function() {
-						console.log("ref queue", refWaitQ);
 						contextReady.resolve(readyContext);
 					});
 				});
@@ -626,21 +598,20 @@
 					// module, reference, or simple object
 					var moduleToLoad = getModule(spec);
 					if(moduleToLoad) {
-						// objectsToCreate++;
 						objectsToInit++;
-						console.log("init count", objectsToInit, spec);
 						// Create object from module
+						
+						// FIXME: This is a nasty mess right here, kids.  This needs to be
+						// factored to reduce the nesting and make it clearer what is happening.
 						loadModule(moduleToLoad).then(
 							function handleModuleLoaded(module) {
+								
 								createObject(spec, module).then(
 									function handleObjectCreated(created) {
-										// promise.resolve(created);
-										// if(++objectCreateCount === objectsToCreate) {
-										// 	objectsCreated.resolve(context);
-										// }
-										
+								
 										initObject(spec, created).then(
 											function handleObjectInited(object) {
+								
 												promise.resolve(created);
 												if(++objectInitCount === objectsToInit) {
 													domReady.then(function() {
@@ -673,23 +644,17 @@
 						} else {
 							var propCount = len;
 							for(var j=0; j<len; j++) {
-								var refPromise = refWaitQ[p];
-								if(!refPromise) {
-									refPromise = refWaitQ[p] = new Promise();
-								}
-								
 								var p = props[j],
 									propPromise = parse(spec[p]);
+
 								propPromise.then(
 									createResolver(--propCount, processed, p, promise),
 									reject(promise)
 								);
-								(function(name, promise) {
-									propPromise.then(function(parsed) {
-										console.log("completed", name, parsed);
-										refPromise.resolve(parsed);
-									});
-								})(p, refPromise);
+
+								if(p !== undef && !refWaitQ[p]) {
+									refWaitQ[p] = propPromise;
+								}
 							}
 						}
 					}

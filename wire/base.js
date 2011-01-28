@@ -4,18 +4,15 @@ define([], function() {
 	return {
 		wire$resolvers: {
 			_: function defaultResolver(factory, name, refObj, promise) {
-				// console.log('trying to resolve', name);
-				console.log("++++BASE RESOLVING", name);
+				// console.log("++++BASE RESOLVING", name);
 				var resolved = factory.resolveName(name);
 				
 				if(resolved !== undef) {
-					// console.log('resolved', name);
-					console.log("++++BASE RESOLVED", name);
+					// console.log("++++BASE RESOLVED", name);
 					promise.resolve(resolved);
 				} else {
 					factory.refReady(name).then(function() {
-						// console.log('resolvING later', name);
-						console.log("++++BASE RESOLVED LATER", name);
+						// console.log("++++BASE RESOLVED LATER", name);
 						promise.resolve(factory.resolveName(name));
 					});
 				}
