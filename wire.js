@@ -49,14 +49,6 @@
 		
 		return k;
 	}
-
-	function mixin(dst, src) {
-		for(var p in src) {
-			dst[p] = src[p];
-		}
-
-		return dst;
-	}
 	
 	function getModule(spec) {
 		return spec.create
@@ -69,8 +61,8 @@
 	}
 	
 	var F = function F(ctor, args) {
-			return ctor.apply(this, args);
-		};
+		return ctor.apply(this, args);
+	};
 
 	function instantiate(ctor, args) {
 		var k = keys(ctor.prototype);
@@ -220,9 +212,14 @@
 		};
 	}
 	
+	var Context = function() {};
+	
 	function contextFactory(parent) {
 		return (function(parent) {
-			var context = {},
+			// Use the prototype chain for context parent-child
+			// relationships
+			Context.prototype = parent ? parent.context : undef;
+			var context = new Context(),
 				uniqueModuleNames = {},
 				// Top-level promises
 				modulesReady = new Promise(),
@@ -529,7 +526,6 @@
 			}
 
 			function initFromParent(parent) {
-				mixin(context, parent.context);
 				parent.contextDestroyed.then(function handleParentDestroyed() { destroy(); });
 			}
 			
