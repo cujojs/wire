@@ -49,6 +49,8 @@ wire({
 }).then(
 function(context) {
 	console.log("Done!",context);
+	// Parent properties are available via the prototype!
+	console.log("initialValue", context.initialValue);
 	
 	// When the button is clicked, cleanup everything by
 	// destroying the context
