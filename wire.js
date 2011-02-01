@@ -227,7 +227,7 @@
 				contextReady = new Promise(),
 				contextDestroyed = new Promise(),
 				domReady = new Promise(),
-				refWaitQ = {},
+				objectDefs = {},
 				// Plugins
 				setters = [],
 				resolvers = {},
@@ -244,9 +244,7 @@
 				// Proxy of this factory that can safely be passed to plugins
 				pluginProxy = {
 					modulesReady: safe(modulesReady),
-					// objectsCreated: safe(objectsCreated),
 					objectsReady: safe(objectsReady),
-					// contextReady: safe(contextReady),
 					domReady: safe(domReady),
 					contextDestroyed: safe(contextDestroyed),
 					resolveName: function(name) {
@@ -259,7 +257,7 @@
 						return setProperties(object, props);
 					},
 					refReady: function(name) {
-						return refWaitQ[name];
+						return objectDefs[name];
 					}
 				},
 				// Track destroy functions to be called when context is destroyed
@@ -508,10 +506,6 @@
 				}
 			}
 
-			function initFromParent(parent) {
-				parent.contextDestroyed.then(function handleParentDestroyed() { destroy(); });
-			}
-			
 			function initPromiseStages() {
 				function rejectPromise(promise, message, err) {
 					fireEvent('onContextError', context, message, err);
@@ -542,7 +536,126 @@
 					}
 				);
 			}
+
+			function initFromParent(parent) {
+				parent.contextDestroyed.then(function handleParentDestroyed() { destroy(); });
+			}
+
+			function parseArray(spec) {
+				var processed = [],
+					promise = new Promise(),
+					len = spec.length;
+					
+				if(len == 0) {
+					promise.resolve(processed);
+				}
+
+				var arrCount = len;
+				for(var i=0; i<len; i++) {
+					parse(spec[i]).then(
+						createResolver(--arrCount, processed, i, promise),
+						reject(promise));
+				}
+				
+				return promise;
+			}
+
+			function parseModule(spec, moduleToLoad) {
+				var promise = new Promise();
+				
+				objectsToInit++;
+				// Create object from module
+				
+				// FIXME: This is a nasty mess right here, kids.  This needs to be
+				// factored to reduce the nesting and make it clearer what is happening.
+				loadModule(moduleToLoad).then(
+					function handleModuleLoaded(module) {
+						
+						createObject(spec, module).then(
+							function handleObjectCreated(created) {
+						
+								initObject(spec, created).then(
+									function handleObjectInited(object) {
+						
+										promise.resolve(created);
+										if(++objectInitCount === objectsToInit) {
+											domReady.then(function() {
+												objectsReady.resolve(context);
+											});
+										}
+									}
+								);
+							},
+							reject(contextReady)
+						);
+					}
+				);
+				
+				return promise;
+			}
 			
+			function parseObject(spec, container) {
+				var processed = container || {},
+					promise = new Promise(),
+					props = keys(spec),
+					len = props.length;
+					
+				if(len == 0) {
+					promise.resolve(processed);
+				} else {
+					var propCount = len;
+					for(var j=0; j<len; j++) {
+						var p = props[j],
+							propPromise = parse(spec[p]);
+
+						propPromise.then(
+							createResolver(--propCount, processed, p, promise),
+							reject(promise)
+						);
+
+						if(container && p !== undef && !objectDefs[p]) {
+							objectDefs[p] = propPromise;
+						}
+					}
+				}
+				
+				return promise;
+			}
+			
+			function parse(spec, container) {
+				var promise;
+
+				if(isArray(spec)) {
+					// Array
+					promise = parseArray(spec);
+
+				} else if(typeof spec == 'object') {
+					// module, reference, or simple object
+
+					var moduleToLoad = getModule(spec);
+					
+					if(moduleToLoad) {
+						// Module
+						promise = parseModule(spec, moduleToLoad);
+
+					} else if(isRef(spec)) {
+						// Reference
+						promise = resolveRef(spec);
+
+					} else {
+						// Simple object
+						promise = parseObject(spec, container);
+					}
+
+				} else {
+					// Integral value/basic type, e.g. String, Number, Boolean, Date, etc.
+					promise = new Promise();
+					promise.resolve(spec);
+				}
+
+				return promise;
+			}
+
 			function finalizeContext(parsedContext) {
 				parsedContext.wire = function wire(spec) {
 					var newParent = {
@@ -565,6 +678,7 @@
 				}
 
 				objectsReady.then(function finalizeContextReady(readyContext) {
+					// TODO: Remove explicit domReady wait
 					// It should be possible not to have to wait for domReady
 					// here, but rely on promise resolution.  For now, just wait
 					// for it.
@@ -574,98 +688,6 @@
 				});
 			}
 
-			function parse(spec, result) {
-				var processed = spec,
-					promise = new Promise(),
-					count,
-					len;
-
-				if(isArray(spec)) {
-					len = spec.length;
-					if(len == 0) {
-						promise.resolve(processed);
-					}
-					processed = result||[];
-
-					var arrCount = len;
-					for(var i=0; i<len; i++) {
-						parse(spec[i]).then(
-							createResolver(--arrCount, processed, i, promise),
-							reject(promise));
-					}
-
-				} else if(typeof spec == 'object') {
-					// module, reference, or simple object
-					var moduleToLoad = getModule(spec);
-					if(moduleToLoad) {
-						objectsToInit++;
-						// Create object from module
-						
-						// FIXME: This is a nasty mess right here, kids.  This needs to be
-						// factored to reduce the nesting and make it clearer what is happening.
-						loadModule(moduleToLoad).then(
-							function handleModuleLoaded(module) {
-								
-								createObject(spec, module).then(
-									function handleObjectCreated(created) {
-								
-										initObject(spec, created).then(
-											function handleObjectInited(object) {
-								
-												promise.resolve(created);
-												if(++objectInitCount === objectsToInit) {
-													domReady.then(function() {
-														objectsReady.resolve(context);
-													});
-												}
-											});
-									},
-									reject(contextReady)
-								);
-							}
-						);
-
-					} else if(isRef(spec)) {
-						// Resolve reference
-						resolveRef(spec).then(
-							function handleResolveRef(target) {
-								promise[target === undef ? 'reject' : 'resolve'](target);
-							},
-							reject(promise)
-						);
-
-					} else {
-						processed = result || {};
-						var props = keys(spec);
-
-						len = props.length;
-						if(len == 0) {
-							promise.resolve(processed);
-						} else {
-							var propCount = len;
-							for(var j=0; j<len; j++) {
-								var p = props[j],
-									propPromise = parse(spec[p]);
-
-								propPromise.then(
-									createResolver(--propCount, processed, p, promise),
-									reject(promise)
-								);
-
-								if(p !== undef && !refWaitQ[p]) {
-									refWaitQ[p] = propPromise;
-								}
-							}
-						}
-					}
-
-				} else {
-					promise.resolve(processed);
-				}
-
-				return promise;
-			}
-			
 			function wire(spec) {
 				initPromiseStages();
 				
