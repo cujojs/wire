@@ -673,7 +673,7 @@
 					return safe(destroy());
 				};
 
-				if(objectsToInit === 0 && !objectsToInit.completed) {
+				if(objectsToInit === 0 && !objectsReady.completed) {
 					objectsReady.resolve(parsedContext);
 				}
 
