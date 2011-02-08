@@ -250,9 +250,9 @@
 		Class: ContextFactory
 	*/
 	/*
-		Constructor: contextFactory
+		Constructor: ContextFactory
 	*/
-	function contextFactory(parent) {
+	function ContextFactory(parent) {
 		return (function(parent) {
 			// Use the prototype chain for context parent-child
 			// relationships
@@ -727,7 +727,7 @@
 						resolveRefObj: resolveRefObj,
 						contextDestroyed: contextDestroyed
 					};
-					return safe(contextFactory(newParent).wire(spec));
+					return safe(ContextFactory(newParent).wire(spec));
 				};
 
 				/*
@@ -834,7 +834,7 @@
 	function safe(promise) {
 		return {
 			then: function safeThen(resolve, reject, progress) {
-				return promise.then(resolve, reject, progress);
+				promise.then(resolve, reject, progress);
 			}
 		};
 	}
@@ -930,33 +930,48 @@
 		
 		Parameters:
 			spec - wiring spec
-			ready - Function to call with the newly wired Context
+			
+		Returns:
+		a <Promise> that will be resolved when the <Context> has been wired.  The
+		newly wired <Context> will be the value of the <Promise>
 	*/
 	var w = global['wire'] = function wire(spec) { // global['wire'] for closure compiler export
+		
 		var promise;
-		if(rootContext === undef) {
+		
+		// If the root context exists, simply use it to wire the new context.
+		// If it doesn't exist, wire the root context first, then use it
+		// to wire the new child.
+		if(rootContext) {
+			// Context.wire returns a safe promise
+			promise = rootContext.wire(spec);
+
+		} else {
 			// No root context yet, so wire it first, then wire the requested spec as
 			// a child.  Subsequent wire() calls will reuse the existing root context.
-			promise = new Promise();
+			var unsafePromise = new Promise();
 			
-			contextFactory().wire(rootSpec).then(function(context) {
+			ContextFactory().wire(rootSpec).then(function(context) {
 				rootContext = context;
 				rootContext.wire(spec).then(
 					function(context) {
-						promise.resolve(context);
+						unsafePromise.resolve(context);
 					},
 					function(err) {
-						promise.reject(err);
+						unsafePromise.reject(err);
 					}
 				);
 			});
-		} else {
-			promise = rootContext.wire(spec);
+			
+			// Make sure we return a safe promise
+			promise = safe(unsafePromise);
+
 		}
 		
-		return safe(promise); // Return restricted promise
+		return promise;
 	};
 	
+	// Add version
 	w.version = VERSION;
 	
 	// WARNING: Probably unsafe. Just for testing right now.
@@ -970,6 +985,7 @@
 		
 		// if(/wire[^\/]*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
 		if((specUrl = script.getAttribute('data-wire-spec'))) {
+			// Use loader to load the wiring spec
 			loadModules([specUrl]);
 			// // Use a script tag to load the wiring spec
 			// var specScript = doc.createElement('script');
