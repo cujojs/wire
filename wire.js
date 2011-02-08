@@ -244,6 +244,10 @@
 		A Context is the result of wiring a spec.  It will contain all the fully
 		realized objects, plus its own wire(), resolve(), and destroy() functions.
 	*/
+	/*
+		Constructor: Context
+		Creates a new, empty Context ready for wiring.
+	*/
 	var Context = function() {};
 	
 	/*
@@ -258,6 +262,9 @@
 			// relationships
 			Context.prototype = parent ? parent.context : undef;
 			var context = new Context(),
+				// Track loaded modules to unique-ify them.  RequireJS currently breaks
+				// when the same module is listed twice in the same dependency array
+				// so this also helps to avoid that problem.
 				uniqueModuleNames = {},
 				// Top-level promises
 				modulesReady = new Promise(),
@@ -317,6 +324,16 @@
 				uniqueModuleNames[defaultModules[i]] = 1;
 			}
 			
+			/*
+				Function: resolveRefObj
+				Resolves the supplied reference, delegating to ancestor <Context>s if
+				necessary.
+				
+				Parameters:
+					refObj - JSON Ref
+					promise - <Promise> to resolve once the reference has been resolved,
+							  or to reject if the reference cannot be resolved.
+			*/
 			function resolveRefObj(refObj, promise) {
 				var ref = refObj.$ref,
 					prefix = "_",
@@ -351,6 +368,17 @@
 				}
 			}
 
+			/*
+				Function: resolveRef
+				Resolve the supplied reference.
+				
+				Parameters:
+					ref - JSON Ref
+					
+				Returns:
+				a <Promise> that will be resolved with the target of the reference once
+				it has been resolved.
+			*/
 			function resolveRef(ref) {
 				var p = new Promise();
 
@@ -361,9 +389,25 @@
 				} else {
 					p.resolve(ref);
 				}
+				
 				return p;
 			}
 
+			/*
+				Function: createObject
+				Constructs an object from the supplied module using any create args in
+				the supplied wiring spec for the object.
+				
+				Parameters:
+					spec - wiring spec for the object to create
+					module - loaded module to use to create the object.  This must be either
+					         a constructor to be invoked with new, or a function that can
+					         be called directly (without new) to create the object.
+					
+				Returns:
+				a <Promise> that will be resolved when the object has been created, or
+				rejected if the object cannot be created.
+			*/
 			function createObject(spec, module) {
 				var p = new Promise(),
 					object = module;
@@ -403,6 +447,7 @@
 				var promise = new Promise();
 
 				function resolveObjectInit() {
+					// Invoke initializer functions
 					if(spec.init) {
 						processFuncList(spec.init, object, spec,
 							function handleProcessFuncList(target, spec, func, args) {
@@ -418,6 +463,7 @@
 					}
 				}
 
+				// Parse and set properties, and then invoke init functions
 				if(spec.properties) {
 					setProperties(object, spec.properties).then(
 						resolveObjectInit,
@@ -427,7 +473,7 @@
 					resolveObjectInit();
 				}
 
-
+				// Queue destroy functions to be called when this Context is destroyed
 				if(spec.destroy) {
 					destroyers.push(function doDestroy() {
 						processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
@@ -778,7 +824,14 @@
 			*/
 			/*
 				Function: wire
+				Wires the supplied spec, fully realizing all objects.
 				
+				Parameters:
+					spec - wiring spec
+					
+				Returns:
+				a <Promise> that will be resolved with the fully realized <Context> once
+				wiring is complete, or rejected if the supplied spec cannot be wired.
 			*/
 			function wire(spec) {
 				initPromiseStages();
