@@ -28,13 +28,13 @@ define(['dojo'], function(pubsub) {
 
 	return {
 		wire$listeners: {
-			onCreate: function(target, spec, resolver) {
+			onCreate: function(factory, object, spec) {
 				if(typeof spec.publish == 'object') {
-					proxyPublish(target, spec.publish);
+					proxyPublish(object, spec.publish);
 				}
 
 				if(typeof spec.subscribe == 'object') {
-					proxySubscribe(target, spec.subscribe);
+					proxySubscribe(object, spec.subscribe);
 				}
 			},
 			onDestroy: function(target) {

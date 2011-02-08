@@ -31,14 +31,44 @@
 	 * Helpers
 	 */
 	
+	/*
+		Function: isArray
+		Standard array test
+		
+		Parameters:
+			it - anything
+			
+		Returns:
+		true iff it is an Array
+	*/
 	function isArray(it) {
 		return tos.call(it) === '[object Array]';
 	}
-	
+
+	/*
+		Function: isFunction
+		Standard function test
+		
+		Parameters:
+			it - anything
+			
+		Returns:
+		true iff it is a Function
+	*/
 	function isFunction(it) {
 		return typeof it == 'function';
 	}
 	
+	/*
+		Function: keys
+		Creates an array of the supplied objects own property names
+		
+		Parameters:
+			obj - Object
+			
+		Returns:
+		Array of obj's own (via hasOwnProperty) property names.
+	*/
 	function keys(obj) {
 		var k = [];
 		for(var p in obj) {
@@ -50,31 +80,112 @@
 		return k;
 	}
 	
+	/*
+		Function: getModule
+		If spec is a module, gets the value of the module property (usually an AMD module id)
+		
+		Parameters:
+			spec - any wiring spec
+			
+		Returns:
+		the value of the module property, or undefined if the supplied spec
+		is not a module.
+	*/
 	function getModule(spec) {
 		return spec.create
 			? (typeof spec.create == 'string' ? spec.create : spec.create.module)
 			: spec.module;
 	}
 	
+	/*
+		Function: isRef
+		Determines if the supplied spec is a reference
+		
+		Parameters:
+			spec - any wiring spec
+			
+		Returns:
+		true iff spec is a reference, false otherwise.
+	*/
 	function isRef(spec) {
 		return spec && spec.$ref !== undef;
 	}
 	
-	var F = function F(ctor, args) {
+	/*
+		Constructor: F
+		Constructor used to beget objects that wire needs to create using new.
+		
+		Parameters:
+			ctor - real constructor to be invoked
+			args - arguments to be supplied to ctor
+	*/
+	function F(ctor, args) {
 		return ctor.apply(this, args);
 	};
 
+	/*
+		Function: instantiate
+		Creates an object by either invoking ctor as a function and returning the
+		result, or by calling new ctor().  It uses a simple heuristic to try to
+		guess which approach is the "right" one.
+		
+		Parameters:
+			ctor - function or constructor to invoke
+			args - array of arguments to pass to ctor in either case
+			
+		Returns:
+		The result of invoking ctor with args, with or without new, depending on
+		the strategy selected.
+	*/
 	function instantiate(ctor, args) {
-		var k = keys(ctor.prototype);
-		if(k.length === 0) {
-			return ctor.apply(null, args);
-		} else {
+		
+		if(isConstructor(ctor)) {
 			F.prototype = ctor.prototype;
 			F.prototype.constructor = ctor;
 			return new F(ctor, args);
+		} else {
+			return ctor.apply(null, args);
 		}
 	}
 	
+	/*
+		Function: isConstructor
+		Determines with the supplied function should be invoked directly or
+		should be invoked using new in order to create the object to be wired.
+		
+		Parameters:
+			func - determine whether this should be called using new or not
+			
+		Returns:
+		true iff func should be invoked using new, false otherwise.
+	*/
+	function isConstructor(func) {
+		var is = false, p;
+		for(p in func.prototype) {
+			if(p !== undef) {
+				is = true;
+				break;
+			}
+		}
+		
+		return is;
+	}
+	
+	/*
+		Function: createResolver
+		Creates a function to used as a promise resolver, that will resolve another, supplied
+		promise if remaining === 0.
+		
+		Parameters:
+			remaining - if remaining === 0, the supplied promise will be resolved with object as the result
+			object - object[prop] will be assigned the result of the outer promise, and will be passed
+			         to the supplied promise as the resolution
+			prop - object[prop] will be assigned the result of the outer promise
+			promise - promise to be resolved with object if remaining === 0
+			
+		Returns:
+		A resolution function for a promise
+	*/
 	function createResolver(remaining, object, prop, promise) {
 		return function resolver(result) {
 			object[prop] = result;
@@ -84,6 +195,20 @@
 		};
 	}
 	
+	/*
+		Function: processFuncList
+		Resolves list to 1 or more functions of target, and invokes callback
+		for each function.
+		
+		Parameters:
+			list - String function name, or array of string function names
+			target - Object having the function or array of functions in list
+			spec - wiring spec used to create target
+			callback - function to be invoked for each function name in list
+			
+		Returns:
+		A <Promise>
+	*/
 	function processFuncList(list, target, spec, callback) {
 		var func,
 			p = new Promise();
@@ -114,105 +239,19 @@
 		return p;
 	}
 	
-	var Promise = function() {
-		this.completed = 0;
-		this.chain = [];
-	};
-	
-	Promise.prototype = {
-		
-		then: function(resolved, rejected, progress) {
-			var completed = this.completed,
-				result = this.result;
-				
-			if(completed > 0) {
-				if(resolved) resolved(result);
-				
-			} else if(completed < 0) {
-				if(rejected) rejected(result);
-				
-			} else {
-				this.chain.push({ resolve: resolved, reject: rejected, progress: progress });
-
-			}
-
-			return this;
-		},
-		
-		resolve: function(value) {
-			return this.complete(value, 1);
-		},
-		
-		reject: function(value) {
-			return this.complete(value, -1);
-		},
-		
-		complete: function(value, completeType) {
-			if(this.completed) throw Error("Promise already completed");
-			
-			this.completed = completeType;
-			var action = completeType > 0 ? 'resolve' : 'reject',
-				res = this.result = value,
-				chain = this.chain,
-				self = this,
-				newResult;
-		
-			for(var i=0; i<chain.length; i++) {
-				try {
-					var c = chain[i],
-						func = c[action];
-						
-					if(isFunction(func)) {
-						newResult = func(res);
-						
-						if(newResult !== undef) {
-							res = newResult;
-						}
-					} else if(action === 'reject') {
-						throw res;
-					}
-				} catch(e) {
-					// console.log("Promise ERROR", e, this);
-					res = e;
-					this.completed = -1;
-					action = 'reject';
-				}
-			}
-			
-			return this.result;
-		},
-		
-		progress: function(statusObject) {
-			var chain = this.chain;
-			for(var i=0; i<chain.length; i++) {
-				try {
-					var c = chain[i];
-					if(c.progress) {
-						c.progress(statusObject);
-					}
-				} catch(e) {
-					this.reject(e);
-				}
-			}
-		}
-	};
-	
-	function safe(promise) {
-		return {
-			then: function safeThen(resolve, reject, progress) {
-				return promise.then(resolve, reject, progress);
-			}
-		};
-	}
-	
-	function reject(promise) {
-		return function(err) {
-			promise.reject(err);
-		};
-	}
-	
+	/*
+		Class: Context
+		A Context is the result of wiring a spec.  It will contain all the fully
+		realized objects, plus its own wire(), resolve(), and destroy() functions.
+	*/
 	var Context = function() {};
 	
+	/*
+		Class: ContextFactory
+	*/
+	/*
+		Constructor: contextFactory
+	*/
 	function contextFactory(parent) {
 		return (function(parent) {
 			// Use the prototype chain for context parent-child
@@ -258,6 +297,9 @@
 					},
 					refReady: function(name) {
 						return objectDefs[name];
+					},
+					addDestroy: function(destroyFunc) {
+						destroyers.push(destroyFunc);
 					}
 				},
 				// Track destroy functions to be called when context is destroyed
@@ -328,7 +370,6 @@
 
 				function objectCreated(obj, promise) {
 					modulesReady.then(function handleModulesReady() {
-						// objectsCreated.progress({ object: obj, spec: spec });
 						contextReady.progress({ object: obj, spec: spec });
 						promise.resolve(obj);
 					});
@@ -532,7 +573,7 @@
 					},
 					null,
 					function progressObjectsCreated(status) {
-						fireEvent("onCreate", status.object, status.spec);
+						fireEvent("onCreate", pluginProxy, status.object, status.spec);
 					}
 				);
 			}
@@ -656,7 +697,29 @@
 				return promise;
 			}
 
+			/*
+				Function: finalizeContext
+				Adds public functions to the supplied context and uses it to resolve the
+				contextReady promise.
+				
+				Parameters:
+					parsedContext - <Context> to finalize and use as resolution for contextReady
+			*/
 			function finalizeContext(parsedContext) {
+				/*
+					Class: Context
+				*/
+				/*
+					Function: wire
+					Wires a new child <Context> from this <Context>
+					
+					Parameters:
+						spec - wiring spec
+						
+					Returns:
+					a <Promise> that will be resolved when the new child <Context> has
+					been wired.
+				*/
 				parsedContext.wire = function wire(spec) {
 					var newParent = {
 						wire: wire,
@@ -664,11 +727,33 @@
 						resolveRefObj: resolveRefObj,
 						contextDestroyed: contextDestroyed
 					};
-					return contextFactory(newParent).wire(spec);
+					return safe(contextFactory(newParent).wire(spec));
 				};
+
+				/*
+					Function: resolve
+					Resolves references using this <Context>.  This will cascade up to ancestor <Context>s
+					until the reference is either resolved or the root <Context> has been reached without
+					resolution, at which point the returned <Promise> will be rejected.
+					
+					Parameters:
+						ref - reference name (String) to resolve
+						
+					Returns:
+					a <Promise> that will be resolved when the reference has been resolved or rejected
+					if the reference cannot be resolved.
+				*/
 				parsedContext.resolve = function resolve(ref) {
 					return safe(resolveName(ref));
 				};
+				
+				/*
+					Function: destroy
+					Destroys this <Context> *and all of its descendents*.
+					
+					Returns:
+					a <Promise> that will be resolved when this <Context> has been destroyed.
+				*/
 				parsedContext.destroy = function destroyContext() {
 					return safe(destroy());
 				};
@@ -688,6 +773,13 @@
 				});
 			}
 
+			/*
+				Class: ContextFactory
+			*/
+			/*
+				Function: wire
+				
+			*/
 			function wire(spec) {
 				initPromiseStages();
 				
@@ -739,6 +831,99 @@
 		})(parent);
 	}
 	
+	function safe(promise) {
+		return {
+			then: function safeThen(resolve, reject, progress) {
+				return promise.then(resolve, reject, progress);
+			}
+		};
+	}
+	
+	function reject(promise) {
+		return function(err) {
+			promise.reject(err);
+		};
+	}
+	
+	/*
+		Class: Promise
+	*/
+	/*
+		Constructor: Promise
+		Promise implementation based on unscriptable's minimalist Promise:
+		https://gist.github.com/814052/
+		with safe mod and progress by me:
+		https://gist.github.com/814313
+	*/ 
+	
+	function Promise () {
+		this._thens = [];
+	}
+
+	Promise.prototype = {
+
+		/* This is the "front end" API. */
+
+		// then(onResolve, onReject): Code waiting for this promise uses the
+		// then() method to be notified when the promise is complete. There
+		// are two completion callbacks: onReject and onResolve. A more
+		// robust promise implementation will also have an onProgress handler.
+		then: function (onResolve, onReject, onProgress) {
+			// capture calls to then()
+			this._thens.push({ resolve: onResolve, reject: onReject, progress: onProgress });
+		},
+
+		// Some promise implementations also have a cancel() front end API that
+		// calls all of the onReject() callbacks (aka a "cancelable promise").
+		// cancel: function (reason) {},
+
+		/* This is the "back end" API. */
+
+		// resolve(resolvedValue): The resolve() method is called when a promise
+		// is resolved (duh). The resolved value (if any) is passed by the resolver
+		// to this method. All waiting onResolve callbacks are called
+		// and any future ones are, too, each being passed the resolved value.
+		resolve: function (val) { this._complete('resolve', val); },
+
+		// reject(exception): The reject() method is called when a promise cannot
+		// be resolved. Typically, you'd pass an exception as the single parameter,
+		// but any other argument, including none at all, is acceptable.
+		// All waiting and all future onReject callbacks are called when reject()
+		// is called and are passed the exception parameter.
+		reject: function (ex) { this._complete('reject', ex); },
+
+		// Some promises may have a progress handler. The back end API to signal a
+		// progress "event" has a single parameter. The contents of this parameter
+		// could be just about anything and is specific to your implementation.
+		// progress: function (data) {},
+		
+		progress: function(statusObject) {
+			var i=0,
+				aThen;
+			while(aThen = this._thens[i++]) { aThen.progress && aThen.progress(statusObject); }
+		},
+
+		/* "Private" methods. */
+
+		_complete: function (which, arg) {
+			// switch over to sync then()
+			this.then = which === 'reject' ?
+				function (resolve, reject) { reject && reject(arg); } :
+				function (resolve, reject) { resolve && resolve(arg); };
+
+			// disallow multiple calls to resolve or reject
+			this.resolve = this.reject = this.progress =
+				function () { throw new Error('Promise already completed.'); };
+
+			// complete all waiting (async) then()s
+			var aThen,
+				i = 0;
+			while (aThen = this._thens[i++]) { aThen[which] && aThen[which](arg); }
+			delete this._thens;
+		}
+	};
+	
+	
 	/*
 		Function: wire
 		Global wire function that is the starting point for wiring applications.
@@ -785,10 +970,11 @@
 		
 		// if(/wire[^\/]*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
 		if((specUrl = script.getAttribute('data-wire-spec'))) {
-			// Use a script tag to load the wiring spec
-			var specScript = doc.createElement('script');
-			specScript.src = specUrl;
-			head.appendChild(specScript);
+			loadModules([specUrl]);
+			// // Use a script tag to load the wiring spec
+			// var specScript = doc.createElement('script');
+			// specScript.src = specUrl;
+			// head.appendChild(specScript);
 		}
 	}
 

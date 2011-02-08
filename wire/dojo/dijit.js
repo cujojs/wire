@@ -1,9 +1,18 @@
 define(['dojo'], function(dojo) {
-	var parsed = false,
-		destroyFuncs = [];
+	var parsed = false;
 	
 	return {
 		wire$resolvers: {
+			/*
+				Function: dijit
+				Resolver for dijits by id.
+				
+				Parameters:
+					factory - wire factory
+					name - id of the dijit
+					refObj - the complete $ref object
+					promise - promise to resolve with the found dijit
+			*/
 			dijit: function(factory, name, refObj, promise) {
 				dojo.ready(
 					function() {
@@ -36,22 +45,20 @@ define(['dojo'], function(dojo) {
 					dojo.ready(function() { dojo.parser.parse(); });
 				}
 			},
-			onContextDestroy: function(context) {
-				for (var i = 0; i < destroyFuncs.length; i++){
-					destroyFuncs[i]();
-				}
-			},
-			onCreate: function(target) {
-				if(typeof target.declaredClass == 'string') {
+			onCreate: function(factory, object) {
+				if(typeof object.declaredClass == 'string') {
+					
 					// Prefer destroyRecursive over destroy
-					if(typeof target.destroyRecursive == 'function') {
-						destroyFuncs.push(function destroyDijit() {
-							target.destroyRecursive();
+					if(typeof object.destroyRecursive == 'function') {
+						factory.addDestroy(function destroyDijitRecursive() {
+							object.destroyRecursive();
 						});
-					} else if(typeof target.destroy == 'function') {
-						destroyFuncs.push(function destroyDijit() {
-							target.destroy();
+
+					} else if(typeof object.destroy == 'function') {
+						factory.addDestroy(function destroyDijit() {
+							object.destroy();
 						});
+
 					}
 				}
 			}
