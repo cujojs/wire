@@ -9,8 +9,10 @@
 */
 //
 // TODO:
+// - Correct order for destroy.  The object tree of a single context must be destroyed
+//   top down, but the context hierarchy itself must be destroyed bottom up.
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
-//    might be used for data-dojo-type
+//   might be used for data-dojo-type
 //
 (function(global, undef){
 	"use strict";
@@ -501,7 +503,10 @@
 
 				// Queue destroy functions to be called when this Context is destroyed
 				if(spec.destroy) {
+					// TODO: Should we fire onDestroy for every object regardless of whether
+					// it has a destroy func or not?
 					destroyers.push(function doDestroy() {
+						fireEvent('onDestroy', object);
 						processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
 							func.apply(target, []); // no args for destroy
 						});
@@ -702,7 +707,7 @@
 			}
 
 			function initFromParent(parent) {
-				parent.contextDestroyed.then(function handleParentDestroyed() { destroy(); });
+				parent.beforeDestroy(function handleParentDestroyed() { destroy(); });
 			}
 
 			function parseArray(spec) {
@@ -857,9 +862,17 @@
 				return contextReady;
 			}
 			
+			/*
+				Function: destroy()
+				Destroys this <Context> by invoking all registered destroy functions, and all
+				onContextDestroy listeners.
+				
+				Returns:
+				a <Promise> that will be resolved when the <Context> has been fully destroyed.
+			*/
 			function destroy() {
 				function doDestroy() {
-					for(var i=0; i < destroyers.length; i++) {
+					for (var i=0; i < destroyers.length; i++) {
 						try {
 							destroyers[i]();
 						} catch(e) {
@@ -904,7 +917,10 @@
 						wire: wire,
 						context: context,
 						resolveRefObj: resolveRefObj,
-						contextDestroyed: contextDestroyed
+						beforeDestroy: function beforeDestroy(func) {
+							// Child contexts must be destroyed before parents
+							destroyers.unshift(func);
+						}
 					};
 					return safe(ContextFactory(newParent).wire(spec));
 				};

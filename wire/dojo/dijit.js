@@ -1,4 +1,4 @@
-define(['dojo'], function(dojo) {
+define(['dojo', 'dojo/parser'], function(dojo, parser) {
 	var parsed = false;
 	
 	return {
@@ -42,7 +42,7 @@ define(['dojo'], function(dojo) {
 				// contexts are created with this plugin present.
 				if(!parsed) {
 					parsed = true;
-					dojo.ready(function() { dojo.parser.parse(); });
+					dojo.ready(function() { parser.parse(); });
 				}
 			},
 			onCreate: function(factory, object) {

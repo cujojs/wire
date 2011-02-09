@@ -1,5 +1,6 @@
 define([], function() {
-	var timer = createTimer();
+	var timer = createTimer(),
+		objectCount = 0;
 	
 	function msg(text) {
 		return "DEBUG: " + text;
@@ -16,7 +17,7 @@ define([], function() {
 		since the last time the timer was called.  All times in milliseconds
 
 		Returns:
-			Timer function
+		Timer function
 	*/
 	function createTimer() {
 		var start = new Date().getTime(),
@@ -28,8 +29,8 @@ define([], function() {
 			split time since this getTime was last called.
 
 			Returns:
-				Object containing total and split times in milliseconds, plus a
-				toString() function that is useful in logging the time.
+			Object containing total and split times in milliseconds, plus a
+			toString() function that is useful in logging the time.
 		*/
 		return function getTime() {
 			var now = new Date().getTime(),
@@ -65,7 +66,7 @@ define([], function() {
 			// Individual object lifecycle callbacks
 			// Don't time these
 			onCreate: function(target, spec, resolver) {
-				console.log(msg('Object created'), target, spec);
+				console.log(msg('Object created (count: ' + (++objectCount) + ')'), target, spec);
 			},
 			onProperties: function(target, spec, resolver) {
 				console.log(msg('Object properties'), target, spec);
@@ -74,7 +75,7 @@ define([], function() {
 				console.log(msg('Object init'), target, spec);
 			},
 			onDestroy: function(target) {
-				console.log(msg('Object destroy'), target);
+				console.log(msg('Object destroy (count: ' + (--objectCount) + ')'), target);
 			}
 		},
 		// Init for this plugin
