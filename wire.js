@@ -4,6 +4,9 @@
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
+/*
+	File: wire.js
+*/
 //
 // TODO:
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
@@ -15,7 +18,6 @@
 	var VERSION = "0.1",
 		wirePrefix = 'wire$',
 		tos = Object.prototype.toString,
-		arrt = '[object Array]',
 		doc = global.document,
 		head = doc.getElementsByTagName('head')[0],
 		scripts = doc.getElementsByTagName('script'),
@@ -28,8 +30,9 @@
 		rootContext;
 		
 	/*
-	 * Helpers
-	 */
+		Section: Javascript Helpers
+		Standard JS helpers
+	*/
 	
 	/*
 		Function: isArray
@@ -81,6 +84,10 @@
 	}
 	
 	/*
+		Section: wire Helpers
+		wire-specific helper functions
+	*/
+	/*
 		Function: getModule
 		If spec is a module, gets the value of the module property (usually an AMD module id)
 		
@@ -112,14 +119,14 @@
 	}
 	
 	/*
-		Constructor: F
+		Constructor: Begetter
 		Constructor used to beget objects that wire needs to create using new.
 		
 		Parameters:
 			ctor - real constructor to be invoked
 			args - arguments to be supplied to ctor
 	*/
-	function F(ctor, args) {
+	function Begetter(ctor, args) {
 		return ctor.apply(this, args);
 	};
 
@@ -140,9 +147,9 @@
 	function instantiate(ctor, args) {
 		
 		if(isConstructor(ctor)) {
-			F.prototype = ctor.prototype;
-			F.prototype.constructor = ctor;
-			return new F(ctor, args);
+			Begetter.prototype = ctor.prototype;
+			Begetter.prototype.constructor = ctor;
+			return new Begetter(ctor, args);
 		} else {
 			return ctor.apply(null, args);
 		}
@@ -253,6 +260,8 @@
 	
 	/*
 		Class: ContextFactory
+		A ContextFactory does the work of creating a <Context> and wiring its objects
+		given a wiring spec.
 	*/
 	/*
 		Constructor: ContextFactory
@@ -549,13 +558,42 @@
 				return promise;
 			}
 
+			/*
+				Function: callInit
+				Applies func on target with supplied args.  Args must be parsed and fully
+				realized and passed before applying func.
+				
+				Parameters:
+					target - Object to which to apply func (i.e. target will be "this")
+					spec - wiring spec that was used to create target, will be passed to listeners
+					func - Function to be applied to target
+					args - unrealized args to pass to func
+					
+				Returns:
+				a <Promise> that will be resolved after func is actually invoked.
+			*/
 			function callInit(target, spec, func, args) {
-				return parse(args).then(function handleInitParsed(processedArgs) {
+				var p = new Promise();
+				parse(args).then(function handleInitParsed(processedArgs) {
 					func.apply(target, isArray(processedArgs) ? processedArgs : [processedArgs]);
+					p.resolve(target);
 					fireEvent('onInit', target, spec);
 				});
+				
+				return p;
 			}
 
+			/*
+				Function: loadModule
+				Loads the module with the supplied moduleId
+				
+				Parameters:
+					moduleId - id of module to load
+					
+				Returns:
+				a <Promise> that will be resolved when the module is loaded.  The value
+				of the <Promise> will be the module.
+			*/
 			function loadModule(moduleId) {
 
 				var p = uniqueModuleNames[moduleId];
@@ -570,6 +608,17 @@
 				return p;
 			}
 
+			/*
+				Function: scanPlugins
+				Scans the supplied Array of concrete modules and registers any plugins found
+				
+				Parameters:
+					modules - Array of modules to scan
+					
+				Returns:
+				a <Promise> that will be resolved once all modules have been scanned and their
+				plugins registered.
+			*/
 			function scanPlugins(modules) {
 				var p = new Promise();
 
@@ -772,6 +821,62 @@
 			}
 
 			/*
+				Function: wire
+				Wires the supplied spec, fully realizing all objects.
+				
+				Parameters:
+					spec - wiring spec
+					
+				Returns:
+				a <Promise> that will be resolved with the fully realized <Context> once
+				wiring is complete, or rejected if the supplied spec cannot be wired.
+			*/
+			function wire(spec) {
+				initPromiseStages();
+				
+				if(parent) {
+					initFromParent(parent);
+				}
+
+				try {
+					parse(spec, context).then(
+						finalizeContext,
+						reject(contextReady)
+					);
+
+					loadModules(keys(uniqueModuleNames), function handleModulesLoaded() {
+						scanPlugins(arguments).then(function handlePluginsScanned(scanned) {
+							modulesReady.resolve(scanned);
+						});
+					});
+
+				} catch(e) {
+					contextReady.reject(e);
+				}
+
+				return contextReady;
+			}
+			
+			function destroy() {
+				function doDestroy() {
+					for(var i=0; i < destroyers.length; i++) {
+						try {
+							destroyers[i]();
+						} catch(e) {
+							/* squelch? */
+							console.log(e);
+						}
+					}
+
+					fireEvent('onContextDestroy', context);
+					contextDestroyed.resolve();
+				}
+				contextReady.then(doDestroy, doDestroy);
+
+				return contextDestroyed;
+			}
+
+			/*
 				Function: finalizeContext
 				Adds public functions to the supplied context and uses it to resolve the
 				contextReady promise.
@@ -847,69 +952,11 @@
 				});
 			}
 
-			/*
-				Class: ContextFactory
-			*/
-			/*
-				Function: wire
-				Wires the supplied spec, fully realizing all objects.
-				
-				Parameters:
-					spec - wiring spec
-					
-				Returns:
-				a <Promise> that will be resolved with the fully realized <Context> once
-				wiring is complete, or rejected if the supplied spec cannot be wired.
-			*/
-			function wire(spec) {
-				initPromiseStages();
-				
-				if(parent) {
-					initFromParent(parent);
-				}
-
-				try {
-					parse(spec, context).then(
-						finalizeContext,
-						reject(contextReady)
-					);
-
-					loadModules(keys(uniqueModuleNames), function handleModulesLoaded() {
-						scanPlugins(arguments).then(function handlePluginsScanned(scanned) {
-							modulesReady.resolve(scanned);
-						});
-					});
-
-				} catch(e) {
-					contextReady.reject(e);
-				}
-
-				return contextReady;
-			}
-			
-			function destroy() {
-				function doDestroy() {
-					for(var i=0; i < destroyers.length; i++) {
-						try {
-							destroyers[i]();
-						} catch(e) {
-							/* squelch? */
-							console.log(e);
-						}
-					}
-
-					fireEvent('onContextDestroy', context);
-					contextDestroyed.resolve();
-				}
-				contextReady.then(doDestroy, doDestroy);
-
-				return contextDestroyed;
-			}
-			
 			return {
 				wire: wire
 			};
 		})(parent);
+
 	}
 	
 	function safe(promise) {
@@ -928,13 +975,14 @@
 	
 	/*
 		Class: Promise
-	*/
-	/*
-		Constructor: Promise
-		Promise implementation based on unscriptable's minimalist Promise:
+		Promise implementation based on unscriptable's minimalist Promise
 		https://gist.github.com/814052/
 		with safe mod and progress by me:
 		https://gist.github.com/814313
+	*/
+	/*
+		Constructor: Promise
+		Creates a new Promise
 	*/ 
 	
 	function Promise () {
@@ -1004,7 +1052,10 @@
 		}
 	};
 	
-	
+	/*
+		Section: wire API
+		The global wire function is the entry point to wiring.
+	*/
 	/*
 		Function: wire
 		Global wire function that is the starting point for wiring applications.
