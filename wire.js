@@ -9,8 +9,6 @@
 */
 //
 // TODO:
-// - Correct order for destroy.  The object tree of a single context must be destroyed
-//   top down, but the context hierarchy itself must be destroyed bottom up.
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
 //   might be used for data-dojo-type
 //
