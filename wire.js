@@ -656,6 +656,13 @@
 				return p;
 			}
 
+			/*
+				Function: addEventListeners
+				Registers all the listener methods of the supplied listener plugin
+				
+				Parameters:
+					listener - listener plugin
+			*/
 			function addEventListeners(listener) {
 				for(var p in listeners) {
 					if(isFunction(listener[p])) {
@@ -664,6 +671,15 @@
 				}
 			}
 
+			/*
+				Function: fireEvent
+				Fires a lifecycle event, invoking all listener plugins registered
+				for that event.
+				
+				Parameters:
+					name - The event name to fire
+					arg1 - etc. args to pass to each listener plugin
+			*/
 			function fireEvent(/* name, arg1, arg2... */) {
 				var args = Array.prototype.slice.call(arguments),
 					name = args.shift(),
@@ -675,6 +691,11 @@
 				}
 			}
 
+			/*
+				Function: initPromiseStages
+				Initializes the lifecycle related promises for modulesReady, contextReady,
+				and domReady.
+			*/
 			function initPromiseStages() {
 				function rejectPromise(promise, message, err) {
 					fireEvent('onContextError', context, message, err);
@@ -706,10 +727,28 @@
 				);
 			}
 
+			/*
+				Function: initFromParent
+				Initializes this <Context> from a parent <Context>.
+				
+				Parameters:
+					parent - parent <Context>
+			*/
 			function initFromParent(parent) {
 				parent.beforeDestroy(function handleParentDestroyed() { destroy(); });
 			}
 
+			/*
+				Function: parseArray
+				Parses and fully realizes all elements of the supplied array
+				
+				Parameters:
+					spec - wiring spec describing an Array
+					
+				Returns:
+				a <Promise> that will be resolved when all elements of the Array
+				have been realized.
+			*/
 			function parseArray(spec) {
 				var processed = [],
 					promise = new Promise(),
@@ -729,6 +768,19 @@
 				return promise;
 			}
 
+			/*
+				Function: parseModule
+				Parses, contructs, sets properties on, and initializes the supplied
+				module wiring spec, using the module whose id is moduleToLoad.
+				
+				Parameters:
+					spec - wiring spec describing a module
+					moduleToLoad - id of module to use
+					
+				Returns:
+				a <Promise> that will be resolved when the module has been fully
+				realized.
+			*/
 			function parseModule(spec, moduleToLoad) {
 				var promise = new Promise();
 				
@@ -763,6 +815,15 @@
 				return promise;
 			}
 			
+			/*
+				Function: parseObject
+				Parses and fully realizes the supplied object wiring spec.
+				
+				Parameters:
+					spec - a wiring spec describing an object
+					container - If present, the spec will be realized into the container Object.
+						That is, container will become the fully realized Object.
+			*/
 			function parseObject(spec, container) {
 				var processed = container || {},
 					promise = new Promise(),
@@ -791,6 +852,20 @@
 				return promise;
 			}
 			
+			/*
+				Function: parse
+				Parse and fully realize the supplied wiring spec.  If container is supplied,
+				the resulting objects will be placed into it.
+				
+				Parameters:
+					spec - wiring spec describing an Array, module, Object, or plain value
+						(String, Number, etc.)
+					container - Object into which to place created objects
+					
+				Returns:
+				a <Promise> that will be resolved once all objects in spec have been fully
+				realized (created, properties set, initialized, plugins invoked, etc.)
+			*/
 			function parse(spec, container) {
 				var promise;
 
@@ -806,11 +881,11 @@
 					if(moduleToLoad) {
 						// Module
 						promise = parseModule(spec, moduleToLoad);
-
+					
 					} else if(isRef(spec)) {
 						// Reference
 						promise = resolveRef(spec);
-
+					
 					} else {
 						// Simple object
 						promise = parseObject(spec, container);
@@ -844,7 +919,7 @@
 				}
 
 				try {
-					parse(spec, context).then(
+					parseObject(spec, context).then(
 						finalizeContext,
 						reject(contextReady)
 					);
@@ -944,7 +1019,8 @@
 				
 				/*
 					Function: destroy
-					Destroys this <Context> *and all of its descendents*.
+					Destroys all this <Context>'s children, and then destroys this <Context>.  That is,
+					<Context> hierarchies are destroyed depth-first _postordering_, i.e. "bottom-up".
 					
 					Returns:
 					a <Promise> that will be resolved when this <Context> has been destroyed.
@@ -975,6 +1051,20 @@
 
 	}
 	
+	/*
+		Section: Promise Helpers
+		Helper functions for <Promise>s
+	*/
+	/*
+		Function: safe
+		Returns a "safe" version of the supplied <Promise> that only has a then() function.
+		
+		Parameters:
+			promise - a <Promise> or safe <Promise>
+			
+		Returns:
+		a safe <Promise> that only has then()
+	*/
 	function safe(promise) {
 		return {
 			then: function safeThen(resolve, reject, progress) {
@@ -983,6 +1073,16 @@
 		};
 	}
 	
+	/*
+		Function: reject
+		Creates a Function that, when invoked, will reject the supplied <Promise>
+		
+		Parameters:
+			promise - <Promise> to reject
+			
+		Returns:
+		a Function that, when invoked, will reject the supplied <Promise>
+	*/
 	function reject(promise) {
 		return function(err) {
 			promise.reject(err);
