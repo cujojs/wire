@@ -3,7 +3,7 @@ define([], function() {
 	
 	return {
 		wire$resolvers: {
-			_: function defaultResolver(factory, name, refObj, promise) {
+			$: function defaultResolver(factory, name, refObj, promise) {
 				// console.log("++++BASE RESOLVING", name);
 				var resolved = factory.resolveName(name);
 				

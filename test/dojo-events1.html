@@ -1,0 +1,50 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Launcher test</title>
+	<script src="../require.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" src="../wire.js"></script>
+	<script type="text/javascript">
+		define('handler', [], function() {
+			return {
+				handleEvent: function(e) {
+					console.log(e);
+					alert("Success!");
+					this.context.destroy();
+				}
+			};
+		});
+		
+		wire({
+			plugins: [
+				{ module: 'wire/dojo/events' },
+				{ module: 'wire/dom' }
+			],
+			handler: {
+				create: "handler",
+				properties: {
+					"context": { $ref: "wire!context" }
+				},
+				connect: {
+					"dom!test": {
+						"click": "handleEvent"
+					}
+				}
+			}
+		}).then(
+			function(context) {
+				console.log("Done", context);
+			},
+			function(err) {
+				console.log(err);
+			}
+		);
+	</script>
+</head>
+<body>
+	<div>
+		<button id="test">Click me!</button>
+	</div>
+</body>
+</html>

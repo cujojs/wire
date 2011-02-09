@@ -207,7 +207,8 @@
 			callback - function to be invoked for each function name in list
 			
 		Returns:
-		A <Promise>
+		a <Promise> that will be resolved after all the functions in list
+		have been processed.
 	*/
 	function processFuncList(list, target, spec, callback) {
 		var func,
@@ -318,7 +319,6 @@
 				objectsToInit = 0,
 				objectInitCount = 0;
 
-			
 			// Mixin default modules
 			for(var i=0; i<defaultModules.length; i++) {
 				uniqueModuleNames[defaultModules[i]] = 1;
@@ -336,7 +336,7 @@
 			*/
 			function resolveRefObj(refObj, promise) {
 				var ref = refObj.$ref,
-					prefix = "_",
+					prefix = "$",
 					name = ref;
 					
 				if(ref.indexOf("!") >= 0) {
@@ -344,27 +344,31 @@
 					prefix = parts[0];
 				    name = parts[1];
 				}
-
-				var promiseProxy = {
-					resolve: function resolvePromise(resolved) {
-						promise.resolve(resolved);
-					}
-				};
-
-				promiseProxy.unresolved = (parent)
-					? function tryParent() {
-						parent.resolveRefObj(refObj, promise);
-					}
-					: function rejectPromise() {
-						promise.reject("Can't resolve reference " + name);
+				
+				if(prefix === "wire") {
+					promise.resolve(context);
+				} else {
+					var promiseProxy = {
+						resolve: function resolvePromise(resolved) {
+							promise.resolve(resolved);
+						}
 					};
 
-				if(resolvers[prefix]) {
-					resolvers[prefix](pluginProxy, name, refObj, promiseProxy);
+					promiseProxy.unresolved = (parent)
+						? function tryParent() {
+							parent.resolveRefObj(refObj, promise);
+						}
+						: function rejectPromise() {
+							promise.reject("Can't resolve reference " + name);
+						};
 
-				} else {
-					promiseProxy.unresolved();
+					if(resolvers[prefix]) {
+						resolvers[prefix](pluginProxy, name, refObj, promiseProxy);
 
+					} else {
+						promiseProxy.unresolved();
+
+					}
 				}
 			}
 
@@ -443,6 +447,19 @@
 				return p;
 			}
 
+			/*
+				Function: initObject
+				Sets properties and invokes initializer functions defined in spec
+				on the supplied object.
+				
+				Parameters:
+					spec - wiring spec with properties and init functions
+					object - Object on which to set properties and invoke init functions
+					
+				Returns:
+				a <Promise> that will be resolved once all properties have been set and
+				init functions have been invoked.
+			*/
 			function initObject(spec, object) {
 				var promise = new Promise();
 
@@ -485,6 +502,17 @@
 				return promise;
 			}
 
+			/*
+				Function: setProperties
+				Sets properties specified in props on object
+				
+				Parameters:
+					object - Object on which to set properties
+					props - property hash--may include wiring spec info, e.g. references, modules, etc.
+					
+				Returns:
+				a <Promise> that will be resolved once all properties have been set
+			*/
 			function setProperties(object, props) {
 				var promise = new Promise(),
 					keyArr = keys(props),

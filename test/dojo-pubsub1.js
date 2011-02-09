@@ -5,6 +5,7 @@ wire({
 	],
 	logger: {
 		create: 'test/test1/AlertLogger'
+		// create: 'test/test1/ConsoleLogger' // if you want a less noisy test :)
 	},
 	thing1: {
 		create: "test/pubsub1/Thing",

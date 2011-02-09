@@ -1,4 +1,6 @@
 define(['dojo'], function(pubsub) {
+	
+	var subscribeHandles = [];
 
 	function proxyPublish(target, publish) {
 		for(var f in publish) {
@@ -16,12 +18,11 @@ define(['dojo'], function(pubsub) {
 	}
 	
 	function proxySubscribe(target, subscriptions) {
-		var handles = [];
 		for(var topic in subscriptions) {
 			var f = subscriptions[topic];
 			if(typeof target[f] == 'function') {
 				// TODO: How to unsubscribe?
-				handles.push(pubsub.subscribe(topic, target, f));
+				subscribeHandles.push(pubsub.subscribe(topic, target, f));
 			}
 		}
 	}
@@ -37,8 +38,10 @@ define(['dojo'], function(pubsub) {
 					proxySubscribe(object, spec.subscribe);
 				}
 			},
-			onDestroy: function(target) {
-				console.log("PUBSUB destroy", target);
+			onContextDestroy: function(target) {
+				for (var i = subscribeHandles.length - 1; i >= 0; i--){
+					pubsub.disconnect(subscribeHandles[i]);
+				};
 			}
 		}
 	};

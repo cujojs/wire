@@ -11,7 +11,7 @@ wire({
 			itemTemplate: { module: 'require/text!test/rest1/person-template1.html' },
 			template: { module: 'require/text!test/rest1/container-template1.html' },
 			container: { $ref: 'dom!container1' },
-			store: { $ref: 'resource!test/rest1/person.json' }
+			store: { $ref: 'resource!rest1/person.json' }
 		},
 		init: 'ready'
 	},
@@ -24,7 +24,7 @@ wire({
 			store: {
 				create: {
 					module: 'dojo/store/JsonRest',
-					args: { target: 'test/rest1/person.json' }
+					args: { target: 'rest1/person.json' }
 				}
 			}
 		},
