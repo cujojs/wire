@@ -302,17 +302,13 @@
 					modulesReady: safe(modulesReady),
 					objectsReady: safe(objectsReady),
 					domReady: safe(domReady),
-					contextDestroyed: safe(contextDestroyed),
 					resolveName: function(name) {
 						return context[name];
 					},
 					resolveRef: function(ref) {
 						return resolveRef(ref);
 					},
-					setProperties: function(object, props) {
-						return setProperties(object, props);
-					},
-					refReady: function(name) {
+					objectReady: function(name) {
 						return safe(objectDefs[name].promise);
 					},
 					addDestroy: function(destroyFunc) {
@@ -427,7 +423,7 @@
 
 				function objectCreated(obj, promise) {
 					modulesReady.then(function handleModulesReady() {
-						contextReady.progress({ status: 'create', target: obj, spec: spec });
+						contextReady.progress({ factory: factoryProxy, status: 'create', target: obj, spec: spec });
 						promise.resolve(obj);
 					});
 				}
@@ -473,12 +469,12 @@
 				var promise = new Promise();
 
 				promise.then(function() {
-					contextReady.progress({ status: "init", target: object, spec: spec });
+					contextReady.progress({ factory: factoryProxy, status: "init", target: object, spec: spec });
 				});
 				
 				function resolveObjectInit() {
+					contextReady.progress({ factory: factoryProxy, status: "props", target: object, spec: spec });
 					// Invoke initializer functions
-					contextReady.progress({ status: "props", target: object, spec: spec });
 					if(spec.init) {
 						processFuncList(spec.init, object, spec,
 							function handleProcessFuncList(target, spec, func, args) {
@@ -509,7 +505,7 @@
 					// TODO: Should we update progress for every object regardless of whether
 					// it has a destroy func or not?
 					destroyers.push(function doDestroy() {
-						contextDestroyed.progress({ status: 'destroy', target: object, spec: spec });
+						contextDestroyed.progress({ factory: factoryProxy, status: 'destroy', target: object, spec: spec });
 						processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
 							func.apply(target, []); // no args for destroy
 						});
@@ -707,15 +703,16 @@
 					
 				if(len == 0) {
 					promise.resolve(processed);
+				} else {
+					var arrCount = len;
+					for(var i=0; i<len; i++) {
+						parse(spec[i]).then(
+							createResolver(--arrCount, processed, i, promise),
+							reject(promise)
+						);
+					}
 				}
 
-				var arrCount = len;
-				for(var i=0; i<len; i++) {
-					parse(spec[i]).then(
-						createResolver(--arrCount, processed, i, promise),
-						reject(promise));
-				}
-				
 				return promise;
 			}
 
@@ -787,21 +784,21 @@
 					var propCount = len;
 					for(var j=0; j<len; j++) {
 						var p = props[j],
-							propPromise = parse(spec[p]);
+							objectDef = {
+								factory: factoryProxy,
+								promise: parse(spec[p]),
+								status: "new",
+								spec: spec
+							};
+							
+						if(container && p !== undef && !objectDefs[p]) {
+							objectDefs[p] = objectDef;
+						}
 
-						propPromise.then(
+						objectDef.promise.then(
 							createResolver(--propCount, processed, p, promise),
 							reject(promise)
 						);
-
-						if(container && p !== undef && !objectDefs[p]) {
-							objectDefs[p] = {
-								factory: factoryProxy,
-								promise: propPromise,
-								status: "new",
-								spec: spec
-							}
-						}
 					}
 				}
 				

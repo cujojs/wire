@@ -11,7 +11,7 @@ define([], function() {
 					// console.log("++++BASE RESOLVED", name);
 					promise.resolve(resolved);
 				} else {
-					factory.refReady(name).then(function() {
+					factory.objectReady(name).then(function() {
 						// console.log("++++BASE RESOLVED LATER", name);
 						promise.resolve(factory.resolveName(name));
 					});

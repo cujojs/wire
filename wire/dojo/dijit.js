@@ -36,18 +36,19 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 				return false;
 			}
 		],
-		wire$listeners: {
-			onContextInit: function() {
-				// Only ever parse the page once, even if other child
-				// contexts are created with this plugin present.
-				if(!parsed) {
-					parsed = true;
-					dojo.ready(function() { parser.parse(); });
-				}
-			},
-			onCreate: function(factory, object) {
-				if(typeof object.declaredClass == 'string') {
-					
+		wire$onWire: function onWire(ready, destroy) {
+			// Only ever parse the page once, even if other child
+			// contexts are created with this plugin present.
+			if(!parsed) {
+				parsed = true;
+				dojo.ready(function() { parser.parse(); });
+			}
+
+			ready.then(null, null, function onObjectCreate(progress) {
+				if(progress.status == "create" && typeof progress.target.declaredClass == 'string') {
+					var object = progress.target,
+						factory = progress.factory;
+
 					// Prefer destroyRecursive over destroy
 					if(typeof object.destroyRecursive == 'function') {
 						factory.addDestroy(function destroyDijitRecursive() {
@@ -61,7 +62,7 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 
 					}
 				}
-			}
+			})
 		}
 	};
 });

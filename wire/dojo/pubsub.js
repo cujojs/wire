@@ -28,21 +28,26 @@ define(['dojo'], function(pubsub) {
 	}
 
 	return {
-		wire$listeners: {
-			onCreate: function(factory, object, spec) {
-				if(typeof spec.publish == 'object') {
-					proxyPublish(object, spec.publish);
-				}
+		wire$onWire: function onWire(ready, destroy) {
+			ready.then(null, null, function onObject(progress) {
+				if(progress.status === 'init') {
+					var spec = progress.spec;
+					
+					if(typeof spec.publish == 'object') {
+						proxyPublish(progress.target, spec.publish);
+					}
 
-				if(typeof spec.subscribe == 'object') {
-					proxySubscribe(object, spec.subscribe);
+					if(typeof spec.subscribe == 'object') {
+						proxySubscribe(progress.target, spec.subscribe);
+					}
 				}
-			},
-			onContextDestroy: function(target) {
-				for (var i = subscribeHandles.length - 1; i >= 0; i--){
+			});
+			
+			destroy.then(function onContextDestroy() {
+				for (var i = connectHandles.length - 1; i >= 0; i--){
 					pubsub.disconnect(subscribeHandles[i]);
-				};
-			}
+				}
+			});
 		}
 	};
 });
