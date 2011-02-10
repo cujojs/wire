@@ -403,10 +403,17 @@
 			}
 
 			/*
+				Function: contextProgress
+				Shortcut for issueing progress updates
 				
+				Parameters:
+					promise - <Promise> on which to issue the progress update
+					status - String status of the target object
+					target - Target object whose status has changed
+					spec - wiring spec from which target object is being wired
 			*/
-			function contextProgress(status, target, spec, destroy) {
-				(destroy ? contextDestroyed : contextReady).progress({
+			function contextProgress(promise, status, target, spec) {
+				promise.progress({
 					factory: factoryProxy,
 					status: status,
 					target: target,
@@ -435,7 +442,7 @@
 
 				function objectCreated(obj, promise) {
 					modulesReady.then(function handleModulesReady() {
-						contextProgress("create", object, spec);
+						contextProgress(contextReady, "create", object, spec);
 						promise.resolve(obj);
 					});
 				}
@@ -481,11 +488,11 @@
 				var promise = new Promise();
 
 				promise.then(function() {
-					contextProgress("init", object, spec);
+					contextProgress(contextReady, "init", object, spec);
 				});
 				
 				function resolveObjectInit() {
-					contextProgress("props", object, spec);
+					contextProgress(contextReady, "props", object, spec);
 					// Invoke initializer functions
 					if(spec.init) {
 						processFuncList(spec.init, object, spec,
@@ -517,7 +524,7 @@
 					// TODO: Should we update progress for every object regardless of whether
 					// it has a destroy func or not?
 					destroyers.push(function doDestroy() {
-						contextProgress("destroy", object, spec, 1);
+						contextProgress(contextDestroyed, "destroy", object, spec);
 						if(spec.destroy) {
 							processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
 								func.apply(target, []); // no args for destroy
