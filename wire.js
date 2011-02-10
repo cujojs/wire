@@ -298,7 +298,7 @@
 					onDestroy: []
 				},
 				// Proxy of this factory that can safely be passed to plugins
-				pluginProxy = {
+				factoryProxy = {
 					modulesReady: safe(modulesReady),
 					objectsReady: safe(objectsReady),
 					domReady: safe(domReady),
@@ -313,7 +313,7 @@
 						return setProperties(object, props);
 					},
 					refReady: function(name) {
-						return objectDefs[name];
+						return safe(objectDefs[name].promise);
 					},
 					addDestroy: function(destroyFunc) {
 						destroyers.push(destroyFunc);
@@ -372,7 +372,7 @@
 						};
 
 					if(resolvers[prefix]) {
-						resolvers[prefix](pluginProxy, name, refObj, promiseProxy);
+						resolvers[prefix](factoryProxy, name, refObj, promiseProxy);
 
 					} else {
 						promiseProxy.unresolved();
@@ -427,7 +427,7 @@
 
 				function objectCreated(obj, promise) {
 					modulesReady.then(function handleModulesReady() {
-						contextReady.progress({ object: obj, spec: spec });
+						contextReady.progress({ status: 'create', target: obj, spec: spec });
 						promise.resolve(obj);
 					});
 				}
@@ -472,8 +472,13 @@
 			function initObject(spec, object) {
 				var promise = new Promise();
 
+				promise.then(function() {
+					contextReady.progress({ status: "init", target: object, spec: spec });
+				});
+				
 				function resolveObjectInit() {
 					// Invoke initializer functions
+					contextReady.progress({ status: "props", target: object, spec: spec });
 					if(spec.init) {
 						processFuncList(spec.init, object, spec,
 							function handleProcessFuncList(target, spec, func, args) {
@@ -501,10 +506,10 @@
 
 				// Queue destroy functions to be called when this Context is destroyed
 				if(spec.destroy) {
-					// TODO: Should we fire onDestroy for every object regardless of whether
+					// TODO: Should we update progress for every object regardless of whether
 					// it has a destroy func or not?
 					destroyers.push(function doDestroy() {
-						fireEvent('onDestroy', object);
+						contextDestroyed.progress({ status: 'destroy', target: object, spec: spec });
 						processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
 							func.apply(target, []); // no args for destroy
 						});
@@ -551,7 +556,6 @@
 							}
 
 							if(--count === 0) {
-								fireEvent('onProperties', object, props);
 								promise.resolve(object);
 							}
 						}, reject(promise));
@@ -580,7 +584,6 @@
 				parse(args).then(function handleInitParsed(processedArgs) {
 					func.apply(target, isArray(processedArgs) ? processedArgs : [processedArgs]);
 					p.resolve(target);
-					fireEvent('onInit', target, spec);
 				});
 				
 				return p;
@@ -639,13 +642,17 @@
 							setters = newPlugin.wire$setters.concat(setters);
 						}
 
-						if(newPlugin.wire$listeners) {
-							addEventListeners(newPlugin.wire$listeners);
-						}
+						// if(newPlugin.wire$listeners) {
+						// 	addEventListeners(newPlugin.wire$listeners);
+						// }
 
 						if(isFunction(newPlugin.wire$init)) {
 							// Have to init plugins immediately, so they can be used during wiring
 							newPlugin.wire$init();
+						}
+						
+						if(isFunction(newPlugin.wire$onWire)) {
+							newPlugin.wire$onWire(contextReady, contextDestroyed);
 						}
 					}
 				}
@@ -655,72 +662,18 @@
 			}
 
 			/*
-				Function: addEventListeners
-				Registers all the listener methods of the supplied listener plugin
-				
-				Parameters:
-					listener - listener plugin
-			*/
-			function addEventListeners(listener) {
-				for(var p in listeners) {
-					if(isFunction(listener[p])) {
-						listeners[p].push(listener);
-					}
-				}
-			}
-
-			/*
-				Function: fireEvent
-				Fires a lifecycle event, invoking all listener plugins registered
-				for that event.
-				
-				Parameters:
-					name - The event name to fire
-					arg1 - etc. args to pass to each listener plugin
-			*/
-			function fireEvent(/* name, arg1, arg2... */) {
-				var args = Array.prototype.slice.call(arguments),
-					name = args.shift(),
-					pluginsToCall = listeners[name];
-
-				for(var i=0; i<pluginsToCall.length; i++) {
-					var plugin = pluginsToCall[i];
-					plugin[name].apply(plugin, args);
-				}
-			}
-
-			/*
 				Function: initPromiseStages
 				Initializes the lifecycle related promises for modulesReady, contextReady,
 				and domReady.
 			*/
 			function initPromiseStages() {
-				function rejectPromise(promise, message, err) {
-					fireEvent('onContextError', context, message, err);
-					reject(promise);
-				};
-
 				onDomReady(function resolveDomReady() {
-					// console.log('domReady');
 					domReady.resolve();
 				});
 
-				modulesReady.then(
-					function resolveModulesReady(modules) {
-						fireEvent('onContextInit', modules);
-					},
+				modulesReady.then(null,
 					function rejectModulesReady(err) {
-						// rejectPromise(objectsCreated, "Module loading failed", err);
-						rejectPromise(contextReady, "Module loading failed", err);
-					});
-
-				contextReady.then(
-					function resolveContextReady(context) {
-						fireEvent('onContextReady', context);
-					},
-					null,
-					function progressObjectsCreated(status) {
-						fireEvent("onCreate", pluginProxy, status.object, status.spec);
+						contextReady.reject(err);
 					}
 				);
 			}
@@ -842,7 +795,12 @@
 						);
 
 						if(container && p !== undef && !objectDefs[p]) {
-							objectDefs[p] = propPromise;
+							objectDefs[p] = {
+								factory: factoryProxy,
+								promise: propPromise,
+								status: "new",
+								spec: spec
+							}
 						}
 					}
 				}
@@ -954,7 +912,6 @@
 						}
 					}
 
-					fireEvent('onContextDestroy', context);
 					contextDestroyed.resolve();
 				}
 				contextReady.then(doDestroy, doDestroy);

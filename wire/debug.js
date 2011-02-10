@@ -49,38 +49,43 @@ define([], function() {
 	}
 	
 	return {
-		wire$listeners: {
-			// Overall context lifecycle callbacks
-			onContextInit: function(modules) {
-				console.log(time("Context init"), modules);
-			},
-			onContextError: function(context, msg, data) {
-				console.log(time("Context ERROR: "), msg, data);
-			},
-			onContextReady: function(context) {
-				console.log(time("Context ready"), context);
-			},
-			onContextDestroy: function(context) {
-				console.log(time("Context destroy"), context);
-			},
-			// Individual object lifecycle callbacks
-			// Don't time these
-			onCreate: function(target, spec, resolver) {
-				console.log(msg('Object created (count: ' + (++objectCount) + ')'), target, spec);
-			},
-			onProperties: function(target, spec, resolver) {
-				console.log(msg('Object properties'), target, spec);
-			},
-			onInit: function(target, spec, resolver) {
-				console.log(msg('Object init'), target, spec);
-			},
-			onDestroy: function(target) {
-				console.log(msg('Object destroy (count: ' + (--objectCount) + ')'), target);
-			}
-		},
 		// Init for this plugin
 		wire$init: function() {
 			console.log(time("All modules loaded"));
+		},
+		wire$onWire: function(ready, destroy) {
+			console.log(time("Context init"));
+			ready.then(
+				function onContextReady(context) {
+					console.log(time("Context ready"), context);
+				},
+				function onContextError(err) {
+					console.log(time("Context ERROR: "), err);
+				},
+				function onContextProgress(progress) {
+					// progress:
+					//   target: Object - object whose status is being reported
+					//   status: String - current status of object
+					//   spec: Any - wiring spec
+					console.log(msg('Object ' + progress.status), progress.target, progress.spec);
+				}
+			);
+			
+			destroy.then(
+				function onContextDestroyed() {
+					console.log(time("Context destroyed"));
+				},
+				function onContextDestroyError(err) {
+					console.log(time("Context destroy ERROR"), err);
+				},
+				function onContextDestroyProgress(progress) {
+					// progress:
+					//   target: Object - object whose status is being reported
+					//   status: String - current status of object
+					//   spec: Any - wiring spec
+					console.log(msg('Object ' + progress.status), progress.target, progress.spec);
+				}
+			);
 		}
 	};
 	
