@@ -309,7 +309,7 @@
 						return resolveRef(ref);
 					},
 					objectReady: function(name) {
-						return safe(objectDefs[name].promise);
+						return safe(objectDefs[name]);
 					},
 					addDestroy: function(destroyFunc) {
 						destroyers.push(destroyFunc);
@@ -403,6 +403,18 @@
 			}
 
 			/*
+				
+			*/
+			function contextProgress(status, target, spec, destroy) {
+				(destroy ? contextDestroyed : contextReady).progress({
+					factory: factoryProxy,
+					status: status,
+					target: target,
+					spec: spec
+				});
+			}
+
+			/*
 				Function: createObject
 				Constructs an object from the supplied module using any create args in
 				the supplied wiring spec for the object.
@@ -423,7 +435,7 @@
 
 				function objectCreated(obj, promise) {
 					modulesReady.then(function handleModulesReady() {
-						contextReady.progress({ factory: factoryProxy, status: 'create', target: obj, spec: spec });
+						contextProgress("create", object, spec);
 						promise.resolve(obj);
 					});
 				}
@@ -451,7 +463,7 @@
 
 				return p;
 			}
-
+			
 			/*
 				Function: initObject
 				Sets properties and invokes initializer functions defined in spec
@@ -469,11 +481,11 @@
 				var promise = new Promise();
 
 				promise.then(function() {
-					contextReady.progress({ factory: factoryProxy, status: "init", target: object, spec: spec });
+					contextProgress("init", object, spec);
 				});
 				
 				function resolveObjectInit() {
-					contextReady.progress({ factory: factoryProxy, status: "props", target: object, spec: spec });
+					contextProgress("props", object, spec);
 					// Invoke initializer functions
 					if(spec.init) {
 						processFuncList(spec.init, object, spec,
@@ -501,16 +513,18 @@
 				}
 
 				// Queue destroy functions to be called when this Context is destroyed
-				if(spec.destroy) {
+				// if(spec.destroy) {
 					// TODO: Should we update progress for every object regardless of whether
 					// it has a destroy func or not?
 					destroyers.push(function doDestroy() {
-						contextDestroyed.progress({ factory: factoryProxy, status: 'destroy', target: object, spec: spec });
-						processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
-							func.apply(target, []); // no args for destroy
-						});
+						contextProgress("destroy", object, spec, 1);
+						if(spec.destroy) {
+							processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
+								func.apply(target, []); // no args for destroy
+							});
+						}
 					});
-				}
+				// }
 
 				return promise;
 			}
@@ -622,7 +636,9 @@
 				plugins registered.
 			*/
 			function scanPlugins(modules) {
-				var p = new Promise();
+				var p = new Promise(),
+					ready = safe(contextReady),
+					destroy = safe(contextDestroyed);
 
 				for (var i=0; i < modules.length; i++) {
 					var newPlugin = modules[i];
@@ -648,7 +664,7 @@
 						}
 						
 						if(isFunction(newPlugin.wire$onWire)) {
-							newPlugin.wire$onWire(contextReady, contextDestroyed);
+							newPlugin.wire$onWire(ready, destroy);
 						}
 					}
 				}
@@ -752,7 +768,8 @@
 												objectsReady.resolve(context);
 											});
 										}
-									}
+									},
+									reject(contextReady)
 								);
 							},
 							reject(contextReady)
@@ -784,18 +801,13 @@
 					var propCount = len;
 					for(var j=0; j<len; j++) {
 						var p = props[j],
-							objectDef = {
-								factory: factoryProxy,
-								promise: parse(spec[p]),
-								status: "new",
-								spec: spec
-							};
+							objectPromise = parse(spec[p]);
 							
 						if(container && p !== undef && !objectDefs[p]) {
-							objectDefs[p] = objectDef;
+							objectDefs[p] = objectPromise;
 						}
 
-						objectDef.promise.then(
+						objectPromise.then(
 							createResolver(--propCount, processed, p, promise),
 							reject(promise)
 						);
