@@ -670,8 +670,8 @@
 							newPlugin.wire$init();
 						}
 						
-						if(isFunction(newPlugin.wire$onWire)) {
-							newPlugin.wire$onWire(ready, destroy);
+						if(isFunction(newPlugin.wire$wire)) {
+							newPlugin.wire$wire(ready, destroy);
 						}
 					}
 				}
@@ -756,10 +756,23 @@
 				var promise = new Promise();
 				
 				objectsToInit++;
+				
+				promise.then(function(object) {
+					if(++objectInitCount === objectsToInit) {
+						// FIXME: This domReady should not be necessary but is currently.
+						domReady.then(function() {
+							objectsReady.resolve(context);
+						});
+					}
+				});
+				
 				// Create object from module
 				
 				// FIXME: This is a nasty mess right here, kids.  This needs to be
 				// factored to reduce the nesting and make it clearer what is happening.
+				// It may be possible to move object creation and initialization out
+				// to "factory" plugins that know how to handle certain types of
+				// objects
 				loadModule(moduleToLoad).then(
 					function handleModuleLoaded(module) {
 						
@@ -770,11 +783,7 @@
 									function handleObjectInited(object) {
 						
 										promise.resolve(created);
-										if(++objectInitCount === objectsToInit) {
-											domReady.then(function() {
-												objectsReady.resolve(context);
-											});
-										}
+										
 									},
 									reject(contextReady)
 								);
@@ -910,7 +919,7 @@
 			}
 			
 			/*
-				Function: destroy()
+				Function: destroy
 				Destroys this <Context> by invoking all registered destroy functions, and all
 				onContextDestroy listeners.
 				
@@ -1074,6 +1083,7 @@
 	
 	function Promise () {
 		this._thens = [];
+		this._progress = [];
 	}
 
 	Promise.prototype = {
@@ -1087,6 +1097,7 @@
 		then: function (onResolve, onReject, onProgress) {
 			// capture calls to then()
 			this._thens.push({ resolve: onResolve, reject: onReject, progress: onProgress });
+			onProgress && this._progress.push(onProgress);
 		},
 
 		// Some promise implementations also have a cancel() front end API that
@@ -1115,8 +1126,8 @@
 		
 		progress: function(statusObject) {
 			var i=0,
-				aThen;
-			while(aThen = this._thens[i++]) { aThen.progress && aThen.progress(statusObject); }
+				p;
+			while(p = this._progress[i++]) { p(statusObject); }
 		},
 
 		/* "Private" methods. */

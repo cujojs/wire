@@ -42,19 +42,53 @@ define([], function() {
 				total: total,
 				split: splitTime,
 				toString: function() {
-					return 'total: ' + total + 'ms, split: ' + splitTime + 'ms';
+					return '' + splitTime + 'ms / ' + total + 'ms';
 				}
 			};
 		};
 	}
 	
+	/*
+		Function: logProgress
+		Logs progress info to the console
+		
+		Parameters:
+			progress - progress Object with status, target, and spec
+				- target - Object - object whose status is being reported
+				- status - String - current status of object
+				- spec: Any - wiring spec
+	*/
+	function logProgress(progress) {
+		// progress:
+		console.log(time('Object ' + progress.status), progress.target, progress.spec);
+	}
+	
 	return {
-		// Init for this plugin
+		/*
+			Function: wire$init
+			Does any initialization for this plugin as soon as it is loaded. This is only
+			called once when the plugin is loaded, and never again.
+		*/
 		wire$init: function() {
 			console.log(time("All modules loaded"));
 		},
-		wire$onWire: function(ready, destroy) {
+		/*
+			Function: wire$wire
+			Invoked when wiring starts and provides two promises: one for wiring the context,
+			and one for destroying the context.  Plugins should register resolve, reject, and
+			promise handlers as necessary to do their work.
+			
+			Parameters:
+				ready - promise that will be resolved when the context has been wired, rejected
+					if there is an error during the wiring process, and will receive progress
+					events for object creation, property setting, and initialization.
+				destroy - promise that will be resolved when the context has been destroyed,
+					rejected if there is an error while destroying the context, and will
+					receive progress events for objects being destroyed.
+		*/
+		wire$wire: function(ready, destroy) {
 			console.log(time("Context init"));
+			
 			ready.then(
 				function onContextReady(context) {
 					console.log(time("Context ready"), context);
@@ -62,29 +96,19 @@ define([], function() {
 				function onContextError(err) {
 					console.log(time("Context ERROR: "), err);
 				},
-				function onContextProgress(progress) {
-					// progress:
-					//   target: Object - object whose status is being reported
-					//   status: String - current status of object
-					//   spec: Any - wiring spec
-					console.log(msg('Object ' + progress.status), progress.target, progress.spec);
-				}
+				logProgress
 			);
 			
 			destroy.then(
 				function onContextDestroyed() {
+					// Do any context-specific plugin cleanup here
 					console.log(time("Context destroyed"));
 				},
 				function onContextDestroyError(err) {
+					// Do any object-specific plugin cleanup here
 					console.log(time("Context destroy ERROR"), err);
 				},
-				function onContextDestroyProgress(progress) {
-					// progress:
-					//   target: Object - object whose status is being reported
-					//   status: String - current status of object
-					//   spec: Any - wiring spec
-					console.log(msg('Object ' + progress.status), progress.target, progress.spec);
-				}
+				logProgress
 			);
 		}
 	};

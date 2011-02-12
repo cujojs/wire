@@ -28,20 +28,22 @@ define(['dojo'], function(pubsub) {
 	}
 
 	return {
-		wire$onWire: function onWire(ready, destroy) {
-			ready.then(null, null, function onObject(progress) {
-				if(progress.status === 'init') {
-					var spec = progress.spec;
+		wire$wire: function onWire(ready, destroy) {
+			ready.then(null, null,
+				function onObject(progress) {
+					if(progress.status === 'init') {
+						var spec = progress.spec;
 					
-					if(typeof spec.publish == 'object') {
-						proxyPublish(progress.target, spec.publish);
-					}
+						if(typeof spec.publish == 'object') {
+							proxyPublish(progress.target, spec.publish);
+						}
 
-					if(typeof spec.subscribe == 'object') {
-						proxySubscribe(progress.target, spec.subscribe);
+						if(typeof spec.subscribe == 'object') {
+							proxySubscribe(progress.target, spec.subscribe);
+						}
 					}
 				}
-			});
+			);
 			
 			destroy.then(function onContextDestroy() {
 				for (var i = connectHandles.length - 1; i >= 0; i--){

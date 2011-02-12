@@ -16,15 +16,17 @@ define(['dojo'], function(events) {
 	}
 
 	return {
-		wire$onWire: function onWire(ready, destroy) {
-			ready.then(null, null, function onObject(progress) {
-				if(progress.status === 'init') {
-					var c = progress.spec.connect;
-					if(typeof c == 'object') {
-						connect(progress.factory, progress.target, c);
+		wire$wire: function onWire(ready, destroy) {
+			ready.then(null, null,
+				function onObject(progress) {
+					if(progress.status === 'init') {
+						var c = progress.spec.connect;
+						if(typeof c == 'object') {
+							connect(progress.factory, progress.target, c);
+						}
 					}
 				}
-			});
+			);
 			
 			destroy.then(function onContextDestroy() {
 				for (var i = connectHandles.length - 1; i >= 0; i--){

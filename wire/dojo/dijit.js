@@ -1,3 +1,9 @@
+/*
+	File: dijit.js
+	wire dijit plugin that provides a dijit! resolver, setter, and
+	manages the lifecycle of dijits created using wire ("programmatic"
+	dijits, not dojoType/data-dojo-type dijits).
+*/
 define(['dojo', 'dojo/parser'], function(dojo, parser) {
 	var parsed = false;
 	
@@ -36,7 +42,7 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 				return false;
 			}
 		],
-		wire$onWire: function onWire(ready, destroy) {
+		wire$wire: function onWire(ready, destroy) {
 			// Only ever parse the page once, even if other child
 			// contexts are created with this plugin present.
 			if(!parsed) {
@@ -44,25 +50,22 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 				dojo.ready(function() { parser.parse(); });
 			}
 
-			ready.then(null, null, function onObjectCreate(progress) {
-				if(progress.status == "create" && typeof progress.target.declaredClass == 'string') {
-					var object = progress.target,
-						factory = progress.factory;
+			destroy.then(null, null,
+				function onObjectDestroyed(progress) {
+					if( typeof progress.target.declaredClass == 'string') {
+						var object = progress.target;
 
-					// Prefer destroyRecursive over destroy
-					if(typeof object.destroyRecursive == 'function') {
-						factory.addDestroy(function destroyDijitRecursive() {
+						// Prefer destroyRecursive over destroy
+						if(typeof object.destroyRecursive == 'function') {
 							object.destroyRecursive();
-						});
 
-					} else if(typeof object.destroy == 'function') {
-						factory.addDestroy(function destroyDijit() {
+						} else if(typeof object.destroy == 'function') {
 							object.destroy();
-						});
 
+						}
 					}
 				}
-			})
+			);
 		}
 	};
 });

@@ -4,7 +4,7 @@ wire({
 		{ module: 'wire/dom' },
 		{ module: 'wire/dojo/store' }
 	],
-	// These two constrollers are equivalent.  The rest! resolver makes life easier.
+	// These two constrollers are equivalent.  The resource! resolver makes life easier.
 	controller: {
 		create: 'test/rest1/View',
 		properties: {
