@@ -4,6 +4,11 @@
 	manages the lifecycle of dijits created using wire ("programmatic"
 	dijits, not dojoType/data-dojo-type dijits).
 */
+/**
+ * @license Copyright (c) 2010 Brian Cavalier
+ * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
+ * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
+ */
 define(['dojo', 'dojo/parser'], function(dojo, parser) {
 	var parsed = false;
 	
