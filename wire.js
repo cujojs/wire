@@ -11,6 +11,9 @@
 // TODO:
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
 //   might be used for data-dojo-type
+// - Explore the idea of different kinds of factories that know how to manage the lifecycle of
+//   modules/objects of particular types, such as dijits, instead of plugins having to feature
+//   test objects to know if they can handle them.
 //
 (function(global, undef){
 	"use strict";
