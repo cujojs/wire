@@ -313,9 +313,6 @@
 					},
 					objectReady: function(name) {
 						return safe(objectDefs[name]);
-					},
-					addDestroy: function(destroyFunc) {
-						destroyers.push(destroyFunc);
 					}
 				},
 				// Track destroy functions to be called when context is destroyed

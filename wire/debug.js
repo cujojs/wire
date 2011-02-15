@@ -3,6 +3,12 @@
  * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
+
+/*
+	File: debug.js
+	wire plugin that logs timing and debug information about wiring context and object
+	lifecycle events (e.g. creation, properties set, initialized, etc.).
+*/
 define([], function() {
 	var timer = createTimer(),
 		objectCount = 0;
@@ -64,7 +70,6 @@ define([], function() {
 				- spec: Any - wiring spec
 	*/
 	function logProgress(progress) {
-		// progress:
 		console.log(time('Object ' + progress.status), progress.target, progress.spec);
 	}
 	

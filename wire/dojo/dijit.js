@@ -9,6 +9,15 @@
  * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
+
+/*
+	File: dijit.js
+	wire plugin that provides a reference resolver for dijits declared using
+	dojoType/data-dojo-type, a setter that can set dojo 1.6+ set(name, value)
+	style properties, a wire$init() function that invokes the dojo parser,
+	and an object lifecycle handler that will cleanup (e.g. destroyRecursive,
+	or destroy) dijits instantiated "programmatically" in a wiring context.
+*/
 define(['dojo', 'dojo/parser'], function(dojo, parser) {
 	var parsed = false;
 	

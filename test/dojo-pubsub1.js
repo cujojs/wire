@@ -31,5 +31,7 @@ wire({
 	function(context) {
 		console.log(context);
 		context.thing1.doSomething("hello!");
+		
+		context.destroy();
 	}
 );
