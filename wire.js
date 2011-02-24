@@ -11,9 +11,15 @@
 // TODO:
 // - Allow easier loading of modules that don't actually need to be references, like dijits that
 //   might be used for data-dojo-type
+// - Consider "deep" references via JSON path syntax, e.g. : "myObject.subObject.name".  There are
+//   pros and cons to this, and it could be abused to create a lot of spaghetti in a wiring
+//   spec.
+// - Should functions be allowed in wiring specs?  e.g. specifying a function as module or create
+//   and having that work as expected?
 // - Explore the idea of different kinds of factories that know how to manage the lifecycle of
 //   modules/objects of particular types, such as dijits, instead of plugins having to feature
 //   test objects to know if they can handle them.
+// - jQuery UI plugin(s) for creating widgets?
 //
 (function(global, undef){
 	"use strict";
@@ -25,7 +31,7 @@
 		head = doc.getElementsByTagName('head')[0],
 		scripts = doc.getElementsByTagName('script'),
 		// Hook up to require
-		loadModules = global['require'],
+		loadModules = global['require'], // appease closure compiler
 		getLoadedModule = loadModules, // this may be requirejs specific
 		onDomReady = loadModules.ready, // this is requirejs specific
 		rootSpec = global.wire || {},
@@ -301,6 +307,10 @@
 					onDestroy: []
 				},
 				// Proxy of this factory that can safely be passed to plugins
+				/*
+					Class: FactoryProxy
+					A proxy of the ContextFactory that is given to plugins
+				*/
 				factoryProxy = {
 					modulesReady: safe(modulesReady),
 					objectsReady: safe(objectsReady),
@@ -319,8 +329,6 @@
 				destroyers = [],
 				// Counters for objects to create and init so that promises
 				// can be resolved when all are complete
-				objectsToCreate = 0,
-				objectCreateCount = 0,
 				objectsToInit = 0,
 				objectInitCount = 0;
 
@@ -331,7 +339,7 @@
 			
 			/*
 				Function: resolveRefObj
-				Resolves the supplied reference, delegating to ancestor <Context>s if
+				Resolves the supplied reference, delegating to ancestor <Contexts> if
 				necessary.
 				
 				Parameters:
@@ -928,6 +936,7 @@
 			*/
 			function destroy() {
 				function doDestroy() {
+					// Invoke all registered destroy functions
 					for (var i=0; i < destroyers.length; i++) {
 						try {
 							destroyers[i]();
@@ -936,9 +945,16 @@
 							console.log(e);
 						}
 					}
+					
+					// Clear out the context
+					for(var p in context) {
+						delete context[p];
+					}
 
+					// Resolve promise
 					contextDestroyed.resolve();
 				}
+				
 				contextReady.then(doDestroy, doDestroy);
 
 				return contextDestroyed;
@@ -982,7 +998,7 @@
 
 				/*
 					Function: resolve
-					Resolves references using this <Context>.  This will cascade up to ancestor <Context>s
+					Resolves references using this <Context>.  This will cascade up to ancestor <Contexts>
 					until the reference is either resolved or the root <Context> has been reached without
 					resolution, at which point the returned <Promise> will be rejected.
 					
@@ -1033,7 +1049,7 @@
 	
 	/*
 		Section: Promise Helpers
-		Helper functions for <Promise>s
+		Helper functions for <Promises>
 	*/
 	/*
 		Function: safe
@@ -1122,7 +1138,6 @@
 		// Some promises may have a progress handler. The back end API to signal a
 		// progress "event" has a single parameter. The contents of this parameter
 		// could be just about anything and is specific to your implementation.
-		// progress: function (data) {},
 		
 		progress: function(statusObject) {
 			var i=0,

@@ -14,6 +14,12 @@
 				}
 			};
 
+			// Anything in this wiring spec will be part of the root
+			// context, which is the parent (or ultimate ancestor) of
+			// all other contexts.
+			// What that means is that the initialValue "object" will be available
+			// in any context via context.initialValue (although child contexts can
+			// override its value)
 			global.wire = {
 				initialValue: "Initial Value from page!"
 			};

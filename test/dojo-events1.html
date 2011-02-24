@@ -22,10 +22,19 @@
 				{ module: 'wire/dom' }
 			],
 			handler: {
+				// Get the handler module (see above).  Note that it is a singleton
+				// since the module doesn't return a function (constructor or otherwise)
+				// that can be invoked--it returns an object.
 				create: "handler",
 				properties: {
+					// wire provides a way to wire in the enclosing context
+					// itself.  This can be useful in certain situations, although
+					// in general, you shouldn't need to.
 					"context": { $ref: "wire!context" }
 				},
+				// Use the wire/dojo/events plugin to declare that when the
+				// #test button is clicked, handler's handleEvent method will
+				// be called.
 				connect: {
 					"dom!test": {
 						"click": "handleEvent"

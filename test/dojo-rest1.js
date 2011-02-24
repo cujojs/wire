@@ -1,5 +1,5 @@
 wire({
-	wire$plugins: [
+	plugins: [
 		{ module: 'wire/debug' },
 		{ module: 'wire/dom' },
 		{ module: 'wire/dojo/store' }
