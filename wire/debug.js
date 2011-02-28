@@ -10,10 +10,9 @@
 	lifecycle events (e.g. creation, properties set, initialized, etc.).
 */
 define([], function() {
-	var timer = createTimer(),
-		objectCount = 0;
-	
-	function msg(text) {
+	var timer = createTimer();
+
+    function msg(text) {
 		return "DEBUG: " + text;
 	}
 

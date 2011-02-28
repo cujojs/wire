@@ -73,13 +73,13 @@ define(['dojo'], function(pubsub) {
 		
 		if(subscribeHandles.length > 0) {
 			destroyHandlers.push(function() {
-				unsubscribeTarget(target, subscribeHandles);
+				unsubscribeTarget();
 			});
 		}
 	}
-	
-	function unsubscribeTarget(target, handles) {
-		for (var i = handles.length - 1; i >= 0; i--){
+
+    function unsubscribeTarget(handles) {
+        for (var i = handles.length - 1; i >= 0; i--){
 			pubsub.unsubscribe(handles[i]);
 		}
 	}
@@ -105,8 +105,8 @@ define(['dojo'], function(pubsub) {
 			destroy.then(function onContextDestroy() {
 				for (var i = destroyHandlers.length - 1; i >= 0; i--){
 					destroyHandlers[i]();
-				};
-			});
+                }
+            });
 		}
 	};
 });

@@ -25,15 +25,13 @@
 	"use strict";
 
 	var VERSION = "0.1",
-		wirePrefix = 'wire$',
-		tos = Object.prototype.toString,
+        tos = Object.prototype.toString,
 		doc = global.document,
 		head = doc.getElementsByTagName('head')[0],
 		scripts = doc.getElementsByTagName('script'),
 		// Hook up to require
 		loadModules = global['require'], // appease closure compiler
-		getLoadedModule = loadModules, // this may be requirejs specific
-		onDomReady = loadModules.ready, // this is requirejs specific
+        onDomReady = loadModules.ready, // this is requirejs specific
 		rootSpec = global.wire || {},
 		defaultModules = ['wire/base'],
 		rootContext;
@@ -137,7 +135,7 @@
 	*/
 	function Begetter(ctor, args) {
 		return ctor.apply(this, args);
-	};
+	}
 
 	/*
 		Function: instantiate
@@ -240,10 +238,7 @@
 			}
 			
 		} else {
-			var k = keys(list),
-				count = k.length;
-				
-			for(var f in list) {
+            for(var f in list) {
 				func = target[f];
 				if(isFunction(func)) {
 					callback(target, spec, func, list[f]);
@@ -296,17 +291,7 @@
 				// Plugins
 				setters = [],
 				resolvers = {},
-				listeners = {
-					onContextInit: [],
-					onContextError: [],
-					onContextReady: [],
-					onContextDestroy: [],
-					onCreate: [],
-					onProperties: [],
-					onInit: [],
-					onDestroy: []
-				},
-				// Proxy of this factory that can safely be passed to plugins
+
 				/*
 					Class: FactoryProxy
 					A proxy of the ContextFactory that is given to plugins
@@ -534,8 +519,8 @@
 					destroyers.push(function doDestroy() {
 						contextProgress(contextDestroyed, "destroy", object, spec);
 						if(spec.destroy) {
-							processFuncList(spec.destroy, object, spec, function(target, spec, func, args) {
-								func.apply(target, []); // no args for destroy
+                            processFuncList(spec.destroy, object, spec, function(target, spec, func) {
+                                func.apply(target, []); // no args for destroy
 							});
 						}
 					});
@@ -764,9 +749,9 @@
 				var promise = new Promise();
 				
 				objectsToInit++;
-				
-				promise.then(function(object) {
-					if(++objectInitCount === objectsToInit) {
+
+                promise.then(function() {
+                    if(++objectInitCount === objectsToInit) {
 						// FIXME: This domReady should not be necessary but is currently.
 						domReady.then(function() {
 							objectsReady.resolve(context);
@@ -1224,7 +1209,7 @@
 	// Find our script tag and look for data attrs
 	for(var i=0; i<scripts.length; i++) {
 		var script = scripts[i],
-			src = script.src,
+			//src = script.src,
 			specUrl;
 		
 		// if(/wire[^\/]*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
