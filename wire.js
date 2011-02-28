@@ -1010,7 +1010,7 @@
 					if the reference cannot be resolved.
 				*/
 				parsedContext.resolve = function resolve(ref) {
-					return safe(resolveName(ref));
+					return safe(resolveRef({ $ref: ref }));
 				};
 				
 				/*
@@ -1151,9 +1151,8 @@
 			// switch over to sync then()
 			this.then = which === 'reject' ?
 				function (resolve, reject) { reject && reject(arg); } :
-				function (resolve, reject) { resolve && resolve(arg); };
-
-			// disallow multiple calls to resolve or reject
+                    function (resolve) { resolve && resolve(arg); };
+            // disallow multiple calls to resolve or reject
 			this.resolve = this.reject = this.progress =
 				function () { throw new Error('Promise already completed.'); };
 
