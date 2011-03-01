@@ -306,6 +306,9 @@
 					resolveRef: function(ref) {
 						return resolveRef(ref);
 					},
+					invoke: function(target, func, args) {
+						return invoke(target, func, args);
+					},
 					objectReady: function(name) {
 						return safe(objectDefs[name]);
 					}
@@ -490,7 +493,7 @@
 					if(spec.init) {
 						processFuncList(spec.init, object, spec,
 							function handleProcessFuncList(target, spec, func, args) {
-								callInit(target, spec, func, args);
+								invoke(target, func, args);
 							}
 						).then(
 							function() {
@@ -576,7 +579,7 @@
 			}
 
 			/*
-				Function: callInit
+				Function: invoke
 				Applies func on target with supplied args.  Args must be parsed and fully
 				realized and passed before applying func.
 				
@@ -589,7 +592,7 @@
 				Returns:
 				a <Promise> that will be resolved after func is actually invoked.
 			*/
-			function callInit(target, spec, func, args) {
+			function invoke(target, func, args) {
 				var p = new Promise();
 				parse(args).then(function handleInitParsed(processedArgs) {
 					func.apply(target, isArray(processedArgs) ? processedArgs : [processedArgs]);
