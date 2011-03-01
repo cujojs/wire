@@ -1,0 +1,53 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>dom test</title>
+	<script src="../../require.js" type="text/javascript"></script>
+	<script src="../../wire.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		define('unload', {
+			onUnload: function() {
+				alert("unloaded!");
+			}
+		});
+		
+		wire({
+			plugins: [
+				{ module: 'wire/debug' },
+				{ module: 'wire/dojo/dom' }
+			],
+			a: 'a',
+			b: 2,
+			unload: {
+				module: 'unload',
+				properties: {
+					nodes: { $ref: 'dom.query!.test' },
+					node:  { $ref: 'dom.query!.test', i: 0 }
+				},
+				// unload: 'onUnload'
+				unload: {
+					onUnload: [{ $ref: 'a' }, { $ref: 'b' }, 'c']
+				}
+			}
+		}).then(
+			function(context) {
+				if(!context.unload.node) {
+					console.error("dom: FAILED, unload.node not wired correctly");
+				}
+				if(!context.unload.nodes || context.unload.nodes.length != 3) {
+					console.error("dom: FAILED, unload.nodes not wired correctly");
+				}
+			},
+			function(err) {
+				console.log("dom: FAILED", err);
+			}
+		);
+	</script>
+</head>
+<body>
+	<div class="test one"></div>
+	<div class="test two"></div>
+	<div class="test three"></div>
+</body>
+</html>
