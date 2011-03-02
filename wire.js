@@ -496,7 +496,7 @@
 								invoke(target, func, args);
 							}
 						).then(
-							function() {
+							function innerResolveObjectInit() {
 								promise.resolve(object);
 							}
 						);
