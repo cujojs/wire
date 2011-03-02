@@ -645,7 +645,7 @@
 
 				for (var i=0; i < modules.length; i++) {
 					var newPlugin = modules[i];
-					// console.log("scanning for plugins: " + newPlugin);
+
 					if(typeof newPlugin == 'object') {
 						if(newPlugin.wire$resolvers) {
 							for(var name in newPlugin.wire$resolvers) {
@@ -656,10 +656,6 @@
 						if(newPlugin.wire$setters) {
 							setters = newPlugin.wire$setters.concat(setters);
 						}
-
-						// if(newPlugin.wire$listeners) {
-						// 	addEventListeners(newPlugin.wire$listeners);
-						// }
 
 						if(isFunction(newPlugin.wire$init)) {
 							// Have to init plugins immediately, so they can be used during wiring
