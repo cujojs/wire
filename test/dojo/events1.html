@@ -3,14 +3,13 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
-	<script src="../require.js" type="text/javascript" charset="utf-8"></script>
-	<script type="text/javascript" src="../wire.js"></script>
+	<script src="../../require.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" src="../../wire.js"></script>
 	<script type="text/javascript">
 		define('handler', [], function() {
 			return {
 				handleEvent: function(e) {
-					console.log(e);
-					alert("Success!");
+					e.target.innerHTML = "Success!";
 					this.context.destroy();
 				}
 			};
