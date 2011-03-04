@@ -12,6 +12,22 @@
 */
 
 define(['dojo/store/JsonRest'], function(JsonRest) {
+	
+	function resolveData(dataPromise, refPromise, wait) {
+		if(wait === true) {
+			dataPromise.then(
+				function(data) {
+					refPromise.resolve(data);
+				},
+				function(err) {
+					refPromise.unresolved();
+				}
+			);
+		} else {
+			refPromise.resolve(dataPromise);
+		}
+	}
+	
 	return {
 		wire$resolvers: {
 			/*
@@ -24,11 +40,17 @@ define(['dojo/store/JsonRest'], function(JsonRest) {
 				
 				Reference params:
 					get - specifies a particular id to fetch.  If supplied, the item will
-						be fetched, and the resolved reference will be the data item itself,
+						be fetched, and the resolved reference will be a *promise* for the data itself,
 						rather than the data store.
 					query - specifies a query to issue.  If supplied, the query will be
-						executed, and the resolved reference will be the query results,
+						executed, and the resolved reference will be a *promise* for the query results,
 						rather than the data store.
+					wait - If specified and the value is strictly true, instead of resolving to
+						*promises*, get and query references (see above) will be resolved to their
+						actual data by waiting for the get and query operations (which may be
+						asynchronous), to complete.  Note that *this will block wiring* (and thus
+						the contextReady event) until the actual data has been fetched, or an
+						error or timeout occurs.
 				
 				Parameters:
 					factory - wiring factory
@@ -40,34 +62,16 @@ define(['dojo/store/JsonRest'], function(JsonRest) {
 			*/
 			resource: function(factory, name, refObj, promise) {
 				
-				var store = new JsonRest({ target: name }),
-					unresolved = function(err) {
-						promise.unresolved();
-					},
-					storePromise;
-				
+				var store = new JsonRest({ target: name });
+					
 				if(refObj.get) {
 					// If get was specified, get it, and resolve with the resulting item.
-					storePromise = store.get(refObj.get);
+					resolveData(store.get(refObj.get), promise, refObj.wait);
 
 				} else if(refObj.query) {
 					// Similarly, query and resolve with the result set.
-					storePromise = store.query(refObj.query);
+					resolveData(store.query(refObj.query), promise, refObj.wait);
 				
-				}
-				
-				if(storePromise) {
-					if(refObj.wait === true) {
-						storePromise.then(
-							function(data) {
-								promise.resolve(data);
-							},
-							unresolved
-						);
-						
-					} else {
-						promise.resolve(storePromise);
-					}
 				} else {
 					// Neither get nor query was specified, so resolve with
 					// the store itself.

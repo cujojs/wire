@@ -26,9 +26,7 @@ wire({
 					module: 'dojo/store/JsonRest',
 					args: { target: 'rest1/people/' }
 				}
-			},
-			person: { $ref: 'person' },
-			people: { $ref: 'people' }
+			}
 		},
 		init: 'ready'
 	},
