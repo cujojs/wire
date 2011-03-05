@@ -71,10 +71,10 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 
 						// Prefer destroyRecursive over destroy
 						if(typeof object.destroyRecursive == 'function') {
-							object.destroyRecursive();
+							object.destroyRecursive(false);
 
 						} else if(typeof object.destroy == 'function') {
-							object.destroy();
+							object.destroy(false);
 
 						}
 					}
