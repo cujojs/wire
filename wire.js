@@ -938,7 +938,7 @@
 
 					// But retain a do-nothing destroy() func, in case
 					// it is called again for some reason.
-					context.destroy = function() { return contextDestroyed; };
+					context.destroy = function() { return safe(contextDestroyed); };
 
 					// Resolve promise
 					contextDestroyed.resolve();
@@ -1011,10 +1011,6 @@
 					a <Promise> that will be resolved when this <Context> has been destroyed.
 				*/
 				parsedContext.destroy = function destroyContext() {
-					this.destroy = function alreadyDestroyed() { 
-						return safe(contextDestroyed);
-					};
-
 					return safe(destroy());
 				};
 
