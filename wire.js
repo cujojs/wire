@@ -931,9 +931,14 @@
 					}
 					
 					// Clear out the context
+					delete context.prototype;
 					for(var p in context) {
 						delete context[p];
 					}
+
+					// But retain a do-nothing destroy() func, in case
+					// it is called again for some reason.
+					context.destroy = function() { return contextDestroyed; };
 
 					// Resolve promise
 					contextDestroyed.resolve();
@@ -1006,7 +1011,6 @@
 					a <Promise> that will be resolved when this <Context> has been destroyed.
 				*/
 				parsedContext.destroy = function destroyContext() {
-					console.log(parsedContext._time, parsedContext._root);
 					this.destroy = function alreadyDestroyed() { 
 						return safe(contextDestroyed);
 					};
@@ -1019,8 +1023,6 @@
 				}
 
 				objectsReady.then(function finalizeContextReady(readyContext) {
-					readyContext._time = new Date().getTime();
-					console.log(readyContext._time, readyContext._root);
 					// TODO: Remove explicit domReady wait
 					// It should be possible not to have to wait for domReady
 					// here, but rely on promise resolution.  For now, just wait
@@ -1186,7 +1188,6 @@
 			// a child.  Subsequent wire() calls will reuse the existing root context.
 			var unsafePromise = new Promise();
 
-			rootSpec._root = "root";
 			ContextFactory().wire(rootSpec).then(function(context) {
 				rootContext = context;
 				rootContext.wire(spec).then(
