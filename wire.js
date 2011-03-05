@@ -931,9 +931,14 @@
 					}
 					
 					// Clear out the context
+					delete context.prototype;
 					for(var p in context) {
 						delete context[p];
 					}
+
+					// But retain a do-nothing destroy() func, in case
+					// it is called again for some reason.
+					context.destroy = function() { return contextDestroyed; };
 
 					// Resolve promise
 					contextDestroyed.resolve();
@@ -1006,6 +1011,10 @@
 					a <Promise> that will be resolved when this <Context> has been destroyed.
 				*/
 				parsedContext.destroy = function destroyContext() {
+					this.destroy = function alreadyDestroyed() { 
+						return safe(contextDestroyed);
+					};
+
 					return safe(destroy());
 				};
 
@@ -1178,7 +1187,7 @@
 			// No root context yet, so wire it first, then wire the requested spec as
 			// a child.  Subsequent wire() calls will reuse the existing root context.
 			var unsafePromise = new Promise();
-			
+
 			ContextFactory().wire(rootSpec).then(function(context) {
 				rootContext = context;
 				rootContext.wire(spec).then(
