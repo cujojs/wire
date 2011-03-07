@@ -16,8 +16,8 @@ define([], function() {
 		return "DEBUG: " + text;
 	}
 
-	function time(text) {
-		return msg(text) + " (" + timer() + ")";
+	function time(text, contextTimer) {
+		return msg(text) + " (total: " + timer() + (contextTimer ? ", context: " + contextTimer() + ")" : ")");
 	}
 
 	/*
@@ -68,8 +68,8 @@ define([], function() {
 				- status - String - current status of object
 				- spec: Any - wiring spec
 	*/
-	function logProgress(progress) {
-		console.log(time('Object ' + progress.status), progress.target, progress.spec);
+	function logProgress(progress, contextTimer) {
+		console.log(time('Object ' + progress.status, contextTimer), progress.target, progress.spec);
 	}
 	
 	return {
@@ -96,28 +96,38 @@ define([], function() {
 					receive progress events for objects being destroyed.
 		*/
 		wire$wire: function(ready, destroy) {
-			console.log(time("Context init"));
+			var contextTimer = createTimer();
+			
+			function contextTime(msg) {
+				return time(msg, contextTimer);
+			}
+			
+			function logContextProgress(progress) {
+				logProgress(progress, contextTimer);
+			}
+			
+			console.log(contextTime("Context init"));
 			
 			ready.then(
 				function onContextReady(context) {
-					console.log(time("Context ready"), context);
+					console.log(contextTime("Context ready"), context);
 				},
 				function onContextError(err) {
-					console.log(time("Context ERROR: "), err);
+					console.log(contextTime("Context ERROR: "), err);
 				},
-				logProgress
+				logContextProgress
 			);
 			
 			destroy.then(
 				function onContextDestroyed() {
 					// Do any context-specific plugin cleanup here
-					console.log(time("Context destroyed"));
+					console.log(contextTime("Context destroyed"));
 				},
 				function onContextDestroyError(err) {
 					// Do any object-specific plugin cleanup here
-					console.log(time("Context destroy ERROR"), err);
+					console.log(contextTime("Context destroy ERROR"), err);
 				},
-				logProgress
+				logContextProgress
 			);
 		}
 	};

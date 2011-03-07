@@ -56,8 +56,8 @@
 						// name: { "$ref": "name" },
 						number: { "$ref": "number" }, // from the parent context
 						foo: { "$ref": "foo" }, // from the parent context
-						logger: { $ref: "logger" } // from the parent context
-						messageNode: { "$ref" : "dom!node1" }, // inject reference to dom node by id
+						logger: { $ref: "logger" }, // from the parent context
+						messageNode: { "$ref" : "dom!node1" } // inject reference to dom node by id
 					},
 					// Init function, named "ready", will be called after properties have been
 					// set.  Since the properties depend on a dom node, the init function can't
