@@ -17,7 +17,13 @@ define([], function() {
 	}
 
 	function time(text, contextTimer) {
-		return msg(text) + " (total: " + timer() + (contextTimer ? ", context: " + contextTimer() + ")" : ")");
+		var all = timer(),
+			timing = " (total: " + 
+				(contextTimer
+					? all.total + "ms, context: " + contextTimer()
+					: all)
+				+ ")";
+		return msg(text) + timing;
 	}
 
 	/*
