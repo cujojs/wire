@@ -12,18 +12,14 @@
 define([], function() {
 	var timer = createTimer();
 
-    function msg(text) {
-		return "DEBUG: " + text;
-	}
-
 	function time(text, contextTimer) {
 		var all = timer(),
-			timing = " (total: " + 
+			timing = "(total: " + 
 				(contextTimer
 					? all.total + "ms, context: " + contextTimer()
 					: all)
-				+ ")";
-		return msg(text) + timing;
+				+ "): ";
+		return "DEBUG " + timing + text;
 	}
 
 	/*
