@@ -279,7 +279,7 @@
 				// Track loaded modules to unique-ify them.  RequireJS currently breaks
 				// when the same module is listed twice in the same dependency array
 				// so this also helps to avoid that problem.
-				uniqueModuleNames = {},
+				moduleDefs = {},
 				// Top-level promises
 				modulesReady = new Promise(),
 				// objectsCreated = new Promise(),
@@ -322,7 +322,7 @@
 
 			// Mixin default modules
 			for(var i=0; i<defaultModules.length; i++) {
-				uniqueModuleNames[defaultModules[i]] = 1;
+				moduleDefs[defaultModules[i]] = 1;
 			}
 			
 			/*
@@ -613,18 +613,23 @@
 				a <Promise> that will be resolved when the module is loaded.  The value
 				of the <Promise> will be the module.
 			*/
-			function loadModule(moduleId) {
+			function loadModule(spec, moduleId) {
 
-				var p = uniqueModuleNames[moduleId];
+				var p = moduleDefs[moduleId];
 
 				if(!p) {
-					p = uniqueModuleNames[moduleId] = new Promise();
+					p = moduleDefs[moduleId] = {
+						promise: new Promise(),
+						specs: [spec]
+					};
 					loadModules([moduleId], function handleModulesLoaded(module) {
-						p.resolve(module);
+						p.promise.resolve(module);
 					});
+				} else {
+					p.specs.push(spec);
 				}
 
-				return p;
+				return p.promise;
 			}
 
 			/*
@@ -643,8 +648,9 @@
 					ready = safe(contextReady),
 					destroy = safe(contextDestroyed);
 
-				for (var i=0; i < modules.length; i++) {
-					var newPlugin = modules[i];
+				for (var moduleId in modules) {
+					var newPlugin = modules[moduleId],
+						moduleDef = moduleDefs[moduleId];
 
 					if(typeof newPlugin == 'object') {
 						if(newPlugin.wire$resolvers) {
@@ -659,7 +665,10 @@
 
 						if(isFunction(newPlugin.wire$init)) {
 							// Have to init plugins immediately, so they can be used during wiring
-							newPlugin.wire$init();
+							// Pass *first* spec as plugin options.  This means that for plugins
+							// that were listed twice (which is pointless anyway), the first
+							// plugin spec wins, and subsequent ones do not override.
+							newPlugin.wire$init(moduleDef.specs ? moduleDef.specs[0] : undef);
 						}
 						
 						if(isFunction(newPlugin.wire$wire)) {
@@ -765,7 +774,7 @@
 				// It may be possible to move object creation and initialization out
 				// to "factory" plugins that know how to handle certain types of
 				// objects
-				loadModule(moduleToLoad).then(
+				loadModule(spec, moduleToLoad).then(
 					function handleModuleLoaded(module) {
 						
 						createObject(spec, module).then(
@@ -897,8 +906,13 @@
 						reject(contextReady)
 					);
 
-					loadModules(keys(uniqueModuleNames), function handleModulesLoaded() {
-						scanPlugins(arguments).then(function handlePluginsScanned(scanned) {
+					var moduleIds = keys(moduleDefs);
+					loadModules(moduleIds, function handleModulesLoaded() {
+						var loaded = {};
+						for (var i = 0; i < arguments.length; i++) {
+							loaded[moduleIds[i]] = arguments[i];
+						}
+						scanPlugins(loaded).then(function handlePluginsScanned(scanned) {
 							modulesReady.resolve(scanned);
 						});
 					});

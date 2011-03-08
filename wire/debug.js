@@ -80,7 +80,7 @@ define([], function() {
 			Does any initialization for this plugin as soon as it is loaded. This is only
 			called once when the plugin is loaded, and never again.
 		*/
-		wire$init: function() {
+		wire$init: function onInit() {
 			console.log(time("All modules loaded"));
 		},
 		/*
@@ -97,7 +97,7 @@ define([], function() {
 					rejected if there is an error while destroying the context, and will
 					receive progress events for objects being destroyed.
 		*/
-		wire$wire: function(ready, destroy) {
+		wire$wire: function onWire(ready, destroy) {
 			var contextTimer = createTimer();
 			
 			function contextTime(msg) {
