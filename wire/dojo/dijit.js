@@ -19,7 +19,8 @@
 	or destroy) dijits instantiated "programmatically" in a wiring context.
 */
 define(['dojo', 'dojo/parser'], function(dojo, parser) {
-	var parsed = false;
+	var parsed = false,
+		doParse = false;
 	
 	return {
 		wire$resolvers: {
@@ -58,12 +59,12 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 		],
 		wire$init: function onInit(options) {
 			// If parse is set to false, don't parse the page
-			parsed = options.parse === false;
+			doParse = options.parse === true;
 		},
 		wire$wire: function onWire(ready, destroy) {
 			// Only ever parse the page once, even if other child
 			// contexts are created with this plugin present.
-			if(!parsed) {
+			if(doParse && !parsed) {
 				parsed = true;
 				dojo.ready(function() { parser.parse(); });
 			}
