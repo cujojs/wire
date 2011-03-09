@@ -30,8 +30,8 @@ wire({
 		},
 		init: 'ready'
 	},
-	person: { $ref: 'resource!rest1/people/', get: 1, wait: true },
-	people: { $ref: 'resource!rest1/people/', query: { name: "Sergei" }, wait: true}
+	person: { $ref: 'resource!rest1/people/', id: 1, wait: true },
+	people: { $ref: 'resource!rest1/people/', query: { name: "Sergei" }, wait: true }
 }).then(
 	function(context) {
 		console.log("Done!", context);

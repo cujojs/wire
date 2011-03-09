@@ -5,7 +5,7 @@
 	dijits, not dojoType/data-dojo-type dijits).
 */
 /**
- * @license Copyright (c) 2010 Brian Cavalier
+ * @license Copyright (c) 2010-2011 Brian Cavalier
  * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */

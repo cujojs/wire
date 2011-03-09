@@ -1,11 +1,11 @@
 /**
- * @license Copyright (c) 2010 Brian Cavalier
+ * @license Copyright (c) 2010-2011 Brian Cavalier
  * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
 /*
-	File: store.js
+	Package: store.js
 	wire plugin that provides a REST resource reference resolver.  Referencing
 	any REST resource using the format: resource!url/goes/here will create a
 	dojo.store.JsonRest pointing to url/goes/here
@@ -39,7 +39,7 @@ define(['dojo/store/JsonRest'], function(JsonRest) {
 				resource!resource_url
 				
 				Reference params:
-					get - specifies a particular id to fetch.  If supplied, the item will
+					id - specifies a particular id to fetch.  If supplied, the item will
 						be fetched, and the resolved reference will be a *promise* for the data itself,
 						rather than the data store.
 					query - specifies a query to issue.  If supplied, the query will be
@@ -64,9 +64,9 @@ define(['dojo/store/JsonRest'], function(JsonRest) {
 				
 				var store = new JsonRest({ target: name });
 					
-				if(refObj.get) {
+				if(refObj.id) {
 					// If get was specified, get it, and resolve with the resulting item.
-					resolveData(store.get(refObj.get), promise, refObj.wait);
+					resolveData(store.get(refObj.id), promise, refObj.wait);
 
 				} else if(refObj.query) {
 					// Similarly, query and resolve with the result set.

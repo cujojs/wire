@@ -1,17 +1,28 @@
 /**
- * @license Copyright (c) 2010 Brian Cavalier
+ * @license Copyright (c) 2010-2011 Brian Cavalier
  * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
 /*
-	File: debug.js
+	Package: debug.js
 	wire plugin that logs timing and debug information about wiring context and object
 	lifecycle events (e.g. creation, properties set, initialized, etc.).
 */
 define([], function() {
 	var timer = createTimer();
 
+	/*
+		Function: time
+		Builds a string with timing info and a message for debug output
+
+		Params:
+			text - String message
+			contextTimer - per-context timer information
+		
+		Returns:
+		A formatted string for output
+	*/
 	function time(text, contextTimer) {
 		var all = timer(),
 			timing = "(total: " + 
@@ -68,7 +79,7 @@ define([], function() {
 			progress - progress Object with status, target, and spec
 				- target - Object - object whose status is being reported
 				- status - String - current status of object
-				- spec: Any - wiring spec
+				- spec - Any - wiring spec
 	*/
 	function logProgress(progress, contextTimer) {
 		console.log(time('Object ' + progress.status, contextTimer), progress.target, progress.spec);

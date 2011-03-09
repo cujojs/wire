@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2010 Brian Cavalier
+ * @license Copyright (c) 2010-2011 Brian Cavalier
  * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
@@ -17,6 +17,9 @@ define({
 		/*
 			Function: dom
 			Resolves a reference to a dom node on the page by its id
+
+			Reference format:
+			dom!node-id
 			
 			Parameters:
 				factory - wiring factory
