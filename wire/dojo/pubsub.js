@@ -5,12 +5,10 @@
  */
 
 /*
-	File: events.js
+	Package: pubsub.js
 	wire plugin that sets up subscriptions and topics to be published after
-	functions are invoked.  ,
-	and disconnect them when an object is destroyed.  This implementation uses
-	dojo.connect and dojo.disconnect to do the work of connecting and disconnecting
-	event handlers.
+	functions are invoked and unsubscribe them when an object is destroyed.  This
+	implementation uses dojo.subscribe and dojo.unsubscribe to do the work.
 */
 define(['dojo'], function(pubsub) {
 

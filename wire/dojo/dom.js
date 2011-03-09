@@ -5,13 +5,24 @@
  */
 
 /*
-	File: dom.js
-	Describe your wire plugin here
+	Package: dom.js
+	Plugin that adds dom query resolver and unload handler capabilities.
+	IMPORTANT: Use the unload capability carefully, as once an unload function
+	has been registered, it cannot be removed, even when the context is destroyed!
 */
 define(['dojo'], function(dojo) {
 	
 	return {
 		wire$resolvers: {
+			/*
+				Function: dom.query
+				Reference resolver that resolves a CSS style DOM query to either an array
+				of nodes, or a single node.
+
+				Reference format:
+				dom.query!<css query>
+				e.g. "dom.query!.foo .bar"
+			*/
 			'dom.query': function(factory, name, refObj, promise) {
 				factory.domReady.then(function() {
 					var result = dojo.query(name);

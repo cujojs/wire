@@ -8,7 +8,8 @@
 	Package: store.js
 	wire plugin that provides a REST resource reference resolver.  Referencing
 	any REST resource using the format: resource!url/goes/here will create a
-	dojo.store.JsonRest pointing to url/goes/here
+	dojo.store.JsonRest pointing to url/goes/here.  Using the id or query
+	options, you can alternatively resolve references to actual data.
 */
 
 define(['dojo/store/JsonRest'], function(JsonRest) {

@@ -5,7 +5,7 @@
  */
 
 /*
-	File: base.js
+	Package: base.js
 	Base wire plugin that provides a reference resolver to resolve objects by name,
 	and a setter plugin that sets basic Javascript properties, e.g. object.prop = value.
 */

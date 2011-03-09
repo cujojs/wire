@@ -5,7 +5,7 @@
  */
 
 /*
-	File: dom.js
+	Package: dom.js
 	wire plugin that provides a resource resolver for dom nodes, by id, in the
 	current page.  This allows easy wiring of page-specific dom references into
 	generic components that may be page-independent, i.e. makes it easier to write
