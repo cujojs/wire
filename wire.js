@@ -310,7 +310,12 @@
 						return invoke(target, func, args);
 					},
 					objectReady: function(name) {
-						return safe(objectDefs[name]);
+						if(name in objectDefs) {
+							return safe(objectDefs[name]);
+						} else {
+							// objectsReady.reject("No object with the name: " + name);
+							throw new Error("No object with the name: " + name);
+						}
 					}
 				},
 				// Track destroy functions to be called when context is destroyed
@@ -359,8 +364,8 @@
 						? function tryParent() {
 							parent.resolveRefObj(refObj, promise);
 						}
-						: function rejectPromise() {
-							promise.reject("Can't resolve reference " + name);
+						: function rejectPromise(err) {
+							promise.reject(err);
 						};
 
 					if(resolvers[prefix]) {
@@ -1028,7 +1033,7 @@
 					return safe(destroy());
 				};
 
-				if(objectsToInit === 0 && !objectsReady.completed) {
+				if(objectsToInit === 0) {
 					objectsReady.resolve(parsedContext);
 				}
 
