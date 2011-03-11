@@ -313,7 +313,6 @@
 						if(name in objectDefs) {
 							return safe(objectDefs[name]);
 						} else {
-							// objectsReady.reject("No object with the name: " + name);
 							throw new Error("No object with the name: " + name);
 						}
 					}
