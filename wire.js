@@ -326,7 +326,7 @@
 
 			// Mixin default modules
 			for(var i=0; i<defaultModules.length; i++) {
-				moduleDefs[defaultModules[i]] = 1;
+				moduleDefs[defaultModules[i]] = { specs: [{ module: defaultModules[i] }] };
 			}
 			
 			/*
@@ -342,10 +342,11 @@
 			function resolveRefObj(refObj, promise) {
 				var ref = refObj.$ref,
 					prefix = "$",
-					name = ref;
+					name = ref,
+					split = "!";
 					
-				if(ref.indexOf("!") >= 0) {
-					var parts = ref.split("!");
+				if(ref.indexOf(split) >= 0) {
+					var parts = ref.split(split);
 					prefix = parts[0];
 				    name = parts[1];
 				}
@@ -647,14 +648,14 @@
 				a <Promise> that will be resolved once all modules have been scanned and their
 				plugins registered.
 			*/
-			function scanPlugins(modules) {
+			function scanPlugins(moduleDefs) {
 				var p = new Promise(),
 					ready = safe(contextReady),
 					destroy = safe(contextDestroyed);
 
-				for (var moduleId in modules) {
-					var newPlugin = modules[moduleId],
-						moduleDef = moduleDefs[moduleId];
+				for (var moduleId in moduleDefs) {
+					var moduleDef = moduleDefs[moduleId],
+						newPlugin = moduleDef.module;
 
 					if(typeof newPlugin == 'object') {
 						if(newPlugin.wire$resolvers) {
@@ -681,7 +682,7 @@
 					}
 				}
 
-				p.resolve(modules);
+				p.resolve(moduleDefs);
 				return p;
 			}
 
@@ -914,9 +915,9 @@
 					loadModules(moduleIds, function handleModulesLoaded() {
 						var loaded = {};
 						for (var i = 0; i < arguments.length; i++) {
-							loaded[moduleIds[i]] = arguments[i];
+							moduleDefs[moduleIds[i]].module = arguments[i];
 						}
-						scanPlugins(loaded).then(function handlePluginsScanned(scanned) {
+						scanPlugins(moduleDefs).then(function handlePluginsScanned(scanned) {
 							modulesReady.resolve(scanned);
 						});
 					});
