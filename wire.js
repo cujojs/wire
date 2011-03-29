@@ -260,7 +260,7 @@
 		Constructor: Context
 		Creates a new, empty Context ready for wiring.
 	*/
-	var Context = function() {};
+	function Context() {};
 	
 	/*
 		Class: ContextFactory
@@ -957,7 +957,8 @@
 
 					// But retain a do-nothing destroy() func, in case
 					// it is called again for some reason.
-					context.destroy = function() { return safe(contextDestroyed); };
+
+					context.destroy = function alreadyDestroyed() { return safe(contextDestroyed); };
 
 					// Resolve promise
 					contextDestroyed.resolve();
@@ -991,7 +992,7 @@
 					a <Promise> that will be resolved when the new child <Context> has
 					been wired.
 				*/
-				parsedContext.wire = function wire(spec) {
+				parsedContext.wire = function wireContext(spec) {
 					var newParent = {
 						wire: wire,
 						context: context,
@@ -1017,7 +1018,7 @@
 					a <Promise> that will be resolved when the reference has been resolved or rejected
 					if the reference cannot be resolved.
 				*/
-				parsedContext.resolve = function resolve(ref) {
+				parsedContext.resolve = function resolveContext(ref) {
 					return safe(resolveRef({ $ref: ref }));
 				};
 				
@@ -1187,7 +1188,7 @@
 		a <Promise> that will be resolved when the <Context> has been wired.  The
 		newly wired <Context> will be the value of the <Promise>
 	*/
-	var w = global['wire'] = function wire(spec) { // global['wire'] for closure compiler export
+	function _wire(spec) {
 		
 		var promise;
 		
@@ -1223,6 +1224,9 @@
 		return promise;
 	};
 	
+	// Create global wire()
+	var w = global['wire'] = _wire; // global['wire'] for closure compiler export
+
 	// Add version
 	w.version = VERSION;
 	
