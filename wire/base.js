@@ -34,9 +34,13 @@ define([], function() {
 				if(resolved !== undef) {
 					promise.resolve(resolved);
 				} else {
-					factory.objectReady(name).then(function() {
-						promise.resolve(factory.resolveName(name));
-					});
+					try {
+						factory.objectReady(name).then(function() {
+							promise.resolve(factory.resolveName(name));
+						});
+					} catch(e) {
+						promise.unresolved(e);
+					}
 				}
 			}
 		},

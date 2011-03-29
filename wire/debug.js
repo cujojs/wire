@@ -126,7 +126,7 @@ define([], function() {
 					console.log(contextTime("Context ready"), context);
 				},
 				function onContextError(err) {
-					console.log(contextTime("Context ERROR: "), err);
+					console.error(contextTime("Context ERROR: "), err);
 				},
 				logContextProgress
 			);
@@ -138,7 +138,7 @@ define([], function() {
 				},
 				function onContextDestroyError(err) {
 					// Do any object-specific plugin cleanup here
-					console.log(contextTime("Context destroy ERROR"), err);
+					console.error(contextTime("Context destroy ERROR"), err);
 				},
 				logContextProgress
 			);

@@ -260,7 +260,7 @@
 		Constructor: Context
 		Creates a new, empty Context ready for wiring.
 	*/
-	var Context = function() {};
+	function Context() {};
 	
 	/*
 		Class: ContextFactory
@@ -310,7 +310,11 @@
 						return invoke(target, func, args);
 					},
 					objectReady: function(name) {
-						return safe(objectDefs[name]);
+						if(name in objectDefs) {
+							return safe(objectDefs[name]);
+						} else {
+							throw new Error("No object with the name: " + name);
+						}
 					}
 				},
 				// Track destroy functions to be called when context is destroyed
@@ -322,7 +326,7 @@
 
 			// Mixin default modules
 			for(var i=0; i<defaultModules.length; i++) {
-				moduleDefs[defaultModules[i]] = 1;
+				moduleDefs[defaultModules[i]] = { specs: [{ module: defaultModules[i] }] };
 			}
 			
 			/*
@@ -338,10 +342,11 @@
 			function resolveRefObj(refObj, promise) {
 				var ref = refObj.$ref,
 					prefix = "$",
-					name = ref;
+					name = ref,
+					split = "!";
 					
-				if(ref.indexOf("!") >= 0) {
-					var parts = ref.split("!");
+				if(ref.indexOf(split) >= 0) {
+					var parts = ref.split(split);
 					prefix = parts[0];
 				    name = parts[1];
 				}
@@ -359,8 +364,8 @@
 						? function tryParent() {
 							parent.resolveRefObj(refObj, promise);
 						}
-						: function rejectPromise() {
-							promise.reject("Can't resolve reference " + name);
+						: function rejectPromise(err) {
+							promise.reject(err);
 						};
 
 					if(resolvers[prefix]) {
@@ -643,14 +648,14 @@
 				a <Promise> that will be resolved once all modules have been scanned and their
 				plugins registered.
 			*/
-			function scanPlugins(modules) {
+			function scanPlugins(moduleDefs) {
 				var p = new Promise(),
 					ready = safe(contextReady),
 					destroy = safe(contextDestroyed);
 
-				for (var moduleId in modules) {
-					var newPlugin = modules[moduleId],
-						moduleDef = moduleDefs[moduleId];
+				for (var moduleId in moduleDefs) {
+					var moduleDef = moduleDefs[moduleId],
+						newPlugin = moduleDef.module;
 
 					if(typeof newPlugin == 'object') {
 						if(newPlugin.wire$resolvers) {
@@ -677,7 +682,7 @@
 					}
 				}
 
-				p.resolve(modules);
+				p.resolve(moduleDefs);
 				return p;
 			}
 
@@ -910,9 +915,9 @@
 					loadModules(moduleIds, function handleModulesLoaded() {
 						var loaded = {};
 						for (var i = 0; i < arguments.length; i++) {
-							loaded[moduleIds[i]] = arguments[i];
+							moduleDefs[moduleIds[i]].module = arguments[i];
 						}
-						scanPlugins(loaded).then(function handlePluginsScanned(scanned) {
+						scanPlugins(moduleDefs).then(function handlePluginsScanned(scanned) {
 							modulesReady.resolve(scanned);
 						});
 					});
@@ -952,7 +957,8 @@
 
 					// But retain a do-nothing destroy() func, in case
 					// it is called again for some reason.
-					context.destroy = function() { return safe(contextDestroyed); };
+
+					context.destroy = function alreadyDestroyed() { return safe(contextDestroyed); };
 
 					// Resolve promise
 					contextDestroyed.resolve();
@@ -986,7 +992,7 @@
 					a <Promise> that will be resolved when the new child <Context> has
 					been wired.
 				*/
-				parsedContext.wire = function wire(spec) {
+				parsedContext.wire = function wireContext(spec) {
 					var newParent = {
 						wire: wire,
 						context: context,
@@ -1012,7 +1018,7 @@
 					a <Promise> that will be resolved when the reference has been resolved or rejected
 					if the reference cannot be resolved.
 				*/
-				parsedContext.resolve = function resolve(ref) {
+				parsedContext.resolve = function resolveContext(ref) {
 					return safe(resolveRef({ $ref: ref }));
 				};
 				
@@ -1028,7 +1034,7 @@
 					return safe(destroy());
 				};
 
-				if(objectsToInit === 0 && !objectsReady.completed) {
+				if(objectsToInit === 0) {
 					objectsReady.resolve(parsedContext);
 				}
 
@@ -1182,7 +1188,7 @@
 		a <Promise> that will be resolved when the <Context> has been wired.  The
 		newly wired <Context> will be the value of the <Promise>
 	*/
-	var w = global['wire'] = function wire(spec) { // global['wire'] for closure compiler export
+	function _wire(spec) {
 		
 		var promise;
 		
@@ -1218,6 +1224,9 @@
 		return promise;
 	};
 	
+	// Create global wire()
+	var w = global['wire'] = _wire; // global['wire'] for closure compiler export
+
 	// Add version
 	w.version = VERSION;
 	
