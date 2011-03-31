@@ -87,14 +87,6 @@ define([], function() {
 	
 	return {
 		/*
-			Function: wire$init
-			Does any initialization for this plugin as soon as it is loaded. This is only
-			called once when the plugin is loaded, and never again.
-		*/
-		wire$init: function onInit() {
-			console.log(time("All modules loaded"));
-		},
-		/*
 			Function: wire$wire
 			Invoked when wiring starts and provides two promises: one for wiring the context,
 			and one for destroying the context.  Plugins should register resolve, reject, and
@@ -108,7 +100,10 @@ define([], function() {
 					rejected if there is an error while destroying the context, and will
 					receive progress events for objects being destroyed.
 		*/
-		wire$wire: function onWire(ready, destroy) {
+		wire$wire: function onWire(ready, destroy, options) {
+
+			console.log(time("All modules loaded"));
+
 			var contextTimer = createTimer();
 			
 			function contextTime(msg) {
@@ -127,18 +122,18 @@ define([], function() {
 				},
 				function onContextError(err) {
 					console.error(contextTime("Context ERROR: "), err);
+					throw err;
 				},
 				logContextProgress
 			);
 			
 			destroy.then(
 				function onContextDestroyed() {
-					// Do any context-specific plugin cleanup here
 					console.log(contextTime("Context destroyed"));
 				},
 				function onContextDestroyError(err) {
-					// Do any object-specific plugin cleanup here
 					console.error(contextTime("Context destroy ERROR"), err);
+					throw err;
 				},
 				logContextProgress
 			);

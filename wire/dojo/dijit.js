@@ -56,22 +56,6 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 			}
 		],
 		/*
-			Function: wire$init
-			Initializes the dijit wire plugin
-
-			Parameters:
-				options - Plugin options:
-					- parse - Boolean, default false.  If set to true (exactly true, not truthy)
-					  the dijit plugin will invoke the dojo parse on the page.  Note that the
-					  parser will only be invoked once, regardless of how many times this
-					  plugin is loaded.
-		*/
-		wire$init: function onInit(options) {
-			// If parse is set to false, don't parse the page
-			doParse = options.parse === true;
-		},
-
-		/*
 			Function: wire$wire
 			If parse option was set to true, invokes the dojo parser on the page if it has not
 			yet been parsed, and properly destroys (via destroyRecursive() or destroy()) dijits
@@ -85,10 +69,10 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 					rejected if there is an error while destroying the context, and will
 					receive progress events for objects being destroyed.
 		*/
-		wire$wire: function onWire(ready, destroy) {
+		wire$wire: function onWire(ready, destroy, options) {
 			// Only ever parse the page once, even if other child
 			// contexts are created with this plugin present.
-			if(doParse && !parsed) {
+			if(options.parse && !parsed) {
 				parsed = true;
 				dojo.ready(function() { parser.parse(); });
 			}
