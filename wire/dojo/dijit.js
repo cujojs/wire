@@ -57,14 +57,10 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 				return false;
 			}
 		],
-		wire$init: function onInit(options) {
-			// If parse is set to false, don't parse the page
-			doParse = options.parse === true;
-		},
-		wire$wire: function onWire(ready, destroy) {
+		wire$wire: function onWire(ready, destroy, options) {
 			// Only ever parse the page once, even if other child
 			// contexts are created with this plugin present.
-			if(doParse && !parsed) {
+			if(options.parse && !parsed) {
 				parsed = true;
 				dojo.ready(function() { parser.parse(); });
 			}

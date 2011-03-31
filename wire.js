@@ -441,10 +441,10 @@
 				var p = new Promise(),
 					object = module;
 
-				function objectCreated(obj, promise) {
+				function objectCreated(created, promise) {
 					modulesReady.then(function handleModulesReady() {
-						contextProgress(contextReady, "create", object, spec);
-						promise.resolve(obj);
+						contextProgress(contextReady, "create", created, spec);
+						promise.resolve(created);
 					});
 				}
 
@@ -667,17 +667,13 @@
 						if(newPlugin.wire$setters) {
 							setters = newPlugin.wire$setters.concat(setters);
 						}
-
-						if(isFunction(newPlugin.wire$init)) {
-							// Have to init plugins immediately, so they can be used during wiring
+						
+						if(isFunction(newPlugin.wire$wire)) {
 							// Pass *first* spec as plugin options.  This means that for plugins
 							// that were listed twice (which is pointless anyway), the first
 							// plugin spec wins, and subsequent ones do not override.
-							newPlugin.wire$init(moduleDef.specs ? moduleDef.specs[0] : undef);
-						}
-						
-						if(isFunction(newPlugin.wire$wire)) {
-							newPlugin.wire$wire(ready, destroy);
+							newPlugin.wire$wire(ready, destroy, 
+								moduleDef.specs ? moduleDef.specs[0] : undef);
 						}
 					}
 				}
