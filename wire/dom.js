@@ -13,27 +13,28 @@
 	to one or more nodes on the page.
 */
 define({
-	wire$resolvers: {
-		/*
-			Function: dom
-			Resolves a reference to a dom node on the page by its id
-			
-			Parameters:
-				factory - wiring factory
-				name - id of dom node
-				refObj - complete JSON ref
-				promise - factory-provided <Promise> that will be resolved with the
-					dom node.
-		*/
-		'dom': function(factory, name, refObj, promise) {
-			factory.domReady.then(function() {
-				var result = document.getElementById(name[0] === '#' ? name.slice(1) : name);
-				if(result) {
-					promise.resolve(result);
-				} else {
-					promise.unresolved();
+	/*
+		Function: dom
+		Resolves a reference to a dom node on the page by its id
+		
+		Parameters:
+			factory - wiring factory
+			name - id of dom node
+			refObj - complete JSON ref
+			promise - factory-provided <Promise> that will be resolved with the
+				dom node.
+	*/
+	wire$plugin: function resolveDomId(ready, options) {
+		return {
+			resolvers: {
+				dom: function(id, refObj, wire, promise) {
+					wire.domReady(function() {
+						var node = document.getElementById(id);
+						if(node) promise.resolve(node);
+						else promise.reject();				
+					});
 				}
-			});
+			}
 		}
 	}
 });

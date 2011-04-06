@@ -7,40 +7,416 @@
 /*
 	File: wire.js
 */
-//
-// TODO:
-// - Allow easier loading of modules that don't actually need to be references, like dijits that
-//   might be used for data-dojo-type
-// - Consider "deep" references via JSON path syntax, e.g. : "myObject.subObject.name".  There are
-//   pros and cons to this, and it could be abused to create a lot of spaghetti in a wiring
-//   spec.
-// - Should functions be allowed in wiring specs?  e.g. specifying a function as module or create
-//   and having that work as expected?
-// - Explore the idea of different kinds of factories that know how to manage the lifecycle of
-//   modules/objects of particular types, such as dijits, instead of plugins having to feature
-//   test objects to know if they can handle them.
-// - jQuery UI plugin(s) for creating widgets?
-//
+
 (function(global, undef){
+
 	"use strict";
 
-	var VERSION = "0.1",
+	var VERSION = "0.5",
         tos = Object.prototype.toString,
-		doc = global.document,
-		head = doc.getElementsByTagName('head')[0],
-		scripts = doc.getElementsByTagName('script'),
-		// Hook up to require
-		loadModules = global['require'], // appease closure compiler
-        onDomReady = loadModules.ready, // this is requirejs specific
-		rootSpec = global.wire || {},
-		defaultModules = ['wire/base'],
-		rootContext;
-		
-	/*
-		Section: Javascript Helpers
-		Standard JS helpers
-	*/
+        loader = global['require'],
+        domReady = loader.ready,
+        rootContext,
+        rootSpec = global['wire']||{ zzz: "parent" };
+
+    function wire(spec) {
+   		var promise = new Promise();
+
+   		// If the root context is not yet wired, wire it first
+   		if(!rootContext) {
+   			rootContext = wireContext(rootSpec);
+   		}
+
+   		// Use the rootContext to wire all new contexts.
+		when(rootContext).then(
+			function(root) {
+				root.wire(spec).then(promise);
+			}
+		);
+
+    	return promise;    	
+    }
+
+    var w = global['wire'] = wire;
+    w.version = VERSION;
+
+    function wireContext(spec, parent) {
+
+    	var promise = new Promise();
+
+		createScope(spec, parent).then(function(scope) {
+			var context;
+			
+			context = scope.objects;
+
+			function wireChildContext(spec) {
+				return wireContext(spec, scope);
+			};
+
+			context.wire    = wireChildContext 
+			context.resolve = scope.resolveRef;
+			context.destroy = scope.destroy;
+			
+			promise.resolve(context);
+		});
+
+		return promise;
+	}
+
+	//
+	// Private functions
+	//
 	
+	function createScope(scopeDef, parent) {
+		var scope, local, objects, resolvers, directives, factories, aspects, setters,
+			moduleLoadPromises, modulesReady, scopeReady, scopeDestroyed,
+			promises, name;
+			
+
+		// Empty parent scope if none provided
+		parent = parent||{};
+
+		local = {};
+
+		// Descend scope and plugins from parent so that this scope can
+		// use them directly via the prototype chain
+		objects = delegate(parent.objects||{});
+		resolvers = delegate(parent.resolvers||{});
+		directives = delegate(parent.directives||{});
+		aspects = delegate(parent.aspects||{});
+
+		factories = delegate(parent.factories||{});
+
+		// Setters is an array, have to concat
+		setters = parent.setters ? [].concat(parent.setters) : [];
+
+		factories.wire$literal = literalFactory;
+		factories.module = factories.create = moduleFactory;
+
+		moduleLoadPromises = [];
+		modulesReady = new Promise();
+
+		scopeReady = new Promise();
+		scopeDestroyed = new Promise();
+
+		// A proxy of this scope that can be used as a parent to
+		// any child scopes that may be created.
+		scope = {
+			local: local,
+			objects: objects,
+			resolvers: resolvers,
+			directives: directives,
+			aspects: aspects,
+			factories: factories,
+			setters: setters,
+			resolveRef: doResolveRef,
+			destroy: destroy,
+			destroyed: scopeDestroyed
+		};
+
+		if(parent.destroyed) {
+			parent.destroyed.then(destroy);
+		}
+
+		promises = [];
+
+		// Setup a promise for each item in this scope
+		for(name in scopeDef) {
+			var p = objects[name] = new Promise();
+			promises.push(p);
+		}
+
+
+		// When all scope item promises are resolved, the scope
+		// is resolved.
+		whenAll(promises).then(scopeReady, scope);
+
+		// Process/create each item in scope and resolve its
+		// promise when completed.
+		for(name in scopeDef) {
+			createScopeItem(name, scopeDef[name], objects[name]);
+		}
+
+		// Once all modules have been loaded, resolve modulesReady
+		whenAll(moduleLoadPromises).then(modulesReady);
+
+		return scopeReady;
+
+		function createScopeItem(name, val, itemPromise) {
+			createItem(val, name).then(function(resolved) {
+				objects[name] = local[name] = resolved;
+				itemPromise.resolve(resolved);
+			});			
+		}
+
+		function createItem(val, name) {
+			var created;
+			
+			if(isRef(val)) {
+				created = resolveRef(name, val);
+
+			} else if(isArray(val)) {
+				created = createArray(val);
+
+			} else if(name && isDirective(name, val)) {
+				created = execDirective(name, val);
+
+			} else if(typeof val == 'object') {
+				var factory = findFactory(val);
+
+				if(factory) {
+					created = createModule(val, factory);
+
+				} else {
+					created = new Promise();
+					createScope(val, scope).then(function(childScope) {
+						created.resolve(childScope.local);
+					});
+
+				}
+
+			} else {
+				// Plain value
+				created = val;
+			}
+
+			return when(created).then(new Promise());
+		}
+
+		function loadModule(moduleId, spec) {
+			var promise = new Promise();
+
+			moduleLoadPromises.push(promise);
+
+			loader(resolveModuleName(moduleId), function(module) {
+				scanPlugin(module, spec);
+				promise.resolve(module);
+			});
+
+			return promise;
+		}
+
+		function resolveModuleName(moduleIdOrAlias) {
+			return [moduleIdOrAlias];
+		}
+
+		function scanPlugin(module, spec) {
+			if(typeof module == 'object' && isFunction(module.wire$plugin)) {
+				var plugin = module.wire$plugin(scopeReady, spec);
+				for(var name in plugin.resolvers) {
+					if(resolvers.hasOwnProperty(name)) {
+						throw new Error("Two resolvers for same type in scope: " + name);
+					}
+
+					resolvers[name] = plugin.resolvers[name];
+				}
+
+				if(plugin.setters) {
+					setters = plugin.setters.concat(setters);
+				}
+			}
+		}
+
+		function createArray(arrayDef) {
+			var promise, result;
+
+			promise = new Promise();
+			result = [];
+
+			if(arrayDef.length === 0) {
+				promise.resolve(result);
+
+			} else {
+				var promises = [];
+
+				for (var i = 0; i < arrayDef.length; i++) {
+					var itemPromise = result[i] = createItem(arrayDef[i]);
+					promises.push(itemPromise);
+
+					(function(i) {
+						// Capture i, assign resolved array item into array
+						itemPromise.then(
+							function(realItem) {
+								result[i] = realItem;
+							}
+						);					
+					})(i);
+				}
+				
+				whenAll(promises).then(promise, result);
+			}
+
+			return promise;
+		}
+
+		function findFactory(spec) {
+			for(var f in factories) {
+				if(spec.hasOwnProperty(f)) {
+					return factories[f];
+				}
+			}
+			
+			return false;			
+		}
+
+		function createModule(spec, factory) {
+			var promise = new Promise();
+
+			if(!factory) factory = findFactory(spec);
+
+			if(factory) {
+				factory(spec, promise);			
+			} else {
+				promise.reject(spec);
+			}
+
+			return promise;
+		}
+
+	    function literalFactory(spec, promise) {
+			delete spec.wire$literal;
+			promise.resolve(spec);    	
+	    }
+
+		function moduleFactory(spec, promise) {
+			var moduleId = spec.create 
+				? typeof spec.create == 'string' ? spec.create : spec.create.module
+				: spec.module;
+
+
+			loadModule(moduleId, spec).then(function(module) {
+				// We'll either use the module directly, or we need
+				// to instantiate/invoke it.
+				if(spec.create && isFunction(module)) {
+					// Instantiate or invoke it and use the result
+					var args = [];
+					if(typeof spec.create == 'object' && spec.create.args) {
+						args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
+					}
+
+					when(modulesReady).then(function() {
+						createArray(args).then(function(resolvedArgs) {
+							var created = instantiate(module, resolvedArgs);
+							promise.resolve(created);
+						});						
+					});
+
+				} else {
+					// Simply use the module as is
+					promise.resolve(module);
+					
+				}
+			});
+
+			return promise;
+		}
+
+		function isDirective(name, spec) {
+			return name in directives;
+		}
+
+		function execDirective(name, spec) {
+			return fake(spec);
+		}
+
+		function resolveRef(name, ref) {
+			var refName = ref.$ref;
+
+			// Punt on this for now.  Should be able to make it work.
+			if(name === refName) {
+				throw new Error("Self-references not allowed: " + name);
+			}
+
+			return doResolveRef(refName, ref);
+		}
+
+		function doResolveRef(refName, refObj) {
+			var promise;
+
+			if(refName in objects) {
+				promise = objects[refName];
+
+			} else {
+				var split;
+
+				promise = new Promise();
+				split = refName.indexOf('!');
+
+				if(split > 0) {
+
+					// Wait for modules, since the reference may need to be
+					// resolved by a plugin
+					when(modulesReady).then(function() {
+
+						var resolver = resolvers[refName.substring(0, split)];
+						if(resolver) {
+							refName = refName.substring(split+1);
+							// TODO: real ref plugin api
+							resolver(refName, refObj, { domReady: domReady }, promise);
+					
+						} else {
+							promise.reject("No resolver found for ref: " + refObj);
+					
+						}
+						
+					});
+				} else {
+					promise.reject("Cannot resolve ref: " + refName);
+				}
+
+			}
+
+			return promise;
+		}
+
+		function destroy() {
+			function doDestroy() {
+				// Invoke all registered destroy functions
+				// for (var i=0; i < destroyers.length; i++) {
+				// 	try {
+				// 		destroyers[i]();
+				// 	} catch(e) {
+				// 		/* squelch? */
+				// 		console.log(e);
+				// 	}
+				// }
+				
+				// TODO: Clear out the context prototypes?
+				var p;
+				for(p in scope)   delete scope[p];
+				for(p in objects) delete objects[p];
+				for(p in local)   delete local[p];
+				
+				// But retain a do-nothing destroy() func, in case
+				// it is called again for some reason.
+				doDestroy = noop;
+
+				// Resolve promise
+				scopeDestroyed.resolve();
+			}
+			
+			scopeReady.then(doDestroy, doDestroy);
+
+			return scopeDestroyed;
+
+		}
+    }
+
+	function isRef(it) {
+		return it && it.$ref;
+	}
+
+	function isScope(it) {
+		return typeof it === 'object';
+	}
+
+	function T() {};
+
+	function delegate(prototype) {
+		T.prototype = prototype;
+		return new T();
+	}
+
 	/*
 		Function: isArray
 		Standard array test
@@ -67,62 +443,6 @@
 	*/
 	function isFunction(it) {
 		return typeof it == 'function';
-	}
-	
-	/*
-		Function: keys
-		Creates an array of the supplied objects own property names
-		
-		Parameters:
-			obj - Object
-			
-		Returns:
-		Array of obj's own (via hasOwnProperty) property names.
-	*/
-	function keys(obj) {
-		var k = [];
-		for(var p in obj) {
-			if(obj.hasOwnProperty(p)) {
-				k.push(p);
-			}
-		}
-		
-		return k;
-	}
-	
-	/*
-		Section: wire Helpers
-		wire-specific helper functions
-	*/
-	/*
-		Function: getModule
-		If spec is a module, gets the value of the module property (usually an AMD module id)
-		
-		Parameters:
-			spec - any wiring spec
-			
-		Returns:
-		the value of the module property, or undefined if the supplied spec
-		is not a module.
-	*/
-	function getModule(spec) {
-		return spec.create
-			? (typeof spec.create == 'string' ? spec.create : spec.create.module)
-			: spec.module;
-	}
-	
-	/*
-		Function: isRef
-		Determines if the supplied spec is a reference
-		
-		Parameters:
-			spec - any wiring spec
-			
-		Returns:
-		true iff spec is a reference, false otherwise.
-	*/
-	function isRef(spec) {
-		return spec && spec.$ref !== undef;
 	}
 	
 	/*
@@ -184,877 +504,101 @@
 		
 		return is;
 	}
-	
-	/*
-		Function: createResolver
-		Creates a function to used as a promise resolver, that will resolve another, supplied
-		promise if remaining === 0.
-		
-		Parameters:
-			remaining - if remaining === 0, the supplied promise will be resolved with object as the result
-			object - object[prop] will be assigned the result of the outer promise, and will be passed
-			         to the supplied promise as the resolution
-			prop - object[prop] will be assigned the result of the outer promise
-			promise - promise to be resolved with object if remaining === 0
-			
-		Returns:
-		A resolution function for a promise
-	*/
-	function createResolver(remaining, object, prop, promise) {
-		return function resolver(result) {
-			object[prop] = result;
-			if(remaining == 0) {
-				promise.resolve(object);
+
+	function getKeys(obj) {
+		var k = [];
+		for(var p in obj) {
+			if(obj.hasOwnProperty(p)) {
+				k.push(p);
 			}
-		};
-	}
-	
-	/*
-		Function: processFuncList
-		Resolves list to 1 or more functions of target, and invokes callback
-		for each function.
-		
-		Parameters:
-			list - String function name, or array of string function names
-			target - Object having the function or array of functions in list
-			spec - wiring spec used to create target
-			callback - function to be invoked for each function name in list
-			
-		Returns:
-		a <Promise> that will be resolved after all the functions in list
-		have been processed.
-	*/
-	function processFuncList(list, target, spec, callback) {
-		var func,
-			p = new Promise();
-			
-		if(typeof list == "string") {
-			func = target[list];
-			if(isFunction(func)) {
-				callback(target, spec, func, []);
-				p.resolve(target);
-			} else {
-				p.reject(target);
-			}
-			
-		} else {
-            for(var f in list) {
-				func = target[f];
-				if(isFunction(func)) {
-					callback(target, spec, func, list[f]);
-				}
-			}
-			
-			p.resolve(target);
 		}
 		
+		return k;
+	}
+
+	function fake(val) {
+		return when(val);
+	}
+
+	function noop() {};
+
+	/*
+		Function: whenN
+		Return a promise that will resolve when and only
+		when N of the supplied promises resolve.  The
+		resolution value will be an array containing the
+		resolution values of the triggering promises.
+		TODO: Figure out the best strategy for rejecting.
+	*/
+	function whenAll(promises) {
+		var toResolve, values, promise;
+
+		toResolve = promises.length;
+		
+		// Resolver for promises.  Captures the value and resolves
+		// the returned promise when toResolve reaches zero.
+		// Overwrites resolver var with a noop once promise has
+		// be resolved to cover case where n < promises.length
+		// var resolver = function handleResolve(val) {
+		function resolver(val) {
+			values.push(val);
+			if(--toResolve === 0) {
+				resolver = noop;
+				promise.resolve(values);
+			}
+		}
+
+		// Wrapper so that resolver can be replaced
+		function resolve(val) {
+			resolver(val);
+		}
+
+		// Rejecter for promises.  Rejects returned promise
+		// immediately, and overwrites rejecter var with a noop
+		// once promise to cover case where n < promises.length.
+		// TODO: Consider rejecting only when N (or promises.length - N?)
+		// promises have been rejected instead of only one?
+		// var rejecter = function handleReject(err) {
+		function rejecter(err) {
+			rejecter = noop;
+			promise.reject(err);			
+		}
+
+		// Wrapper so that rejecer can be replaced
+		function reject(err) {
+			rejecter(err);
+		}
+
+		promise = new Promise();
+		values = [];
+
+		if(toResolve == 0) {
+			promise.resolve(values);
+
+		} else {
+			for (var i = 0; i < promises.length; i++) {
+				when(promises[i]).then(resolve, reject);
+			}
+
+		}
+		
+		return promise;
+	}
+
+	function when(promiseOrValue) {
+		if(isPromise(promiseOrValue)) {
+			return promiseOrValue;
+		}
+
+		var p = new Promise();
+		p.resolve(promiseOrValue);
 		return p;
 	}
-	
-	/*
-		Class: Context
-		A Context is the result of wiring a spec.  It will contain all the fully
-		realized objects, plus its own wire(), resolve(), and destroy() functions.
-	*/
-	/*
-		Constructor: Context
-		Creates a new, empty Context ready for wiring.
-	*/
-	var Context = function() {};
-	
-	/*
-		Class: ContextFactory
-		A ContextFactory does the work of creating a <Context> and wiring its objects
-		given a wiring spec.
-	*/
-	/*
-		Constructor: ContextFactory
-	*/
-	function ContextFactory(parent) {
-		return (function(parent) {
-			// Use the prototype chain for context parent-child
-			// relationships
-			Context.prototype = parent ? parent.context : undef;
-			var context = new Context(),
-				// Track loaded modules to unique-ify them.  RequireJS currently breaks
-				// when the same module is listed twice in the same dependency array
-				// so this also helps to avoid that problem.
-				moduleDefs = {},
-				// Top-level promises
-				modulesReady = new Promise(),
-				// objectsCreated = new Promise(),
-				objectsReady = new Promise(),
-				contextReady = new Promise(),
-				contextDestroyed = new Promise(),
-				domReady = new Promise(),
-				objectDefs = {},
-				// Plugins
-				setters = [],
-				resolvers = {},
 
-				/*
-					Class: FactoryProxy
-					A proxy of the ContextFactory that is given to plugins
-				*/
-				factoryProxy = {
-					modulesReady: safe(modulesReady),
-					objectsReady: safe(objectsReady),
-					domReady: safe(domReady),
-					resolveName: function(name) {
-						return context[name];
-					},
-					resolveRef: function(ref) {
-						return resolveRef(ref);
-					},
-					invoke: function(target, func, args) {
-						return invoke(target, func, args);
-					},
-					objectReady: function(name) {
-						if(name in objectDefs) {
-							return safe(objectDefs[name]);
-						} else {
-							throw new Error("No object with the name: " + name);
-						}
-					}
-				},
-				// Track destroy functions to be called when context is destroyed
-				destroyers = [],
-				// Counters for objects to create and init so that promises
-				// can be resolved when all are complete
-				objectsToInit = 0,
-				objectInitCount = 0;
-
-			// Mixin default modules
-			for(var i=0; i<defaultModules.length; i++) {
-				moduleDefs[defaultModules[i]] = { specs: [{ module: defaultModules[i] }] };
-			}
-			
-			/*
-				Function: resolveRefObj
-				Resolves the supplied reference, delegating to ancestor <Contexts> if
-				necessary.
-				
-				Parameters:
-					refObj - JSON Ref
-					promise - <Promise> to resolve once the reference has been resolved,
-							  or to reject if the reference cannot be resolved.
-			*/
-			function resolveRefObj(refObj, promise) {
-				var ref = refObj.$ref,
-					prefix = "$",
-					name = ref,
-					split = "!";
-					
-				if(ref.indexOf(split) >= 0) {
-					var parts = ref.split(split);
-					prefix = parts[0];
-				    name = parts[1];
-				}
-				
-				if(prefix === "wire") {
-					promise.resolve(context);
-				} else {
-					var promiseProxy = {
-						resolve: function resolvePromise(resolved) {
-							promise.resolve(resolved);
-						}
-					};
-
-					promiseProxy.unresolved = (parent)
-						? function tryParent() {
-							parent.resolveRefObj(refObj, promise);
-						}
-						: function rejectPromise(err) {
-							promise.reject(err);
-						};
-
-					if(resolvers[prefix]) {
-						resolvers[prefix](factoryProxy, name, refObj, promiseProxy);
-
-					} else {
-						promiseProxy.unresolved();
-
-					}
-				}
-			}
-
-			/*
-				Function: resolveRef
-				Resolve the supplied reference.
-				
-				Parameters:
-					ref - JSON Ref
-					
-				Returns:
-				a <Promise> that will be resolved with the target of the reference once
-				it has been resolved.
-			*/
-			function resolveRef(ref) {
-				var p = new Promise();
-
-				if(isRef(ref)) {
-					modulesReady.then(function resolveRefAfterModulesReady() {
-						resolveRefObj(ref, p);
-					});
-				} else {
-					p.resolve(ref);
-				}
-				
-				return p;
-			}
-
-			/*
-				Function: contextProgress
-				Shortcut for issueing progress updates
-				
-				Parameters:
-					promise - <Promise> on which to issue the progress update
-					status - String status of the target object
-					target - Target object whose status has changed
-					spec - wiring spec from which target object is being wired
-			*/
-			function contextProgress(promise, status, target, spec) {
-				promise.progress({
-					factory: factoryProxy,
-					status: status,
-					target: target,
-					spec: spec
-				});
-			}
-
-			/*
-				Function: createObject
-				Constructs an object from the supplied module using any create args in
-				the supplied wiring spec for the object.
-				
-				Parameters:
-					spec - wiring spec for the object to create
-					module - loaded module to use to create the object.  This must be either
-					         a constructor to be invoked with new, or a function that can
-					         be called directly (without new) to create the object.
-					
-				Returns:
-				a <Promise> that will be resolved when the object has been created, or
-				rejected if the object cannot be created.
-			*/
-			function createObject(spec, module) {
-				var p = new Promise(),
-					object = module;
-
-				function objectCreated(obj, promise) {
-					modulesReady.then(function handleModulesReady() {
-						contextProgress(contextReady, "create", object, spec);
-						promise.resolve(obj);
-					});
-				}
-
-				try {
-					if(spec.create && isFunction(module)) {
-						var args = [];
-						if(typeof spec.create == 'object' && spec.create.args) {
-							args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
-						}
-
-						parse(args).then(
-							function handleCreateParsed(resolvedArgs) {
-								objectCreated(instantiate(module, resolvedArgs), p);
-							},
-							reject(p)
-						);
-					} else {
-						objectCreated(object, p);
-					}
-
-				} catch(e) {
-					p.reject(e);
-				}
-
-				return p;
-			}
-			
-			/*
-				Function: initObject
-				Sets properties and invokes initializer functions defined in spec
-				on the supplied object.
-				
-				Parameters:
-					spec - wiring spec with properties and init functions
-					object - Object on which to set properties and invoke init functions
-					
-				Returns:
-				a <Promise> that will be resolved once all properties have been set and
-				init functions have been invoked.
-			*/
-			function initObject(spec, object) {
-				var promise = new Promise();
-
-				promise.then(function() {
-					contextProgress(contextReady, "init", object, spec);
-				});
-				
-				function resolveObjectInit() {
-					contextProgress(contextReady, "props", object, spec);
-					// Invoke initializer functions
-					if(spec.init) {
-						processFuncList(spec.init, object, spec,
-							function handleProcessFuncList(target, spec, func, args) {
-								invoke(target, func, args);
-							}
-						).then(
-							function innerResolveObjectInit() {
-								promise.resolve(object);
-							}
-						);
-					} else {
-						promise.resolve(object);
-					}
-				}
-
-				// Parse and set properties, and then invoke init functions
-				if(spec.properties) {
-					setProperties(object, spec.properties).then(
-						resolveObjectInit,
-						reject(promise)
-					);
-				} else {
-					resolveObjectInit();
-				}
-
-				// Queue destroy functions to be called when this Context is destroyed
-				// if(spec.destroy) {
-					// TODO: Should we update progress for every object regardless of whether
-					// it has a destroy func or not?
-					destroyers.push(function doDestroy() {
-						contextProgress(contextDestroyed, "destroy", object, spec);
-						if(spec.destroy) {
-                            processFuncList(spec.destroy, object, spec, function(target, spec, func) {
-                                func.apply(target, []); // no args for destroy
-							});
-						}
-					});
-				// }
-
-				return promise;
-			}
-
-			/*
-				Function: setProperties
-				Sets properties specified in props on object
-				
-				Parameters:
-					object - Object on which to set properties
-					props - property hash--may include wiring spec info, e.g. references, modules, etc.
-					
-				Returns:
-				a <Promise> that will be resolved once all properties have been set
-			*/
-			function setProperties(object, props) {
-				var promise = new Promise(),
-					keyArr = keys(props),
-					cachedSetter;
-
-				var count = keyArr.length;
-				for(var i=0; i<keyArr.length; i++) {
-					var name = keyArr[i];
-					(function(name, prop) {
-						parse(prop).then(function handlePropertiesParsed(value) {
-							// If we previously found a working setter for this target, use it
-							if(!(cachedSetter && cachedSetter(object, name, value))) {
-								var success = false,
-									s = 0;
-
-								// Try all the registered setters until we find one that reports success
-								while(!success && s<setters.length) {
-									var setter = setters[s++];
-									success = setter(object, name, value);
-									if(success) {
-										cachedSetter = setter;
-									}
-								}
-							}
-
-							if(--count === 0) {
-								promise.resolve(object);
-							}
-						}, reject(promise));
-					})(name, props[name]);
-				}
-
-				return promise;
-			}
-
-			/*
-				Function: invoke
-				Applies func on target with supplied args.  Args must be parsed and fully
-				realized and passed before applying func.
-				
-				Parameters:
-					target - Object to which to apply func (i.e. target will be "this")
-					spec - wiring spec that was used to create target, will be passed to listeners
-					func - Function to be applied to target
-					args - unrealized args to pass to func
-					
-				Returns:
-				a <Promise> that will be resolved after func is actually invoked.
-			*/
-			function invoke(target, func, args) {
-				var p = new Promise();
-				parse(args).then(function handleInitParsed(processedArgs) {
-					func.apply(target, isArray(processedArgs) ? processedArgs : [processedArgs]);
-					p.resolve(target);
-				});
-				
-				return p;
-			}
-
-			/*
-				Function: loadModule
-				Loads the module with the supplied moduleId
-				
-				Parameters:
-					moduleId - id of module to load
-					
-				Returns:
-				a <Promise> that will be resolved when the module is loaded.  The value
-				of the <Promise> will be the module.
-			*/
-			function loadModule(spec, moduleId) {
-
-				var p = moduleDefs[moduleId];
-
-				if(!p) {
-					p = moduleDefs[moduleId] = {
-						promise: new Promise(),
-						specs: [spec]
-					};
-					loadModules([moduleId], function handleModulesLoaded(module) {
-						p.promise.resolve(module);
-					});
-				} else {
-					p.specs.push(spec);
-				}
-
-				return p.promise;
-			}
-
-			/*
-				Function: scanPlugins
-				Scans the supplied Array of concrete modules and registers any plugins found
-				
-				Parameters:
-					modules - Array of modules to scan
-					
-				Returns:
-				a <Promise> that will be resolved once all modules have been scanned and their
-				plugins registered.
-			*/
-			function scanPlugins(moduleDefs) {
-				var p = new Promise(),
-					ready = safe(contextReady),
-					destroy = safe(contextDestroyed);
-
-				for (var moduleId in moduleDefs) {
-					var moduleDef = moduleDefs[moduleId],
-						newPlugin = moduleDef.module;
-
-					if(typeof newPlugin == 'object') {
-						if(newPlugin.wire$resolvers) {
-							for(var name in newPlugin.wire$resolvers) {
-								resolvers[name] = newPlugin.wire$resolvers[name];
-							}
-						}
-
-						if(newPlugin.wire$setters) {
-							setters = newPlugin.wire$setters.concat(setters);
-						}
-
-						if(isFunction(newPlugin.wire$init)) {
-							// Have to init plugins immediately, so they can be used during wiring
-							// Pass *first* spec as plugin options.  This means that for plugins
-							// that were listed twice (which is pointless anyway), the first
-							// plugin spec wins, and subsequent ones do not override.
-							newPlugin.wire$init(moduleDef.specs ? moduleDef.specs[0] : undef);
-						}
-						
-						if(isFunction(newPlugin.wire$wire)) {
-							newPlugin.wire$wire(ready, destroy);
-						}
-					}
-				}
-
-				p.resolve(moduleDefs);
-				return p;
-			}
-
-			/*
-				Function: initPromiseStages
-				Initializes the lifecycle related promises for modulesReady, contextReady,
-				and domReady.
-			*/
-			function initPromiseStages() {
-				onDomReady(function resolveDomReady() {
-					domReady.resolve();
-				});
-
-				modulesReady.then(null,
-					function rejectModulesReady(err) {
-						contextReady.reject(err);
-					}
-				);
-			}
-
-			/*
-				Function: initFromParent
-				Initializes this <Context> from a parent <Context>.
-				
-				Parameters:
-					parent - parent <Context>
-			*/
-			function initFromParent(parent) {
-				parent.beforeDestroy(function handleParentDestroyed() { destroy(); });
-			}
-
-			/*
-				Function: parseArray
-				Parses and fully realizes all elements of the supplied array
-				
-				Parameters:
-					spec - wiring spec describing an Array
-					
-				Returns:
-				a <Promise> that will be resolved when all elements of the Array
-				have been realized.
-			*/
-			function parseArray(spec) {
-				var processed = [],
-					promise = new Promise(),
-					len = spec.length;
-					
-				if(len == 0) {
-					promise.resolve(processed);
-				} else {
-					var arrCount = len;
-					for(var i=0; i<len; i++) {
-						parse(spec[i]).then(
-							createResolver(--arrCount, processed, i, promise),
-							reject(promise)
-						);
-					}
-				}
-
-				return promise;
-			}
-
-			/*
-				Function: parseModule
-				Parses, contructs, sets properties on, and initializes the supplied
-				module wiring spec, using the module whose id is moduleToLoad.
-				
-				Parameters:
-					spec - wiring spec describing a module
-					moduleToLoad - id of module to use
-					
-				Returns:
-				a <Promise> that will be resolved when the module has been fully
-				realized.
-			*/
-			function parseModule(spec, moduleToLoad) {
-				var promise = new Promise();
-				
-				objectsToInit++;
-
-                promise.then(function() {
-                    if(++objectInitCount === objectsToInit) {
-						// FIXME: This domReady should not be necessary but is currently.
-						domReady.then(function() {
-							objectsReady.resolve(context);
-						});
-					}
-				});
-				
-				// Create object from module
-				
-				// FIXME: This is a nasty mess right here, kids.  This needs to be
-				// factored to reduce the nesting and make it clearer what is happening.
-				// It may be possible to move object creation and initialization out
-				// to "factory" plugins that know how to handle certain types of
-				// objects
-				loadModule(spec, moduleToLoad).then(
-					function handleModuleLoaded(module) {
-						
-						createObject(spec, module).then(
-							function handleObjectCreated(created) {
-						
-								initObject(spec, created).then(
-									function handleObjectInited(object) {
-						
-										promise.resolve(created);
-										
-									},
-									reject(contextReady)
-								);
-							},
-							reject(contextReady)
-						);
-					}
-				);
-				
-				return promise;
-			}
-			
-			/*
-				Function: parseObject
-				Parses and fully realizes the supplied object wiring spec.
-				
-				Parameters:
-					spec - a wiring spec describing an object
-					container - If present, the spec will be realized into the container Object.
-						That is, container will become the fully realized Object.
-			*/
-			function parseObject(spec, container) {
-				var processed = container || {},
-					promise = new Promise(),
-					props = keys(spec),
-					len = props.length;
-					
-				if(len == 0) {
-					promise.resolve(processed);
-				} else {
-					var propCount = len;
-					for(var j=0; j<len; j++) {
-						var p = props[j],
-							objectPromise = parse(spec[p]);
-							
-						if(container && p !== undef && !objectDefs[p]) {
-							objectDefs[p] = objectPromise;
-						}
-
-						objectPromise.then(
-							createResolver(--propCount, processed, p, promise),
-							reject(promise)
-						);
-					}
-				}
-				
-				return promise;
-			}
-			
-			/*
-				Function: parse
-				Parse and fully realize the supplied wiring spec.  If container is supplied,
-				the resulting objects will be placed into it.
-				
-				Parameters:
-					spec - wiring spec describing an Array, module, Object, or plain value
-						(String, Number, etc.)
-					container - Object into which to place created objects
-					
-				Returns:
-				a <Promise> that will be resolved once all objects in spec have been fully
-				realized (created, properties set, initialized, plugins invoked, etc.)
-			*/
-			function parse(spec, container) {
-				var promise;
-
-				if(isArray(spec)) {
-					// Array
-					promise = parseArray(spec);
-
-				} else if(typeof spec == 'object') {
-					// module, reference, or simple object
-
-					var moduleToLoad = getModule(spec);
-					
-					if(moduleToLoad) {
-						// Module
-						promise = parseModule(spec, moduleToLoad);
-					
-					} else if(isRef(spec)) {
-						// Reference
-						promise = resolveRef(spec);
-					
-					} else {
-						// Simple object
-						promise = parseObject(spec, container);
-					}
-
-				} else {
-					// Integral value/basic type, e.g. String, Number, Boolean, Date, etc.
-					promise = new Promise();
-					promise.resolve(spec);
-				}
-
-				return promise;
-			}
-
-			/*
-				Function: wire
-				Wires the supplied spec, fully realizing all objects.
-				
-				Parameters:
-					spec - wiring spec
-					
-				Returns:
-				a <Promise> that will be resolved with the fully realized <Context> once
-				wiring is complete, or rejected if the supplied spec cannot be wired.
-			*/
-			function wire(spec) {
-				initPromiseStages();
-				
-				if(parent) {
-					initFromParent(parent);
-				}
-
-				try {
-					parseObject(spec, context).then(
-						finalizeContext,
-						reject(contextReady)
-					);
-
-					var moduleIds = keys(moduleDefs);
-					loadModules(moduleIds, function handleModulesLoaded() {
-						var loaded = {};
-						for (var i = 0; i < arguments.length; i++) {
-							moduleDefs[moduleIds[i]].module = arguments[i];
-						}
-						scanPlugins(moduleDefs).then(function handlePluginsScanned(scanned) {
-							modulesReady.resolve(scanned);
-						});
-					});
-
-				} catch(e) {
-					contextReady.reject(e);
-				}
-
-				return contextReady;
-			}
-			
-			/*
-				Function: destroy
-				Destroys this <Context> by invoking all registered destroy functions, and all
-				onContextDestroy listeners.
-				
-				Returns:
-				a <Promise> that will be resolved when the <Context> has been fully destroyed.
-			*/
-			function destroy() {
-				function doDestroy() {
-					// Invoke all registered destroy functions
-					for (var i=0; i < destroyers.length; i++) {
-						try {
-							destroyers[i]();
-						} catch(e) {
-							/* squelch? */
-							console.log(e);
-						}
-					}
-					
-					// Clear out the context
-					delete context.prototype;
-					for(var p in context) {
-						delete context[p];
-					}
-
-					// But retain a do-nothing destroy() func, in case
-					// it is called again for some reason.
-					context.destroy = function() { return safe(contextDestroyed); };
-
-					// Resolve promise
-					contextDestroyed.resolve();
-				}
-				
-				contextReady.then(doDestroy, doDestroy);
-
-				return contextDestroyed;
-			}
-
-			/*
-				Function: finalizeContext
-				Adds public functions to the supplied context and uses it to resolve the
-				contextReady promise.
-				
-				Parameters:
-					parsedContext - <Context> to finalize and use as resolution for contextReady
-			*/
-			function finalizeContext(parsedContext) {
-				/*
-					Class: Context
-				*/
-				/*
-					Function: wire
-					Wires a new child <Context> from this <Context>
-					
-					Parameters:
-						spec - wiring spec
-						
-					Returns:
-					a <Promise> that will be resolved when the new child <Context> has
-					been wired.
-				*/
-				parsedContext.wire = function wire(spec) {
-					var newParent = {
-						wire: wire,
-						context: context,
-						resolveRefObj: resolveRefObj,
-						beforeDestroy: function beforeDestroy(func) {
-							// Child contexts must be destroyed before parents
-							destroyers.unshift(func);
-						}
-					};
-					return safe(ContextFactory(newParent).wire(spec));
-				};
-
-				/*
-					Function: resolve
-					Resolves references using this <Context>.  This will cascade up to ancestor <Contexts>
-					until the reference is either resolved or the root <Context> has been reached without
-					resolution, at which point the returned <Promise> will be rejected.
-					
-					Parameters:
-						ref - reference name (String) to resolve
-						
-					Returns:
-					a <Promise> that will be resolved when the reference has been resolved or rejected
-					if the reference cannot be resolved.
-				*/
-				parsedContext.resolve = function resolve(ref) {
-					return safe(resolveRef({ $ref: ref }));
-				};
-				
-				/*
-					Function: destroy
-					Destroys all this <Context>'s children, and then destroys this <Context>.  That is,
-					<Context> hierarchies are destroyed depth-first _postordering_, i.e. "bottom-up".
-					
-					Returns:
-					a <Promise> that will be resolved when this <Context> has been destroyed.
-				*/
-				parsedContext.destroy = function destroyContext() {
-					return safe(destroy());
-				};
-
-				if(objectsToInit === 0) {
-					objectsReady.resolve(parsedContext);
-				}
-
-				objectsReady.then(function finalizeContextReady(readyContext) {
-					// TODO: Remove explicit domReady wait
-					// It should be possible not to have to wait for domReady
-					// here, but rely on promise resolution.  For now, just wait
-					// for it.
-					domReady.then(function() {
-						contextReady.resolve(readyContext);
-					});
-				});
-			}
-
-			return {
-				wire: wire
-			};
-		})(parent);
-
+	function isPromise(promiseOrValue) {
+		return promiseOrValue && isFunction(promiseOrValue.then);
 	}
-	
+		
 	/*
 		Section: Promise Helpers
 		Helper functions for <Promises>
@@ -1103,7 +647,7 @@
 	/*
 		Constructor: Promise
 		Creates a new Promise
-	*/ 
+	*/
 	
 	function Promise () {
 		this._thens = [];
@@ -1119,9 +663,22 @@
 		// are two completion callbacks: onReject and onResolve. A more
 		// robust promise implementation will also have an onProgress handler.
 		then: function (onResolve, onReject, onProgress) {
-			// capture calls to then()
-			this._thens.push({ resolve: onResolve, reject: onReject, progress: onProgress });
-			onProgress && this._progress.push(onProgress);
+			if(isPromise(onResolve)) {
+				// Chain promise
+				this.then(
+					function(val)    { onResolve.resolve(onReject ? onReject : val); },
+					function(err)    { onResolve.reject(err); },
+					function(update) { onResolve.progress(update); }
+				);
+
+				return onResolve;
+			} else {
+				// capture calls to then()
+				this._thens.push({ resolve: onResolve, reject: onReject, progress: onProgress });
+				onProgress && this._progress.push(onProgress);	
+				return this;
+			}
+
 		},
 
 		// Some promise implementations also have a cancel() front end API that
@@ -1157,9 +714,27 @@
 
 		_complete: function (which, arg) {
 			// switch over to sync then()
-			this.then = which === 'reject' ?
-				function (resolve, reject) { reject && reject(arg); } :
-                    function (resolve) { resolve && resolve(arg); };
+			this.then = which[2] === 'j'
+				? function (resolve, reject) {
+					if(isPromise(resolve)) {
+						resolve.reject(arg);
+						return resolve;
+					} else if(reject) {
+						reject(arg);
+					}
+
+					return this;
+				}
+                : function (resolve) {
+                	if(isPromise(resolve)) {
+                		resolve.resolve(arg);
+                		return resolve;
+                	} else if(resolve) {
+                		resolve(arg);
+                	}
+					
+					return this;
+				};
             // disallow multiple calls to resolve or reject
 			this.resolve = this.reject = this.progress =
 				function () { throw new Error('Promise already completed.'); };
@@ -1171,79 +746,4 @@
 			delete this._thens;
 		}
 	};
-	
-	/*
-		Section: wire API
-		The global wire function is the entry point to wiring.
-	*/
-	/*
-		Function: wire
-		Global wire function that is the starting point for wiring applications.
-		
-		Parameters:
-			spec - wiring spec
-			
-		Returns:
-		a <Promise> that will be resolved when the <Context> has been wired.  The
-		newly wired <Context> will be the value of the <Promise>
-	*/
-	var w = global['wire'] = function wire(spec) { // global['wire'] for closure compiler export
-		
-		var promise;
-		
-		// If the root context exists, simply use it to wire the new context.
-		// If it doesn't exist, wire the root context first, then use it
-		// to wire the new child.
-		if(rootContext) {
-			// Context.wire returns a safe promise
-			promise = rootContext.wire(spec);
-
-		} else {
-			// No root context yet, so wire it first, then wire the requested spec as
-			// a child.  Subsequent wire() calls will reuse the existing root context.
-			var unsafePromise = new Promise();
-
-			ContextFactory().wire(rootSpec).then(function(context) {
-				rootContext = context;
-				rootContext.wire(spec).then(
-					function(context) {
-						unsafePromise.resolve(context);
-					},
-					function(err) {
-						unsafePromise.reject(err);
-					}
-				);
-			});
-			
-			// Make sure we return a safe promise
-			promise = safe(unsafePromise);
-
-		}
-		
-		return promise;
-	};
-	
-	// Add version
-	w.version = VERSION;
-	
-	// WARNING: Probably unsafe. Just for testing right now.
-	// TODO: Only do this for browser env
-	
-	// Find our script tag and look for data attrs
-	for(var i=0; i<scripts.length; i++) {
-		var script = scripts[i],
-			//src = script.src,
-			specUrl;
-		
-		// if(/wire[^\/]*\.js(\W|$)/.test(src) && (specUrl = script.getAttribute('data-wire-spec'))) {
-		if((specUrl = script.getAttribute('data-wire-spec'))) {
-			// Use loader to load the wiring spec
-			loadModules([specUrl]);
-			// // Use a script tag to load the wiring spec
-			// var specScript = doc.createElement('script');
-			// specScript.src = specUrl;
-			// head.appendChild(specScript);
-		}
-	}
-
 })(window);
