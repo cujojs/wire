@@ -24,7 +24,7 @@ define({
 			promise - factory-provided <Promise> that will be resolved with the
 				dom node.
 	*/
-	wire$plugin: function resolveDomId(ready, options) {
+	wire$plugin: function domPlugin(ready, options) {
 		return {
 			resolvers: {
 				dom: function(id, refObj, wire, promise) {
