@@ -14,13 +14,20 @@
 
 	var VERSION = "0.5",
         tos = Object.prototype.toString,
+		doc = global.document,
+		head = doc.getElementsByTagName('head')[0],
+		scripts = doc.getElementsByTagName('script'),
         loader = global['require'],
         domReady = loader.ready,
         rootContext,
-        rootSpec = global['wire']||{ zzz: "parent" };
+        rootSpec = global['wire']||{};
+
+    //
+    // Public API
+    //
 
     function wire(spec) {
-   		var promise = new Promise();
+   		var promise = newPromise();
 
    		// If the root context is not yet wired, wire it first
    		if(!rootContext) {
@@ -30,7 +37,7 @@
    		// Use the rootContext to wire all new contexts.
 		when(rootContext).then(
 			function(root) {
-				root.wire(spec).then(promise);
+				chain(root.wire(spec), promise);
 			}
 		);
 
@@ -40,35 +47,64 @@
     var w = global['wire'] = wire;
     w.version = VERSION;
 
-    function wireContext(spec, parent) {
+	// WARNING: Probably unsafe. Just for testing right now.
+	// TODO: Only do this for browser env
+	
+	// Find our script tag and look for data attrs
+	for(var i=0; i<scripts.length; i++) {
+		var script, specUrl;
 
-    	var promise = new Promise();
-
-		createScope(spec, parent).then(function(scope) {
-			var context;
-			
-			context = scope.objects;
-
-			function wireChildContext(spec) {
-				return wireContext(spec, scope);
-			};
-
-			context.wire    = wireChildContext 
-			context.resolve = scope.resolveRef;
-			context.destroy = scope.destroy;
-			
-			promise.resolve(context);
-		});
-
-		return promise;
+		script = scripts[i];
+		
+		if((specUrl = script.getAttribute('data-wire-spec'))) {
+			// Use loader to load the wiring spec
+			loader([specUrl]);
+		}
 	}
+
 
 	//
 	// Private functions
 	//
 	
+    function wireContext(spec, parent) {
+
+    	var promise = newPromise();
+
+    	// Function to do the actual wiring.  Capture the
+    	// parent so it can be called after an async load
+    	// if spec is an AMD module Id string.
+    	function doWireContext(spec) {
+			createScope(spec, parent).then(function(scope) {
+				var context;
+				
+				context = scope.objects;
+
+				function wireChildContext(spec) {
+					return wireContext(spec, scope);
+				};
+
+				context.wire    = wireChildContext;
+				context.resolve = scope.resolveRef;
+				context.destroy = scope.destroy;
+				
+				promise.resolve(context);
+			});
+    	}
+
+    	// If spec is a module Id, load it, then wire it.
+    	// If it's a spec object, wire it now.
+    	if(typeof spec == 'string') {
+    		loader([spec], doWireContext);
+    	} else {
+    		doWireContext(spec);
+    	}
+
+		return promise;
+	}
+
 	function createScope(scopeDef, parent) {
-		var scope, local, objects, resolvers, directives, factories, aspects, setters,
+		var scope, local, objects, resolvers, factories, aspects, setters,
 			moduleLoadPromises, modulesReady, scopeReady, scopeDestroyed,
 			promises, name;
 			
@@ -82,7 +118,6 @@
 		// use them directly via the prototype chain
 		objects = delegate(parent.objects||{});
 		resolvers = delegate(parent.resolvers||{});
-		directives = delegate(parent.directives||{});
 		aspects = delegate(parent.aspects||{});
 
 		factories = delegate(parent.factories||{});
@@ -94,10 +129,10 @@
 		factories.module = factories.create = moduleFactory;
 
 		moduleLoadPromises = [];
-		modulesReady = new Promise();
+		modulesReady = newPromise();
 
-		scopeReady = new Promise();
-		scopeDestroyed = new Promise();
+		scopeReady = newPromise();
+		scopeDestroyed = newPromise();
 
 		// A proxy of this scope that can be used as a parent to
 		// any child scopes that may be created.
@@ -105,7 +140,6 @@
 			local: local,
 			objects: objects,
 			resolvers: resolvers,
-			directives: directives,
 			aspects: aspects,
 			factories: factories,
 			setters: setters,
@@ -122,14 +156,13 @@
 
 		// Setup a promise for each item in this scope
 		for(name in scopeDef) {
-			var p = objects[name] = new Promise();
+			var p = objects[name] = newPromise();
 			promises.push(p);
 		}
 
-
 		// When all scope item promises are resolved, the scope
 		// is resolved.
-		whenAll(promises).then(scopeReady, scope);
+		chain(whenAll(promises), scopeReady, scope);
 
 		// Process/create each item in scope and resolve its
 		// promise when completed.
@@ -138,7 +171,7 @@
 		}
 
 		// Once all modules have been loaded, resolve modulesReady
-		whenAll(moduleLoadPromises).then(modulesReady);
+		chain(whenAll(moduleLoadPromises), modulesReady);
 
 		return scopeReady;
 
@@ -158,33 +191,19 @@
 			} else if(isArray(val)) {
 				created = createArray(val);
 
-			} else if(name && isDirective(name, val)) {
-				created = execDirective(name, val);
-
-			} else if(typeof val == 'object') {
-				var factory = findFactory(val);
-
-				if(factory) {
-					created = createModule(val, factory);
-
-				} else {
-					created = new Promise();
-					createScope(val, scope).then(function(childScope) {
-						created.resolve(childScope.local);
-					});
-
-				}
+			} else if(isStrictlyObject(val)) {
+				created = processObject(val);
 
 			} else {
 				// Plain value
 				created = val;
 			}
 
-			return when(created).then(new Promise());
+			return chain(when(created), newPromise());
 		}
 
 		function loadModule(moduleId, spec) {
-			var promise = new Promise();
+			var promise = newPromise();
 
 			moduleLoadPromises.push(promise);
 
@@ -201,18 +220,22 @@
 		}
 
 		function scanPlugin(module, spec) {
+			// if(typeof module == 'function' && module.name == 'wire$plugin') {
 			if(typeof module == 'object' && isFunction(module.wire$plugin)) {
+				// var plugin = instantiate(module, [scopeReady, spec]);
 				var plugin = module.wire$plugin(scopeReady, spec);
-				for(var name in plugin.resolvers) {
-					if(resolvers.hasOwnProperty(name)) {
-						throw new Error("Two resolvers for same type in scope: " + name);
+				if(plugin) {
+					for(var name in plugin.resolvers) {
+						if(resolvers.hasOwnProperty(name)) {
+							throw new Error("Two resolvers for same type in scope: " + name);
+						}
+
+						resolvers[name] = plugin.resolvers[name];
 					}
 
-					resolvers[name] = plugin.resolvers[name];
-				}
-
-				if(plugin.setters) {
-					setters = plugin.setters.concat(setters);
+					if(plugin.setters) {
+						setters = plugin.setters.concat(setters);
+					}					
 				}
 			}
 		}
@@ -220,7 +243,7 @@
 		function createArray(arrayDef) {
 			var promise, result;
 
-			promise = new Promise();
+			promise = newPromise();
 			result = [];
 
 			if(arrayDef.length === 0) {
@@ -243,8 +266,29 @@
 					})(i);
 				}
 				
-				whenAll(promises).then(promise, result);
+				chain(whenAll(promises), promise, result);
 			}
+
+			return promise;
+		}
+
+		function processObject(spec) {
+			var promise = newPromise();
+
+			promise.then(function(target) {
+				// TODO: scopeReady progress update should have a richer
+				// update object containing info about the status, wire API, etc.
+				scopeReady.progress({
+					spec: spec,
+					target: target,
+					configured: promise,
+					initialized: promise
+				});
+			});
+
+			var factory = findFactory(spec);
+
+			factory(spec, promise);			
 
 			return promise;
 		}
@@ -256,21 +300,17 @@
 				}
 			}
 			
-			return false;			
+			return scopeFactory;			
 		}
 
-		function createModule(spec, factory) {
-			var promise = new Promise();
+		//
+		// Factories
+		//
 
-			if(!factory) factory = findFactory(spec);
-
-			if(factory) {
-				factory(spec, promise);			
-			} else {
-				promise.reject(spec);
-			}
-
-			return promise;
+		function scopeFactory(spec, promise) {
+			return createScope(spec, scope).then(function(created) {
+				promise.resolve(created.local);
+			});
 		}
 
 	    function literalFactory(spec, promise) {
@@ -283,23 +323,12 @@
 				? typeof spec.create == 'string' ? spec.create : spec.create.module
 				: spec.module;
 
-
 			loadModule(moduleId, spec).then(function(module) {
 				// We'll either use the module directly, or we need
 				// to instantiate/invoke it.
 				if(spec.create && isFunction(module)) {
 					// Instantiate or invoke it and use the result
-					var args = [];
-					if(typeof spec.create == 'object' && spec.create.args) {
-						args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
-					}
-
-					when(modulesReady).then(function() {
-						createArray(args).then(function(resolvedArgs) {
-							var created = instantiate(module, resolvedArgs);
-							promise.resolve(created);
-						});						
-					});
+					createModule(spec, promise);
 
 				} else {
 					// Simply use the module as is
@@ -308,16 +337,34 @@
 				}
 			});
 
+			function createModule(spec, module) {
+				var args = [];
+				if(typeof spec.create == 'object' && spec.create.args) {
+					args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
+				}
+
+				when(modulesReady).then(function() {
+					createArray(args).then(function(resolvedArgs) {
+						var created = instantiate(module, resolvedArgs);
+						promise.resolve(created);
+					});						
+				});				
+			}
+
+			function processAspects(spec, module) {
+				// 1. Process "on created" aspects
+				// 2. Configure properties - should this be an "on created" aspect?
+				// 3. Process "on configured" aspects
+				// 4. Process "on initialized" aspects
+
+			}
+
 			return promise;
 		}
 
-		function isDirective(name, spec) {
-			return name in directives;
-		}
-
-		function execDirective(name, spec) {
-			return fake(spec);
-		}
+		//
+		// Reference resolution
+		//
 
 		function resolveRef(name, ref) {
 			var refName = ref.$ref;
@@ -339,7 +386,7 @@
 			} else {
 				var split;
 
-				promise = new Promise();
+				promise = newPromise();
 				split = refName.indexOf('!');
 
 				if(split > 0) {
@@ -368,6 +415,10 @@
 
 			return promise;
 		}
+
+		//
+		// Destroy
+		//
 
 		function destroy() {
 			function doDestroy() {
@@ -428,7 +479,11 @@
 		true iff it is an Array
 	*/
 	function isArray(it) {
-		return tos.call(it) === '[object Array]';
+		return tos.call(it) == '[object Array]';
+	}
+
+	function isStrictlyObject(it) {
+		return tos.call(it) == '[object Object]';
 	}
 
 	/*
@@ -523,9 +578,9 @@
 	function noop() {};
 
 	/*
-		Function: whenN
+		Function: whenA
 		Return a promise that will resolve when and only
-		when N of the supplied promises resolve.  The
+		when all of the supplied promises resolve.  The
 		resolution value will be an array containing the
 		resolution values of the triggering promises.
 		TODO: Figure out the best strategy for rejecting.
@@ -543,7 +598,7 @@
 		function resolver(val) {
 			values.push(val);
 			if(--toResolve === 0) {
-				resolver = noop;
+				resolver = progress = noop;
 				promise.resolve(values);
 			}
 		}
@@ -560,7 +615,7 @@
 		// promises have been rejected instead of only one?
 		// var rejecter = function handleReject(err) {
 		function rejecter(err) {
-			rejecter = noop;
+			rejecter = progress = noop;
 			promise.reject(err);			
 		}
 
@@ -569,7 +624,14 @@
 			rejecter(err);
 		}
 
-		promise = new Promise();
+		// Progress updater.  Since this may be called many times,
+		// can't overwrite it until resolve/reject.  So, it is
+		// overwritten in resolve(), and reject().
+		function progress(update) {
+			promise.progress(update);
+		}
+
+		promise = newPromise();
 		values = [];
 
 		if(toResolve == 0) {
@@ -577,7 +639,7 @@
 
 		} else {
 			for (var i = 0; i < promises.length; i++) {
-				when(promises[i]).then(resolve, reject);
+				when(promises[i]).then(resolve, reject, progress);
 			}
 
 		}
@@ -590,7 +652,7 @@
 			return promiseOrValue;
 		}
 
-		var p = new Promise();
+		var p = newPromise();
 		p.resolve(promiseOrValue);
 		return p;
 	}
@@ -636,6 +698,36 @@
 			promise.reject(err);
 		};
 	}
+
+	/*
+		Function: chain
+		Chain two <Promises> such that when the first completes, the second
+		is completed with either the completion value of the first, or
+		in the case of resolve, completed with the optional resolveValue.
+
+		Parameters:
+			first - first <Promise>
+			second - <Promise> to complete when first <Promise> completes
+			resolveValue - optional value to use as the resolution value
+				for first.
+		
+		Returns:
+			second
+	*/
+	function chain(first, second, resolveValue) {
+		var args = arguments;
+		first.then(
+			function(val)    { second.resolve(args.length > 2 ? resolveValue : val); },
+			function(err)    { second.reject(err); },
+			function(update) { second.progress(update); }
+		);
+
+		return second;
+	}
+
+	function newPromise() {
+		return new Promise();
+	}
 	
 	/*
 		Class: Promise
@@ -663,22 +755,10 @@
 		// are two completion callbacks: onReject and onResolve. A more
 		// robust promise implementation will also have an onProgress handler.
 		then: function (onResolve, onReject, onProgress) {
-			if(isPromise(onResolve)) {
-				// Chain promise
-				this.then(
-					function(val)    { onResolve.resolve(onReject ? onReject : val); },
-					function(err)    { onResolve.reject(err); },
-					function(update) { onResolve.progress(update); }
-				);
-
-				return onResolve;
-			} else {
-				// capture calls to then()
-				this._thens.push({ resolve: onResolve, reject: onReject, progress: onProgress });
-				onProgress && this._progress.push(onProgress);	
-				return this;
-			}
-
+			// capture calls to then()
+			this._thens.push({ resolve: onResolve, reject: onReject, progress: onProgress });
+			onProgress && this._progress.push(onProgress);	
+			return this;
 		},
 
 		// Some promise implementations also have a cancel() front end API that
@@ -705,8 +785,7 @@
 		// could be just about anything and is specific to your implementation.
 		
 		progress: function(statusObject) {
-			var i=0,
-				p;
+			var i = 0, p;
 			while(p = this._progress[i++]) { p(statusObject); }
 		},
 
@@ -714,27 +793,9 @@
 
 		_complete: function (which, arg) {
 			// switch over to sync then()
-			this.then = which[2] === 'j'
-				? function (resolve, reject) {
-					if(isPromise(resolve)) {
-						resolve.reject(arg);
-						return resolve;
-					} else if(reject) {
-						reject(arg);
-					}
-
-					return this;
-				}
-                : function (resolve) {
-                	if(isPromise(resolve)) {
-                		resolve.resolve(arg);
-                		return resolve;
-                	} else if(resolve) {
-                		resolve(arg);
-                	}
-					
-					return this;
-				};
+			this.then = which === 'reject' ?
+				function (resolve, reject) { reject && reject(arg); } :
+                    function (resolve) { resolve && resolve(arg); };
             // disallow multiple calls to resolve or reject
 			this.resolve = this.reject = this.progress =
 				function () { throw new Error('Promise already completed.'); };
@@ -744,6 +805,7 @@
 				i = 0;
 			while (aThen = this._thens[i++]) { aThen[which] && aThen[which](arg); }
 			delete this._thens;
+			delete this._progress;
 		}
 	};
 })(window);

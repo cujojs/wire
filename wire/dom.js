@@ -12,9 +12,9 @@
 	components that can be used on multiple pages, but still require a reference
 	to one or more nodes on the page.
 */
-define({
+define(['require'], function(require) {
 	/*
-		Function: dom
+		Function: byId
 		Resolves a reference to a dom node on the page by its id
 		
 		Parameters:
@@ -24,17 +24,23 @@ define({
 			promise - factory-provided <Promise> that will be resolved with the
 				dom node.
 	*/
-	wire$plugin: function domPlugin(ready, options) {
-		return {
-			resolvers: {
-				dom: function(id, refObj, wire, promise) {
-					wire.domReady(function() {
-						var node = document.getElementById(id);
-						if(node) promise.resolve(node);
-						else promise.reject();				
-					});
-				}
-			}
-		}
+	function byId(id, refObj, wire, promise) {
+		require(['curl/domReady'], function resolveDomId() {
+			var node = document.getElementById(id);
+			if(node) promise.resolve(node);
+			else promise.reject();			
+		});
 	}
+
+	// return function wire$plugin(ready, options) {
+	return {
+		wire$plugin: function domPlugin(ready, options) {
+			return {
+				resolvers: {
+					dom: byId
+				}
+			};
+		}
+	};
+
 });

@@ -70,19 +70,19 @@ define([], function() {
 				- status - String - current status of object
 				- spec: Any - wiring spec
 	*/
-	function logProgress(progress, contextTimer) {
-		console.log(time('Object ' + progress.status, contextTimer), progress.target, progress.spec);
+	function logProgress(update, contextTimer) {
+		console.log(time('Object created', contextTimer), update.target, update.spec);
+
+		update.configured.then(function(target) {
+			console.log(time('Object configured', contextTimer), update.target, update.spec);		
+		});
+		
+		update.initialized.then(function(target) {
+			console.log(time('Object initialized', contextTimer), update.target, update.spec);		
+		});
 	}
-	
+
 	return {
-		/*
-			Function: wire$init
-			Does any initialization for this plugin as soon as it is loaded. This is only
-			called once when the plugin is loaded, and never again.
-		*/
-		wire$init: function onInit() {
-			console.log(time("All modules loaded"));
-		},
 		/*
 			Function: wire$wire
 			Invoked when wiring starts and provides two promises: one for wiring the context,
@@ -97,7 +97,7 @@ define([], function() {
 					rejected if there is an error while destroying the context, and will
 					receive progress events for objects being destroyed.
 		*/
-		wire$wire: function onWire(ready, destroy) {
+		wire$plugin: function debugPlugin(ready) {
 			var contextTimer = createTimer();
 			
 			function contextTime(msg) {
@@ -120,18 +120,19 @@ define([], function() {
 				logContextProgress
 			);
 			
-			destroy.then(
-				function onContextDestroyed() {
-					// Do any context-specific plugin cleanup here
-					console.log(contextTime("Context destroyed"));
-				},
-				function onContextDestroyError(err) {
-					// Do any object-specific plugin cleanup here
-					console.error(contextTime("Context destroy ERROR"), err);
-				},
-				logContextProgress
-			);
+			// destroy.then(
+			// 	function onContextDestroyed() {
+			// 		// Do any context-specific plugin cleanup here
+			// 		console.log(contextTime("Context destroyed"));
+			// 	},
+			// 	function onContextDestroyError(err) {
+			// 		// Do any object-specific plugin cleanup here
+			// 		console.error(contextTime("Context destroy ERROR"), err);
+			// 	},
+			// 	logContextProgress
+			// );
+			// return {};		
 		}
 	};
-	
+
 });

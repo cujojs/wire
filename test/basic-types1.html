@@ -1,0 +1,59 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>wire 2 test</title>
+	<script>
+		require = {
+			debug: true,
+			paths: {
+				wire: '../wire',
+				test: '../test'
+			}
+		};
+	</script>
+<!--	<script src="../require.js" type="text/javascript" charset="utf-8"></script> -->
+	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript" src="../wire.js"></script>
+	<script type="text/javascript">
+		// Simple example of wiring in objects by reference using JSON ref syntax
+		wire({
+			plugins: [
+				{ module: 'wire/debug' }
+			],
+			numberRef: { $ref: 'number' },
+			objectRef: { $ref: 'object' },
+			
+			string: 'this is a string',
+			
+			number: 10,
+			
+			date: new Date(),
+			
+			regex1: /^blah$/,
+			regex2: new RegExp("^foobar$"),
+
+			boolean1: true,
+			boolean2: new Boolean(false),
+			
+			object: {
+				string: "I'm a nested a string",
+				nested: {
+					// Will reference object.string rather than
+					// the top-level string because of scoping.
+					nameRef: { $ref: 'string' },
+				}
+			},
+
+			array: ["string", 10, { foo: "bar" }, [1, 2, 3], { a: [1, 2, 3], b: 4 }]
+		}).then(function(context) {
+			console.log("DONE", context);
+		});
+	</script>
+</head>
+<body>
+	<div>
+		<p id="node1"></p>
+	</div>
+</body>
+</html>
