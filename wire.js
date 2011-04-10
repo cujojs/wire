@@ -799,7 +799,7 @@
 		// robust promise implementation will also have an onProgress handler.
 		then: function (onResolve, onReject, onProgress) {
 			// capture calls to then()
-			this._thens.push({ resolve: onResolve, reject: onReject, progress: onProgress });
+			this._thens.push({ resolve: onResolve, reject: onReject });
 			onProgress && this._progress.push(onProgress);	
 			return this;
 		},
@@ -836,9 +836,9 @@
 
 		_complete: function (which, arg) {
 			// switch over to sync then()
-			this.then = which === 'reject' ?
-				function (resolve, reject) { reject && reject(arg); } :
-                    function (resolve) { resolve && resolve(arg); };
+			this.then = which === 'reject'
+				? function (resolve, reject) { reject && reject(arg); return this; }
+				: function (resolve) { resolve && resolve(arg); return this; };
             // disallow multiple calls to resolve or reject
 			this.resolve = this.reject = this.progress =
 				function () { throw new Error('Promise already completed.'); };
