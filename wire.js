@@ -220,23 +220,26 @@
 		}
 
 		function scanPlugin(module, spec) {
-			// if(typeof module == 'function' && module.name == 'wire$plugin') {
 			if(typeof module == 'object' && isFunction(module.wire$plugin)) {
-				// var plugin = instantiate(module, [scopeReady, spec]);
-				var plugin = module.wire$plugin(scopeReady, spec);
+				var plugin = module.wire$plugin(scopeReady, scopeDestroyed, spec);
 				if(plugin) {
-					for(var name in plugin.resolvers) {
-						if(resolvers.hasOwnProperty(name)) {
-							throw new Error("Two resolvers for same type in scope: " + name);
-						}
-
-						resolvers[name] = plugin.resolvers[name];
-					}
+					addPlugin(plugin.resolvers, resolvers);
+					addPlugin(plugin.aspects, aspects);
 
 					if(plugin.setters) {
 						setters = plugin.setters.concat(setters);
 					}					
 				}
+			}
+		}
+
+		function addPlugin(src, registry) {
+			for(var name in src) {
+				if(registry[name]) {
+					throw new Error("Two plugins for same type in scope: " + name);
+				}
+
+				registry[name] = src[name];
 			}
 		}
 
@@ -275,17 +278,6 @@
 		function processObject(spec) {
 			var promise = newPromise();
 
-			promise.then(function(target) {
-				// TODO: scopeReady progress update should have a richer
-				// update object containing info about the status, wire API, etc.
-				scopeReady.progress({
-					spec: spec,
-					target: target,
-					configured: promise,
-					initialized: promise
-				});
-			});
-
 			var factory = findFactory(spec);
 
 			factory(spec, promise);			
@@ -319,47 +311,98 @@
 	    }
 
 		function moduleFactory(spec, promise) {
-			var moduleId = spec.create 
+			var moduleId, update, created, configured, initialized;
+			
+			moduleId = spec.create 
 				? typeof spec.create == 'string' ? spec.create : spec.create.module
 				: spec.module;
 
+			update = { spec: spec };
+			created     = update.created     = newPromise();
+			configured  = update.configured  = newPromise();
+			initialized = update.initialized = newPromise();
+
+			// After the object has been created, update progress for
+			// the entire scope, then process the post-created aspects
+			created.then(function(object) {
+				// TODO: scopeReady progress update should have a richer
+				// update object containing info about the status, wire API, etc.
+				scopeReady.progress(update);
+				chain(processAspects('created', object), configured);
+			});
+
+			// After the object is configured, process the post-configured
+			// aspects.
+			configured.then(function(object) {
+				chain(processAspects('configured', object), initialized);
+			});
+
+			// After the object is initialized, process the post-initialized
+			// aspects.
+			initialized.then(function(object) {
+				chain(processAspects('initialized', object), promise);
+			});
+
+			// Load the module, and use it to create the object
 			loadModule(moduleId, spec).then(function(module) {
 				// We'll either use the module directly, or we need
 				// to instantiate/invoke it.
 				if(spec.create && isFunction(module)) {
 					// Instantiate or invoke it and use the result
-					createModule(spec, promise);
+					chain(create(module), created);
 
 				} else {
 					// Simply use the module as is
-					promise.resolve(module);
+					created.resolve(module);
 					
 				}
 			});
 
-			function createModule(spec, module) {
-				var args = [];
+			return promise;
+
+			//
+			// ModuleFactory private functions
+			//
+
+			function create(module) {
+				var args, promise;
+				
+				args = [];
+				promise = newPromise();
+
 				if(typeof spec.create == 'object' && spec.create.args) {
 					args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
 				}
 
 				when(modulesReady).then(function() {
 					createArray(args).then(function(resolvedArgs) {
-						var created = instantiate(module, resolvedArgs);
-						promise.resolve(created);
+						var object = instantiate(module, resolvedArgs);
+
+						chain(processAspects(spec, object), promise);
 					});						
-				});				
+				});
+
+				return promise;
 			}
 
-			function processAspects(spec, module) {
-				// 1. Process "on created" aspects
-				// 2. Configure properties - should this be an "on created" aspect?
-				// 3. Process "on configured" aspects
-				// 4. Process "on initialized" aspects
+			function processAspects(step, target) {
+				var promises, aspect, options;
+
+				promises = [];
+
+				for(var a in aspects) {
+					aspect = aspects[a];
+					options = spec[a];
+					if(options && aspect && aspect[step]) {
+						var aspectPromise = newPromise();
+						promises.push(aspectPromise);
+						aspect[step](target, options, aspectPromise);
+					}
+				}
+
+				return chain(whenAll(promises), newPromise(), target);
 
 			}
-
-			return promise;
 		}
 
 		//

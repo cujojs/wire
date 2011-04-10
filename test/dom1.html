@@ -3,7 +3,17 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
-	<script src="../require.js" type="text/javascript" charset="utf-8"></script>
+	<script>
+		require = {
+			debug: true,
+			paths: {
+				wire: '../wire',
+				test: '../test'
+			}
+		};
+	</script>
+
+	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript" src="../wire.js"></script>
 	<script type="text/javascript">
 		wire({

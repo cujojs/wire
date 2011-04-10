@@ -34,7 +34,7 @@ define(['require'], function(require) {
 
 	// return function wire$plugin(ready, options) {
 	return {
-		wire$plugin: function domPlugin(ready, options) {
+		wire$plugin: function domPlugin(ready, destroyed, options) {
 			return {
 				resolvers: {
 					dom: byId
