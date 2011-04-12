@@ -24,9 +24,9 @@ define(['require'], function(require) {
 			promise - factory-provided <Promise> that will be resolved with the
 				dom node.
 	*/
-	function byId(id, refObj, wire, promise) {
+	function byId(promise, name, refObj, wire) {
 		require(['curl/domReady'], function resolveDomId() {
-			var node = document.getElementById(id);
+			var node = document.getElementById(name);
 			if(node) promise.resolve(node);
 			else promise.reject();			
 		});

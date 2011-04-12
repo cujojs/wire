@@ -48,9 +48,6 @@
 			array: ["string", 10, { foo: "bar" }, [1, 2, 3], { a: [1, 2, 3], b: 4 }]
 		}).then(function(context) {
 			console.log("DONE", context);
-			context.destroy().then(function() {
-				console.log("DESTROYED", context);
-			});
 		});
 	</script>
 </head>

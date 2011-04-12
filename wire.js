@@ -148,6 +148,11 @@
 			destroyed: scopeDestroyed
 		};
 
+		var aspectApi = {
+			wire: createItem,
+			resolveRef: doResolveRef
+		};
+
 		if(parent.destroyed) {
 			parent.destroyed.then(destroy);
 		}
@@ -186,7 +191,7 @@
 			var created;
 			
 			if(isRef(val)) {
-				created = resolveRef(name, val);
+				created = resolveRef(val, name);
 
 			} else if(isArray(val)) {
 				created = createArray(val);
@@ -207,16 +212,12 @@
 
 			moduleLoadPromises.push(promise);
 
-			loader(resolveModuleName(moduleId), function(module) {
+			loader([moduleId], function(module) {
 				scanPlugin(module, spec);
 				promise.resolve(module);
 			});
 
 			return promise;
-		}
-
-		function resolveModuleName(moduleIdOrAlias) {
-			return [moduleIdOrAlias];
 		}
 
 		function scanPlugin(module, spec) {
@@ -353,7 +354,7 @@
 
 				} else {
 					// Simply use the module as is
-					created.resolve(module);
+					chain(modulesReady, created, module);
 					
 				}
 			});
@@ -374,11 +375,13 @@
 					args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
 				}
 
-				when(modulesReady).then(function() {
-					createArray(args).then(function(resolvedArgs) {
-						var object = instantiate(module, resolvedArgs);
+				modulesReady.then(function() {
 
-						chain(processAspects(spec, object), promise);
+					createArray(args).then(function(resolvedArgs) {
+
+						var object = instantiate(module, resolvedArgs);
+						promise.resolve(object);
+
 					});						
 				});
 
@@ -386,17 +389,19 @@
 			}
 
 			function processAspects(step, target) {
-				var promises, aspect, options;
+				var promises, aspectProcessor, options, aspect;
 
 				promises = [];
+				aspect = { target: target }
 
 				for(var a in aspects) {
-					aspect = aspects[a];
-					options = spec[a];
-					if(options && aspect && aspect[step]) {
+					aspectProcessor = aspects[a];
+					options = aspect.options = spec[a];
+
+					if(options && aspectProcessor && aspectProcessor[step]) {
 						var aspectPromise = newPromise();
 						promises.push(aspectPromise);
-						aspect[step](target, options, aspectPromise);
+						aspectProcessor[step](aspectPromise, aspect, aspectApi);
 					}
 				}
 
@@ -409,7 +414,7 @@
 		// Reference resolution
 		//
 
-		function resolveRef(name, ref) {
+		function resolveRef(ref, name) {
 			var refName = ref.$ref;
 
 			// Punt on this for now.  Should be able to make it work.
@@ -442,7 +447,7 @@
 						if(resolver) {
 							refName = refName.substring(split+1);
 							// TODO: real ref plugin api
-							resolver(refName, refObj, { domReady: domReady }, promise);
+							resolver(promise, refName, refObj, aspectApi);
 					
 						} else {
 							promise.reject("No resolver found for ref: " + refObj);

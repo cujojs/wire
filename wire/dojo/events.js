@@ -14,8 +14,8 @@
 define(['dojo'], function(events) {
 	
 	return {
-		wire$wire: function onWire(ready, destroy) {
-
+		wire$plugin: function eventsPlugin(ready, destroyed, options) {
+			
 			var connectHandles = [];
 
 			/*
@@ -41,34 +41,33 @@ define(['dojo'], function(events) {
 					object - object being wired, will be the target of connected events
 					connects - specification of events to connect, see examples above.
 			*/
-			function connect(factory, object, connects) {
+			function connect(wire, target, connects) {
 				for(var ref in connects) {
 					(function(ref, c) {
-						factory.resolveRef({ $ref: ref }).then(function(target) {
+						wire.resolveRef(ref).then(function(resolved) {
 							for(var eventName in c) {
-								connectHandles.push(events.connect(target, eventName, object, c[eventName]));
+								connectHandles.push(events.connect(resolved, eventName, target, c[eventName]));
 							}
 						});
 					})(ref, connects[ref]);
 				}
 			}
-
-			ready.then(null, null,
-				function onObject(progress) {
-					if(progress.status === 'init') {
-						var c = progress.spec.connect;
-						if(typeof c == 'object') {
-							connect(progress.factory, progress.target, c);
-						}
-					}
-				}
-			);
 			
-			destroy.then(function onContextDestroy() {
+			destroyed.then(function onContextDestroy() {
 				for (var i = connectHandles.length - 1; i >= 0; i--){
 					events.disconnect(connectHandles[i]);
 				}
 			});
+
+			return {
+				aspects: {
+					connect: {
+						initialized: function(promise, aspect, wire) {
+							connect(wire, aspect.target, aspect.options)
+						}
+					}
+				}
+			}
 		}
 	};
 });

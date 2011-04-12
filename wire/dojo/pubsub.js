@@ -96,14 +96,14 @@ define(['dojo'], function(pubsub) {
 			return {
 				aspects: {
 					publish: {
-						initialized: function(target, options, promise) {
-							proxyPublish(target, options);
+						initialized: function(promise, aspect, wire) {
+							proxyPublish(aspect.target, aspect.options);
 							promise.resolve();
 						}
 					},
 					subscribe: {
-						initialized: function(target, options, promise) {
-							subscribeTarget(target, options);
+						initialized: function(promise, aspect, wire) {
+							subscribeTarget(aspect.target, aspect.options);
 							promise.resolve();
 						}
 					}
