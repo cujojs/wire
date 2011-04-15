@@ -25,14 +25,18 @@ define(['dojo'], function(events) {
 				whose keys are event names, and whose values are methods of object to
 				invoke.  For example:
 				connect: {
+					"refToOtherThing": {
+						"eventOrMethodOfOtherThing": "myOwnMethod"
+					},
 					"dom!myButton": {
 						"onclick": "_handleButtonClick"
 					},
 					"dijit!myWidget": {
 						"onChange": "_handleValueChange"
-					},
-					"otherObject": {
-						"onWhatever": "_handleWhatever"
+					}
+
+					"myOwnEventOrMethod": {
+						"refToOtherThing": "methodOfOtherThing"
 					}
 				}
 
@@ -42,14 +46,22 @@ define(['dojo'], function(events) {
 					connects - specification of events to connect, see examples above.
 			*/
 			function connect(factory, object, connects) {
-				for(var ref in connects) {
-					(function(ref, c) {
-						factory.resolveRef({ $ref: ref }).then(function(target) {
-							for(var eventName in c) {
-								connectHandles.push(events.connect(target, eventName, object, c[eventName]));
+				for(var name in connects) {
+					(function(name, c) {
+						if(typeof object[name] == 'function') {
+							for(var ref in c) {
+								factory.resolveRef({ $ref: ref }).then(function(target) {
+									connectHandles.push(events.connect(object, name, target, c[ref]));
+								});
 							}
-						});
-					})(ref, connects[ref]);
+						} else {
+							factory.resolveRef({ $ref: name }).then(function(target) {
+								for(var eventName in c) {
+									connectHandles.push(events.connect(target, eventName, object, c[eventName]));
+								}
+							});							
+						}
+					})(name, connects[name]);
 				}
 			}
 
