@@ -909,9 +909,9 @@
 
 					var moduleIds = keys(moduleDefs);
 					loadModules(moduleIds, function handleModulesLoaded() {
-						var loaded = {};
-						for (var i = 0; i < arguments.length; i++) {
-							moduleDefs[moduleIds[i]].module = arguments[i];
+						var loaded = {}, i = 0;
+						for(var id in moduleDefs) {
+							moduleDefs[id].module = arguments[i++];
 						}
 						scanPlugins(moduleDefs).then(function handlePluginsScanned(scanned) {
 							modulesReady.resolve(scanned);
