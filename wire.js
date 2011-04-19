@@ -9,6 +9,7 @@
 */
 
 (function(global, undef){
+define(['require'], function(require) {
 
 	"use strict";
 
@@ -17,8 +18,6 @@
 		doc = global.document,
 		head = doc.getElementsByTagName('head')[0],
 		scripts = doc.getElementsByTagName('script'),
-        loader = global['require'],
-        domReady = loader.ready,
         rootContext,
         rootSpec = global['wire']||{};
 
@@ -44,24 +43,24 @@
     	return promise;    	
     }
 
-    var w = global['wire'] = wire;
-    w.version = VERSION;
+    wire.version = VERSION;
 
-	// WARNING: Probably unsafe. Just for testing right now.
-	// TODO: Only do this for browser env
-	
-	// Find our script tag and look for data attrs
-	for(var i=0; i<scripts.length; i++) {
-		var script, specUrl;
+    //
+    // AMD Plugin API
+    //
 
-		script = scripts[i];
-		
-		if((specUrl = script.getAttribute('data-wire-spec'))) {
-			// Use loader to load the wiring spec
-			loader([specUrl]);
-		}
+    function amdPlugin(name, require, callback, config) {
+		var promise = callback.resolve
+			? callback
+			: {
+				resolve: callback,
+				reject: function(err) { throw err; }
+			};
+
+		chain(wire(name), promise);
 	}
 
+	wire.load = amdPlugin;
 
 	//
 	// Private functions
@@ -95,7 +94,7 @@
     	// If spec is a module Id, load it, then wire it.
     	// If it's a spec object, wire it now.
     	if(typeof spec == 'string') {
-    		loader([spec], doWireContext);
+    		require([spec], doWireContext);
     	} else {
     		doWireContext(spec);
     	}
@@ -105,7 +104,7 @@
 
 	function createScope(scopeDef, parent) {
 		var scope, local, objects, resolvers, factories, aspects, setters,
-			moduleLoadPromises, modulesReady, scopeReady, scopeDestroyed,
+			modulesToLoad, moduleLoadPromises, modulesReady, scopeReady, scopeDestroyed,
 			promises, name;
 			
 
@@ -125,10 +124,8 @@
 		// Setters is an array, have to concat
 		setters = parent.setters ? [].concat(parent.setters) : [];
 
-		factories.wire$literal = literalFactory;
-		factories.module = factories.create = moduleFactory;
-
-		moduleLoadPromises = [];
+		modulesToLoad = [];
+		moduleLoadPromises = {};
 		modulesReady = newPromise();
 
 		scopeReady = newPromise();
@@ -148,16 +145,23 @@
 			destroyed: scopeDestroyed
 		};
 
-		var aspectApi = {
-			wire: createItem,
-			resolveRef: doResolveRef
-		};
+		function pluginApi(spec) {
+			return createItem(spec);
+		}
+
+		pluginApi.load = loadModule;
+		pluginApi.resolveRef = doResolveRef;
+		pluginApi.promise = newPromise;
+		pluginApi.when = when;
+		pluginApi.whenAll = whenAll;
 
 		if(parent.destroyed) {
 			parent.destroyed.then(destroy);
 		}
 
 		promises = [];
+
+		loadModule('wire/base');
 
 		// Setup a promise for each item in this scope
 		for(name in scopeDef) {
@@ -176,7 +180,10 @@
 		}
 
 		// Once all modules have been loaded, resolve modulesReady
-		chain(whenAll(moduleLoadPromises), modulesReady);
+		// chain(whenAll(moduleLoadPromises), modulesReady);
+		require(modulesToLoad, function(modules) {
+			modulesReady.resolve(modules);
+		});
 
 		return scopeReady;
 
@@ -197,7 +204,11 @@
 				created = createArray(val);
 
 			} else if(isStrictlyObject(val)) {
-				created = processObject(val);
+				if(val.module) {
+					created = loadModule(val.module, val)
+				} else {
+					created = processObject(val);
+				}
 
 			} else {
 				// Plain value
@@ -208,16 +219,25 @@
 		}
 
 		function loadModule(moduleId, spec) {
-			var promise = newPromise();
+			var promise, m;
 
-			moduleLoadPromises.push(promise);
+			m = moduleLoadPromises[moduleId]
 
-			loader([moduleId], function(module) {
-				scanPlugin(module, spec);
-				promise.resolve(module);
-			});
+			if(!m) {
+				modulesToLoad.push(moduleId);
+				m = moduleLoadPromises[moduleId] = { id: moduleId };
+				promise = m.promise = new Promise();
 
-			return promise;
+				moduleLoadPromises[moduleId] = m;
+
+				require([moduleId], function(module) {
+					scanPlugin(module, spec);
+					m.module = module;
+					chain(modulesReady, promise, m.module);
+				});
+			}
+
+			return m.promise;
 		}
 
 		function scanPlugin(module, spec) {
@@ -225,6 +245,7 @@
 				var plugin = module.wire$plugin(scopeReady, scopeDestroyed, spec);
 				if(plugin) {
 					addPlugin(plugin.resolvers, resolvers);
+					addPlugin(plugin.factories, factories);
 					addPlugin(plugin.aspects, aspects);
 
 					if(plugin.setters) {
@@ -236,7 +257,7 @@
 
 		function addPlugin(src, registry) {
 			for(var name in src) {
-				if(registry[name]) {
+				if(registry.hasOwnProperty(name)) {
 					throw new Error("Two plugins for same type in scope: " + name);
 				}
 
@@ -262,11 +283,9 @@
 
 					(function(i) {
 						// Capture i, assign resolved array item into array
-						itemPromise.then(
-							function(realItem) {
-								result[i] = realItem;
-							}
-						);					
+						itemPromise.then(function(realItem) {
+							result[i] = realItem;
+						});
 					})(i);
 				}
 				
@@ -277,13 +296,76 @@
 		}
 
 		function processObject(spec) {
-			var promise = newPromise();
+			var promise, proxy, update, created, configured, initialized;
+			
+			promise = newPromise();
 
-			var factory = findFactory(spec);
+			proxy = {};
 
-			factory(spec, promise);			
+			update = { spec: spec };
+			created     = update.created     = newPromise();
+			configured  = update.configured  = newPromise();
+			initialized = update.initialized = newPromise();
+
+			// FIXME: Should not have to wait for all modules to load,
+			// but rather only the module containing the particular
+			// factory we need.  But how to know which factory before
+			// they are all loaded?
+			// Maybe need a special syntax for factories, something like:
+			// create: "factory!whatever-arg-the-factory-takes"
+			// args: [factory args here]
+			modulesReady.then(function() {
+				var factory = findFactory(spec);
+				factory(created, spec, pluginApi);
+
+				// After the object has been created, update progress for
+				// the entire scope, then process the post-created aspects
+				created.then(function(object) {
+					initProxy(proxy, object);
+
+					scopeReady.progress(update);
+					chain(processAspects('created', proxy, spec), configured);
+				});
+
+				// After the object is configured, process the post-configured
+				// aspects.
+				configured.then(function(object) {
+					chain(processAspects('configured', proxy, spec), initialized);
+				});
+
+				// After the object is initialized, process the post-initialized
+				// aspects.
+				initialized.then(function(object) {
+					chain(processAspects('initialized', proxy, spec), promise);
+				});				
+			});
 
 			return promise;
+		}
+
+		function initProxy(proxy, object) {
+			var cachedSetter;
+
+			function setProp(prop, value) {
+				if(!(cachedSetter && cachedSetter(object, prop, value))) {
+					var success = false,
+						s = 0;
+
+					// Try all the registered setters until we find one that reports success
+					while(!success && s<setters.length) {
+						var setter = setters[s++];
+						success = setter(object, prop, value);
+						if(success) {
+							cachedSetter = setter;
+						}
+					}
+				}
+			}
+
+			proxy.target = object;
+			proxy.set    = setProp;
+			// TODO: Add get() and invoke() to provide a generic interface to
+			// getting a prop value and invoke a method?
 		}
 
 		function findFactory(spec) {
@@ -293,121 +375,40 @@
 				}
 			}
 			
-			return scopeFactory;			
+			return spec.module ? moduleFactory : scopeFactory;			
+		}
+
+		function processAspects(step, target, spec) {
+			var promises, aspect, aspectApi, aspectProcessor, options;
+
+			promises = [];
+			// aspectApi = delegate(pluginApi);
+			aspectApi = pluginApi;
+			aspect = delegate(target);
+
+			for(var a in aspects) {
+				aspectProcessor = aspects[a];
+				options = aspect.options = spec[a];
+
+				if(options && aspectProcessor && aspectProcessor[step]) {
+					var aspectPromise = newPromise();
+					promises.push(aspectPromise);
+					aspectProcessor[step](aspectPromise, aspect, aspectApi);
+				}
+			}
+
+			return chain(whenAll(promises), newPromise(), target.target);
+
 		}
 
 		//
 		// Factories
 		//
 
-		function scopeFactory(spec, promise) {
+		function scopeFactory(promise, spec, wire) {
 			return createScope(spec, scope).then(function(created) {
 				promise.resolve(created.local);
 			});
-		}
-
-	    function literalFactory(spec, promise) {
-			delete spec.wire$literal;
-			promise.resolve(spec);    	
-	    }
-
-		function moduleFactory(spec, promise) {
-			var moduleId, update, created, configured, initialized;
-			
-			moduleId = spec.create 
-				? typeof spec.create == 'string' ? spec.create : spec.create.module
-				: spec.module;
-
-			update = { spec: spec };
-			created     = update.created     = newPromise();
-			configured  = update.configured  = newPromise();
-			initialized = update.initialized = newPromise();
-
-			// After the object has been created, update progress for
-			// the entire scope, then process the post-created aspects
-			created.then(function(object) {
-				// TODO: scopeReady progress update should have a richer
-				// update object containing info about the status, wire API, etc.
-				scopeReady.progress(update);
-				chain(processAspects('created', object), configured);
-			});
-
-			// After the object is configured, process the post-configured
-			// aspects.
-			configured.then(function(object) {
-				chain(processAspects('configured', object), initialized);
-			});
-
-			// After the object is initialized, process the post-initialized
-			// aspects.
-			initialized.then(function(object) {
-				chain(processAspects('initialized', object), promise);
-			});
-
-			// Load the module, and use it to create the object
-			loadModule(moduleId, spec).then(function(module) {
-				// We'll either use the module directly, or we need
-				// to instantiate/invoke it.
-				if(spec.create && isFunction(module)) {
-					// Instantiate or invoke it and use the result
-					chain(create(module), created);
-
-				} else {
-					// Simply use the module as is
-					chain(modulesReady, created, module);
-					
-				}
-			});
-
-			return promise;
-
-			//
-			// ModuleFactory private functions
-			//
-
-			function create(module) {
-				var args, promise;
-				
-				args = [];
-				promise = newPromise();
-
-				if(typeof spec.create == 'object' && spec.create.args) {
-					args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
-				}
-
-				modulesReady.then(function() {
-
-					createArray(args).then(function(resolvedArgs) {
-
-						var object = instantiate(module, resolvedArgs);
-						promise.resolve(object);
-
-					});						
-				});
-
-				return promise;
-			}
-
-			function processAspects(step, target) {
-				var promises, aspectProcessor, options, aspect;
-
-				promises = [];
-				aspect = { target: target }
-
-				for(var a in aspects) {
-					aspectProcessor = aspects[a];
-					options = aspect.options = spec[a];
-
-					if(options && aspectProcessor && aspectProcessor[step]) {
-						var aspectPromise = newPromise();
-						promises.push(aspectPromise);
-						aspectProcessor[step](aspectPromise, aspect, aspectApi);
-					}
-				}
-
-				return chain(whenAll(promises), newPromise(), target);
-
-			}
 		}
 
 		//
@@ -447,7 +448,7 @@
 						if(resolver) {
 							refName = refName.substring(split+1);
 							// TODO: real ref plugin api
-							resolver(promise, refName, refObj, aspectApi);
+							resolver(promise, refName, refObj, pluginApi);
 					
 						} else {
 							promise.reject("No resolver found for ref: " + refObj);
@@ -548,81 +549,6 @@
 		return typeof it == 'function';
 	}
 	
-	/*
-		Constructor: Begetter
-		Constructor used to beget objects that wire needs to create using new.
-		
-		Parameters:
-			ctor - real constructor to be invoked
-			args - arguments to be supplied to ctor
-	*/
-	function Begetter(ctor, args) {
-		return ctor.apply(this, args);
-	}
-
-	/*
-		Function: instantiate
-		Creates an object by either invoking ctor as a function and returning the
-		result, or by calling new ctor().  It uses a simple heuristic to try to
-		guess which approach is the "right" one.
-		
-		Parameters:
-			ctor - function or constructor to invoke
-			args - array of arguments to pass to ctor in either case
-			
-		Returns:
-		The result of invoking ctor with args, with or without new, depending on
-		the strategy selected.
-	*/
-	function instantiate(ctor, args) {
-		
-		if(isConstructor(ctor)) {
-			Begetter.prototype = ctor.prototype;
-			Begetter.prototype.constructor = ctor;
-			return new Begetter(ctor, args);
-		} else {
-			return ctor.apply(null, args);
-		}
-	}
-	
-	/*
-		Function: isConstructor
-		Determines with the supplied function should be invoked directly or
-		should be invoked using new in order to create the object to be wired.
-		
-		Parameters:
-			func - determine whether this should be called using new or not
-			
-		Returns:
-		true iff func should be invoked using new, false otherwise.
-	*/
-	function isConstructor(func) {
-		var is = false, p;
-		for(p in func.prototype) {
-			if(p !== undef) {
-				is = true;
-				break;
-			}
-		}
-		
-		return is;
-	}
-
-	function getKeys(obj) {
-		var k = [];
-		for(var p in obj) {
-			if(obj.hasOwnProperty(p)) {
-				k.push(p);
-			}
-		}
-		
-		return k;
-	}
-
-	function fake(val) {
-		return when(val);
-	}
-
 	function noop() {};
 
 	/*
@@ -846,7 +772,9 @@
 				: function (resolve) { resolve && resolve(arg); return this; };
             // disallow multiple calls to resolve or reject
 			this.resolve = this.reject = this.progress =
-				function () { throw new Error('Promise already completed.'); };
+				function () { 
+					throw new Error('Promise already completed.');
+				};
 
 			// complete all waiting (async) then()s
 			var aThen,
@@ -856,4 +784,10 @@
 			delete this._progress;
 		}
 	};
-})(window);
+	
+	return wire;
+});
+})(window, typeof define != 'undefined' ? define : function(deps, factory){
+    // global when, if not loaded via require
+    this.wire = factory(require);
+});

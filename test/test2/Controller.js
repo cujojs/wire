@@ -1,4 +1,4 @@
-define([], function() {
+define(['dojo'], function() {
 
 	var Controller = function() {
 	};

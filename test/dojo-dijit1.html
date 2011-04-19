@@ -9,8 +9,20 @@
 				baseUrl: '../',
 				modulePaths:  {
 					'dojo': 'dojo',
+					'dijit': 'dijit'
+					// 'test': 'test'
+				}
+			};
+
+			require = { 
+				debug: true,
+				baseUrl: '../',
+				paths: {
+					'dojo': 'dojo',
 					'dijit': 'dijit',
-					'test': 'test'
+					'wire': './wire',
+					'text': 'curl/src/curl/plugin/text',
+					'domReady': 'curl/src/curl/domReady'
 				}
 			};
 
@@ -25,8 +37,10 @@
 			};
 		})(window);
 	</script>
-	<script src="../require.js" type="text/javascript" charset="utf-8"></script>
-	<script type="text/javascript" src="../wire.js" data-wire-spec="dojo-dijit1.js"></script>
+	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		require(['wire!test/dojo-dijit1']);
+	</script>
 </head>
 <body>
 	<div id="container">

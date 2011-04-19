@@ -2,26 +2,33 @@
 <html lang="en-US">
 <head>
 	<meta charset="UTF-8">
-	<title>Launcher test</title>
+	<title>Literal factory test</title>
 	<script>
 		require = { debug: true, baseUrl: '../' };
 	</script>
 
 	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
-
 	<script type="text/javascript">
 		require(['wire'], function(wire) {
 			wire({
 				plugins: [
-					// { module: 'wire/debug' },
-					{ module: 'wire/dom' }
+					{ module: 'wire/debug' }
 				],
-				node: { $ref: 'dom!node1' }
+				controller1: {
+					// The module test/test1/Controller should NOT be loaded.
+					// Wiring should result in an object literal with a
+					// property named "module" whose value is "test/test1/Controller"
+					module: 'test/test1/Controller',
+					wire$literal: true
+				},
+				controller2: {
+					wire$literal: {
+						module: 'test/test1/Controller'
+					}
+				}
 			}).then(
 				function(context) {
-					context.node.innerHTML = 'success';
 					console.log("Done", context);
-					// context.destroy();
 				},
 				function(err) {
 					console.log(err);
@@ -31,8 +38,5 @@
 	</script>
 </head>
 <body>
-	<div>
-		<p id="node1"></p>
-	</div>
 </body>
 </html>

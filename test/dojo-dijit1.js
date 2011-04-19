@@ -1,4 +1,4 @@
-wire({
+define({
 	// There is nothing special about this array.  It's just an array of modules
 	// whose members happen to be a plugins, but we could define it at the top
 	// level or at any depth.  So, the following would work just as well:
@@ -57,20 +57,21 @@ wire({
 	},
 	// Wire in a reference to the destroy button.
 	destroyButton: { $ref: 'dom!destroy' }
-}).then(
-function(context) {
-	// Properties/objects from the parent context are available via the prototype!
-	console.log("initialValue", context.initialValue);
-	
-	// When the button is clicked, cleanup everything by
-	// destroying the context.  Note that this will destroy the programmatically
-	// created widget1 dijit, but not the dijit that is created via dojoType.
-	var d = context.destroyButton;
-	d.onclick = function() {
-		context.destroy();
-		d.onclick = null;
-	};
-},
-function(err) {
-	console.log("wire failed", err);
 });
+// .then(
+// function(context) {
+// 	// Properties/objects from the parent context are available via the prototype!
+// 	console.log("initialValue", context.initialValue);
+	
+// 	// When the button is clicked, cleanup everything by
+// 	// destroying the context.  Note that this will destroy the programmatically
+// 	// created widget1 dijit, but not the dijit that is created via dojoType.
+// 	var d = context.destroyButton;
+// 	d.onclick = function() {
+// 		context.destroy();
+// 		d.onclick = null;
+// 	};
+// },
+// function(err) {
+// 	console.log("wire failed", err);
+// });

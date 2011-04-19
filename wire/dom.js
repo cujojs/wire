@@ -25,7 +25,7 @@ define(['require'], function(require) {
 				dom node.
 	*/
 	function byId(promise, name, refObj, wire) {
-		require(['curl/domReady'], function resolveDomId() {
+		require(['domReady'], function resolveDomId() {
 			var node = document.getElementById(name);
 			if(node) promise.resolve(node);
 			else promise.reject();			

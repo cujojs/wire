@@ -2,26 +2,28 @@
 <html lang="en-US">
 <head>
 	<meta charset="UTF-8">
-	<title>Launcher test</title>
+	<title>Destroy test</title>
 	<script>
-		require = { debug: true, baseUrl: '../' };
+		require = { debug: true, baseUrl: '../', paths: { 'wire': './wire' } };
 	</script>
 
 	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
-
 	<script type="text/javascript">
 		require(['wire'], function(wire) {
 			wire({
-				plugins: [
-					// { module: 'wire/debug' },
-					{ module: 'wire/dom' }
-				],
-				node: { $ref: 'dom!node1' }
+				controller: {
+					create: {
+						module: 'test/test1/Controller'
+					},
+					properties: {
+						name: 'me'
+					},
+					destroy: 'ready'
+				}
 			}).then(
 				function(context) {
-					context.node.innerHTML = 'success';
 					console.log("Done", context);
-					// context.destroy();
+					context.destroy();
 				},
 				function(err) {
 					console.log(err);

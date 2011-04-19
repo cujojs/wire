@@ -1,5 +1,6 @@
 wire({
 	plugins: [
+		{ module: 'wire/base' },
 		{ module: 'wire/debug' },
 		{ module: 'wire/dojo/pubsub' }
 	],
@@ -31,7 +32,7 @@ wire({
 		},
 		subscribe: {
 			"thing/did-something": "doSomething"
-		}
+		},
 	}
 }).then(
 	function(context) {

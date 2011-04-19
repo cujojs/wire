@@ -18,60 +18,50 @@
 	and an object lifecycle handler that will cleanup (e.g. destroyRecursive,
 	or destroy) dijits instantiated "programmatically" in a wiring context.
 */
-define(['dojo', 'dojo/parser'], function(dojo, parser) {
-	var parsed = false,
-		doParse = false;
+define(['dojo', 'dojo/parser', 'dijit/dijit'], function(dojo, parser) {
+	var parsed = false;
+
+	/*
+		Function: dijitById
+		Resolver for dijits by id.		
+	*/
+	function dijitById(promise, name, refObj, wire) {
+		console.log("dijit resolver 1", name);
+		dojo.ready(
+			function() {
+				console.log("dijit resolver 2", name);
+				var resolved = dijit.byId(name);
+				if(resolved) {
+					promise.resolve(resolved);
+				} else {
+					throw new Error("Unresolved dijit ref",name, refObj);
+					// promise.reject();
+				}
+			}
+		);
+	}
+
+	function setDijitProperty(object, property, value) {
+		if(typeof object.set == 'function') {
+			object.set(property, value);
+			return true;
+		}
+
+		return false;
+	}
 	
 	return {
-		wire$resolvers: {
-			/*
-				Function: dijit
-				Resolver for dijits by id.
-				
-				Parameters:
-					factory - wire factory
-					name - id of the dijit
-					refObj - the complete $ref object
-					promise - promise to resolve with the found dijit
-			*/
-			dijit: function(factory, name, refObj, promise) {
-				dojo.ready(
-					function() {
-						var resolved = dijit.byId(name);
-						if(resolved) {
-							promise.resolve(resolved);
-						} else {
-							promise.unresolved();
-						}
-					}
-				);
-			}
-		},
-		wire$setters: [
-			function setDijitProperty(object, property, value) {
-				if(typeof object.set == 'function') {
-					object.set(property, value);
-					return true;
-				}
-
-				return false;
-			}
-		],
-		wire$init: function onInit(options) {
-			// If parse is set to false, don't parse the page
-			doParse = options.parse === true;
-		},
-		wire$wire: function onWire(ready, destroy) {
+		wire$plugin: function onWire(ready, destroy, options) {
 			// Only ever parse the page once, even if other child
 			// contexts are created with this plugin present.
-			if(doParse && !parsed) {
+			if(options.parse && !parsed) {
 				parsed = true;
 				dojo.ready(function() { parser.parse(); });
 			}
 
 			destroy.then(null, null,
 				function onObjectDestroyed(progress) {
-					if( typeof progress.target.declaredClass == 'string') {
+					if(typeof progress.target.declaredClass == 'string') {
 						var object = progress.target;
 
 						// Prefer destroyRecursive over destroy
@@ -85,6 +75,15 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 					}
 				}
 			);
+
+			return {
+				resolvers: {
+					dijit: dijitById
+				},
+				setters: [
+					setDijitProperty
+				]
+			}
 		}
 	};
 });
