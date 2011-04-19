@@ -13,8 +13,7 @@
 	or destroy) dijits instantiated "programmatically" in a wiring context.
 */
 define(['dojo', 'dojo/parser'], function(dojo, parser) {
-	var parsed = false,
-		doParse = false;
+	var parsed = false;
 	
 	return {
 		wire$resolvers: {

@@ -28,7 +28,7 @@ define({
 				promise - factory-provided <Promise> that will be resolved with the
 					dom node.
 		*/
-		'dom': function(factory, name, refObj, promise) {
+		dom: function(factory, name, refObj, promise) {
 			factory.domReady.then(function() {
 				var result = document.getElementById(name[0] === '#' ? name.slice(1) : name);
 				if(result) {

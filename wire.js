@@ -762,9 +762,9 @@
                 promise.then(function() {
                     if(++objectInitCount === objectsToInit) {
 						// FIXME: This domReady should not be necessary but is currently.
-						domReady.then(function() {
+						// domReady.then(function() {
 							objectsReady.resolve(context);
-						});
+						// });
 					}
 				});
 				
