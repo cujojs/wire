@@ -4,16 +4,16 @@
 	<meta charset="UTF-8">
 	<title>nested objects test</title>
 	<script>
-		require = { debug: true, baseUrl: '../' };
+		require = { debug: true, baseUrl: '../', paths: { wire: './wire', domReady: 'curl/src/curl/domReady' } };
 	</script>
 	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
 		require(['wire'], function(wire) {
 			wire({
 				// Plugins
-				plugins: [
-					{ module: 'wire/debug' }
-				],
+				// plugins: [
+				// 	{ module: 'wire/debug' }
+				// ],
 				// The particular logger we want.
 				// Pick either the AlertLogger or SilentLogger and reload.
 				// Can inject concrete dependencies without having to modify Controller.
@@ -43,7 +43,7 @@
 				context.wire({
 					// Plugins
 					plugins: [
-						{ module: 'wire/debug' },
+						// { module: 'wire/debug' },
 						{ module: 'wire/dom' }
 					],
 					name: "Test 2",
@@ -51,16 +51,16 @@
 					controller: {
 						create: {
 							module: 'test/test1/Controller',
-							args: [{ "$ref": "name" }] // from the parent context
+							args: [{ $ref: "name" }] // from the parent context
 						},
 
 						// Properties will be set after construction
 						properties: {
 							// name: { "$ref": "name" },
-							number: { "$ref": "number" }, // from the parent context
-							foo: { "$ref": "foo" }, // from the parent context
+							number: { $ref: "number" }, // from the parent context
+							foo: { $ref: "foo" }, // from the parent context
 							logger: { $ref: "logger" }, // from the parent context
-							messageNode: { "$ref" : "dom!node1" } // inject reference to dom node by id
+							messageNode: { $ref: "dom!node1" } // inject reference to dom node by id
 						},
 						// Init function, named "ready", will be called after properties have been
 						// set.  Since the properties depend on a dom node, the init function can't
@@ -69,7 +69,7 @@
 						init: {
 							// Params can be a single value/ref/module or a mixed array of them
 							// e.g. [{ "$ref": "message" }] will work just fine here
-							ready: { "$ref": "message" }
+							ready: { $ref: "message" }
 						}
 					}
 				}).then(function(context2) {
@@ -77,7 +77,7 @@
 					// message, logger, and foo properties.  It will have a name property that
 					// overrides it's parent's name.
 					console.log("Done2", context2);
-					context.destroy().then(function() { console.log("contexts destroyed"); });
+					// context.destroy().then(function() { console.log("contexts destroyed"); });
 				});
 			});
 		});

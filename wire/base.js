@@ -53,7 +53,7 @@ define([], function() {
 			promises = [];
 
 			for(var func in options) {
-				p = wire.promise();
+				p = wire.deferred();
 				promises.push(p);
 				invoke(p, func, target, options[func], wire);
 			}
@@ -64,100 +64,6 @@ define([], function() {
 		}
 	}
 
-	/*
-		Constructor: Begetter
-		Constructor used to beget objects that wire needs to create using new.
-		
-		Parameters:
-			ctor - real constructor to be invoked
-			args - arguments to be supplied to ctor
-	*/
-	function Begetter(ctor, args) {
-		return ctor.apply(this, args);
-	}
-
-	/*
-		Function: instantiate
-		Creates an object by either invoking ctor as a function and returning the
-		result, or by calling new ctor().  It uses a simple heuristic to try to
-		guess which approach is the "right" one.
-		
-		Parameters:
-			ctor - function or constructor to invoke
-			args - array of arguments to pass to ctor in either case
-			
-		Returns:
-		The result of invoking ctor with args, with or without new, depending on
-		the strategy selected.
-	*/
-	function instantiate(ctor, args) {
-		
-		if(isConstructor(ctor)) {
-			Begetter.prototype = ctor.prototype;
-			Begetter.prototype.constructor = ctor;
-			return new Begetter(ctor, args);
-		} else {
-			return ctor.apply(null, args);
-		}
-	}
-	
-	/*
-		Function: isConstructor
-		Determines with the supplied function should be invoked directly or
-		should be invoked using new in order to create the object to be wired.
-		
-		Parameters:
-			func - determine whether this should be called using new or not
-			
-		Returns:
-		true iff func should be invoked using new, false otherwise.
-	*/
-	function isConstructor(func) {
-		var is = false, p;
-		for(p in func.prototype) {
-			if(p !== undef) {
-				is = true;
-				break;
-			}
-		}
-		
-		return is;
-	}
-
-	function moduleFactory(promise, spec, wire) {
-		var moduleId, args;
-		
-		moduleId = spec.create 
-			? typeof spec.create == 'string' ? spec.create : spec.create.module
-			: spec.module;
-
-		// Load the module, and use it to create the object
-		wire.load(moduleId, spec).then(function(module) {
-			// We'll either use the module directly, or we need
-			// to instantiate/invoke it.
-			if(spec.create && typeof module == 'function') {
-				// Instantiate or invoke it and use the result
-				if(typeof spec.create == 'object' && spec.create.args) {
-					args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
-				} else {
-					args = [];
-				}
-
-				wire(args).then(function(resolvedArgs) {
-
-					var object = instantiate(module, resolvedArgs);
-					promise.resolve(object);
-
-				});
-
-			} else {
-				// Simply use the module as is
-				promise.resolve(module);
-				
-			}
-		});
-	}
-
 	function literalFactory(promise, spec, wire) {
 		if(spec.wire$literal === true) {
 			delete spec.wire$literal;
@@ -166,60 +72,63 @@ define([], function() {
 			promise.resolve(spec.wire$literal);
 		}
 	}
+
+	function propertiesAspect(promise, aspect, wire) {
+		var options, promises, p, val;
+
+		promises = [];
+		options = aspect.options;
+
+		for(var prop in options) {
+			p = wire.deferred();
+			promises.push(p);
+			
+			val = options[prop];
+			wire(val).then(function(resolvedValue) {
+				aspect.set(prop, resolvedValue);
+				p.resolve();
+			});
+
+		}
+
+		wire.whenAll(promises).then(function() {
+			promise.resolve();
+		});
+	}
+
+	function initAspect(promise, aspect, wire) {
+		invokeAll(promise, aspect, wire);
+	}
+
+	function destroyAspect(promise, aspect, wire) {
+		promise.resolve();
+
+		destroyFuncs.push(function destroyObject() {
+			invokeAll(wire.deferred(), aspect, wire);
+		});
+	}
 	    				
 	return {
 		wire$plugin: function(ready, destroyed, options) {
 			return {
 				factories: {
-					wire$literal: literalFactory,
-	    			create: moduleFactory
+					wire$literal: literalFactory
 				},
 				aspects: {
 					// properties aspect.  Sets properties on components
 					// after creation.
 					properties: {
-						created: function(promise, aspect, wire) {
-							var options, promises, p, val;
-
-							promises = [];
-							options = aspect.options;
-
-							for(var prop in options) {
-								p = wire.promise();
-								promises.push(p);
-								
-								val = options[prop];
-								console.log("before prop", prop, val);
-								wire(val).then(function(resolvedValue) {
-									console.log("setting prop", prop, val, resolvedValue);
-									aspect.set(prop, resolvedValue);
-									p.resolve();
-								});
-
-							}
-
-							wire.whenAll(promises).then(function() {
-								promise.resolve();
-							});
-						}
+						created: propertiesAspect,
 					},
 					// init aspect.  Invokes methods on components after
 					// they have been configured
 					init: {
-						configured: function(promise, aspect, wire) {
-							invokeAll(promise, aspect, wire);
-						}
+						configured: initAspect
 					},
 					// destroy aspect.  Registers methods to be invoked
 					// on components when the enclosing context is destroyed
 					destroy: {
-						initialized: function(promise, aspect, wire) {
-							promise.resolve();
-
-							destroyFuncs.push(function destroyObject() {
-								invokeAll(wire.promise(), aspect, wire);
-							});
-						}
+						initialized: destroyAspect
 					}
 				},
 				setters: [
