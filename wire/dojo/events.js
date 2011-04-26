@@ -11,7 +11,7 @@
 	dojo.connect and dojo.disconnect to do the work of connecting and disconnecting
 	event handlers.
 */
-define(['dojo'], function(events) {
+define(['dojo', 'dojo/_base/event'], function(events) {
 	
 	return {
 		wire$plugin: function eventsPlugin(ready, destroyed, options) {
@@ -63,11 +63,11 @@ define(['dojo'], function(events) {
 				aspects: {
 					connect: {
 						initialized: function(promise, aspect, wire) {
-							connect(wire, aspect.target, aspect.options)
+							connect(wire, aspect.target, aspect.options);
 						}
 					}
 				}
-			}
+			};
 		}
 	};
 });

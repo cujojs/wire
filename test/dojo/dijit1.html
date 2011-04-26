@@ -5,25 +5,33 @@
 	<title>Launcher test</title>
 	<script type="text/javascript">
 		(function(global) {
+			var
+				baseUrl = '../../';
+
 			global.djConfig = {
-				baseUrl: '../',
-				modulePaths:  {
-					'dojo': 'dojo',
-					'dijit': 'dijit'
-					// 'test': 'test'
-				}
+				baseUrl: baseUrl
 			};
 
-			require = { 
-				debug: true,
-				baseUrl: '../',
+			global.require = {
+				baseUrl: baseUrl,
+				pluginPath: 'curl/src/curl/plugin',
 				paths: {
-					'dojo': 'dojo',
-					'dijit': 'dijit',
 					'wire': './wire',
-					'text': 'curl/src/curl/plugin/text',
-					'domReady': 'curl/src/curl/domReady'
-				}
+					curl: 'curl/src/curl',
+					domReady: 'curl/src/curl/domReady'
+				},
+				packages: [
+					{
+						name: 'dojo',
+						lib: '.',
+						main: './lib/main-browser'
+					},
+					{
+						name: 'dijit',
+						lib: '.',
+						main: './lib/main'
+					}
+				]
 			};
 
 			// Anything in this wiring spec will be part of the root
@@ -37,9 +45,9 @@
 			};
 		})(window);
 	</script>
-	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
-		require(['wire!test/dojo-dijit1']);
+		require(['wire!test/dojo/dijit1']);
 	</script>
 </head>
 <body>

@@ -1,6 +1,5 @@
-wire({
+define({
 	plugins: [
-		{ module: 'wire/base' },
 		{ module: 'wire/debug' },
 		{ module: 'wire/dojo/pubsub' }
 	],
@@ -34,12 +33,4 @@ wire({
 			"thing/did-something": "doSomething"
 		},
 	}
-}).then(
-	function(context) {
-		// Call doSomething on the publisher Thing.  This will also trigger
-		// the subscriber Thing's doSomething!
-		context.thing1.doSomething("hello!");
-		
-		context.destroy();
-	}
-);
+});

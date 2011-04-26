@@ -12,7 +12,7 @@
 	dojo.publish, dojo.subscribe and dojo.unsubscribe to do the work of connecting and disconnecting
 	event handlers.
 */
-define(['dojo'], function(pubsub) {
+define(['dojo', 'dojo/_base/connect'], function(pubsub) {
 
 	return {
 		wire$plugin: function pubsubPlugin(ready, destroyed, options) {

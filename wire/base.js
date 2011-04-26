@@ -65,12 +65,7 @@ define([], function() {
 	}
 
 	function literalFactory(promise, spec, wire) {
-		if(spec.wire$literal === true) {
-			delete spec.wire$literal;
-			promise.resolve(spec);					
-		} else {
-			promise.resolve(spec.wire$literal);
-		}
+		promise.resolve(spec.wire$literal);
 	}
 
 	function propertiesAspect(promise, aspect, wire) {
@@ -80,15 +75,18 @@ define([], function() {
 		options = aspect.options;
 
 		for(var prop in options) {
+
 			p = wire.deferred();
 			promises.push(p);
-			
-			val = options[prop];
-			wire(val).then(function(resolvedValue) {
-				aspect.set(prop, resolvedValue);
-				p.resolve();
-			});
 
+			(function(p, name, val) {
+				
+				wire(val).then(function(resolvedValue) {
+					aspect.set(name, resolvedValue);
+					p.resolve();
+				});
+
+			})(p, prop, options[prop]);
 		}
 
 		wire.whenAll(promises).then(function() {
@@ -107,10 +105,17 @@ define([], function() {
 			invokeAll(wire.deferred(), aspect, wire);
 		});
 	}
-	    				
+
 	return {
 		wire$plugin: function(ready, destroyed, options) {
 			return {
+				resolvers: {
+					wire: function(promise, name, refObj, wire) {
+						wire.ready.then(function(context) {
+							promise.resolve(context);
+						});
+					}
+				},
 				factories: {
 					wire$literal: literalFactory
 				},
@@ -118,7 +123,7 @@ define([], function() {
 					// properties aspect.  Sets properties on components
 					// after creation.
 					properties: {
-						created: propertiesAspect,
+						created: propertiesAspect
 					},
 					// init aspect.  Invokes methods on components after
 					// they have been configured

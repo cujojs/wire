@@ -154,6 +154,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		pluginApi.deferred = newPromise;
 		pluginApi.when = when;
 		pluginApi.whenAll = whenAll;
+		pluginApi.ready = scopeReady;
 
 		if(parent.destroyed) {
 			parent.destroyed.then(destroy);
@@ -306,9 +307,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				});
 			}
 
-			processObject(promise, spec);
-
-			return promise;
+			return processObject(promise, spec);
 		}
 
 		function findFactory(spec) {
@@ -893,7 +892,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				: function (resolve) { resolve && resolve(arg); return this; };
             // disallow multiple calls to resolve or reject
 			this.resolve = this.reject = this.progress =
-				function () { 
+				function alreadyCompleted() { 
 					throw new Error('Promise already completed.');
 				};
 
