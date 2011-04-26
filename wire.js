@@ -15,9 +15,6 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	var VERSION = "0.5",
         tos = Object.prototype.toString,
-		doc = global.document,
-		head = doc.getElementsByTagName('head')[0],
-		scripts = doc.getElementsByTagName('script'),
         rootContext,
         rootSpec = global['wire']||{};
 
