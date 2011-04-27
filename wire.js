@@ -186,30 +186,6 @@
 	}
 	
 	/*
-		Function: createResolver
-		Creates a function to used as a promise resolver, that will resolve another, supplied
-		promise if remaining === 0.
-		
-		Parameters:
-			remaining - if remaining === 0, the supplied promise will be resolved with object as the result
-			object - object[prop] will be assigned the result of the outer promise, and will be passed
-			         to the supplied promise as the resolution
-			prop - object[prop] will be assigned the result of the outer promise
-			promise - promise to be resolved with object if remaining === 0
-			
-		Returns:
-		A resolution function for a promise
-	*/
-	function createResolver(remaining, object, prop, promise) {
-		return function resolver(result) {
-			object[prop] = result;
-			if(remaining == 0) {
-				promise.resolve(object);
-			}
-		};
-	}
-	
-	/*
 		Function: processFuncList
 		Resolves list to 1 or more functions of target, and invokes callback
 		for each function.
@@ -226,7 +202,7 @@
 	*/
 	function processFuncList(list, target, spec, callback) {
 		var func,
-			p = new Promise();
+			p = newPromise();
 			
 		if(typeof list == "string") {
 			func = target[list];
@@ -281,12 +257,12 @@
 				// so this also helps to avoid that problem.
 				moduleDefs = {},
 				// Top-level promises
-				modulesReady = new Promise(),
-				// objectsCreated = new Promise(),
-				objectsReady = new Promise(),
-				contextReady = new Promise(),
-				contextDestroyed = new Promise(),
-				domReady = new Promise(),
+				modulesReady = newPromise(),
+				// objectsCreated = newPromise(),
+				objectsReady = newPromise(),
+				contextReady = newPromise(),
+				contextDestroyed = newPromise(),
+				domReady = newPromise(),
 				objectDefs = {},
 				// Plugins
 				setters = [],
@@ -390,7 +366,7 @@
 				it has been resolved.
 			*/
 			function resolveRef(ref) {
-				var p = new Promise();
+				var p = newPromise();
 
 				if(isRef(ref)) {
 					modulesReady.then(function resolveRefAfterModulesReady() {
@@ -438,7 +414,7 @@
 				rejected if the object cannot be created.
 			*/
 			function createObject(spec, module) {
-				var p = new Promise(),
+				var p = newPromise(),
 					object = module;
 
 				function objectCreated(created, promise) {
@@ -486,7 +462,7 @@
 				init functions have been invoked.
 			*/
 			function initObject(spec, object) {
-				var promise = new Promise();
+				var promise = newPromise();
 
 				promise.then(function() {
 					contextProgress(contextReady, "init", object, spec);
@@ -549,7 +525,7 @@
 				a <Promise> that will be resolved once all properties have been set
 			*/
 			function setProperties(object, props) {
-				var promise = new Promise(),
+				var promise = newPromise(),
 					keyArr = keys(props),
 					cachedSetter;
 
@@ -598,7 +574,7 @@
 				a <Promise> that will be resolved after func is actually invoked.
 			*/
 			function invoke(target, func, args) {
-				var p = new Promise();
+				var p = newPromise();
 				parse(args).then(function handleInitParsed(processedArgs) {
 					func.apply(target, isArray(processedArgs) ? processedArgs : [processedArgs]);
 					p.resolve(target);
@@ -624,7 +600,7 @@
 
 				if(!p) {
 					p = moduleDefs[moduleId] = {
-						promise: new Promise(),
+						promise: newPromise(),
 						specs: [spec]
 					};
 					loadModules([moduleId], function handleModulesLoaded(module) {
@@ -649,7 +625,7 @@
 				plugins registered.
 			*/
 			function scanPlugins(moduleDefs) {
-				var p = new Promise(),
+				var p = newPromise(),
 					ready = safe(contextReady),
 					destroy = safe(contextDestroyed);
 
@@ -723,7 +699,8 @@
 			*/
 			function parseArray(spec) {
 				var processed = [],
-					promise = new Promise(),
+					promise = newPromise(),
+					promises = [],
 					len = spec.length;
 					
 				if(len == 0) {
@@ -731,11 +708,18 @@
 				} else {
 					var arrCount = len;
 					for(var i=0; i<len; i++) {
-						parse(spec[i]).then(
-							createResolver(--arrCount, processed, i, promise),
-							reject(promise)
-						);
+						var p = parse(spec[i]);
+						promises.push(p);
+
+						(function(p, processed, i) {
+							p.then(function(val) { processed[i] = val; });
+						})(p, processed, i);
 					}
+
+					whenAll(promises).then(
+						function() { promise.resolve(processed); },
+						reject(promise)
+					);
 				}
 
 				return promise;
@@ -755,7 +739,7 @@
 				realized.
 			*/
 			function parseModule(spec, moduleToLoad) {
-				var promise = new Promise();
+				var promise = newPromise();
 				
 				objectsToInit++;
 
@@ -809,7 +793,8 @@
 			*/
 			function parseObject(spec, container) {
 				var processed = container || {},
-					promise = new Promise(),
+					promise = newPromise(),
+					promises = [],
 					props = keys(spec),
 					len = props.length;
 					
@@ -820,16 +805,22 @@
 					for(var j=0; j<len; j++) {
 						var p = props[j],
 							objectPromise = parse(spec[p]);
+
+						promises.push(objectPromise);
 							
 						if(container && p !== undef && !objectDefs[p]) {
 							objectDefs[p] = objectPromise;
 						}
 
-						objectPromise.then(
-							createResolver(--propCount, processed, p, promise),
-							reject(promise)
-						);
+						(function(promise, processed, prop) {
+							promise.then(function(object) { processed[prop] = object; });
+						})(objectPromise, processed, p);
 					}
+
+					whenAll(promises).then(
+						function() { promise.resolve(processed); },
+						reject(promise)
+					);
 				}
 				
 				return promise;
@@ -876,7 +867,7 @@
 
 				} else {
 					// Integral value/basic type, e.g. String, Number, Boolean, Date, etc.
-					promise = new Promise();
+					promise = newPromise();
 					promise.resolve(spec);
 				}
 
@@ -1089,6 +1080,96 @@
 			promise.reject(err);
 		};
 	}
+
+		/*
+		Function: whenAll
+		Return a promise that will resolve when and only
+		when all of the supplied promises resolve.  The
+		resolution value will be an array containing the
+		resolution values of the triggering promises.
+		TODO: Figure out the best strategy for rejecting.
+	*/
+	function whenAll(promises) {
+		var toResolve, values, promise;
+
+		toResolve = promises.length;
+		
+		// Resolver for promises.  Captures the value and resolves
+		// the returned promise when toResolve reaches zero.
+		// Overwrites resolver var with a noop once promise has
+		// be resolved to cover case where n < promises.length
+		// var resolver = function handleResolve(val) {
+		function resolver(val) {
+			values.push(val);
+			if(--toResolve === 0) {
+				resolver = progress = noop;
+				promise.resolve(values);
+			}
+		}
+
+		// Wrapper so that resolver can be replaced
+		function resolve(val) {
+			resolver(val);
+		}
+
+		// Rejecter for promises.  Rejects returned promise
+		// immediately, and overwrites rejecter var with a noop
+		// once promise to cover case where n < promises.length.
+		// TODO: Consider rejecting only when N (or promises.length - N?)
+		// promises have been rejected instead of only one?
+		// var rejecter = function handleReject(err) {
+		function rejecter(err) {
+			rejecter = progress = noop;
+			promise.reject(err);			
+		}
+
+		// Wrapper so that rejecer can be replaced
+		function reject(err) {
+			rejecter(err);
+		}
+
+		// Progress updater.  Since this may be called many times,
+		// can't overwrite it until resolve/reject.  So, it is
+		// overwritten in resolve(), and reject().
+		function progress(update) {
+			promise.progress(update);
+		}
+
+		promise = newPromise();
+		values = [];
+
+		if(toResolve == 0) {
+			promise.resolve(values);
+
+		} else {
+			for (var i = 0; i < promises.length; i++) {
+				when(promises[i]).then(resolve, reject, progress);
+			}
+
+		}
+		
+		return promise;
+	}
+
+	function when(promiseOrValue) {
+		if(isPromise(promiseOrValue)) {
+			return promiseOrValue;
+		}
+
+		var p = newPromise();
+		p.resolve(promiseOrValue);
+		return p;
+	}
+
+	function newPromise() {
+		return new Promise();
+	}
+
+	function isPromise(promiseOrValue) {
+		return promiseOrValue && typeof promiseOrValue.then == 'function';
+	}
+
+	function noop() {}
 	
 	/*
 		Class: Promise
@@ -1198,7 +1279,7 @@
 		} else {
 			// No root context yet, so wire it first, then wire the requested spec as
 			// a child.  Subsequent wire() calls will reuse the existing root context.
-			var unsafePromise = new Promise();
+			var unsafePromise = newPromise();
 
 			ContextFactory().wire(rootSpec).then(function(context) {
 				rootContext = context;
