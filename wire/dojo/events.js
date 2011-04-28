@@ -64,6 +64,7 @@ define(['dojo', 'dojo/_base/event'], function(events) {
 					connect: {
 						initialized: function(promise, aspect, wire) {
 							connect(wire, aspect.target, aspect.options);
+							promise.resolve();
 						}
 					}
 				}

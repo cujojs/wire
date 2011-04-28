@@ -28,18 +28,23 @@ define(['require'], function(require) {
 		require(['domReady'], function resolveDomId() {
 			var node = document.getElementById(name);
 			if(node) promise.resolve(node);
-			else promise.reject();			
+			else promise.reject();
 		});
 	}
+
+	// Wire plugin.
+	// Since this plugin has no context-specific needs or functionality, can
+	// always return the same object.
+	var wirePlugin = {
+		resolvers: {
+			dom: byId
+		}		
+	};
 
 	// return function wire$plugin(ready, options) {
 	return {
 		wire$plugin: function domPlugin(ready, destroyed, options) {
-			return {
-				resolvers: {
-					dom: byId
-				}
-			};
+			return wirePlugin;
 		}
 	};
 

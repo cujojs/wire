@@ -337,7 +337,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 
 		function processObject(target, spec) {
-			var promise, proxy, update, created, configured, initialized;
+			var promise, proxy, update, created, configured, initialized, destroyed;
 			
 			promise = newPromise();
 
@@ -347,12 +347,17 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			created     = update.created     = target;
 			configured  = update.configured  = newPromise();
 			initialized = update.initialized = newPromise();
+			destroyed   = update.destroyed   = newPromise();
 
 			// After the object has been created, update progress for
 			// the entire scope, then process the post-created aspects
 			when(target).then(function(object) {
 				
 				initProxy(proxy, object);
+
+				chain(scopeDestroyed, destroyed, object);
+
+				update.target = object;
 
 				// Notify progress about this object.
 				scopeReady.progress(update);
@@ -402,13 +407,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			// getting a prop value and invoke a method?
 		}
 
-		function processAspects(step, target, spec) {
-			var promises, aspect, aspectApi, aspectProcessor, options;
+		function processAspects(step, proxy, spec) {
+			var promises, aspect, aspectProcessor, options;
 
 			promises = [];
-			// aspectApi = delegate(pluginApi);
-			aspectApi = pluginApi;
-			aspect = delegate(target);
+			aspect = delegate(proxy);
 
 			for(var a in aspects) {
 				aspectProcessor = aspects[a];
@@ -417,11 +420,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				if(options && aspectProcessor && aspectProcessor[step]) {
 					var aspectPromise = newPromise();
 					promises.push(aspectPromise);
-					aspectProcessor[step](aspectPromise, aspect, aspectApi);
+					aspectProcessor[step](aspectPromise, aspect, pluginApi);
 				}
 			}
 
-			return chain(whenAll(promises), newPromise(), target.target);
+			return chain(whenAll(promises), newPromise(), proxy.target);
 
 		}
 
@@ -496,23 +499,27 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				split = refName.indexOf('!');
 
 				if(split > 0) {
+					var name = refName.substring(0, split);
+					if(name == 'wire') {
+						console.log(refObj);
+						promise.resolve(scopeReady);
+					} else {
+						// Wait for modules, since the reference may need to be
+						// resolved by a resolver plugin
+						modulesReady.then(function() {
 
-					// Wait for modules, since the reference may need to be
-					// resolved by a plugin
-					modulesReady.then(function() {
-
-						var resolver = resolvers[refName.substring(0, split)];
-						if(resolver) {
-							refName = refName.substring(split+1);
-							// TODO: real ref plugin api
-							resolver(promise, refName, refObj, pluginApi);
-					
-						} else {
-							promise.reject("No resolver found for ref: " + refObj);
-					
-						}
+							var resolver = resolvers[name];
+							if(resolver) {
+								refName = refName.substring(split+1);
+								resolver(promise, refName, refObj, pluginApi);
 						
-					});
+							} else {
+								promise.reject("No resolver found for ref: " + refObj);
+						
+							}
+						});
+					}
+
 				} else {
 					promise.reject("Cannot resolve ref: " + refName);
 				}
@@ -527,35 +534,25 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		//
 
 		function destroy() {
-			function doDestroy() {
-				// Invoke all registered destroy functions
-				// for (var i=0; i < destroyers.length; i++) {
-				// 	try {
-				// 		destroyers[i]();
-				// 	} catch(e) {
-				// 		/* squelch? */
-				// 		console.log(e);
-				// 	}
-				// }
-				
-				// TODO: Clear out the context prototypes?
-				var p;
-				for(p in scope)   delete scope[p];
-				for(p in objects) delete objects[p];
-				for(p in local)   delete local[p];
-				
-				// But retain a do-nothing destroy() func, in case
-				// it is called again for some reason.
-				doDestroy = noop;
-
-				// Resolve promise
-				scopeDestroyed.resolve();
-			}
-			
 			scopeReady.then(doDestroy, doDestroy);
 
 			return scopeDestroyed;
 
+		}
+
+		function doDestroy() {
+			// TODO: Clear out the context prototypes?
+			var p;
+			for(p in scope)   delete scope[p];
+			for(p in objects) delete objects[p];
+			for(p in local)   delete local[p];
+			
+			// But retain a do-nothing destroy() func, in case
+			// it is called again for some reason.
+			doDestroy = noop;
+
+			// Resolve promise
+			scopeDestroyed.resolve();
 		}
     }
 

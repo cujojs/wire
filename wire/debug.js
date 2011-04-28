@@ -82,6 +82,10 @@ define([], function() {
 		update.initialized.then(function(target) {
 			console.log(time('Object initialized', contextTimer), target, update.spec);		
 		});
+
+		update.destroyed.then(function(target) {
+			console.log(time('Object destroyed', contextTimer), target, update.spec);		
+		});
 	}
 
 	return {

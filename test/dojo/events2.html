@@ -12,7 +12,7 @@
 			return {
 				handleEvent: function(e) {
 					e.target.innerHTML = "Success!";
-					this.context.destroy();
+					this.context.then(function(c) { c.destroy(); });
 				}
 			};
 		});
@@ -21,7 +21,7 @@
 			return {
 				handleEvent: function(e) {
 					e.target.innerHTML = "Success!";
-					this.context.destroy();
+					this.context.then(function(c) { c.destroy(); });
 				}
 			};
 		});
@@ -29,6 +29,7 @@
 		require(['wire'], function(wire) {
 			wire({
 				plugins: [
+					{ module: 'wire/debug' },
 					{ module: 'wire/dojo/events' },
 					{ module: 'wire/dom' }
 				],
@@ -57,6 +58,7 @@
 					console.log("Done", context);
 					context.wire({
 						plugins: [
+							{ module: 'wire/debug' },
 							{ module: 'wire/dojo/events' },
 							{ module: 'wire/dom' }
 						],

@@ -18,7 +18,7 @@
 	and an object lifecycle handler that will cleanup (e.g. destroyRecursive,
 	or destroy) dijits instantiated "programmatically" in a wiring context.
 */
-define(['dojo', 'dojo/parser', 'dijit'], function(dojo, parser, dijit) {
+define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser, dijit, Widget) {
 	var parsed = false;
 
 	/*
@@ -26,11 +26,10 @@ define(['dojo', 'dojo/parser', 'dijit'], function(dojo, parser, dijit) {
 		Resolver for dijits by id.		
 	*/
 	function dijitById(promise, name, refObj, wire) {
-		console.log("dijit resolver 1", name);
 		dojo.ready(
 			function() {
-				console.log("dijit resolver 2", name);
 				var resolved = dijit.byId(name);
+
 				if(resolved) {
 					promise.resolve(resolved);
 				} else {
@@ -59,23 +58,26 @@ define(['dojo', 'dojo/parser', 'dijit'], function(dojo, parser, dijit) {
 				dojo.ready(function() { parser.parse(); });
 			}
 
-			destroy.then(null, null,
-				function onObjectDestroyed(progress) {
-					if(typeof progress.target.declaredClass == 'string') {
-						var object = progress.target;
+			ready.then(null, null, function(update) {
+				// Only care about objects that are dijits
+				if(update.target instanceof Widget) {
 
+					// It's a dijit, so we need to know when it is being
+					// destroyed so that we can do proper dijit cleanup on it
+					update.destroyed.then(function(target) {
 						// Prefer destroyRecursive over destroy
-						if(typeof object.destroyRecursive == 'function') {
-							object.destroyRecursive(false);
+						if(typeof target.destroyRecursive == 'function') {
+							target.destroyRecursive(false);
 
-						} else if(typeof object.destroy == 'function') {
-							object.destroy(false);
+						} else if(typeof target.destroy == 'function') {
+							target.destroy(false);
 
 						}
-					}
+					});					
 				}
-			);
+			});
 
+			// Return plugin
 			return {
 				resolvers: {
 					dijit: dijitById

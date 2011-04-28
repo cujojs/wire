@@ -58,20 +58,3 @@ define({
 	// Wire in a reference to the destroy button.
 	destroyButton: { $ref: 'dom!destroy' }
 });
-// .then(
-// function(context) {
-// 	// Properties/objects from the parent context are available via the prototype!
-// 	console.log("initialValue", context.initialValue);
-	
-// 	// When the button is clicked, cleanup everything by
-// 	// destroying the context.  Note that this will destroy the programmatically
-// 	// created widget1 dijit, but not the dijit that is created via dojoType.
-// 	var d = context.destroyButton;
-// 	d.onclick = function() {
-// 		context.destroy();
-// 		d.onclick = null;
-// 	};
-// },
-// function(err) {
-// 	console.log("wire failed", err);
-// });
