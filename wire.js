@@ -23,7 +23,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
     //
 
     function wire(spec) {
-   		var promise = newPromise();
+   		var promise = Deferred();
 
    		// If the root context is not yet wired, wire it first
    		if(!rootContext) {
@@ -37,7 +37,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			}
 		);
 
-    	return promise;    	
+    	return promise.promise;    	
     }
 
     wire.version = VERSION;
@@ -65,7 +65,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	
     function wireContext(spec, parent) {
 
-    	var promise = newPromise();
+    	var promise = Deferred();
 
     	// Function to do the actual wiring.  Capture the
     	// parent so it can be called after an async load
@@ -123,10 +123,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		modulesToLoad = [];
 		moduleLoadPromises = {};
-		modulesReady = newPromise();
+		modulesReady = Deferred();
 
-		scopeReady = newPromise();
-		scopeDestroyed = newPromise();
+		scopeReady = Deferred();
+		scopeDestroyed = Deferred();
 
 		// A proxy of this scope that can be used as a parent to
 		// any child scopes that may be created.
@@ -148,7 +148,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		pluginApi.load = loadModule;
 		pluginApi.resolveRef = doResolveRef;
-		pluginApi.deferred = newPromise;
+		pluginApi.deferred = Deferred;
 		pluginApi.when = when;
 		pluginApi.whenAll = whenAll;
 		pluginApi.ready = scopeReady;
@@ -163,7 +163,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		// Setup a promise for each item in this scope
 		for(name in scopeDef) {
-			var p = objects[name] = newPromise();
+			var p = objects[name] = Deferred();
 			promises.push(p);
 		}
 
@@ -209,7 +209,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				created = val;
 			}
 
-			return chain(when(created), newPromise());
+			return chain(when(created), Deferred());
 		}
 
 		function loadModule(moduleId, spec) {
@@ -220,7 +220,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			if(!m) {
 				modulesToLoad.push(moduleId);
 				m = moduleLoadPromises[moduleId] = { id: moduleId };
-				promise = m.promise = new Promise();
+				promise = m.promise = Deferred();
 
 				moduleLoadPromises[moduleId] = m;
 
@@ -262,7 +262,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		function createArray(arrayDef) {
 			var promise, result;
 
-			promise = newPromise();
+			promise = Deferred();
 			result = [];
 
 			if(arrayDef.length === 0) {
@@ -297,7 +297,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				promise = loadModule(spec.module, spec);
 			} else {
 				// Look for a factory, then use it to create the object
-				promise = newPromise();
+				promise = Deferred();
 
 				findFactory(spec).then(function(factory) {
 					factory(promise, spec, pluginApi);
@@ -308,7 +308,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function findFactory(spec) {
-			var promise = newPromise();
+			var promise = Deferred();
 
 			// FIXME: Should not have to wait for all modules to load,
 			// but rather only the module containing the particular
@@ -339,15 +339,20 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		function processObject(target, spec) {
 			var promise, proxy, update, created, configured, initialized, destroyed;
 			
-			promise = newPromise();
+			promise = Deferred();
 
 			proxy = {};
 
 			update = { spec: spec };
-			created     = update.created     = target;
-			configured  = update.configured  = newPromise();
-			initialized = update.initialized = newPromise();
-			destroyed   = update.destroyed   = newPromise();
+			created     = target;
+			configured  = Deferred();
+			initialized = Deferred();
+			destroyed   = Deferred();
+
+			update.created     = created.promise;
+			update.configured  = configured.promise;
+			update.initialized = initialized.promise;
+			update.destroyed   = destroyed.promise;
 
 			// After the object has been created, update progress for
 			// the entire scope, then process the post-created aspects
@@ -418,13 +423,13 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				options = aspect.options = spec[a];
 
 				if(options && aspectProcessor && aspectProcessor[step]) {
-					var aspectPromise = newPromise();
+					var aspectPromise = Deferred();
 					promises.push(aspectPromise);
 					aspectProcessor[step](aspectPromise, aspect, pluginApi);
 				}
 			}
 
-			return chain(whenAll(promises), newPromise(), proxy.target);
+			return chain(whenAll(promises), Deferred(), proxy.target);
 
 		}
 
@@ -495,7 +500,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			} else {
 				var split;
 
-				promise = newPromise();
+				promise = Deferred();
 				split = refName.indexOf('!');
 
 				if(split > 0) {
@@ -605,9 +610,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		return typeof it == 'function';
 	}
 	
-	function noop() {};
-
-		/*
+	/*
 		Constructor: Begetter
 		Constructor used to beget objects that wire needs to create using new.
 		
@@ -721,7 +724,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			promise.progress(update);
 		}
 
-		promise = newPromise();
+		promise = Deferred();
 		values = [];
 
 		if(toResolve == 0) {
@@ -742,51 +745,13 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return promiseOrValue;
 		}
 
-		var p = newPromise();
+		var p = Deferred();
 		p.resolve(promiseOrValue);
 		return p;
 	}
 
 	function isPromise(promiseOrValue) {
 		return promiseOrValue && isFunction(promiseOrValue.then);
-	}
-		
-	/*
-		Section: Promise Helpers
-		Helper functions for <Promises>
-	*/
-	/*
-		Function: safe
-		Returns a "safe" version of the supplied <Promise> that only has a then() function.
-		
-		Parameters:
-			promise - a <Promise> or safe <Promise>
-			
-		Returns:
-		a safe <Promise> that only has then()
-	*/
-	function safe(promise) {
-		return {
-			then: function safeThen(resolve, reject, progress) {
-				promise.then(resolve, reject, progress);
-			}
-		};
-	}
-	
-	/*
-		Function: reject
-		Creates a Function that, when invoked, will reject the supplied <Promise>
-		
-		Parameters:
-			promise - <Promise> to reject
-			
-		Returns:
-		a Function that, when invoked, will reject the supplied <Promise>
-	*/
-	function reject(promise) {
-		return function(err) {
-			promise.reject(err);
-		};
 	}
 
 	/*
@@ -815,95 +780,163 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		return second;
 	}
 
-	function newPromise() {
-		return new Promise();
-	}
-	
+	//
+	// The following Deferred promise implementation is from when.js:
+	// https://github.com/briancavalier/when.js
+	//
+
+	function noop() {};
+
+	var freeze = Object.freeze || noop;
+
 	/*
-		Class: Promise
-		Promise implementation based on unscriptable's minimalist Promise
-		https://gist.github.com/814052/
-		with safe mod and progress by me:
-		https://gist.github.com/814313
+		Constructor: Deferred
+		Creates a new, CommonJS compliant, Deferred with fully isolated
+		resolver and promise parts, either or both of which may be given out
+		safely to consumers.
+		The Deferred itself has the full API: resolve, reject, progress, and
+		then. The resolver has resolve, reject, and progress.  The promise
+		only has then.
 	*/
-	/*
-		Constructor: Promise
-		Creates a new Promise
-	*/
-	
-	function Promise () {
-		this._thens = [];
-		this._progress = [];
-	}
+	function Deferred() {
+		var deferred, promise, resolver, result, listeners, tail;
 
-	Promise.prototype = {
+		function _then(callback, errback, progback) {
+			var d, listener;
 
-		/* This is the "front end" API. */
+			listener = {
+				deferred: (d = Deferred()),
+				resolve: callback,
+				reject: errback,
+				progress: progback
+			};
 
-		// then(onResolve, onReject): Code waiting for this promise uses the
-		// then() method to be notified when the promise is complete. There
-		// are two completion callbacks: onReject and onResolve. A more
-		// robust promise implementation will also have an onProgress handler.
-		then: function (onResolve, onReject, onProgress) {
-			// capture calls to then()
-			this._thens.push({ resolve: onResolve, reject: onReject });
-			onProgress && this._progress.push(onProgress);	
-			return this;
-		},
+			if(listeners) {
+				// Append new listener if linked list already initialized
+				tail = tail.next = listener;
+			} else {
+				// Init linked list
+				listeners = tail = listener;
+			}
 
-		// Some promise implementations also have a cancel() front end API that
-		// calls all of the onReject() callbacks (aka a "cancelable promise").
-		// cancel: function (reason) {},
-
-		/* This is the "back end" API. */
-
-		// resolve(resolvedValue): The resolve() method is called when a promise
-		// is resolved (duh). The resolved value (if any) is passed by the resolver
-		// to this method. All waiting onResolve callbacks are called
-		// and any future ones are, too, each being passed the resolved value.
-		resolve: function (val) { this._complete('resolve', val); },
-
-		// reject(exception): The reject() method is called when a promise cannot
-		// be resolved. Typically, you'd pass an exception as the single parameter,
-		// but any other argument, including none at all, is acceptable.
-		// All waiting and all future onReject callbacks are called when reject()
-		// is called and are passed the exception parameter.
-		reject: function (ex) { this._complete('reject', ex); },
-
-		// Some promises may have a progress handler. The back end API to signal a
-		// progress "event" has a single parameter. The contents of this parameter
-		// could be just about anything and is specific to your implementation.
-		
-		progress: function(statusObject) {
-			var i = 0, p;
-			while(p = this._progress[i++]) { p(statusObject); }
-		},
-
-		/* "Private" methods. */
-
-		_complete: function (which, arg) {
-			// switch over to sync then()
-			this.then = which === 'reject'
-				? function (resolve, reject) { reject && reject(arg); return this; }
-				: function (resolve) { resolve && resolve(arg); return this; };
-            // disallow multiple calls to resolve or reject
-			this.resolve = this.reject = this.progress =
-				function alreadyCompleted() { 
-					throw new Error('Promise already completed.');
-				};
-
-			// complete all waiting (async) then()s
-			var aThen,
-				i = 0;
-			while (aThen = this._thens[i++]) { aThen[which] && aThen[which](arg); }
-			delete this._thens;
-			delete this._progress;
+			return d.promise;
 		}
-	};
-	
+
+		function then(callback, errback, progback) {
+			return _then(callback, errback, progback);
+		}
+
+		function resolve(val) { 
+			complete('resolve', val);
+		}
+
+		function reject(err) {
+			complete('reject', err);
+		}
+		
+		function _progress(update) {
+			var listener, progress;
+			
+			listener = listeners;
+
+			while(listener) {
+				progress = listener.progress;
+				progress && progress(update);
+				listener = listener.next;
+			}
+		}
+
+		function progress(update) {
+			_progress(update);
+		}
+
+		function complete(which, val) {
+			// Save original thenImpl
+			var origThen = _then;
+
+			// Replace thenImpl with one that immediately notifies
+			// with the result.
+			_then = function newThen(callback, errback) {
+				var promise = origThen(callback, errback);
+				notify(which, result);
+				return promise;
+			};
+
+			// Replace complete so that this Deferred
+			// can only be completed once.  Note that this leaves
+			// notify() intact so that it can be used in the
+			// rewritten thenImpl above.
+			// Replace progressImpl, so that subsequent attempts
+			// to issue progress throw.
+			complete = _progress = function alreadyCompleted() {
+				throw new Error("already completed");
+			};
+
+			// Final result of this Deferred.  This is immutable
+			result = val;
+
+			// Notify listeners
+			notify(which, val);
+		}
+
+		function notify(which, val) {
+			// Traverse all listeners registered directly with this Deferred,
+			// also making sure to handle chained thens
+			while(listeners) {
+				var listener, ldeferred, newResult, handler;
+
+				listener  = listeners;
+				ldeferred = listener.deferred;
+				listeners = listeners.next;
+
+				handler = listener[which];
+				if(handler) {
+					try {
+						newResult = handler(result);
+
+						if(isPromise(newResult)) {
+							// If the handler returned a promise, chained deferreds
+							// should complete only after that promise does.
+							newResult.then(ldeferred.resolve, ldeferred.reject, ldeferred.progress);
+						
+						} else {
+							// Complete deferred from chained then()
+							ldeferred[which](newResult === undef ? result : newResult);							
+
+						}
+					} catch(e) {
+						// Exceptions cause chained deferreds to complete
+						// TODO: Should this always reject()?
+						ldeferred[which](result);
+					}
+				}
+			}			
+		}
+
+		// The full Deferred object, with both Promise and Resolver parts
+		deferred = {};
+
+		// Promise and Resolver parts
+
+		// Expose Promise API
+		promise = deferred.promise  = {
+			then: (deferred.then = then)
+		};
+
+		// Expose Resolver API
+		resolver = deferred.resolver = {
+			resolve:  (deferred.resolve  = resolve),
+			reject:   (deferred.reject   = reject),
+			progress: (deferred.progress = progress)
+		};
+
+		// Freeze Promise and Resolver APIs
+		freeze(promise);
+		freeze(resolver);
+
+		return deferred;
+	}
+
 	return wire;
 });
-})(window, typeof define != 'undefined' ? define : function(deps, factory){
-    // global when, if not loaded via require
-    this.wire = factory(require);
-});
+})(window);
