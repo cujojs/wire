@@ -154,7 +154,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		pluginApi.ready = scopeReady;
 
 		if(parent.destroyed) {
-			parent.destroyed.then(destroy);
+			parent.destroyed.then(null, null, destroy);
 		}
 
 		scanPlugin(basePlugin);
@@ -541,6 +541,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function doDestroy() {
+			scopeDestroyed.progress();
+
 			// TODO: Clear out the context prototypes?
 			var p;
 			for(p in scope)   delete scope[p];

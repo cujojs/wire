@@ -132,8 +132,7 @@ define([], function() {
 				},
 				function onContextDestroyError(err) {
 					console.error(contextTime("Context destroy ERROR"), err);
-				},
-				logContextProgress
+				}
 			);
 
 			// return {};		
