@@ -146,12 +146,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return createItem(spec);
 		}
 
-		pluginApi.load = loadModule;
-		pluginApi.resolveRef = doResolveRef;
-		pluginApi.deferred = Deferred;
-		pluginApi.when = when;
-		pluginApi.whenAll = whenAll;
-		pluginApi.ready = scopeReady;
+		pluginApi.resolveRef = function(ref) { return when(doResolveRef(ref)); };
+		pluginApi.deferred   = Deferred;
+		pluginApi.when       = when;
+		pluginApi.whenAll    = whenAll;
+		pluginApi.ready      = scopeReady;
 
 		if(parent.destroyed) {
 			parent.destroyed.then(null, null, destroy);

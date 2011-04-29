@@ -58,7 +58,7 @@ define(['dojo/store/JsonRest'], function(JsonRest) {
 				with the dojo.store.JsonRest that points to the REST
 				resource at the referenced url.
 	*/
-	function resolveResource(name, refObj, wire, promise) {
+	function resolveResource(promise, name, refObj, wire) {
 		var store = new JsonRest({ target: name });
 			
 		if(refObj.get) {
