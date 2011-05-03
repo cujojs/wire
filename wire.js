@@ -212,25 +212,35 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function loadModule(moduleId, spec) {
-			var promise, m;
+			var d;
 
-			m = moduleLoadPromises[moduleId];
+			if(typeof moduleId == 'string') {
+				var m = moduleLoadPromises[moduleId];
 
-			if(!m) {
-				modulesToLoad.push(moduleId);
-				m = moduleLoadPromises[moduleId] = { id: moduleId };
-				promise = m.promise = Deferred();
+				if(!m) {
+					modulesToLoad.push(moduleId);
+					m = moduleLoadPromises[moduleId] = { 
+						id: moduleId,
+						deferred: (d = Deferred())
+					};
 
-				moduleLoadPromises[moduleId] = m;
+					moduleLoadPromises[moduleId] = m;
 
-				require([moduleId], function(module) {
-					scanPlugin(module, spec);
-					m.module = module;
-					chain(modulesReady, promise, m.module);
-				});
+					require([moduleId], function(module) {
+						scanPlugin(module, spec);
+						m.module = module;
+						chain(modulesReady, m.deferred, m.module);
+					});
+				} else {
+					d = m.deferred;
+				}
+
+			} else {
+				d = Deferred();
+				d.resolve(moduleId);
 			}
-
-			return m.promise;
+			
+			return d;
 		}
 
 		function scanPlugin(module, spec) {
@@ -482,19 +492,16 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		function resolveRef(ref, name) {
 			var refName = ref.$ref;
 
-			// Punt on this for now.  Should be able to make it work.
-			if(name === refName) {
-				throw new Error("Self-references not allowed: " + name);
-			}
-
-			return doResolveRef(refName, ref);
+			return doResolveRef(refName, ref, name == refName);
 		}
 
-		function doResolveRef(refName, refObj) {
-			var promise;
+		function doResolveRef(refName, refObj, excludeSelf) {
+			var promise, registry;
 
-			if(refName in objects) {
-				promise = objects[refName];
+			registry = excludeSelf ? parent.objects : objects;
+
+			if(refName in registry) {
+				promise = registry[refName];
 
 			} else {
 				var split;
@@ -505,8 +512,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				if(split > 0) {
 					var name = refName.substring(0, split);
 					if(name == 'wire') {
-						console.log(refObj);
 						promise.resolve(scopeReady);
+
 					} else {
 						// Wait for modules, since the reference may need to be
 						// resolved by a resolver plugin

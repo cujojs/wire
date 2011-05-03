@@ -100,14 +100,26 @@ define([], function() {
 
 	function destroyAspect(promise, aspect, wire) {
 		promise.resolve();
+		
+		var target, options, w;
+		
+		target = aspect.target;
+		options = aspect.options;
+		w = wire;
 
 		destroyFuncs.push(function destroyObject() {
-			invokeAll(wire.deferred(), aspect, wire);
+			invokeAll(wire.deferred(), { options: options, target: target }, w);
 		});
 	}
 
 	return {
 		wire$plugin: function(ready, destroyed, options) {
+			destroyed.then(null, null, function() {
+				for (var i=0; i < destroyFuncs.length; i++) {
+					destroyFuncs[i]();
+				};
+			});
+			
 			return {
 				resolvers: {
 					wire: function(promise, name, refObj, wire) {
