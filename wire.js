@@ -100,7 +100,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	function createScope(scopeDef, parent) {
-		var scope, local, objects, resolvers, factories, aspects, setters,
+		var scope, local, objects, resolvers, factories, facets, setters,
 			modulesToLoad, moduleLoadPromises, modulesReady, scopeReady, scopeDestroyed,
 			promises, name;
 			
@@ -112,10 +112,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		// Descend scope and plugins from parent so that this scope can
 		// use them directly via the prototype chain
-		objects = delegate(parent.objects||{});
+		objects   = delegate(parent.objects||{});
 		resolvers = delegate(parent.resolvers||{});
-		aspects = delegate(parent.aspects||{});
-
+		facets    = delegate(parent.facets||{});
 		factories = delegate(parent.factories||{});
 
 		// Setters is an array, have to concat
@@ -134,7 +133,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			local: local,
 			objects: objects,
 			resolvers: resolvers,
-			aspects: aspects,
+			facets: facets,
 			factories: factories,
 			setters: setters,
 			resolveRef: doResolveRef,
@@ -249,7 +248,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				if(plugin) {
 					addPlugin(plugin.resolvers, resolvers);
 					addPlugin(plugin.factories, factories);
-					addPlugin(plugin.aspects, aspects);
+					addPlugin(plugin.facets, facets);
 
 					if(plugin.setters) {
 						setters = plugin.setters.concat(setters);
@@ -364,7 +363,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			update.destroyed   = destroyed.promise;
 
 			// After the object has been created, update progress for
-			// the entire scope, then process the post-created aspects
+			// the entire scope, then process the post-created facets
 			when(target).then(function(object) {
 				
 				initProxy(proxy, object);
@@ -377,13 +376,13 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				scopeReady.progress(update);
 
 				// After the object is configured, process the post-configured
-				// aspects.
+				// facets.
 				configured.then(function(object) {
 					chain(processAspects('configured', proxy, spec), initialized);
 				});
 
 				// After the object is initialized, process the post-initialized
-				// aspects.
+				// facets.
 				initialized.then(function(object) {
 					chain(processAspects('initialized', proxy, spec), promise);
 				});				
@@ -422,19 +421,19 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function processAspects(step, proxy, spec) {
-			var promises, aspect, aspectProcessor, options;
+			var promises, facet, facetProcessor, options;
 
 			promises = [];
-			aspect = delegate(proxy);
+			facet = delegate(proxy);
 
-			for(var a in aspects) {
-				aspectProcessor = aspects[a];
-				options = aspect.options = spec[a];
+			for(var a in facets) {
+				facetProcessor = facets[a];
+				options = facet.options = spec[a];
 
-				if(options && aspectProcessor && aspectProcessor[step]) {
-					var aspectPromise = Deferred();
-					promises.push(aspectPromise);
-					aspectProcessor[step](aspectPromise, aspect, pluginApi);
+				if(options && facetProcessor && facetProcessor[step]) {
+					var facetPromise = Deferred();
+					promises.push(facetPromise);
+					facetProcessor[step](facetPromise, facet, pluginApi);
 				}
 			}
 

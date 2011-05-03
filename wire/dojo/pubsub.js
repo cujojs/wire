@@ -94,16 +94,16 @@ define(['dojo', 'dojo/_base/connect'], function(pubsub) {
 			});
 
 			return {
-				aspects: {
+				facets: {
 					publish: {
-						initialized: function(promise, aspect, wire) {
-							proxyPublish(aspect.target, aspect.options);
+						initialized: function(promise, facet, wire) {
+							proxyPublish(facet.target, facet.options);
 							promise.resolve();
 						}
 					},
 					subscribe: {
-						initialized: function(promise, aspect, wire) {
-							subscribeTarget(aspect.target, aspect.options);
+						initialized: function(promise, facet, wire) {
+							subscribeTarget(facet.target, facet.options);
 							promise.resolve();
 						}
 					}

@@ -19,13 +19,13 @@ define(['dojo'], function(dojo) {
 		});		
 	}
 
-	function unloadAspect(promise, aspect, wire) {
+	function unloadAspect(promise, facet, wire) {
 		var spec, unload, tunload, target;
 
-		spec = aspect.options;
+		spec = facet.options;
 		unload = spec.unload;
 		tunload = typeof unload;
-		target = aspect.target;
+		target = facet.target;
 	
 		// If it's an object, there may be more than one unload func to
 		// call, and each may have args.
@@ -34,13 +34,13 @@ define(['dojo'], function(dojo) {
 		if(tunload == 'object') {
 			dojo.addOnUnload(function() {
 				for(var f in unload) {
-					aspect.invoke(target[f], unload[f]);
+					facet.invoke(target[f], unload[f]);
 				}
 			});
 			
 		} else if(tunload == 'string') {
 			dojo.addOnUnload(function() {
-				aspect.invoke(target[unload]);
+				facet.invoke(target[unload]);
 			});
 		}
 	}
@@ -51,7 +51,7 @@ define(['dojo'], function(dojo) {
 				resolvers: {
 					'dom.query': resolveQuery
 				},
-				// aspects: {
+				// facets: {
 				// 	unload: {
 				// 		initialized: unloadAspect
 				// 	}

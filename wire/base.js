@@ -39,11 +39,11 @@ define([], function() {
 		}
 	}
 
-	function invokeAll(promise, aspect, wire) {
+	function invokeAll(promise, facet, wire) {
 		var target, options;
 
-		target  = aspect.target;
-		options = aspect.options;
+		target  = facet.target;
+		options = facet.options;
 
 		if(typeof options == 'string') {
 			invoke(promise, options, target, [], wire);
@@ -68,11 +68,11 @@ define([], function() {
 		promise.resolve(spec.wire$literal);
 	}
 
-	function propertiesAspect(promise, aspect, wire) {
+	function propertiesAspect(promise, facet, wire) {
 		var options, promises, p, val;
 
 		promises = [];
-		options = aspect.options;
+		options = facet.options;
 
 		for(var prop in options) {
 
@@ -82,7 +82,7 @@ define([], function() {
 			(function(p, name, val) {
 				
 				wire(val).then(function(resolvedValue) {
-					aspect.set(name, resolvedValue);
+					facet.set(name, resolvedValue);
 					p.resolve();
 				});
 
@@ -94,17 +94,17 @@ define([], function() {
 		});
 	}
 
-	function initAspect(promise, aspect, wire) {
-		invokeAll(promise, aspect, wire);
+	function initAspect(promise, facet, wire) {
+		invokeAll(promise, facet, wire);
 	}
 
-	function destroyAspect(promise, aspect, wire) {
+	function destroyAspect(promise, facet, wire) {
 		promise.resolve();
 		
 		var target, options, w;
 		
-		target = aspect.target;
-		options = aspect.options;
+		target = facet.target;
+		options = facet.options;
 		w = wire;
 
 		destroyFuncs.push(function destroyObject() {
@@ -131,18 +131,18 @@ define([], function() {
 				factories: {
 					wire$literal: literalFactory
 				},
-				aspects: {
-					// properties aspect.  Sets properties on components
+				facets: {
+					// properties facet.  Sets properties on components
 					// after creation.
 					properties: {
 						created: propertiesAspect
 					},
-					// init aspect.  Invokes methods on components after
+					// init facet.  Invokes methods on components after
 					// they have been configured
 					init: {
 						configured: initAspect
 					},
-					// destroy aspect.  Registers methods to be invoked
+					// destroy facet.  Registers methods to be invoked
 					// on components when the enclosing context is destroyed
 					destroy: {
 						initialized: destroyAspect

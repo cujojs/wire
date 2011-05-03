@@ -74,10 +74,10 @@ define(['dojo', 'dojo/_base/event'], function(events) {
 			});
 
 			return {
-				aspects: {
+				facets: {
 					connect: {
-						initialized: function(promise, aspect, wire) {
-							connect(wire, aspect.target, aspect.options);
+						initialized: function(promise, facet, wire) {
+							connect(wire, facet.target, facet.options);
 							promise.resolve();
 						}
 					}
