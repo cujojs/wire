@@ -2,15 +2,17 @@
 
 Wire.js is an [Inversion of Control Container](http://martinfowler.com/articles/injection.html "Inversion of Control Containers and the Dependency Injection pattern") for Javascript apps.
 
-With wire.js, you can focus on coding the business logic of your components and let wire.js handle the bootstrapping and the glue that connects them together.  You write a simple wiring spec in JSON (or Javascript) that describes how your components should be wired together, and wire will load, configure, and wire together those components to create your application.
+With wire.js, you can focus on coding the business logic of your components and let wire.js handle the bootstrapping and the glue that connects them together.  You write a simple wiring spec in JSON (or Javascript) that describes how your components should be wired together, and wire will load, configure, and connect those components to create your application, and will clean them up later.
 
-Specifically, wire.js handles:
+### Specifically, wire.js provides:
 
 * Component lifecycle management
 * Dependency Inversion via constructor and setter Dependency Injection
 * Automatic dependency ordering
 * Connectors
 * Service locator pattern and reference resolution
+
+### Plugins
 
 Wire.js also has a plugin architecture that allows plugins to provide new capabilities to wire.js *and syntax* to wiring specs.  Here are some of the capabilities provided by the bundled plugins:
 
