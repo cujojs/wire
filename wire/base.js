@@ -28,6 +28,7 @@ define([], function() {
 						var result = f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
 							? resolvedArgs
 							: [resolvedArgs]);
+							
 						promise.resolve(result);
 
 					} catch(e) {
@@ -135,17 +136,17 @@ define([], function() {
 					// properties facet.  Sets properties on components
 					// after creation.
 					properties: {
-						created: propertiesAspect
+						configure: propertiesAspect
 					},
 					// init facet.  Invokes methods on components after
 					// they have been configured
 					init: {
-						configured: initAspect
+						initialize: initAspect
 					},
 					// destroy facet.  Registers methods to be invoked
 					// on components when the enclosing context is destroyed
 					destroy: {
-						initialized: destroyAspect
+						ready: destroyAspect
 					}
 				},
 				setters: [

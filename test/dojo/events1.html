@@ -11,8 +11,10 @@
 		define('handler', [], function() {
 			return {
 				handleEvent: function(e) {
-					e.target.innerHTML = "Success!";
-					// this.context.destroy();
+					this.context.destroy().then(function() {
+						e.target.innerHTML = "Success!";
+						console.log("DESTROYED");
+					});
 				}
 			};
 		});
@@ -28,12 +30,12 @@
 					// since the module doesn't return a function (constructor or otherwise)
 					// that can be invoked--it returns an object.
 					module: "handler",
-					// properties: {
-					// 	// wire provides a way to wire in the enclosing context
-					// 	// itself.  This can be useful in certain situations, although
-					// 	// in general, you shouldn't need to.
-					// 	"context": { $ref: "wire!context" }
-					// },
+					properties: {
+						// wire provides a way to wire in the enclosing context
+						// itself.  This can be useful in certain situations, although
+						// in general, you shouldn't need to.
+						"context": { $ref: "wire!context" }
+					},
 					// Use the wire/dojo/events plugin to declare that when the
 					// #test button is clicked, handler's handleEvent method will
 					// be called.

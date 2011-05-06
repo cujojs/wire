@@ -76,7 +76,7 @@ define(['dojo', 'dojo/_base/event'], function(events) {
 			return {
 				facets: {
 					connect: {
-						initialized: function(promise, facet, wire) {
+						ready: function(promise, facet, wire) {
 							connect(wire, facet.target, facet.options);
 							promise.resolve();
 						}

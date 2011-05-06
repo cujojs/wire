@@ -96,13 +96,13 @@ define(['dojo', 'dojo/_base/connect'], function(pubsub) {
 			return {
 				facets: {
 					publish: {
-						initialized: function(promise, facet, wire) {
+						ready: function(promise, facet, wire) {
 							proxyPublish(facet.target, facet.options);
 							promise.resolve();
 						}
 					},
 					subscribe: {
-						initialized: function(promise, facet, wire) {
+						ready: function(promise, facet, wire) {
 							subscribeTarget(facet.target, facet.options);
 							promise.resolve();
 						}

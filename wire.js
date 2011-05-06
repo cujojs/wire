@@ -23,7 +23,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
     //
 
     function wire(spec) {
-   		var promise = Deferred();
+   		var d = Deferred();
 
    		// If the root context is not yet wired, wire it first
    		if(!rootContext) {
@@ -33,11 +33,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
    		// Use the rootContext to wire all new contexts.
 		when(rootContext).then(
 			function(root) {
-				chain(root.wire(spec), promise);
+				chain(root.wire(spec), d);
 			}
 		);
 
-    	return promise.promise;    	
+    	return d.promise;    	
     }
 
     wire.version = VERSION;
@@ -72,19 +72,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
     	// if spec is an AMD module Id string.
     	function doWireContext(spec) {
 			createScope(spec, parent).then(function(scope) {
-				var context;
-				
-				context = scope.objects;
-
-				function wireChildContext(spec) {
-					return wireContext(spec, scope);
-				};
-
-				context.wire    = wireChildContext;
-				context.resolve = scope.resolveRef;
-				context.destroy = scope.destroy;
-				
-				promise.resolve(context);
+				promise.resolve(scope.objects);
 			});
     	}
 
@@ -101,7 +89,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	function createScope(scopeDef, parent) {
 		var scope, local, objects, resolvers, factories, facets, setters,
-			modulesToLoad, moduleLoadPromises, modulesReady, scopeReady, scopeDestroyed,
+			modulesToLoad, moduleLoadPromises,
+			contextApi, modulesReady, scopeReady, scopeDestroyed,
 			promises, name;
 			
 
@@ -114,8 +103,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// use them directly via the prototype chain
 		objects   = delegate(parent.objects||{});
 		resolvers = delegate(parent.resolvers||{});
-		facets    = delegate(parent.facets||{});
 		factories = delegate(parent.factories||{});
+		facets    = delegate(parent.facets||{});
 
 		// Setters is an array, have to concat
 		setters = parent.setters ? [].concat(parent.setters) : [];
@@ -130,27 +119,33 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// A proxy of this scope that can be used as a parent to
 		// any child scopes that may be created.
 		scope = {
-			local: local,
-			objects: objects,
-			resolvers: resolvers,
-			facets: facets,
-			factories: factories,
-			setters: setters,
+			local:      local,
+			objects:    objects,
+			resolvers:  resolvers,
+			factories:  factories,
+			facets:     facets,
+			setters:    setters,
 			resolveRef: doResolveRef,
-			destroy: destroy,
-			destroyed: scopeDestroyed
+			destroy:    destroy,
+			destroyed:  scopeDestroyed
 		};
 
+		// Plugin API
+		// wire() API that is passed to plugins.
 		function pluginApi(spec) {
 			return createItem(spec);
 		}
 
-		pluginApi.resolveRef = function(ref) { return when(doResolveRef(ref)); };
+		// It has additional methods that plugins can use
+		pluginApi.resolveRef = apiResolveRef;
 		pluginApi.deferred   = Deferred;
 		pluginApi.when       = when;
 		pluginApi.whenAll    = whenAll;
-		pluginApi.ready      = scopeReady;
+		pluginApi.ready      = scopeReady.promise;
 
+		// When the parent begins its destroy phase, this child must
+		// begin its destroy phase and complete it before the parent.
+		// The context hierarchy will be destroyed from child to parent.
 		if(parent.destroyed) {
 			parent.destroyed.then(null, null, destroy);
 		}
@@ -164,6 +159,31 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			var p = objects[name] = Deferred();
 			promises.push(p);
 		}
+
+		// Context API
+		// API of a wired context that is returned, via promise, to
+		// the caller.  It will also have properties for all the
+		// objects that were created in this scope.
+		function apiResolveRef(ref) {
+			return when(doResolveRef(ref)).promise;
+		}
+
+		function apiWire(spec) {
+			return wireContext(spec, scope).promise;
+		}
+
+		function apiDestroy() {
+			return destroy().promise;
+		}
+
+		var contextPromise = chain(scopeReady, Deferred(), objects).promise;
+
+		contextApi = {
+			then:       contextPromise.then,
+			wire:       (objects.wire = apiWire),
+			destroy:    (objects.destroy = apiDestroy),
+			resolve:    (objects.resolve = apiResolveRef)
+		};
 
 		// When all scope item promises are resolved, the scope
 		// is resolved.
@@ -182,6 +202,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		});
 
 		return scopeReady;
+
+		//
+		// Scope functions
+		//
 
 		function createScopeItem(name, val, itemPromise) {
 			createItem(val, name).then(function(resolved) {
@@ -244,7 +268,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		function scanPlugin(module, spec) {
 			if(typeof module == 'object' && isFunction(module.wire$plugin)) {
-				var plugin = module.wire$plugin(scopeReady, scopeDestroyed, spec);
+				var plugin = module.wire$plugin(contextPromise, scopeDestroyed, spec);
 				if(plugin) {
 					addPlugin(plugin.resolvers, resolvers);
 					addPlugin(plugin.factories, factories);
@@ -378,16 +402,16 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				// After the object is configured, process the post-configured
 				// facets.
 				configured.then(function(object) {
-					chain(processAspects('configured', proxy, spec), initialized);
+					chain(processFacets('initialize', proxy, spec), initialized);
 				});
 
 				// After the object is initialized, process the post-initialized
 				// facets.
 				initialized.then(function(object) {
-					chain(processAspects('initialized', proxy, spec), promise);
+					chain(processFacets('ready', proxy, spec), promise);
 				});				
 
-				chain(processAspects('created', proxy, spec), configured);
+				chain(processFacets('configure', proxy, spec), configured);
 
 			});
 
@@ -420,7 +444,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			// getting a prop value and invoke a method?
 		}
 
-		function processAspects(step, proxy, spec) {
+		function processFacets(step, proxy, spec) {
 			var promises, facet, facetProcessor, options;
 
 			promises = [];
@@ -442,15 +466,24 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		//
-		// Factories
+		// Built-in Factories
 		//
 
+		/*
+			Function: scopeFactory
+			Factory to create a new nested scope
+		*/
 		function scopeFactory(promise, spec, wire) {
 			return createScope(spec, scope).then(function(created) {
 				promise.resolve(created.local);
 			});
 		}
 
+		/*
+			Function: moduleFactory
+			Factory that uses an AMD module either directly, or as a
+			constructor or plain function to create the resulting item.
+		*/
 		function moduleFactory(promise, spec, wire) {
 			var moduleId;
 			
@@ -511,7 +544,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				if(split > 0) {
 					var name = refName.substring(0, split);
 					if(name == 'wire') {
-						promise.resolve(scopeReady);
+						wireResolver(promise, name, refObj, pluginApi);
 
 					} else {
 						// Wait for modules, since the reference may need to be
@@ -539,6 +572,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return promise;
 		}
 
+		function wireResolver(promise, name, refObj, wire) {
+			promise.resolve(contextApi);
+		}
+
 		//
 		// Destroy
 		//
@@ -555,9 +592,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			// TODO: Clear out the context prototypes?
 			var p;
-			for(p in scope)   delete scope[p];
-			for(p in objects) delete objects[p];
 			for(p in local)   delete local[p];
+			for(p in objects) delete objects[p];
+			for(p in scope)   delete scope[p];
 			
 			// But retain a do-nothing destroy() func, in case
 			// it is called again for some reason.
