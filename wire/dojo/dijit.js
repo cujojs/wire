@@ -79,7 +79,7 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				setters: [
 					setDijitProperty
 				]
-			}
+			};
 		}
 	};
 });
