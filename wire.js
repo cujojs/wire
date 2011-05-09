@@ -307,18 +307,19 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 					var itemPromise = result[i] = createItem(arrayDef[i]);
 					promises.push(itemPromise);
 
-					(function(i) {
-						// Capture i, assign resolved array item into array
-						itemPromise.then(function(realItem) {
-							result[i] = realItem;
-						});
-					})(i);
+					resolveArrayValue(itemPromise, result, i);
 				}
 				
 				chain(whenAll(promises), promise, result);
 			}
 
 			return promise;
+		}
+
+		function resolveArrayValue(promise, array, i) {
+			promise.then(function(value) {
+				array[i] = value;
+			});
 		}
 
 		function createModule(spec) {
@@ -332,7 +333,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				promise = Deferred();
 
 				findFactory(spec).then(function(factory) {
-					factory(promise, spec, pluginApi);
+					factory(promise.resolver, spec, pluginApi);
 				});
 			}
 
@@ -445,24 +446,26 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function processFacets(step, proxy, spec) {
-			var promises, facet, facetProcessor, options;
+			var promises, facet, facetProcessor, options, name;
 
 			promises = [];
 			facet = delegate(proxy);
 
-			for(var a in facets) {
-				facetProcessor = facets[a];
-				options = facet.options = spec[a];
-
-				if(options && facetProcessor && facetProcessor[step]) {
-					var facetPromise = Deferred();
-					promises.push(facetPromise);
-					facetProcessor[step](facetPromise, facet, pluginApi);
-				}
+			for(name in facets) {
+				options = facet.options = spec[name];
+				processFacet(facets[name], step, facet, promises);
 			}
 
 			return chain(whenAll(promises), Deferred(), proxy.target);
 
+		}
+
+		function processFacet(processor, step, facet, promises) {
+			if(facet.options && processor && processor[step]) {
+				var facetPromise = Deferred();
+				promises.push(facetPromise);
+				processor[step](facetPromise.resolver, facet, pluginApi);
+			}
 		}
 
 		//

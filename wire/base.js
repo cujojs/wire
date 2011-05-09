@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2010 Brian Cavalier
+ * @license Copyright (c) 2011 Brian Cavalier
  * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
@@ -50,10 +50,10 @@ define([], function() {
 			invoke(promise, options, target, [], wire);
 
 		} else {
-			var promises, p;
+			var promises, p, func;
 			promises = [];
 
-			for(var func in options) {
+			for(func in options) {
 				p = wire.deferred();
 				promises.push(p);
 				invoke(p, func, target, options[func], wire);
@@ -70,29 +70,24 @@ define([], function() {
 	}
 
 	function propertiesAspect(promise, facet, wire) {
-		var options, promises, p, val;
+		var options, promises, p, prop;
 
 		promises = [];
 		options = facet.options;
 
-		for(var prop in options) {
-
-			p = wire.deferred();
-			promises.push(p);
-
-			(function(p, name, val) {
-				
-				wire(val).then(function(resolvedValue) {
-					facet.set(name, resolvedValue);
-					p.resolve();
-				});
-
-			})(p, prop, options[prop]);
+		for(prop in options) {
+			promises.push(setProperty(facet, prop, options[prop], wire));
 		}
 
 		wire.whenAll(promises).then(function() {
 			promise.resolve();
 		});
+	}
+
+	function setProperty(proxy, name, val, wire) {
+		return wire(val).then(function(resolvedValue) {
+			proxy.set(name, resolvedValue);
+		});		
 	}
 
 	function initAspect(promise, facet, wire) {
@@ -115,10 +110,12 @@ define([], function() {
 
 	return {
 		wire$plugin: function(ready, destroyed, options) {
-			destroyed.then(null, null, function() {
-				for (var i=0; i < destroyFuncs.length; i++) {
-					destroyFuncs[i]();
-				};
+			destroyed.then(function() {
+				var destroy;
+
+				while((destroy = destroyFuncs.shift())) {
+					destroy();
+				}
 			});
 			
 			return {

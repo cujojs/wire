@@ -5,7 +5,7 @@ define({
 	// dom: { module: 'wire/dom' }
 	// This seems like it could end up being a reasonable convention, tho.
 	plugins: [
-		{ module: 'wire/debug' },
+		// { module: 'wire/debug' },
 		{ module: 'wire/dojo/dijit', parse: true }, // Calls dojo.parser.parse
 		{ module: 'wire/dom' }
 	],
@@ -16,8 +16,8 @@ define({
 		properties: {
 			// These are both forward references.  These will resolve just
 			// fine--order is not important in a wiring spec.
-			name: { '$ref': 'name' },
-			widget: { '$ref': 'widget1' }
+			name: { $ref: 'name' },
+			widget: { $ref: 'widget1' }
 		},
 		init: 'ready', // Called as soon as all properties have been set
 		destroy: 'destroy' // Called when the context is destroyed
@@ -33,7 +33,7 @@ define({
 			args: {}
 		},
 		properties: {
-			value: { '$ref': 'initialValue' }
+			value: { $ref: 'initialValue' }
 		},
 		init: {
 			// placeAt will be called once the #container dom node is
