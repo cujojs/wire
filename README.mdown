@@ -45,6 +45,8 @@ As you probably guessed, this will alert with the message "Hello wire()d!".  Yes
 
 # Simple, but Less Ridiculous Hello wire()d!
 
+**Code:** [The code for this example is available here](https://github.com/briancavalier/hello-wire.js)
+
 First, we'll define a component using AMD:
 
 	define(['hello-wired'], function() {
