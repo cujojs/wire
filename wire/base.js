@@ -10,10 +10,9 @@
 	and a setter plugin that sets basic Javascript properties, e.g. object.prop = value.
 */
 define([], function() {
-	var tos, destroyFuncs, undef;
+	var tos, undef;
 
 	tos = Object.prototype.toString;
-	destroyFuncs = [];
 
 	function isArray(it) {
 		return tos.call(it) == '[object Array]';
@@ -94,22 +93,10 @@ define([], function() {
 		invokeAll(promise, facet, wire);
 	}
 
-	function destroyAspect(promise, facet, wire) {
-		promise.resolve();
-		
-		var target, options, w;
-		
-		target = facet.target;
-		options = facet.options;
-		w = wire;
-
-		destroyFuncs.push(function destroyObject() {
-			invokeAll(wire.deferred(), { options: options, target: target }, w);
-		});
-	}
-
 	return {
 		wire$plugin: function(ready, destroyed, options) {
+			var destroyFuncs = [];
+
 			destroyed.then(function() {
 				var destroy;
 
@@ -143,7 +130,19 @@ define([], function() {
 					// destroy facet.  Registers methods to be invoked
 					// on components when the enclosing context is destroyed
 					destroy: {
-						ready: destroyAspect
+						ready: function destroyAspect(promise, facet, wire) {
+							promise.resolve();
+							
+							var target, options, w;
+							
+							target = facet.target;
+							options = facet.options;
+							w = wire;
+
+							destroyFuncs.push(function destroyObject() {
+								invokeAll(wire.deferred(), { options: options, target: target }, w);
+							});
+						}
 					}
 				},
 				setters: [
