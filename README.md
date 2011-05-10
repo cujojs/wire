@@ -24,10 +24,12 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # Ok, What Now?
 
-1. Read on for examples.
-2. Check out the [wire.js presentation from JSConf 2011](http://bit.ly/mkWy1L "wire.js - Javascript IOC Container w/Dependency Injection").
-3. More coming soon...
-4. Download and try it out!
+1. Read on for a simple Hello World example.
+1. Check out the [wire.js presentation from JSConf 2011](http://bit.ly/mkWy1L "wire.js - Javascript IOC Container w/Dependency Injection").
+1. Get the code for the [Piratescript or N00bscript](https://github.com/briancavalier/piratescript) game from the presentation.
+1. See the [wiki for more documentation](https://github.com/briancavalier/wire/wiki)
+1. Download and try it out!
+1. More coming soon...
 
 # Simple and Ridiculous Example - Hello wire()d!
 
@@ -108,8 +110,7 @@ When you load this page in a browser, you'll see the text "Hello! I haz been wir
 # TODO
 
 1. Add license
-2. Add link to hello-wired github
-3. Add link to pirate script github
+1. Add link to pirate script github
 
 ## wire <3 AMD
 
