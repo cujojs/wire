@@ -34,13 +34,28 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 		);
 	}
 
-	function setDijitProperty(object, property, value) {
-		if(typeof object.set == 'function') {
-			object.set(property, value);
-			return true;
+	function isDijit(it) {
+		return it instanceof Widget;
+	}
+
+	function createDijitProxy(object, spec) {
+		var proxy;
+
+		if(isDijit(object)) {
+			proxy = {
+				get: function(property, value) {
+					return object.get(property);
+				},
+				set: function(property, value) {
+					return object.set(property, value);
+				},
+				invoke: function(method, args) {
+					return method.invoke(object, args);
+				}
+			}
 		}
 
-		return false;
+		return proxy;
 	}
 	
 	return {
@@ -54,7 +69,7 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 
 			ready.then(null, null, function(update) {
 				// Only care about objects that are dijits
-				if(update.target instanceof Widget) {
+				if(isDijit(update.target)) {
 
 					// It's a dijit, so we need to know when it is being
 					// destroyed so that we can do proper dijit cleanup on it
@@ -76,8 +91,8 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				resolvers: {
 					dijit: dijitById
 				},
-				setters: [
-					setDijitProperty
+				proxies: [
+					createDijitProxy
 				]
 			};
 		}

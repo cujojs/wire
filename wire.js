@@ -88,7 +88,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	function createScope(scopeDef, parent) {
-		var scope, local, objects, resolvers, factories, facets, setters,
+		var scope, local, objects, resolvers, factories, facets, proxies,
 			modulesToLoad, moduleLoadPromises,
 			contextApi, modulesReady, scopeReady, scopeDestroyed,
 			promises, name;
@@ -106,8 +106,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		factories = delegate(parent.factories||{});
 		facets    = delegate(parent.facets||{});
 
-		// Setters is an array, have to concat
-		setters = parent.setters ? [].concat(parent.setters) : [];
+		// Proxies is an array, have to concat
+		proxies = parent.proxies ? [].concat(parent.proxies) : [];
 
 		modulesToLoad = [];
 		moduleLoadPromises = {};
@@ -124,7 +124,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			resolvers:  resolvers,
 			factories:  factories,
 			facets:     facets,
-			setters:    setters,
+			proxies: 	proxies,
 			resolveRef: doResolveRef,
 			destroy:    destroy,
 			destroyed:  scopeDestroyed
@@ -274,8 +274,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 					addPlugin(plugin.factories, factories);
 					addPlugin(plugin.facets, facets);
 
-					if(plugin.setters) {
-						setters = plugin.setters.concat(setters);
+					if(plugin.proxies) {
+						proxies = plugin.proxies.concat(proxies);
 					}					
 				}
 			}
@@ -374,8 +374,6 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			
 			promise = Deferred();
 
-			proxy = {};
-
 			update = { spec: spec };
 			created     = target;
 			configured  = Deferred();
@@ -390,8 +388,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			// After the object has been created, update progress for
 			// the entire scope, then process the post-created facets
 			when(target).then(function(object) {
-				
-				initProxy(proxy, object);
+				var proxy = createProxy(object, spec);
 
 				chain(scopeDestroyed, destroyed, object);
 
@@ -420,29 +417,15 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return promise;
 		}
 
-		function initProxy(proxy, object) {
-			var cachedSetter;
+		function createProxy(object, spec) {
+			var proxy, i;
 
-			function setProp(prop, value) {
-				if(!(cachedSetter && cachedSetter(object, prop, value))) {
-					var success = false,
-						s = 0;
-
-					// Try all the registered setters until we find one that reports success
-					while(!success && s<setters.length) {
-						var setter = setters[s++];
-						success = setter(object, prop, value);
-						if(success) {
-							cachedSetter = setter;
-						}
-					}
-				}
-			}
+			i = 0;
+			while(!(proxy = proxies[i++](object, spec))) {}
 
 			proxy.target = object;
-			proxy.set    = setProp;
-			// TODO: Add get() and invoke() to provide a generic interface to
-			// getting a prop value and invoke a method?
+
+			return proxy;
 		}
 
 		function processFacets(step, proxy, spec) {
