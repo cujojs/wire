@@ -213,11 +213,18 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		//
 
 		function createScopeItem(name, val, itemPromise) {
-			itemPromise.then(function(resolved) {
+			// NOTE: Order is important here.
+			// The object & local property assignment MUST happen before
+			// the chain resolves so that the concrete item is in place.
+			// Otherwise, the whole scope can be marked as resolved before
+			// the final item has been resolved.
+			var p = createItem(val, name);
+
+			p.then(function(resolved) {
 				objects[name] = local[name] = resolved;
 			});
 
-			chain(createItem(val, name), itemPromise);
+			chain(p, itemPromise);
 		}
 
 		function createItem(val, name) {
