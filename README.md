@@ -110,7 +110,6 @@ When you load this page in a browser, you'll see the text "Hello! I haz been wir
 # TODO
 
 1. Add license
-1. Add link to pirate script github
 
 ## wire <3 AMD
 

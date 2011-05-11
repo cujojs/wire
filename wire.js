@@ -208,10 +208,14 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		//
 
 		function createScopeItem(name, val, itemPromise) {
-			createItem(val, name).then(function(resolved) {
-				objects[name] = local[name] = resolved;
-				itemPromise.resolve(resolved);
-			});			
+			createItem(val, name).then(
+				function(resolved) {
+					objects[name] = local[name] = resolved;
+					itemPromise.resolve(resolved);
+				},
+				function(err) {
+					itemPromise.reject(err);
+				});
 		}
 
 		function createItem(val, name) {
@@ -935,7 +939,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 					} catch(e) {
 						// Exceptions cause chained deferreds to complete
 						// TODO: Should this always reject()?
-						ldeferred[which](result);
+						console.error(e);
+						ldeferred.reject(e);
+						// ldeferred[which](result);
 					}
 				}
 			}			
