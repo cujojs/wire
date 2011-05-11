@@ -21,13 +21,16 @@
 				plugins: [
 					{ module: 'wire/debug' }
 				],
+				// Order doesn't matter.  Forward refs are ok
 				numberRef: { $ref: 'number' },
 				objectRef: { $ref: 'object' },
 				
+				// Plain strings and numbers
 				string: 'this is a string',
 				
 				number: 10,
 				
+				// Builtins that look like objects are supported directly
 				date: new Date(),
 				
 				regex1: /^blah$/,
@@ -36,6 +39,7 @@
 				boolean1: true,
 				boolean2: new Boolean(false),
 				
+				// As are plain objects, which also provide scoping
 				object: {
 					string: "I'm a nested a string",
 					nested: {
@@ -45,10 +49,16 @@
 					}
 				},
 
+				// Arrays are easy, too
 				array: ["string", 10, { foo: "bar" }, [1, 2, 3], { a: [1, 2, 3], b: 4 }]
-			}).then(function(context) {
-				console.log("DONE", context);
-			});
+			}).then(
+				function(context) {
+					console.log("DONE", context);
+				},
+				function(err) {
+					console.err(err);
+				}
+			);
 			
 		});
 	</script>

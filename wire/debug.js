@@ -122,6 +122,7 @@ define([], function() {
 				},
 				function onContextError(err) {
 					console.error(contextTime("Context ERROR: "), err);
+					console.error(err);
 				},
 				logContextProgress
 			);
@@ -135,7 +136,8 @@ define([], function() {
 				}
 			);
 
-			// return {};		
+			// Debug plugin doesn't provide any additional functionality,
+			// so doesn't need to return anything
 		}
 	};
 

@@ -65,15 +65,20 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	
     function wireContext(spec, parent) {
 
-    	var promise = Deferred();
+    	var deferred = Deferred();
 
     	// Function to do the actual wiring.  Capture the
     	// parent so it can be called after an async load
     	// if spec is an AMD module Id string.
     	function doWireContext(spec) {
-			createScope(spec, parent).then(function(scope) {
-				promise.resolve(scope.objects);
-			});
+			createScope(spec, parent).then(
+				function(scope) {
+					deferred.resolve(scope.objects);
+				},
+				function(err) {
+					deferred.reject(err);
+				}
+			);
     	}
 
     	// If spec is a module Id, load it, then wire it.
@@ -84,7 +89,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
     		doWireContext(spec);
     	}
 
-		return promise;
+		return deferred;
 	}
 
 	function createScope(scopeDef, parent) {
@@ -155,9 +160,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		promises = [];
 
 		// Setup a promise for each item in this scope
+		var p;
 		for(name in scopeDef) {
-			var p = objects[name] = Deferred();
-			promises.push(p);
+			promises.push(p = objects[name] = Deferred());
 		}
 
 		// Context API
@@ -208,14 +213,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		//
 
 		function createScopeItem(name, val, itemPromise) {
-			createItem(val, name).then(
-				function(resolved) {
-					objects[name] = local[name] = resolved;
-					itemPromise.resolve(resolved);
-				},
-				function(err) {
-					itemPromise.reject(err);
-				});
+			itemPromise.then(function(resolved) {
+				objects[name] = local[name] = resolved;
+			});
+
+			chain(createItem(val, name), itemPromise);
 		}
 
 		function createItem(val, name) {
@@ -711,7 +713,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		TODO: Figure out the best strategy for rejecting.
 	*/
 	function whenAll(promises) {
-		var toResolve, values, promise;
+		var toResolve, values, deferred;
 
 		toResolve = promises.length;
 		
@@ -724,7 +726,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			values.push(val);
 			if(--toResolve === 0) {
 				resolver = progress = noop;
-				promise.resolve(values);
+				deferred.resolve(values);
 			}
 		}
 
@@ -741,7 +743,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// var rejecter = function handleReject(err) {
 		function rejecter(err) {
 			rejecter = progress = noop;
-			promise.reject(err);			
+			deferred.reject(err);			
 		}
 
 		// Wrapper so that rejecer can be replaced
@@ -753,14 +755,14 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// can't overwrite it until resolve/reject.  So, it is
 		// overwritten in resolve(), and reject().
 		function progress(update) {
-			promise.progress(update);
+			deferred.progress(update);
 		}
 
-		promise = Deferred();
+		deferred = Deferred();
 		values = [];
 
 		if(toResolve == 0) {
-			promise.resolve(values);
+			deferred.resolve(values);
 
 		} else {
 			for (var i = 0; i < promises.length; i++) {
@@ -769,7 +771,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		}
 		
-		return promise;
+		return deferred;
 	}
 
 	function when(promiseOrValue) {
@@ -777,9 +779,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return promiseOrValue;
 		}
 
-		var p = Deferred();
-		p.resolve(promiseOrValue);
-		return p;
+		var d = Deferred();
+		d.resolve(promiseOrValue);
+		return d;
 	}
 
 	function isPromise(promiseOrValue) {
@@ -937,11 +939,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 						}
 					} catch(e) {
-						// Exceptions cause chained deferreds to complete
-						// TODO: Should this always reject()?
-						console.error(e);
+						// Exceptions cause chained deferreds to reject
+						// TODO: Should this also switch remaining listeners to reject?
+						// console.error(e);
+						// which = 'reject';
 						ldeferred.reject(e);
-						// ldeferred[which](result);
 					}
 				}
 			}			
