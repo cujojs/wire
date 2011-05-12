@@ -31,85 +31,9 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 1. Download and try it out!
 1. More coming soon...
 
-# Simple and Ridiculous Example - Hello wire()d!
+# License
 
-Here's a very simple wire.js take on Hello World.  Wire.js can use AMD modules, so first, let's use AMD to define a very simple wiring spec.  Wiring specs are simply JSON or Javascript objects.
-
-	define(['hello-wired-spec'], { message: "Hello wire()d!" });
-	
-In this case our wiring spec is a laughably simple object with a single String property.  Next, let's wire() the spec using wire.js as an AMD plugin. 
-	
-	require(['wire!hello-wired-spec'], function(wired) {
-		alert(wired.message);
-	});
-	
-As you probably guessed, this will alert with the message "Hello wire()d!".  Yes, that was silly, so let's create a more interesting Hello wire()d.
-
-# Simple, but Less Ridiculous Hello wire()d!
-
-**Code:** [The code for this example is available here](https://github.com/briancavalier/hello-wire.js)
-
-First, we'll define a component using AMD:
-
-	define(['hello-wired'], function() {
-		function HelloWired(node) {
-			this._node = node;
-		}
-		
-		HelloWired.prototype = {
-			sayHello: function(message) {
-				this._node.innerHTML = "Hello! " + message;
-			}
-		};
-		
-		return HelloWired;
-	});
-	
-This is a simple module that returns a Javascript constructor for our HelloWorld object.  Now, let's create a wiring spec for our tiny Hello wire()d app:
-
-	define(['hello-wired-spec'], {
-		message: "I haz been wired",
-		helloWired: {
-			create: {
-				module: 'hello-wired',
-				args: { $ref: 'dom!hello' }
-			},
-			init: {
-				sayHello: { $ref: 'message' }
-			}
-		},
-		plugins: [
-			{ module: 'wire/dom' }
-		]
-	});
-	
-And finally, let's create a page for our little app
-
-	<!DOCTYPE HTML>
-	<html>
-	<head>
-		<title>Hello wire()d!</title>	
-		<!-- AMD Loader, in this case curl.js -->
-		<script type="text/javascript" src="curl.js"></script>
-		
-		<!-- Wire the Hello wire()d spec to create the app -->
-		<script type="text/javascript">
-			require(['wire!hello-wired-spec']);
-		</script>
-	</head>
-
-	<body>
-		<header>
-			<h1 id="hello"></h1>
-		</header>
-	</body>
-	</html>
-
-When you load this page in a browser, you'll see the text "Hello! I haz been wired" in the `h1`.
-
-# TODO
-
-1. Add license
+wire.js is licensed under [The MIT License](http://www.opensource.org/licenses/mit-license.php).
 
 ## wire <3 AMD
 
