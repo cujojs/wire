@@ -20,15 +20,15 @@ Wire.js also has a plugin architecture that allows plugins to provide new capabi
 * Event and PubSub connectors. Write your components without any glue code, and connect them together in the wiring spec using events or pubsub.  The event connector works for DOM nodes, too!
 * Aspect Oriented Programming (AOP).  Wire.js comes with an AOP plugin that allows you to declaratively apply decorators, before/after/around advice, and to introduce mixins on the fly.
 
-Plugins also allow you to use capabilities of your existing modules/libraries/frameworks.  For example, wire.js has a set of plugins for Dojo that allow it to integrate with Dijit's widget system, to use dojo.connect as the event connector, and dojo.publish/subscribe as the pubsub connector.  If you are already using those aspects of Dojo, you can use the wire.js's Dojo plugins to integrate easily with all your existing components.
+Plugins also allow you to use capabilities of your existing modules/libraries/frameworks.  For example, wire.js has a set of plugins for Dojo that allow it to integrate with Dijit's widget system, to use dojo.connect as the event connector, and dojo.publish/subscribe as the pubsub connector.  If you are already using those aspects of Dojo, you can use wire.js's Dojo plugins to integrate easily with all your existing components.
 
 # Ok, What Now?
 
-1. Read on for a simple Hello World example.
+1. [Read about](https://github.com/briancavalier/hello-wire.js) and [try out](http://briancavalier.com/code/hello-wire) the Hello Wire introduction.
 1. Check out the [wire.js presentation from JSConf 2011](http://bit.ly/mkWy1L "wire.js - Javascript IOC Container w/Dependency Injection").
-1. Get the code for the [Piratescript or N00bscript](https://github.com/briancavalier/piratescript) game from the presentation.
-1. See the [wiki for more documentation](https://github.com/briancavalier/wire/wiki)
-1. Download and try it out!
+1. Get the code for the [Piratescript or N00bscript](https://github.com/briancavalier/piratescript) game from the presentation. *Docs coming soon!*
+1. See the [wiki for more documentation](https://github.com/briancavalier/wire/wiki). *Coming soon!*
+1. Fork it and try it out!
 1. More coming soon...
 
 # License
