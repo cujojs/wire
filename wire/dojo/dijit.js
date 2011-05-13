@@ -35,6 +35,10 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 	}
 
 	function isDijit(it) {
+		// NOTE: It is possible to create inheritance hierarchies with dojo.declare
+		// where the following evaluates to false *even though* dijit._Widget is
+		// most certainly an ancestor of it.
+		// So, may need to modify this test if that seems to happen in practice.
 		return it instanceof Widget;
 	}
 
