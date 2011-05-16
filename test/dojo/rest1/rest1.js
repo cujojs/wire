@@ -1,4 +1,4 @@
-wire({
+define({
 	plugins: [
 		{ module: 'wire/debug' },
 		{ module: 'wire/dom' },
@@ -8,8 +8,8 @@ wire({
 	controller: {
 		create: 'test/dojo/rest1/View',
 		properties: {
-			itemTemplate: { module: 'text!test/rest1/person-template1.html' },
-			template: { module: 'text!test/rest1/container-template1.html' },
+			itemTemplate: { module: 'text!test/dojo/rest1/person-template1.html' },
+			template: { module: 'text!test/dojo/rest1/container-template1.html' },
 			container: { $ref: 'dom!container1' },
 			store: { $ref: 'resource!people/' }
 		},
@@ -18,8 +18,8 @@ wire({
 	controller2: {
 		create: 'test/dojo/rest1/View',
 		properties: {
-			itemTemplate: { module: 'text!test/rest1/person-template2.html' },
-			template: { module: 'text!test/rest1/container-template2.html' },
+			itemTemplate: { module: 'text!test/dojo/rest1/person-template2.html' },
+			template: { module: 'text!test/dojo/rest1/container-template2.html' },
 			container: { $ref: 'dom!container2' },
 			store: {
 				create: {
@@ -32,8 +32,4 @@ wire({
 	},
 	person: { $ref: 'resource!people/', get: 1, wait: true },
 	people: { $ref: 'resource!people/', query: { name: "Sergei" }, wait: true}
-}).then(
-	function(context) {
-		console.log("Done!", context);
-	}
-);
+});

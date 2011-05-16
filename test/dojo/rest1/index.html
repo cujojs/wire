@@ -6,18 +6,20 @@
 	<script type="text/javascript">
 		(function(global) {
 			global.require = {
-				baseUrl: '../../../'//,
-				// paths: {
-				// 	'dojo': '../dojo',
-				// 	'dijit': '../dijit',
-				// 	'test': '../test',
-				// 	'wire': '../wire'
-				// }
+				debug: true,
+				baseUrl: '../../../',
+				pluginPath: 'curl/src/curl/plugin',
+				paths: {
+					wire: './wire',
+					domReady: 'curl/src/curl/domReady'
+				}
 			};
 		})(window);
 	</script>
 	<script src="../../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
-	<script type="text/javascript" src="../../../wire.js" data-wire-spec="test/dojo/rest1/rest1"></script>
+	<script type="text/javascript">
+		require(['wire!test/dojo/rest1/rest1']);
+	</script>
 </head>
 <body>
 	<div id="container1">

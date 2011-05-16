@@ -398,34 +398,33 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			update.initialized = initialized.promise;
 			update.destroyed   = destroyed.promise;
 
+			function fail(err) { promise.reject(err); }
+
 			// After the object has been created, update progress for
 			// the entire scope, then process the post-created facets
-			when(target).then(function(object) {
-				var proxy = createProxy(object, spec);
+			when(target).then(
+				function(object) {
+					chain(scopeDestroyed, destroyed, object);
 
-				chain(scopeDestroyed, destroyed, object);
+					// Notify progress about this object.
+					update.target = object;
+					scopeReady.progress(update);
 
-				update.target = object;
-
-				// Notify progress about this object.
-				scopeReady.progress(update);
-
-				// After the object is configured, process the post-configured
-				// facets.
-				configured.then(function(object) {
-					chain(processFacets('initialize', proxy, spec), initialized);
-				});
-
-				// After the object is initialized, process the post-initialized
-				// facets.
-				initialized.then(function(object) {
-					chain(processFacets('ready', proxy, spec), promise);
-				});				
-
-				chain(processFacets('configure', proxy, spec), configured);
-
-			});
-
+					var proxy = createProxy(object, spec);
+					chain(processFacets('configure', proxy, spec), configured).then(
+						function(object) {
+							return chain(processFacets('initialize', proxy, spec), initialized);
+						},
+						fail
+					).then(
+						function(object) {
+							return chain(processFacets('ready', proxy, spec), promise);
+						},
+						fail
+					);
+				},
+				fail
+			);
 
 			return promise;
 		}

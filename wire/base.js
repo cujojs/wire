@@ -78,16 +78,26 @@ define([], function() {
 			promises.push(setProperty(facet, prop, options[prop], wire));
 		}
 
-		wire.whenAll(promises).then(function() {
-			promise.resolve();
-		});
+		wire.whenAll(promises).then(
+			function() {
+				promise.resolve();
+			},
+			function(err) {
+				promise.reject(err);
+			}
+		);
 	}
 
 	function setProperty(proxy, name, val, wire) {
-		return wire(val).then(function(resolvedValue) {
+		var promise = wire(val);
+
+		promise.then(function(resolvedValue) {
 			proxy.set(name, resolvedValue);
-		});		
+		});
+
+		return promise;
 	}
+
 
 	function initFacet(promise, facet, wire) {
 		invokeAll(promise, facet, wire);
