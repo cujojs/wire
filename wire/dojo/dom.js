@@ -8,10 +8,13 @@
 	File: dom.js
 	Describe your wire plugin here
 */
-define(['dojo'], function(dojo) {
+define(['dojo', 'wire/domReady'], function(dojo, domReady) {
 
 	function resolveQuery(promise, name, refObj, wire) {
-		require(['domReady'], function() {
+		// Could use dojo.ready() here, but it also waits for the dijit
+		// parser, which may not be necessary in all situations, e.g. if
+		// you're using dojo, but not dijit.  So, just use domReady.
+		domReady(function() {
 			var result = dojo.query(name);
 			promise.resolve(typeof refObj.i == 'number' && refObj.i < result.length
 				? result[refObj.i]

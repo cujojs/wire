@@ -27,7 +27,7 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				if(resolved) {
 					promise.resolve(resolved);
 				} else {
-					throw new Error("Unresolved dijit ref",name, refObj);
+					throw new Error("Unresolved dijit ref", name, refObj);
 					// promise.reject();
 				}
 			}
