@@ -22,19 +22,24 @@ define([], function() {
 		var f = target[func];
 		if(typeof f == 'function') {
 			if(args) {
-				wire(args).then(function(resolvedArgs) {
-					try {
-						var result = f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
-							? resolvedArgs
-							: [resolvedArgs]);
-							
-						promise.resolve(result);
+				wire(args).then(
+					function(resolvedArgs) {
+						// try {
+							var result = f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
+								? resolvedArgs
+								: [resolvedArgs]);
+								
+							promise.resolve(result);
 
-					} catch(e) {
-						promise.reject(e);
+						// } catch(e) {
+						// 	promise.reject(e);
 
+						// }
+					},
+					function(err) {
+						promise.reject(err);
 					}
-				});
+				);
 			}			
 		}
 	}

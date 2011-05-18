@@ -28,7 +28,8 @@ define(['wire/domReady'], function(domReady) {
 		domReady(function resolveDomId() {
 			var node = document.getElementById(name);
 			if(node) promise.resolve(node);
-			else promise.reject();
+			// Best to throw here since this may be happening async)
+			else throw new Error("No DOM node with id: " + name);
 		});
 	}
 

@@ -31,14 +31,23 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 1. Fork it and try it out!
 1. More coming soon...
 
+# Roadmap
+
+### 0.5.1
+* More documentation
+
+### Considering for pre-1.0
+* Unofficial official Node.js support
+
+# Release Notes
+
+### 0.5 -- *May 18, 2010*
+
+* Re-engineered core: smaller, faster, and more loader-independent,
+* Improved plugin system,
+* Can be used as either an AMD module or an AMD plugin,
+* Sizzle plugin, courtesy of [@unscriptable](https://twitter.com/unscriptable)
+
 # License
 
 wire.js is licensed under [The MIT License](http://www.opensource.org/licenses/mit-license.php).
-
-## wire <3 AMD
-
-While wire is not a Javascript AMD loader, like [curl](https://github.com/unscriptable/curl), [RequireJS](http://requirejs.org/ "RequireJS"), or [backdraft's bdload](http://bdframework.org/bdLoad/index.html "bdLoad - the backdraft AMD loader - home"), it does use an AMD-compliant loader to do its job of assembling modules and objects into a running application.
-
-wire is intended to play well with any AMD loader that you might already be using.  It can work with modules that have been fully built and optimized into a single file, into multiple layers (a la the RequireJS build tool), or totally unoptimized modules (e.g. during development).
-
-In fact, wire plugins are themselves AMD modules, and can be loaded dynamically during development or included in your optimized build for deployment.
