@@ -75,9 +75,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				function(scope) {
 					deferred.resolve(scope.objects);
 				},
-				function(err) {
-					deferred.reject(err);
-				}
+				chainReject(deferred)
 			);
     	}
 
@@ -231,12 +229,15 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			var created;
 			
 			if(isRef(val)) {
+				// Reference
 				created = resolveRef(val, name);
 
 			} else if(isArray(val)) {
+				// Array
 				created = createArray(val);
 
 			} else if(isStrictlyObject(val)) {
+				// Module or nested scope
 				created = createModule(val);
 
 			} else {
@@ -336,21 +337,25 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function createModule(spec) {
-			var promise;
+			var promise = Deferred();
 
-			if(spec.module) {
-				// It's just a module, load it
-				promise = loadModule(spec.module, spec);
-			} else {
-				// Look for a factory, then use it to create the object
-				promise = Deferred();
+			// Look for a factory, then use it to create the object
+			findFactory(spec).then(
+				function(factory) {
+					var factoryPromise = Deferred();
+					factory(factoryPromise.resolver, spec, pluginApi);
+					chain(processObject(factoryPromise, spec), promise);
+				},
+				function() {
+					// No factory found, treat object spec as a nested scope
+					createScope(spec, scope).then(
+						function(created) { promise.resolve(created.local); },
+						chainReject(promise)
+					);
+				}
+			);
 
-				findFactory(spec).then(function(factory) {
-					factory(promise.resolver, spec, pluginApi);
-				});
-			}
-
-			return processObject(promise, spec);
+			return promise;
 		}
 
 		function findFactory(spec) {
@@ -363,8 +368,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			// Maybe need a special syntax for factories, something like:
 			// create: "factory!whatever-arg-the-factory-takes"
 			// args: [factory args here]
-			if(spec.create) {
+			if(spec.module) {
 				promise.resolve(moduleFactory);
+			} else if(spec.create) {
+				promise.resolve(instanceFactory);
 			} else {
 				modulesReady.then(function() {
 					for(var f in factories) {
@@ -374,7 +381,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 						}
 					}
 					
-					promise.resolve(scopeFactory);		
+					promise.reject();		
 				});				
 			}
 
@@ -398,7 +405,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			update.initialized = initialized.promise;
 			update.destroyed   = destroyed.promise;
 
-			function fail(err) { promise.reject(err); }
+			var fail = chainReject(promise);
 
 			// After the object has been created, update progress for
 			// the entire scope, then process the post-created facets
@@ -467,52 +474,55 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// Built-in Factories
 		//
 
-		/*
-			Function: scopeFactory
-			Factory to create a new nested scope
-		*/
-		function scopeFactory(promise, spec, wire) {
-			return createScope(spec, scope).then(function(created) {
-				promise.resolve(created.local);
-			});
+		function moduleFactory(promise, spec, wire) {
+			chain(loadModule(spec.module, spec), promise);
 		}
 
 		/*
-			Function: moduleFactory
+			Function: instanceFactory
 			Factory that uses an AMD module either directly, or as a
 			constructor or plain function to create the resulting item.
 		*/
-		function moduleFactory(promise, spec, wire) {
-			var moduleId;
-			
-			moduleId = spec.create.module||spec.create;
+		function instanceFactory(promise, spec, wire) {
+			var fail = chainReject(promise);
 
 			// Load the module, and use it to create the object
-			loadModule(moduleId, spec).then(function(module) {
-				var args;
-				// We'll either use the module directly, or we need
-				// to instantiate/invoke it.
-				if(spec.create && isFunction(module)) {
-					// Instantiate or invoke it and use the result
-					if(typeof spec.create == 'object' && spec.create.args) {
-						args = isArray(spec.create.args) ? spec.create.args : [spec.create.args];
-					} else {
-						args = [];
+			loadModule(spec.create.module||spec.create, spec).then(
+				function(module) {
+					var create, createArgs;
+					
+					function resolve(resolvedArgs) {
+						promise.resolve(instantiate(module, resolvedArgs));
 					}
 
-					createArray(args).then(function(resolvedArgs) {
-
-						var object = instantiate(module, resolvedArgs);
-						promise.resolve(object);
-
-					});
-
-				} else {
-					// Simply use the module as is
-					promise.resolve(module);
+					create = spec.create;
+					createArgs = [];
 					
-				}
-			});
+					// We'll either use the module directly, or we need
+					// to instantiate/invoke it.
+					if(create && isFunction(module)) {
+						// Instantiate or invoke it and use the result
+						if(typeof create == 'object' && create.args) {
+							createArgs = create.args;
+							createArgs = isArray(createArgs) ? createArgs : [createArgs];
+
+							createArray(createArgs).then(resolve, fail);
+
+						} else {
+							// No args, don't need to process them, so can directly
+							// insantiate the module and resolve
+							resolve(createArgs);
+
+						}
+
+					} else {
+						// Simply use the module as is
+						promise.resolve(module);
+						
+					}
+				},
+				fail
+			);
 		}
 
 		//
@@ -818,6 +828,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		);
 
 		return second;
+	}
+
+	function chainReject(resolver) {
+		return function(err) { promise.reject(err); };
 	}
 
 	//
