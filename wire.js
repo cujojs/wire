@@ -13,13 +13,14 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	"use strict";
 
-	var VERSION = "0.5",
-        tos = Object.prototype.toString,
-        rootContext,
-        rootSpec = global['wire']||{};
+	var VERSION, tos, rootContext, rootSpec;
+	
+	VERSION = "0.5";
+    tos = Object.prototype.toString;
+    rootSpec = global['wire']||{};
 
     //
-    // Public API
+    // AMD Module API
     //
 
     function wire(spec) {
@@ -104,10 +105,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		// Descend scope and plugins from parent so that this scope can
 		// use them directly via the prototype chain
-		objects   = delegate(parent.objects||{});
+		objects   = delegate(parent.objects  ||{});
 		resolvers = delegate(parent.resolvers||{});
 		factories = delegate(parent.factories||{});
-		facets    = delegate(parent.facets||{});
+		facets    = delegate(parent.facets   ||{});
 
 		// Proxies is an array, have to concat
 		proxies = parent.proxies ? [].concat(parent.proxies) : [];
@@ -390,7 +391,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 
 		function processObject(target, spec) {
-			var promise, proxy, update, created, configured, initialized, destroyed;
+			var promise, update, created, configured, initialized, destroyed, fail;
 			
 			promise = Deferred();
 
@@ -405,7 +406,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			update.initialized = initialized.promise;
 			update.destroyed   = destroyed.promise;
 
-			var fail = chainReject(promise);
+			fail = chainReject(promise);
 
 			// After the object has been created, update progress for
 			// the entire scope, then process the post-created facets
@@ -437,9 +438,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function createProxy(object, spec) {
-			var proxy, i;
+			var proxy, i = 0;
 
-			i = 0;
 			while(!(proxy = proxies[i++](object, spec))) {}
 
 			proxy.target = object;
@@ -448,7 +448,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function processFacets(step, proxy, spec) {
-			var promises, facet, facetProcessor, options, name;
+			var promises, facet, options, name;
 
 			promises = [];
 			facet = delegate(proxy);
@@ -604,14 +604,14 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			for(p in objects) delete objects[p];
 			for(p in scope)   delete scope[p];
 			
-			// But retain a do-nothing destroy() func, in case
+			// Retain a do-nothing destroy() func, in case
 			// it is called again for some reason.
 			doDestroy = noop;
 
 			// Resolve promise
 			scopeDestroyed.resolve();
 		}
-    }
+    } // createScope
 
 	function isRef(it) {
 		return it && it.$ref;

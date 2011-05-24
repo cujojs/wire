@@ -31,22 +31,25 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 1. Fork it and try it out!
 1. More coming soon...
 
-# Roadmap
-
-### 0.5.1
-* More documentation
-
-### Considering for pre-1.0
-* Unofficial official Node.js support
-
-# Release Notes
+# What's New
 
 ### 0.5 -- *May 18, 2010*
 
 * Re-engineered core: smaller, faster, and more loader-independent,
-* Improved plugin system,
 * Can be used as either an AMD module or an AMD plugin,
-* Sizzle plugin, courtesy of [@unscriptable](https://twitter.com/unscriptable)
+* Improved plugin system,
+* AOP plugin, `wire/aop`: Decorators and Introductions.  *Coming Soon*: before, after, afterReturning, afterThrowing, and around advice,
+* Sizzle plugin, `wire/sizzle`, courtesy of [@unscriptable](https://twitter.com/unscriptable)
+
+# Roadmap
+
+### 0.5.1
+* More documentation
+* AOP before, after, afterReturning, afterThrowing, and around advice
+
+### The future
+* Unofficial official Node.js support
+* More module, reusable wire specs by "#include"ing one spec in another
 
 # License
 
