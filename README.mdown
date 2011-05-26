@@ -1,4 +1,6 @@
-# wire
+# wire.js
+
+**Version 0.5 is coming soon!**  [Check out the README and progress in the dev-05 branch.](https://github.com/briancavalier/wire/tree/dev-05)
 
 wire is an application bootstrap, configuration, and assembly tool based on the principles of [Inversion of Control](http://en.wikipedia.org/wiki/Inversion_of_control "Inversion of control - Wikipedia, the free encyclopedia"), and [Dependency Injection](http://en.wikipedia.org/wiki/Dependency_Injection "Dependency injection - Wikipedia, the free encyclopedia").
 
