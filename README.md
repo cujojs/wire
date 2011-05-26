@@ -43,13 +43,14 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # Roadmap
 
-### 0.5.1
+### 0.5.x
 * More documentation
 * AOP before, after, afterReturning, afterThrowing, and around advice
+* Create new objects by extending existing ones, dynamically, in a wire spec
 
 ### The future
-* Unofficial official Node.js support
-* More module, reusable wire specs by "#include"ing one spec in another
+* Node.js support
+* More modular, reusable wire specs by "#include"ing one spec in another
 
 # License
 
