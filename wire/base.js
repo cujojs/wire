@@ -92,14 +92,15 @@ define([], function() {
 	//
 	// You can use the literal factory to force creation of an object literal:
 	// myObject: {
-	//   wire$literal: {
+	//   literal: {
 	//     create: "foo"
 	//   }
 	// }
 	//
-	// which will result in myObject.create == "foo"
+	// which will result in myObject.create == "foo" rather than attempting
+	// to create an instance of an AMD module whose id is "foo".
 	function literalFactory(promise, spec, wire) {
-		promise.resolve(spec.wire$literal);
+		promise.resolve(spec.literal);
 	}
 
 	function protoFactory(promise, spec, wire) {
@@ -194,7 +195,7 @@ define([], function() {
 			
 			return {
 				factories: {
-					wire$literal: literalFactory,
+					literal: literalFactory,
 					prototype: protoFactory
 				},
 				facets: {
