@@ -33,7 +33,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's New
 
-### 0.5 -- *May 18, 2010*
+### 0.5
 
 * Re-engineered core: smaller, faster, and more loader-independent,
 * Can be used as either an AMD module or an AMD plugin,
