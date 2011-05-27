@@ -1,0 +1,48 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>aop test</title>
+	<script>
+		require = { debug: true, baseUrl: '../../../', paths: { 'wire': './wire' } };
+	</script>
+	<script src="../../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		require(['wire'], function(wire) {
+			wire({
+				plugins: [
+					{ module: 'wire/debug' },
+					{
+						module: 'wire/aop',
+						decorators: {
+							mydecorator1: 'test/wire/aop/Decorator',
+							mydecorator2: 'test/wire/aop/Decorator'
+						}
+					}
+				],
+				thing: {
+					create: 'test/wire/aop/Thing',
+					properties: { name: 'thing1' },
+					decorate: {
+						mydecorator2: ['AGAIN!'],
+						mydecorator1: ['DECORATED']
+					}
+				}
+				
+				// Add your test wiring declarations here
+				
+			}).then(
+				function(context) {
+					context.thing.doSomething("I'm the thing");
+				},
+				function(err) {
+					console.log("aop: FAILED", err);
+				}
+			);			
+		});
+	</script>
+</head>
+<body>
+
+</body>
+</html>
