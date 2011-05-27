@@ -39,6 +39,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 * Can be used as either an AMD module or an AMD plugin,
 * Improved plugin system,
 * AOP plugin, `wire/aop`: Decorators and Introductions.  *Coming Soon*: before, after, afterReturning, afterThrowing, and around advice,
+* Prototype factory plugin allows you to use the JS prototype chain to create new objects directly from other objects in your wire spec.
 * Sizzle plugin, `wire/sizzle`, courtesy of [@unscriptable](https://twitter.com/unscriptable)
 
 # Roadmap

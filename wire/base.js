@@ -10,13 +10,23 @@
 	proxy for plain JS objects.
 */
 define([], function() {
-	var tos, undef;
+	var tos, beget, undef;
 
 	tos = Object.prototype.toString;
 
 	function isArray(it) {
 		return tos.call(it) == '[object Array]';
 	}
+
+	// In case Object.create isn't available
+	function T() {};
+
+	function createObject(prototype) {
+		T.prototype = prototype;
+		return new T();
+	}
+
+	beget = Object.create || objectCreate;
 
 	function invoke(promise, func, target, args, wire) {
 		var f = target[func];
@@ -69,8 +79,41 @@ define([], function() {
 		}
 	}
 
+	// Factory that handles cases where you need to create an object literal
+	// that has a property whose name would trigger another wire factory.
+	// For example, if you need an object literal with a property named "create",
+	// which would normally cause wire to try to construct an instance using
+	// a constructor or other function, and will probably result in an error,
+	// or an unexpected result:
+	// myObject: {
+	//	 create: "foo"
+	//   ...
+	// }
+	//
+	// You can use the literal factory to force creation of an object literal:
+	// myObject: {
+	//   wire$literal: {
+	//     create: "foo"
+	//   }
+	// }
+	//
+	// which will result in myObject.create == "foo"
 	function literalFactory(promise, spec, wire) {
 		promise.resolve(spec.wire$literal);
+	}
+
+	function protoFactory(promise, spec, wire) {
+		var parentRef = spec.prototype;
+
+		wire.resolveRef(parentRef).then(
+			function(parent) {
+				var child = beget(parent);
+				promise.resolve(child);
+			},
+			function(err) {
+				promise.reject(err);
+			}
+		);
 	}
 
 	function propertiesFacet(promise, facet, wire) {
@@ -151,7 +194,8 @@ define([], function() {
 			
 			return {
 				factories: {
-					wire$literal: literalFactory
+					wire$literal: literalFactory,
+					prototype: protoFactory
 				},
 				facets: {
 					// properties facet.  Sets properties on components

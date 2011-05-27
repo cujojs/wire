@@ -13,11 +13,13 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	"use strict";
 
-	var VERSION, tos, rootContext, rootSpec;
+	var VERSION, tos, rootContext, rootSpec, delegate;
 	
 	VERSION = "0.5";
     tos = Object.prototype.toString;
     rootSpec = global['wire']||{};
+
+	delegate = Object.create || createObject;
 
     //
     // AMD Module API
@@ -621,13 +623,6 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		return typeof it === 'object';
 	}
 
-	function T() {};
-
-	function delegate(prototype) {
-		T.prototype = prototype;
-		return new T();
-	}
-
 	/*
 		Function: isArray
 		Standard array test
@@ -658,6 +653,14 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	*/
 	function isFunction(it) {
 		return typeof it == 'function';
+	}
+
+	// In case Object.create isn't available
+	function T() {};
+
+	function createObject(prototype) {
+		T.prototype = prototype;
+		return new T();
 	}
 	
 	/*
