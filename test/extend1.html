@@ -1,0 +1,93 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Proto test</title>
+	<script>
+		require = {
+			debug: true,
+			paths: {
+				wire: '../wire',
+				test: '../test'
+			}
+		};
+	</script>
+
+	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		//
+		// The prototype factory allows creating new objects, in the style of
+		// Object.create, directly in a wire spec.
+		// 
+		// You might use this to create a parent, or template", object, with a base configuration,
+		// and then easily generate child objects from that template and specialize their
+		// configuration for particular situations.
+		//
+		require(['wire'], function(wire) {
+			wire({
+				// A simple example using object literals
+
+				//
+				// Simple object literal to use as the parent
+				parent1: {
+					firstName: "Senior",
+					lastName: "Smith"
+				},
+				//
+				// Create a child from the parent and override the firstName
+				child1: {
+					prototype: 'parent1',
+					properties: {
+						firstName: "Junior"
+					}
+				},
+
+				// A more interesting example using an AMD module
+
+				//
+				// Create a parent instance from the Controller AMD module,
+				// set it's name and logger, and call its ready method to make
+				// it say hi.
+				parent2: {
+					create: 'test/test1/Controller',
+					properties: {
+						name: "Mom",
+						logger: { $ref: 'logger' }
+					},
+					init: {
+						ready: "Hello Billy"
+					}
+				},
+				//
+				// Create a child instance directly from the parent using the
+				// prototype chain, override the name, and call its ready method
+				// to make it say hi.
+				child2: {
+					prototype: 'parent2',
+					properties: {
+						name: "Billy"
+					},
+					init: {
+						ready: "Hi Mom"
+					}
+				},
+
+				//
+				// Create a logger for use above
+				logger: {
+					module: 'test/test1/ConsoleLogger'
+				}
+			}).then(
+				function(context) {
+					console.log("DONE", context);
+				},
+				function(err) {
+					console.err(err);
+				}
+			);
+		});
+	</script>
+</head>
+<body>
+</body>
+</html>
