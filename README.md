@@ -27,7 +27,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 1. [Read about](https://github.com/briancavalier/hello-wire.js) and [try out](http://briancavalier.com/code/hello-wire) the Hello Wire introduction.
 1. Check out the [wire.js presentation from JSConf 2011](http://bit.ly/mkWy1L "wire.js - Javascript IOC Container w/Dependency Injection").
 1. Get the code for the [Piratescript or N00bscript](https://github.com/briancavalier/piratescript) game from the presentation. *Docs coming soon!*
-1. See the [wiki for more documentation](https://github.com/briancavalier/wire/wiki). *Coming soon!*
+1. See the [wiki for more documentation](https://github.com/briancavalier/wire/wiki).
 1. Fork it and try it out!
 1. More coming soon...
 
