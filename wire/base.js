@@ -21,7 +21,7 @@ define([], function() {
 	// In case Object.create isn't available
 	function T() {};
 
-	function createObject(prototype) {
+	function objectCreate(prototype) {
 		T.prototype = prototype;
 		return new T();
 	}
