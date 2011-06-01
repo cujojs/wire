@@ -47,7 +47,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 ### 0.5.x
 * More documentation
 * AOP before, after, afterReturning, afterThrowing, and around advice
-* Create new objects by extending existing ones, dynamically, in a wire spec
+* Defer module loading, and object creation or initialization (lazy load, create, init) until object is referenced or used.
 
 ### The future
 * Node.js support

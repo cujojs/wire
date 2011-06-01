@@ -34,17 +34,11 @@ define([], function() {
 			if(args) {
 				wire(args).then(
 					function(resolvedArgs) {
-						// try {
-							var result = f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
-								? resolvedArgs
-								: [resolvedArgs]);
-								
-							promise.resolve(result);
-
-						// } catch(e) {
-						// 	promise.reject(e);
-
-						// }
+						var result = f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
+							? resolvedArgs
+							: [resolvedArgs]);
+							
+						promise.resolve(result);
 					},
 					function(err) {
 						promise.reject(err);
