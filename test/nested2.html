@@ -2,17 +2,18 @@
 <html lang="en-US">
 <head>
 	<meta charset="UTF-8">
-	<title>wire test</title>
+	<title>nested objects 2 test</title>
 	<script type="text/javascript">
 		(function(global) {
+			global.require = { debug: true, baseUrl: '../', paths: { wire: './wire' } };
+
 			// The root context
 			global.wire = {
 				a: 0
 			};
 		})(window);
 	</script>
-	<script src="../require.js" type="text/javascript" charset="utf-8"></script>
-	<script type="text/javascript" src="../wire.js"></script>
+	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
 		// This wires a direct child of the root context, adding
 		// nothing to it.  So context0 is *not* the root context, but
@@ -23,37 +24,39 @@
 		//   - context 1
 		//    - context 2
 		//     - context 3
-		wire().then(function(context0) {
-			// context0 is a child of the root context, but added nothing
-			console.log("context0 wired");
-			console.log(context0.a);
-			
-			// Wire a child of context0, and override a
-			context0.wire({ a: 1 }).then(function(context1) {
-				// context1 is the child of context0
-				console.log("context1 wired");
-				console.log(context1.a);
+		require(['wire'], function(wire) {
+			wire().then(function(context0) {
+				// context0 is a child of the root context, but added nothing
+				console.log("context0 wired");
 				console.log(context0.a);
-
-				// Wire a child of context1, and override a again
-				context1.wire({ a: 2 }).then(function(context2) {
-					// context2 is the child of context1
-					console.log("context2 wired");
-					console.log(context2.a);
+				
+				// Wire a child of context0, and override a
+				context0.wire({ a: 1 }).then(function(context1) {
+					// context1 is the child of context0
+					console.log("context1 wired");
 					console.log(context1.a);
 					console.log(context0.a);
 
-					// Wire a child of context2, and override a again
-					context2.wire({ a: 3 }).then(function(context3) {
-						// context3 is the child of context2
-						console.log("context3 wired");
-						console.log(context3.a);
+					// Wire a child of context1, and override a again
+					context1.wire({ a: 2 }).then(function(context2) {
+						// context2 is the child of context1
+						console.log("context2 wired");
 						console.log(context2.a);
 						console.log(context1.a);
 						console.log(context0.a);
-						
-						// This will destroy all contexts except the root
-						context0.destroy();
+
+						// Wire a child of context2, and override a again
+						context2.wire({ a: 3 }).then(function(context3) {
+							// context3 is the child of context2
+							console.log("context3 wired");
+							console.log(context3.a);
+							console.log(context2.a);
+							console.log(context1.a);
+							console.log(context0.a);
+							
+							// This will destroy all contexts except the root
+							context0.destroy();
+						});
 					});
 				});
 			});

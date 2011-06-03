@@ -1,0 +1,30 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Launcher test</title>
+	<script type="text/javascript">
+		(function(global) {
+			global.require = {
+				debug: true,
+				baseUrl: '../../../',
+				pluginPath: 'curl/src/curl/plugin',
+				paths: {
+					wire: './wire',
+					curl: 'curl/src/curl'
+				}
+			};
+		})(window);
+	</script>
+	<script src="../../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		require(['wire!test/dojo/rest1/rest1']);
+	</script>
+</head>
+<body>
+	<div id="container1">
+	</div>
+	<div id="container2">
+	</div>
+</body>
+</html>

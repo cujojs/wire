@@ -12,31 +12,41 @@
 	components that can be used on multiple pages, but still require a reference
 	to one or more nodes on the page.
 */
-define({
-	wire$resolvers: {
-		/*
-			Function: dom
-			Resolves a reference to a dom node on the page by its id
-
-			Reference format:
-			dom!node-id
-			
-			Parameters:
-				factory - wiring factory
-				name - id of dom node
-				refObj - complete JSON ref
-				promise - factory-provided <Promise> that will be resolved with the
-					dom node.
-		*/
-		dom: function(factory, name, refObj, promise) {
-			factory.domReady.then(function() {
-				var result = document.getElementById(name[0] === '#' ? name.slice(1) : name);
-				if(result) {
-					promise.resolve(result);
-				} else {
-					promise.unresolved();
-				}
-			});
-		}
+define(['wire/domReady'], function(domReady) {
+	/*
+		Function: byId
+		Resolves a reference to a dom node on the page by its id
+		
+		Parameters:
+			factory - wiring factory
+			name - id of dom node
+			refObj - complete JSON ref
+			promise - factory-provided <Promise> that will be resolved with the
+				dom node.
+	*/
+	function byId(promise, name, refObj, wire) {
+		domReady(function resolveDomId() {
+			var node = document.getElementById(name);
+			if(node) promise.resolve(node);
+			// Best to throw here since this may be happening async)
+			else throw new Error("No DOM node with id: " + name);
+		});
 	}
+
+	// Wire plugin.
+	// Since this plugin has no context-specific needs or functionality, can
+	// always return the same object.
+	var wirePlugin = {
+		resolvers: {
+			dom: byId
+		}		
+	};
+
+	// return function wire$plugin(ready, options) {
+	return {
+		wire$plugin: function domPlugin(ready, destroyed, options) {
+			return wirePlugin;
+		}
+	};
+
 });

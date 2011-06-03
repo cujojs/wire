@@ -7,13 +7,14 @@
 /*
 	Package: pubsub.js
 	wire plugin that sets up subscriptions and topics to be published after
-	functions are invoked and unsubscribe them when an object is destroyed.  This
-	implementation uses dojo.subscribe and dojo.unsubscribe to do the work.
+	functions are invoked, and disconnect them when an object is destroyed.
+	This implementation uses dojo.publish, dojo.subscribe and dojo.unsubscribe
+	to do the work of connecting and disconnecting event handlers.
 */
-define(['dojo'], function(pubsub) {
+define(['dojo', 'dojo/_base/connect'], function(pubsub) {
 
 	return {
-		wire$wire: function onWire(ready, destroy) {
+		wire$plugin: function pubsubPlugin(ready, destroyed, options) {
 
 			var destroyHandlers = [];
 
@@ -84,28 +85,29 @@ define(['dojo'], function(pubsub) {
 					pubsub.unsubscribe(handles[i]);
 				}
 			}
-			
-			ready.then(null, null,
-				function onObject(progress) {
-					if(progress.status === 'init') {
-						var spec = progress.spec;
-					
-						if(typeof spec.publish == 'object') {
-							proxyPublish(progress.target, spec.publish);
-						}
 
-						if(typeof spec.subscribe == 'object') {
-							subscribeTarget(progress.target, spec.subscribe);
+			destroyed.then(function onContextDestroy() {
+				for (var i = destroyHandlers.length - 1; i >= 0; i--){
+					destroyHandlers[i]();
+				}
+			});
+
+			return {
+				facets: {
+					publish: {
+						ready: function(promise, facet, wire) {
+							proxyPublish(facet.target, facet.options);
+							promise.resolve();
+						}
+					},
+					subscribe: {
+						ready: function(promise, facet, wire) {
+							subscribeTarget(facet.target, facet.options);
+							promise.resolve();
 						}
 					}
 				}
-			);
-			
-			destroy.then(function onContextDestroy() {
-				for (var i = destroyHandlers.length - 1; i >= 0; i--){
-					destroyHandlers[i]();
-                }
-            });
+			}
 		}
 	};
 });

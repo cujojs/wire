@@ -1,5 +1,5 @@
 /**
- * @license Copyright (c) 2010-2011 Brian Cavalier
+ * @license Copyright (c) 2011 Brian Cavalier
  * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
@@ -12,63 +12,57 @@
 	and an object lifecycle handler that will cleanup (e.g. destroyRecursive,
 	or destroy) dijits instantiated "programmatically" in a wiring context.
 */
-define(['dojo', 'dojo/parser'], function(dojo, parser) {
+define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser, dijit, Widget) {
 	var parsed = false;
+
+	/*
+		Function: dijitById
+		Resolver for dijits by id.		
+	*/
+	function dijitById(promise, name, refObj, wire) {
+		dojo.ready(
+			function() {
+				var resolved = dijit.byId(name);
+
+				if(resolved) {
+					promise.resolve(resolved);
+				} else {
+					throw new Error("No dijit with id: " + name);
+				}
+			}
+		);
+	}
+
+	function isDijit(it) {
+		// NOTE: It is possible to create inheritance hierarchies with dojo.declare
+		// where the following evaluates to false *even though* dijit._Widget is
+		// most certainly an ancestor of it.
+		// So, may need to modify this test if that seems to happen in practice.
+		return it instanceof Widget;
+	}
+
+	function createDijitProxy(object, spec) {
+		var proxy;
+
+		if(isDijit(object)) {
+			proxy = {
+				get: function(property, value) {
+					return object.get(property);
+				},
+				set: function(property, value) {
+					return object.set(property, value);
+				},
+				invoke: function(method, args) {
+					return method.invoke(object, args);
+				}
+			}
+		}
+
+		return proxy;
+	}
 	
 	return {
-		wire$resolvers: {
-			/*
-				Function: dijit
-				Resolver for dijits by id that will resolve any dijit on the page by its widget id,
-				whether created declaratively with dojotype or programatically.
-
-				Reference format:
-					dijit!widget-id
-				
-				Parameters:
-					factory - wire factory
-					name - id of the dijit
-					refObj - the complete $ref object
-					promise - promise to resolve with the found dijit
-			*/
-			dijit: function(factory, name, refObj, promise) {
-				dojo.ready(
-					function() {
-						var resolved = dijit.byId(name);
-						if(resolved) {
-							promise.resolve(resolved);
-						} else {
-							promise.unresolved();
-						}
-					}
-				);
-			}
-		},
-		wire$setters: [
-			function setDijitProperty(object, property, value) {
-				if(typeof object.set == 'function') {
-					object.set(property, value);
-					return true;
-				}
-
-				return false;
-			}
-		],
-		/*
-			Function: wire$wire
-			If parse option was set to true, invokes the dojo parser on the page if it has not
-			yet been parsed, and properly destroys (via destroyRecursive() or destroy()) dijits
-			that were created via wire context (rather than using dojotype, for example).
-			
-			Parameters:
-				ready - promise that will be resolved when the context has been wired, rejected
-					if there is an error during the wiring process, and will receive progress
-					events for object creation, property setting, and initialization.
-				destroy - promise that will be resolved when the context has been destroyed,
-					rejected if there is an error while destroying the context, and will
-					receive progress events for objects being destroyed.
-		*/
-		wire$wire: function onWire(ready, destroy, options) {
+		wire$plugin: function onWire(ready, destroy, options) {
 			// Only ever parse the page once, even if other child
 			// contexts are created with this plugin present.
 			if(options.parse && !parsed) {
@@ -76,22 +70,34 @@ define(['dojo', 'dojo/parser'], function(dojo, parser) {
 				dojo.ready(function() { parser.parse(); });
 			}
 
-			destroy.then(null, null,
-				function onObjectDestroyed(progress) {
-					if( typeof progress.target.declaredClass == 'string') {
-						var object = progress.target;
+			ready.then(null, null, function(update) {
+				// Only care about objects that are dijits
+				if(isDijit(update.target)) {
 
+					// It's a dijit, so we need to know when it is being
+					// destroyed so that we can do proper dijit cleanup on it
+					update.destroyed.then(function(target) {
 						// Prefer destroyRecursive over destroy
-						if(typeof object.destroyRecursive == 'function') {
-							object.destroyRecursive(false);
+						if(typeof target.destroyRecursive == 'function') {
+							target.destroyRecursive(false);
 
-						} else if(typeof object.destroy == 'function') {
-							object.destroy(false);
+						} else if(typeof target.destroy == 'function') {
+							target.destroy(false);
 
 						}
-					}
+					});					
 				}
-			);
+			});
+
+			// Return plugin
+			return {
+				resolvers: {
+					dijit: dijitById
+				},
+				proxies: [
+					createDijitProxy
+				]
+			};
 		}
 	};
 });
