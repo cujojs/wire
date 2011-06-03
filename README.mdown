@@ -1,15 +1,5 @@
 # wire.js
 
-**Version 0.5 is coming soon!**  [Check out the README and progress in the dev-05 branch.](https://github.com/briancavalier/wire/tree/dev-05)
+**6/2/2011 Update: Version 0.5 has been promoted to the dev branch for final testing** [Check out the README and progress in the _dev_ branch.](https://github.com/briancavalier/wire/tree/dev)
 
-wire is an application bootstrap, configuration, and assembly tool based on the principles of [Inversion of Control](http://en.wikipedia.org/wiki/Inversion_of_control "Inversion of control - Wikipedia, the free encyclopedia"), and [Dependency Injection](http://en.wikipedia.org/wiki/Dependency_Injection "Dependency injection - Wikipedia, the free encyclopedia").
-
-With wire, you create a wiring spec in plain JSON (or Javascript) that describes how your components should be wired together, and wire will load, configure, and wire together those components to create your application.
-
-## wire <3 AMD
-
-While wire is not a Javascript AMD loader, like [RequireJS](http://requirejs.org/ "RequireJS"), [curl](https://github.com/unscriptable/curl) or [backdraft's bdload](http://bdframework.org/bdLoad/index.html "bdLoad - the backdraft AMD loader - home"), it does use an AMD-compliant loader to do its job of assembling modules and objects into a running application.
-
-wire is intended to play well with any AMD loader that you might already be using.  It can work with modules that have been fully built and optimized into a single file, into multiple layers (a la the RequireJS build tool), or totally unoptimized modules (e.g. during development).
-
-In fact, wire plugins are themselves AMD modules, and can be loaded dynamically during development or included in your optimized build for deployment.
+**5/25/2011 Update: Version 0.5 is coming soon!** [Check out the README and progress in the _dev-05_ branch.](https://github.com/briancavalier/wire/tree/dev-05)
