@@ -44,13 +44,11 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # Roadmap
 
-### 0.5.x
 * More documentation
 * AOP before, after, afterReturning, afterThrowing, and around advice
+* AOP weaving.  Apply cross-cutting AOP via pointcut queries
 * Defer module loading, and object creation or initialization (lazy load, create, init) until object is referenced or used.
 * Fully automated test suite. (Test suite is comprehensive, but manual right now)
-
-### The future
 * Node.js support
 * More modular, reusable wire specs by "#include"ing one spec in another
 
