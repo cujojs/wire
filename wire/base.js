@@ -27,6 +27,18 @@ define([], function() {
 	}
 
 	beget = Object.create || objectCreate;
+	
+	function reject(resolver) {
+		return function(err) {
+			resolver.reject(err);
+		};
+	}
+	
+	function resolve(resolver) {
+		return function(result) {
+			resolver.resolve(result);
+		};
+	}
 
 	function invoke(promise, func, target, args, wire) {
 		var f = target[func];
@@ -34,11 +46,15 @@ define([], function() {
 			if(args) {
 				wire(args).then(
 					function(resolvedArgs) {
-						var result = f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
-							? resolvedArgs
-							: [resolvedArgs]);
-							
-						promise.resolve(result);
+						try {
+							var result = f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
+								? resolvedArgs
+								: [resolvedArgs]);
+
+							promise.resolve(result);
+						} catch(e) {
+							promise.reject(e);
+						}
 					},
 					function(err) {
 						promise.reject(err);
@@ -67,9 +83,10 @@ define([], function() {
 				invoke(p, func, target, options[func], wire);
 			}
 			
-			wire.whenAll(promises).then(function() {
-				promise.resolve();
-			});
+			wire.whenAll(promises).then(
+				resolve(promise),
+				reject(promise)
+			);
 		}
 	}
 
@@ -105,9 +122,7 @@ define([], function() {
 				var child = beget(parent);
 				promise.resolve(child);
 			},
-			function(err) {
-				promise.reject(err);
-			}
+			reject(promise)
 		);
 	}
 
@@ -122,12 +137,8 @@ define([], function() {
 		}
 
 		wire.whenAll(promises).then(
-			function() {
-				promise.resolve();
-			},
-			function(err) {
-				promise.reject(err);
-			}
+			resolve(promise),
+			reject(promise)	
 		);
 	}
 

@@ -71,6 +71,11 @@ define([], function() {
 		};
 	}
 	
+	function logError(err, message) {
+		console.error(time("Context ERROR: " + message));
+		console.error(err);
+	}
+	
 	/*
 		Function: logProgress
 		Logs progress info to the console
@@ -82,21 +87,23 @@ define([], function() {
 				- spec - Any - wiring spec
 	*/
 	function logProgress(update, contextTimer) {
-		update.created.then(function(target) {
-			console.log(time('Object created', contextTimer), target, update.spec);
-		});
+		function logUpdate(message) {
+			return function(target) {
+				console.log(time(message, contextTimer), target, update.spec);		
+			};
+		}
 
-		update.configured.then(function(target) {
-			console.log(time('Object configured', contextTimer), target, update.spec);		
-		});
+		function logError(message) {
+			return function(err) {
+				console.error(time(message, contextTimer), err, update.spec);
+				console.error(err);
+			};
+		}
 		
-		update.initialized.then(function(target) {
-			console.log(time('Object initialized', contextTimer), target, update.spec);		
-		});
-
-		update.destroyed.then(function(target) {
-			console.log(time('Object destroyed', contextTimer), target, update.spec);		
-		});
+		update.created.then(logUpdate('Object created'), logError('Object create ERROR'));
+		update.configured.then(logUpdate('Object configured'), logError('Object configure ERROR'));
+		update.initialized.then(logUpdate('Object initialized'), logError('Object initialize ERROR'));
+		update.destroyed.then(logUpdate('Object destroyed'), logError('Object destroy ERROR'));
 	}
 
 	return {
