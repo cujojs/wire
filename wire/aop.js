@@ -145,7 +145,7 @@ define(['require'], function(require) {
 		var advised = target[func];
 		
 		if(!advised._advisor) {
-			var args, before, after, around, advisor, interceptor;
+			var args, before, afterReturning, afterThrowing, after, around, advisor, interceptor;
 
 			args = argsToArray(arguments);
 			before = [];
