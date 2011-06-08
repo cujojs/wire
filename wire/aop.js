@@ -125,13 +125,13 @@ define(['require'], function(require) {
 		promise.resolve();
 	}
 
-	function callAdvice(advices, target, arguments) {
+	function callAdvice(advices, target, args) {
 		var i, advice;
 
 		i = advices.length;
 
 		while((advice = advices[--i])) {
-			advice.apply(target, arguments);
+			advice.apply(target, args);
 		}
 	}
 
@@ -145,9 +145,8 @@ define(['require'], function(require) {
 		var advised = target[func];
 		
 		if(!advised._advisor) {
-			var args, before, afterReturning, afterThrowing, after, around, advisor, interceptor;
+			var before, afterReturning, afterThrowing, after, around, advisor, interceptor;
 
-			args = argsToArray(arguments);
 			before = [];
 			after  = [];
 			afterReturning  = [];
