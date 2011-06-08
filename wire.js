@@ -461,7 +461,6 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			}
 
 			return chain(whenAll(promises), Deferred(), proxy.target);
-
 		}
 
 		function processFacet(processor, step, facet, promises) {
@@ -735,6 +734,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		var toResolve, values, deferred;
 
 		toResolve = promises.length;
+
+		deferred = Deferred();
+		values = [];
 		
 		// Resolver for promises.  Captures the value and resolves
 		// the returned promise when toResolve reaches zero.
@@ -765,7 +767,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			deferred.reject(err);			
 		}
 
-		// Wrapper so that rejecer can be replaced
+		// Wrapper so that rejecter can be replaced
 		function reject(err) {
 			rejecter(err);
 		}
@@ -777,14 +779,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			deferred.progress(update);
 		}
 
-		deferred = Deferred();
-		values = [];
-
 		if(toResolve == 0) {
 			deferred.resolve(values);
 
 		} else {
-			for (var i = 0; i < promises.length; i++) {
+			for (var i = 0, len = promises.length; i < len; i++) {
 				when(promises[i]).then(resolve, reject, progress);
 			}
 		}
