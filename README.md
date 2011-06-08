@@ -37,6 +37,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 * Re-engineered core: smaller, faster, and more loader-independent,
 * Can be used as either an AMD module or an AMD plugin,
+* Tested with [curl.js](https://github.com/unscriptable/curl), and [RequireJS](http://requirejs.org/).  Should also work with the upcoming [dojo 1.7 loader](http://dojotoolkit.org/) (but hasn't been tested yet),
 * Improved plugin system,
 * AOP plugin, `wire/aop`: Decorators and Introductions.  *Coming Soon*: before, after, afterReturning, afterThrowing, and around advice,
 * Prototype factory plugin allows using the JS prototype chain to create new objects directly from other objects in your wire spec.
