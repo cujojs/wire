@@ -29,7 +29,6 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 1. Get the code for the [Piratescript or N00bscript](https://github.com/briancavalier/piratescript) game from the presentation. *Docs coming soon!*
 1. See the [wiki for more documentation](https://github.com/briancavalier/wire/wiki).
 1. Fork it and try it out!
-1. More coming soon...
 
 # What's New
 
@@ -41,7 +40,12 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 * Improved plugin system,
 * AOP plugin, `wire/aop`: Decorators and Introductions.  *Coming Soon*: before, after, afterReturning, afterThrowing, and around advice,
 * Prototype factory plugin allows using the JS prototype chain to create new objects directly from other objects in your wire spec.
-* Sizzle plugin, `wire/sizzle`, courtesy of [@unscriptable](https://twitter.com/unscriptable)
+* Sizzle plugin, `wire/sizzle`, courtesy of [@unscriptable](https://twitter.com/unscriptfable)
+* Not entirely new to 0.5, but worth mentioning Dojo integration, including:
+	* pubsub connector, subscribe *and publish* non-invasively using `dojo.publish/subscribe`
+	* event connector that uses dojo.connect
+	* easy JsonRest datastores via `resource!` reference resolver
+	* `dom.query!` reference resolver that uses `dojo.query`
 
 # Roadmap
 
@@ -50,6 +54,8 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 * AOP weaving.  Apply cross-cutting AOP via pointcut queries
 * Defer module loading, and object creation or initialization (lazy load, create, init) until object is referenced or used.
 * Fully automated test suite. (Test suite is comprehensive, but manual right now)
+* Support for more AMD loaders
+* Integration with more libs and frameworks.
 * Node.js support
 * More modular, reusable wire specs by "#include"ing one spec in another
 
