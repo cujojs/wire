@@ -1,0 +1,59 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Literal factory test</title>
+	<script>
+		require = {
+			debug: true,
+			paths: {
+				wire: '../wire',
+				test: '../test'
+			}
+		};
+	</script>
+
+	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		require(['wire'], function(wire) {
+			wire({
+				plugins: [
+					{ module: 'wire/debug' }
+				],
+				// The module test/test1/Controller should NOT be loaded.
+				// Wiring should result in an object literal with a
+				// property named "module" whose value is "test/test1/Controller"
+				controller1: {
+					literal: {
+						module: 'test/test1/Controller'
+					}
+				},
+				controller2: {
+					// Similarly, this should not load or create test/test1/Controller.
+					// The controller2 property should end up being exactly the
+					// object literal.
+					literal: {
+						create: {
+							module: 'test/test1/Controller',
+							args: "foo"
+						},
+						properties: {
+							prop1: 1,
+							prop2: 2
+						}
+					}
+				}
+			}).then(
+				function(context) {
+					console.log("Done", context);
+				},
+				function(err) {
+					console.log(err);
+				}
+			);
+		});
+	</script>
+</head>
+<body>
+</body>
+</html>

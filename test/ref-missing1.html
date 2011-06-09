@@ -1,0 +1,41 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Missing reference test</title>
+	<script>
+		require = {
+			debug: true,
+			paths: {
+				wire: '../wire',
+				test: '../test'
+			}
+		};
+	</script>
+
+	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		// Simple example of wiring in objects by reference using JSON ref syntax
+		require(['wire'], function(wire) {
+			wire({
+				plugins: [
+					{ module: 'wire/debug' }
+				],
+				// Unresolvable reference should fail
+				thingRef: { $ref: 'thing' },
+			}).then(
+				function(context) {
+					console.error("TEST FAILED: Should not have been able to wire", context);
+				},
+				function(err) {
+					console.log("Seeing an error is CORRECT");
+					console.err(err);
+				}
+			);
+			
+		});
+	</script>
+</head>
+<body>
+</body>
+</html>

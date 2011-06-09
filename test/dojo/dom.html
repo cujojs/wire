@@ -2,9 +2,11 @@
 <html lang="en-US">
 <head>
 	<meta charset="UTF-8">
-	<title>dom test</title>
-	<script src="../../require.js" type="text/javascript"></script>
-	<script src="../../wire.js" type="text/javascript"></script>
+	<title>dojo dom query test</title>
+	<script>
+		require = { debug: true, baseUrl: '../../', paths: { wire: './wire', curl: 'curl/src/curl', domReady: 'curl/src/curl/domReady' } };
+	</script>
+	<script src="../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
 		define('unload', {
 			onUnload: function() {
@@ -12,37 +14,39 @@
 			}
 		});
 		
-		wire({
-			plugins: [
-				{ module: 'wire/debug' },
-				{ module: 'wire/dojo/dom' }
-			],
-			a: 'a',
-			b: 2,
-			unload: {
-				module: 'unload',
-				properties: {
-					nodes: { $ref: 'dom.query!.test' },
-					node:  { $ref: 'dom.query!.test', i: 0 }
-				},
-				// unload: 'onUnload'
+		require(['wire'], function(wire) {
+			wire({
+				plugins: [
+					{ module: 'wire/debug' },
+					{ module: 'wire/dojo/dom' }
+				],
+				a: 'a',
+				b: 2,
 				unload: {
-					onUnload: [{ $ref: 'a' }, { $ref: 'b' }, 'c']
+					module: 'unload',
+					properties: {
+						nodes: { $ref: 'dom.query!.test' },
+						node:  { $ref: 'dom.query!.test', i: 0 }
+					},
+					// unload: 'onUnload'
+					unload: {
+						onUnload: [{ $ref: 'a' }, { $ref: 'b' }, 'c']
+					}
 				}
-			}
-		}).then(
-			function(context) {
-				if(!context.unload.node) {
-					console.error("dom: FAILED, unload.node not wired correctly");
+			}).then(
+				function(context) {
+					if(!context.unload.node) {
+						console.error("dom: FAILED, unload.node not wired correctly", context.unload.node);
+					}
+					if(!context.unload.nodes || context.unload.nodes.length != 3) {
+						console.error("dom: FAILED, unload.nodes not wired correctly", context.unload.nodes);
+					}
+				},
+				function(err) {
+					console.log("dom: FAILED", err);
 				}
-				if(!context.unload.nodes || context.unload.nodes.length != 3) {
-					console.error("dom: FAILED, unload.nodes not wired correctly");
-				}
-			},
-			function(err) {
-				console.log("dom: FAILED", err);
-			}
-		);
+			);			
+		});
 	</script>
 </head>
 <body>

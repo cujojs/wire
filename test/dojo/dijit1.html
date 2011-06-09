@@ -1,0 +1,71 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Launcher test</title>
+	<script type="text/javascript">
+		(function(global) {
+			var
+				baseUrl = '../../';
+
+			global.djConfig = {
+				baseUrl: baseUrl
+			};
+
+			global.require = {
+				baseUrl: baseUrl,
+				pluginPath: 'curl/src/curl/plugin',
+				paths: {
+					'wire': './wire',
+					curl: 'curl/src/curl'
+				},
+				packages: [
+					{
+						name: 'dojo',
+						lib: '.',
+						main: './lib/main-browser'
+					},
+					{
+						name: 'dijit',
+						lib: '.',
+						main: './lib/main'
+					}
+				]
+			};
+
+			// Anything in this wiring spec will be part of the root
+			// context, which is the parent (or ultimate ancestor) of
+			// all other contexts.
+			// What that means is that the initialValue "object" will be available
+			// in any context via context.initialValue (although child contexts can
+			// override its value)
+			global.wire = {
+				initialValue: "Initial Value from page!"
+			};
+		})(window);
+	</script>
+	<script src="../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		require(['wire!test/dojo/dijit1'], function(context) {
+			// Properties/objects from the parent context are available via the prototype!
+			console.log("initialValue", context.initialValue);
+			
+			// When the button is clicked, cleanup everything by
+			// destroying the context.  Note that this will destroy the programmatically
+			// created widget1 dijit, but not the dijit that is created via dojoType.
+			var d = context.destroyButton;
+			d.onclick = function() {
+				context.destroy();
+				d.onclick = null;
+			};
+
+		});
+	</script>
+</head>
+<body>
+	<div id="container">
+		<input id="widget" data-dojo-type="dijit.form.TextBox">
+		<button id="destroy">Destroy</button>
+	</div>
+</body>
+</html>

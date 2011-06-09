@@ -1,11 +1,11 @@
-wire({
+define({
 	// There is nothing special about this array.  It's just an array of modules
 	// whose members happen to be a plugins, but we could define it at the top
 	// level or at any depth.  So, the following would work just as well:
 	// dom: { module: 'wire/dom' }
 	// This seems like it could end up being a reasonable convention, tho.
 	plugins: [
-		{ module: 'wire/debug' },
+		// { module: 'wire/debug' },
 		{ module: 'wire/dojo/dijit', parse: true }, // Calls dojo.parser.parse
 		{ module: 'wire/dom' }
 	],
@@ -16,8 +16,8 @@ wire({
 		properties: {
 			// These are both forward references.  These will resolve just
 			// fine--order is not important in a wiring spec.
-			name: { '$ref': 'name' },
-			widget: { '$ref': 'widget1' }
+			name: { $ref: 'name' },
+			widget: { $ref: 'widget1' }
 		},
 		init: 'ready', // Called as soon as all properties have been set
 		destroy: 'destroy' // Called when the context is destroyed
@@ -33,7 +33,7 @@ wire({
 			args: {}
 		},
 		properties: {
-			value: { '$ref': 'initialValue' }
+			value: { $ref: 'initialValue' }
 		},
 		init: {
 			// placeAt will be called once the #container dom node is
@@ -57,20 +57,4 @@ wire({
 	},
 	// Wire in a reference to the destroy button.
 	destroyButton: { $ref: 'dom!destroy' }
-}).then(
-function(context) {
-	// Properties/objects from the parent context are available via the prototype!
-	console.log("initialValue", context.initialValue);
-	
-	// When the button is clicked, cleanup everything by
-	// destroying the context.  Note that this will destroy the programmatically
-	// created widget1 dijit, but not the dijit that is created via dojoType.
-	var d = context.destroyButton;
-	d.onclick = function() {
-		context.destroy();
-		d.onclick = null;
-	};
-},
-function(err) {
-	console.log("wire failed", err);
 });

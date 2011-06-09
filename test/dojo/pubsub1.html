@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Launcher test</title>
+	<script>
+		require = { debug: true, baseUrl: '../../', paths: { wire: './wire', curl: 'curl/src/curl' } };
+	</script>
+	<script src="../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		require(['wire!test/dojo/pubsub1'], function(context) {
+			console.log(context);
+
+			context.thing1.doSomething("It worked!");
+		});
+	</script>
+</head>
+<body>
+
+</body>
+</html>

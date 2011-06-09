@@ -3,14 +3,16 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
-	<script src="../../require.js" type="text/javascript" charset="utf-8"></script>
-	<script type="text/javascript" src="../../wire.js"></script>
+	<script>
+		require = { debug: true, baseUrl: '../../', paths: { wire: './wire', curl: 'curl/src/curl', domReady: 'curl/src/curl/domReady' } };
+	</script>
+	<script src="../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
 		define('handler1', [], function() {
 			return {
 				handleEvent: function(e) {
 					e.target.innerHTML = "Success!";
-					this.context.destroy();
+					this.context.then(function(c) { c.destroy(); });
 				}
 			};
 		});
@@ -19,74 +21,79 @@
 			return {
 				handleEvent: function(e) {
 					e.target.innerHTML = "Success!";
-					this.context.destroy();
+					this.context.then(function(c) { c.destroy(); });
 				}
 			};
 		});
 		
-		wire({
-			plugins: [
-				{ module: 'wire/dojo/events' },
-				{ module: 'wire/dom' }
-			],
-			handler: {
-				// Get the handler module (see above).  Note that it is a singleton
-				// since the module doesn't return a function (constructor or otherwise)
-				// that can be invoked--it returns an object.
-				create: "handler1",
-				properties: {
-					// wire provides a way to wire in the enclosing context
-					// itself.  This can be useful in certain situations, although
-					// in general, you shouldn't need to.
-					"context": { $ref: "wire!context" }
-				},
-				// Use the wire/dojo/events plugin to declare that when the
-				// #test button is clicked, handler's handleEvent method will
-				// be called.
-				connect: {
-					"dom!test": {
-						"click": "handleEvent"
-					}
-				}
-			}
-		}).then(
-			function(context) {
-				console.log("Done", context);
-				context.wire({
-					plugins: [
-						{ module: 'wire/dojo/events' },
-						{ module: 'wire/dom' }
-					],
-					handler: {
-						// Get the handler module (see above).  Note that it is a singleton
-						// since the module doesn't return a function (constructor or otherwise)
-						// that can be invoked--it returns an object.
-						create: "handler2",
-						properties: {
-							// wire provides a way to wire in the enclosing context
-							// itself.  This can be useful in certain situations, although
-							// in general, you shouldn't need to.
-							"context": { $ref: "wire!context" }
-						},
-						// Use the wire/dojo/events plugin to declare that when the
-						// #test button is clicked, handler's handleEvent method will
-						// be called.
-						connect: {
-							"dom!test2": {
-								"click": "handleEvent"
-							}
+		require(['wire'], function(wire) {
+			wire({
+				plugins: [
+					{ module: 'wire/debug' },
+					{ module: 'wire/dojo/events' },
+					{ module: 'wire/dom' }
+				],
+				handler: {
+					// Get the handler module (see above).  Note that it is a singleton
+					// since the module doesn't return a function (constructor or otherwise)
+					// that can be invoked--it returns an object.
+					create: "handler1",
+					properties: {
+						// wire provides a way to wire in the enclosing context
+						// itself.  This can be useful in certain situations, although
+						// in general, you shouldn't need to.
+						"context": { $ref: "wire!context" }
+					},
+					// Use the wire/dojo/events plugin to declare that when the
+					// #test button is clicked, handler's handleEvent method will
+					// be called.
+					connect: {
+						"dom!test": {
+							"click": "handleEvent"
 						}
 					}
-				}).then(
-					function(child) {
-						console.log("Child done", child);
-					}
-				);
-			},
-			function(err) {
-				console.log(err);
-			}
-		);
+				}
+			}).then(
+				function(context) {
+					console.log("Done", context);
+					context.wire({
+						plugins: [
+							{ module: 'wire/debug' },
+							{ module: 'wire/dojo/events' },
+							{ module: 'wire/dom' }
+						],
+						handler: {
+							// Get the handler module (see above).  Note that it is a singleton
+							// since the module doesn't return a function (constructor or otherwise)
+							// that can be invoked--it returns an object.
+							create: "handler2",
+							properties: {
+								// wire provides a way to wire in the enclosing context
+								// itself.  This can be useful in certain situations, although
+								// in general, you shouldn't need to.
+								"context": { $ref: "wire!context" }
+							},
+							// Use the wire/dojo/events plugin to declare that when the
+							// #test button is clicked, handler's handleEvent method will
+							// be called.
+							connect: {
+								"dom!test2": {
+									"click": "handleEvent"
+								}
+							}
+						}
+					}).then(
+						function(child) {
+							console.log("Child done", child);
+						}
+					);
+				},
+				function(err) {
+					console.log(err);
+				}
+			);
+		});
+
 	</script>
 </head>
 <body>

@@ -71,6 +71,11 @@ define([], function() {
 		};
 	}
 	
+	function logError(err, message) {
+		console.error(time("Context ERROR: " + message));
+		console.error(err);
+	}
+	
 	/*
 		Function: logProgress
 		Logs progress info to the console
@@ -81,10 +86,26 @@ define([], function() {
 				- status - String - current status of object
 				- spec - Any - wiring spec
 	*/
-	function logProgress(progress, contextTimer) {
-		console.log(time('Object ' + progress.status, contextTimer), progress.target, progress.spec);
+	function logProgress(update, contextTimer) {
+		function logUpdate(message) {
+			return function(target) {
+				console.log(time(message, contextTimer), target, update.spec);		
+			};
+		}
+
+		function logError(message) {
+			return function(err) {
+				console.error(time(message, contextTimer), err, update.spec);
+				console.error(err);
+			};
+		}
+		
+		update.created.then(logUpdate('Object created'), logError('Object create ERROR'));
+		update.configured.then(logUpdate('Object configured'), logError('Object configure ERROR'));
+		update.initialized.then(logUpdate('Object initialized'), logError('Object initialize ERROR'));
+		update.destroyed.then(logUpdate('Object destroyed'), logError('Object destroy ERROR'));
 	}
-	
+
 	return {
 		/*
 			Function: wire$wire
@@ -100,10 +121,7 @@ define([], function() {
 					rejected if there is an error while destroying the context, and will
 					receive progress events for objects being destroyed.
 		*/
-		wire$wire: function onWire(ready, destroy, options) {
-
-			console.log(time("All modules loaded"));
-
+		wire$plugin: function debugPlugin(ready, destroyed, options) {
 			var contextTimer = createTimer();
 			
 			function contextTime(msg) {
@@ -122,22 +140,23 @@ define([], function() {
 				},
 				function onContextError(err) {
 					console.error(contextTime("Context ERROR: "), err);
-					throw err;
+					console.error(err);
 				},
 				logContextProgress
 			);
 			
-			destroy.then(
+			destroyed.then(
 				function onContextDestroyed() {
 					console.log(contextTime("Context destroyed"));
 				},
 				function onContextDestroyError(err) {
 					console.error(contextTime("Context destroy ERROR"), err);
-					throw err;
-				},
-				logContextProgress
+				}
 			);
+
+			// Debug plugin doesn't provide any additional functionality,
+			// so doesn't need to return anything
 		}
 	};
-	
+
 });

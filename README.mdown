@@ -1,5 +1,0 @@
-# wire.js
-
-**6/2/2011 Update: Version 0.5 has been promoted to the dev branch for final testing** [Check out the README and progress in the _dev_ branch.](https://github.com/briancavalier/wire/tree/dev)
-
-**5/25/2011 Update: Version 0.5 is coming soon!** [Check out the README and progress in the _dev-05_ branch.](https://github.com/briancavalier/wire/tree/dev-05)

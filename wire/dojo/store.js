@@ -28,57 +28,62 @@ define(['dojo/store/JsonRest'], function(JsonRest) {
 			refPromise.resolve(dataPromise);
 		}
 	}
+
+	/*
+		Function: resource
+		Resolves a dojo.store.JsonRest for the REST resource at the url
+		specified in the reference, e.g. resource!url/to/resource
+		
+		Reference format:
+		resource!resource_url
+		
+		Reference params:
+			get - specifies a particular id to fetch.  If supplied, the item will
+				be fetched, and the resolved reference will be a *promise* for the data itself,
+				rather than the data store.
+			query - specifies a query to issue.  If supplied, the query will be
+				executed, and the resolved reference will be a *promise* for the query results,
+				rather than the data store.
+			wait - If specified and the value is strictly true, instead of resolving to
+				*promises*, get and query references (see above) will be resolved to their
+				actual data by waiting for the get and query operations (which may be
+				asynchronous), to complete.  Note that *this will block wiring* (and thus
+				the contextReady event) until the actual data has been fetched, or an
+				error or timeout occurs.
+		
+		Parameters:
+			name - url
+			refObj - complete JSON ref object in the form { $ref: name }
+			wire - wiring factory
+			promise - <Promise>, provided by wiring factory, that will be resolved
+				with the dojo.store.JsonRest that points to the REST
+				resource at the referenced url.
+	*/
+	function resolveResource(promise, name, refObj, wire) {
+		var store = new JsonRest({ target: name });
+			
+		if(refObj.get) {
+			// If get was specified, get it, and resolve with the resulting item.
+			resolveData(store.get(refObj.get), promise, refObj.wait);
+
+		} else if(refObj.query) {
+			// Similarly, query and resolve with the result set.
+			resolveData(store.query(refObj.query), promise, refObj.wait);
+		
+		} else {
+			// Neither get nor query was specified, so resolve with
+			// the store itself.
+			promise.resolve(store);
+		}		
+	}
 	
 	return {
-		wire$resolvers: {
-			/*
-				Function: resource
-				Resolves a dojo.store.JsonRest for the REST resource at the url
-				specified in the reference, e.g. resource!url/to/resource
-				
-				Reference format:
-				resource!resource_url
-				
-				Reference params:
-					id - specifies a particular id to fetch.  If supplied, the item will
-						be fetched, and the resolved reference will be a *promise* for the data itself,
-						rather than the data store.
-					query - specifies a query to issue.  If supplied, the query will be
-						executed, and the resolved reference will be a *promise* for the query results,
-						rather than the data store.
-					wait - If specified and the value is strictly true, instead of resolving to
-						*promises*, get and query references (see above) will be resolved to their
-						actual data by waiting for the get and query operations (which may be
-						asynchronous), to complete.  Note that *this will block wiring* (and thus
-						the contextReady event) until the actual data has been fetched, or an
-						error or timeout occurs.
-				
-				Parameters:
-					factory - wiring factory
-					name - url
-					refObj - complete JSON ref object in the form { $ref: name }
-					promise - <Promise>, provided by wiring factory, that will be resolved
-						with the dojo.store.JsonRest that points to the REST
-						resource at the referenced url.
-			*/
-			resource: function(factory, name, refObj, promise) {
-				
-				var store = new JsonRest({ target: name });
-					
-				if(refObj.id) {
-					// If get was specified, get it, and resolve with the resulting item.
-					resolveData(store.get(refObj.id), promise, refObj.wait);
-
-				} else if(refObj.query) {
-					// Similarly, query and resolve with the result set.
-					resolveData(store.query(refObj.query), promise, refObj.wait);
-				
-				} else {
-					// Neither get nor query was specified, so resolve with
-					// the store itself.
-					promise.resolve(store);
+		wire$plugin: function restPlugin(ready, options) {
+			return {
+				resolvers: {
+					resource: resolveResource
 				}
-			}
+			};
 		}
 	};
 });
