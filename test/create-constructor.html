@@ -1,0 +1,80 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Launcher test</title>
+
+	<script type="text/javascript" src="util/doh/runner.js"></script>
+
+	<script>
+		require = { debug: true, baseUrl: '../', paths: { curl: 'curl/src/curl' } };
+	</script>
+	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+
+	<script type="text/javascript">
+		define('no-prototype-constructor', [], function() {
+			function Constructor(name) {
+				this.name = name;
+				this.foo = "bar";
+			}
+
+			return Constructor;
+		});
+
+		require(['wire'], function(wire) {
+			wire({
+				// test1 should should be called as a constructor using new
+				test1: {
+					create: {
+						module: 'no-prototype-constructor',
+						useNew: true
+					}
+				},
+				// test2 should should be called as a constructor using new
+				test2: {
+					create: {
+						module: 'no-prototype-constructor',
+						args: 'test2',
+						useNew: true
+					}
+				},
+				// test3 should be undefined, since wire.js will guess
+				// incorrectly that Constructor is supposed to be called
+				// as a regular function rather than with new.
+				test3: {
+					create: {
+						module: 'no-prototype-constructor',
+						args: 'test2',
+					}
+				}
+
+			}).then(
+				function(context) {
+					var undef;
+
+					doh.register('create-constructor', [
+						function(doh) {
+							doh.assertTrue(context.test1 !== undef);
+							doh.assertEqual(undef, context.test1.name);
+							doh.assertEqual('bar', context.test1.foo);
+						},
+						function(doh) {
+							doh.assertTrue(context.test2 !== undef);
+							doh.assertEqual('test2', context.test2.name);
+							doh.assertEqual('bar', context.test2.foo);
+						},
+						function(doh) {
+							doh.assertEqual(undef, context.test3);
+						}
+					]);
+					doh.run();
+				},
+				function(err) {
+				}
+			);
+		});
+	</script>
+</head>
+<body>
+</body>
+</html>

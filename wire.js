@@ -84,7 +84,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
     	// If spec is a module Id, load it, then wire it.
     	// If it's a spec object, wire it now.
-    	if(typeof spec == 'string') {
+    	if(isString(spec)) {
     		require([spec], doWireContext);
     	} else {
     		doWireContext(spec);
@@ -254,7 +254,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		function loadModule(moduleId, spec) {
 			var d;
 
-			if(typeof moduleId == 'string') {
+			if(isString(moduleId)) {
 				var m = moduleLoadPromises[moduleId];
 
 				if(!m) {
@@ -485,34 +485,39 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			constructor or plain function to create the resulting item.
 		*/
 		function instanceFactory(promise, spec, wire) {
-			var fail = chainReject(promise);
+			var fail, create, module, args, useNew;
+			
+			fail = chainReject(promise);
+
+			create = spec.create;
+			if(isString(create)) {
+				module = create;
+			} else {
+				module = create.module;
+				args   = create.args;
+				useNew = create.useNew;
+			}
 
 			// Load the module, and use it to create the object
-			loadModule(spec.create.module||spec.create, spec).then(
+			loadModule(module, spec).then(
 				function(module) {
-					var create, createArgs;
-					
-					function resolve(resolvedArgs) {
-						promise.resolve(instantiate(module, resolvedArgs));
-					}
 
-					create = spec.create;
-					createArgs = [];
+					function resolve(resolvedArgs) {
+						promise.resolve(instantiate(module, resolvedArgs, useNew));
+					}
 					
 					// We'll either use the module directly, or we need
 					// to instantiate/invoke it.
-					if(create && isFunction(module)) {
+					if(isFunction(module)) {
 						// Instantiate or invoke it and use the result
-						if(typeof create == 'object' && create.args) {
-							createArgs = create.args;
-							createArgs = isArray(createArgs) ? createArgs : [createArgs];
-
-							createArray(createArgs).then(resolve, fail);
+						if(args) {
+							args = isArray(args) ? args : [args];
+							createArray(args).then(resolve, fail);
 
 						} else {
 							// No args, don't need to process them, so can directly
 							// insantiate the module and resolve
-							resolve(createArgs);
+							resolve([]);
 
 						}
 
@@ -636,6 +641,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		return tos.call(it) == '[object Array]';
 	}
 
+	function isString(it) {
+		return typeof it == 'string';
+	}
+
 	function isStrictlyObject(it) {
 		return tos.call(it) == '[object Object]';
 	}
@@ -688,9 +697,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		The result of invoking ctor with args, with or without new, depending on
 		the strategy selected.
 	*/
-	function instantiate(ctor, args) {
+	function instantiate(ctor, args, forceConstructor) {
 		
-		if(isConstructor(ctor)) {
+		if(forceConstructor || isConstructor(ctor)) {
 			Begetter.prototype = ctor.prototype;
 			Begetter.prototype.constructor = ctor;
 			return new Begetter(ctor, args);
