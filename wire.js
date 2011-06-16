@@ -962,7 +962,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 					} catch(e) {
 						// Exceptions cause chained deferreds to reject
 						// TODO: Should this also switch remaining listeners to reject?
-						// console.error(e);
+						if (console && console.error) { console.error(e); }
 						// which = 'reject';
 						ldeferred.reject(e);
 					}
@@ -996,4 +996,4 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	return wire;
 });
-})(window);
+})(this);
