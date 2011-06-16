@@ -996,4 +996,4 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	return wire;
 });
-})(window);
+})(this);
