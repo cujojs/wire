@@ -63,7 +63,9 @@
 
 					doh.register('basic-types1', [
 						function(doh) {
-							var t = context.number;
+							var t, r;
+							t = context.number;
+							r = context.numberRef;
 							doh.assertEqual('number', typeof t);
 							doh.assertEqual(10, t);
 							doh.assertEqual(r, context.numberRef);

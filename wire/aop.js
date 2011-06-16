@@ -117,99 +117,6 @@ define(['require'], function(require) {
 		});
 	}
 
-	//
-	// Advice
-	//
-
-	function adviceAspect(promise, facet, wire) {
-		promise.resolve();
-	}
-
-	function callAdvice(advices, target, args) {
-		var i, advice;
-
-		i = advices.length;
-
-		while((advice = advices[--i])) {
-			advice.apply(target, args);
-		}
-	}
-
-	function makeAdviceList(advices, order) {
-		return function(advice) {
-			order.call(advices, advice);
-		};
-	}
-
-	function addAdvice(type, target, func, adviceFunc) {
-		var advised = target[func];
-		
-		if(!advised._advisor) {
-			var before, afterReturning, afterThrowing, after, around, advisor, interceptor;
-
-			before = [];
-			after  = [];
-			afterReturning  = [];
-			afterThrowing   = [];
-			around = {};
-
-			// Intercept calls to the original function, and invoke
-			// all currently registered before, around, and after advices
-			interceptor = target[func] = function() {
-				var targetArgs, result, afterType;
-
-				targetArgs = argsToArray(arguments);
-				afterType = afterReturning;
-
-				// Befores
-				callAdvice(before, this, targetArgs);
-				
-				// Call around if registered.  If not call original
-				try {
-					result = (around.advice||advised).apply(this, targetArgs);
-
-				} catch(e) {
-					result = e;
-					afterType = afterThrowing;
-
-				}
-
-				callAdvice(afterType, this, [result]);					
-
-				// TODO: Is it correct to pass original arguments here or
-				// return result?  What if exception occurred?  Should result
-				// then be the exception?
-				callAdvice(after, this, targetArgs);
-
-				return result;
-			};
-
-			interceptor._advisor = {
-				before: makeAdviceList(before, ap.unshift),
-				after:  makeAdviceList(after, ap.push),
-				afterReturning: makeAdviceList(afterReturning, ap.push),
-				afterThrowing:  makeAdviceList(afterThrowing, ap.push),
-				around: function(f) {
-					around.advice = function() {
-						var args, self;
-						args = argsToArray(arguments);
-						self = this;
-
-						function proceed() {
-							return advised.apply(self, args);
-						}
-
-						f.call(self, { args: args, target: self, proceed: proceed });
-					};
-				}
-			};
-		}
-
-		advised._advisor[type](adviceFunc);
-
-		return advised._advisor;
-	}
-
 	return {
 		/*
 			Function: wire$plugin
@@ -233,9 +140,6 @@ define(['require'], function(require) {
 
 			return {
 				facets: {
-					advice: {
-						configure: adviceAspect
-					},
 					decorate: {
 						configure: function(promise, facet, wire) {
 							decorateAspect(decorators, promise, facet, wire);

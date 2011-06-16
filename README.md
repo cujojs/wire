@@ -32,6 +32,14 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's New
 
+### v0.5.1
+
+* `create` factory now supports the `useNew` option, when `true`, forces an object instance to be created using `new`.  Read more about why this is necessary,
+* Improved debug output when using `wire/debug` plugin,
+* Slimmed down `wire/aop` plugin in preparation for a new version in an upcoming release,
+* Automated unit tests using [Dojo DOH](http://dojotoolkit.org/reference-guide/util/doh.html), 
+* Semantic versioning
+
 ### 0.5
 
 * Re-engineered core: smaller, faster, and more loader-independent,
