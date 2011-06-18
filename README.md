@@ -32,7 +32,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's New
 
-### v0.5.1
+### 0.5.1
 
 * `create` factory now supports the `useNew` option, when `true`, forces an object instance to be created using `new`.  Read more about why this is necessary,
 * Improved debug output when using `wire/debug` plugin,
