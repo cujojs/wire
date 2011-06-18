@@ -55,7 +55,7 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				invoke: function(method, args) {
 					return method.invoke(object, args);
 				}
-			}
+			};
 		}
 
 		return proxy;
