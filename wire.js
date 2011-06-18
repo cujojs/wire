@@ -501,30 +501,33 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			// Load the module, and use it to create the object
 			loadModule(module, spec).then(
 				function(module) {
-
 					function resolve(resolvedArgs) {
 						promise.resolve(instantiate(module, resolvedArgs, useNew));
 					}
-					
-					// We'll either use the module directly, or we need
-					// to instantiate/invoke it.
-					if(isFunction(module)) {
-						// Instantiate or invoke it and use the result
-						if(args) {
-							args = isArray(args) ? args : [args];
-							createArray(args).then(resolve, fail);
+
+					try {
+						// We'll either use the module directly, or we need
+						// to instantiate/invoke it.
+						if(isFunction(module)) {
+							// Instantiate or invoke it and use the result
+							if(args) {
+								args = isArray(args) ? args : [args];
+								createArray(args).then(resolve, fail);
+
+							} else {
+								// No args, don't need to process them, so can directly
+								// insantiate the module and resolve
+								resolve([]);
+
+							}
 
 						} else {
-							// No args, don't need to process them, so can directly
-							// insantiate the module and resolve
-							resolve([]);
-
+							// Simply use the module as is
+							promise.resolve(module);
+							
 						}
-
-					} else {
-						// Simply use the module as is
-						promise.resolve(module);
-						
+					} catch(e) {
+						fail(e);
 					}
 				},
 				fail
@@ -841,7 +844,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	function chainReject(resolver) {
-		return function(err) { promise.reject(err); };
+		return function(err) { resolver.reject(err); };
 	}
 
 	//
@@ -971,7 +974,6 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 					} catch(e) {
 						// Exceptions cause chained deferreds to reject
 						// TODO: Should this also switch remaining listeners to reject?
-						if (console && console.error) { console.error(e); }
 						// which = 'reject';
 						ldeferred.reject(e);
 					}
