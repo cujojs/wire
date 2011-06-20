@@ -3,25 +3,32 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
+
+	<script src="util/doh/runner.js"></script>
+
 	<script>
 		require = { debug: true, baseUrl: '../', paths: { curl: 'curl/src/curl' } };
 	</script>
 
-	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../curl/src/curl.js"></script>
 
 	<script type="text/javascript">
 		require(['wire'], function(wire) {
 			wire({
 				plugins: [
-					{ module: 'wire/debug' },
+					// { module: 'wire/debug' },
 					{ module: 'wire/dom' }
 				],
 				node: { $ref: 'dom!node1' }
 			}).then(
 				function(context) {
-					console.log("Done", context);
-					context.node.innerHTML = 'success';
-					// context.destroy();
+					doh.register('dom-resolver', [
+						function(doh) {
+							doh.assertEqual('node1', context.node.id);
+						}
+					]);
+
+					doh.run();
 				},
 				function(err) {
 					console.log(err);

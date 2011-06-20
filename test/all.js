@@ -10,5 +10,8 @@ doh.registerUrl('create-constructor', '../../create-constructor.html');
 doh.registerUrl('init-facet', '../../init.html');
 doh.registerUrl('destroy-facet', '../../destroy.html');
 
+// wire/dom
+doh.registerUrl('dom-resolver', '../../dom1.html');
+
 // Go
 doh.run();
