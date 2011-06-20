@@ -3,27 +3,56 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Destroy test</title>
+
+	<script type="text/javascript" src="util/doh/runner.js"></script>
+
 	<script>
 		require = { debug: true, baseUrl: '../', paths: { 'wire': './wire' } };
 	</script>
 
 	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
+		define('test-logger', [], function() {
+			function TestLogger() {}
+
+			TestLogger.prototype = {
+				log: function(msg) {
+					this.called = true;
+				}
+			}
+
+			return TestLogger;
+		});
+
 		require(['wire'], function(wire) {
 			wire({
+				logger: {
+					create: 'test-logger'
+				},
 				controller: {
 					create: {
 						module: 'test/test1/Controller'
 					},
 					properties: {
-						name: 'me'
+						name: 'me',
+						logger: { $ref: 'logger' }
 					},
 					destroy: 'ready'
 				}
 			}).then(
 				function(context) {
-					console.log("Done", context);
-					context.destroy();
+					doh.register('destroy-facet', [
+						function(doh) {
+							var logger = context.logger;
+							doh.assertFalse(logger.called);
+
+							context.destroy();
+
+							doh.assertTrue(logger.called);
+						}
+					]);
+
+					doh.run();
 				},
 				function(err) {
 					console.log(err);
