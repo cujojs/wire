@@ -4,22 +4,22 @@
 	<meta charset="UTF-8">
 	<title>Destroy test</title>
 
-	<script type="text/javascript" src="util/doh/runner.js"></script>
+	<script src="util/doh/runner.js"></script>
 
 	<script>
 		require = { debug: true, baseUrl: '../', paths: { 'wire': './wire' } };
 	</script>
 
-	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../curl/src/curl.js" charset="utf-8"></script>
 	<script type="text/javascript">
 		define('test-logger', [], function() {
 			function TestLogger() {}
 
 			TestLogger.prototype = {
 				log: function(msg) {
-					this.called = true;
+					this.message = msg;
 				}
-			}
+			};
 
 			return TestLogger;
 		});
@@ -37,18 +37,21 @@
 						name: 'me',
 						logger: { $ref: 'logger' }
 					},
-					destroy: 'ready'
+					destroy: {
+						ready: 'Goodbye!'
+					}
 				}
 			}).then(
 				function(context) {
 					doh.register('destroy-facet', [
 						function(doh) {
 							var logger = context.logger;
-							doh.assertFalse(logger.called);
+
+							doh.assertEqual(logger.message, undefined);
 
 							context.destroy();
 
-							doh.assertTrue(logger.called);
+							doh.assertTrue(typeof logger.message == 'string');
 						}
 					]);
 

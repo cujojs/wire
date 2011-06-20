@@ -18,9 +18,9 @@
 
 			TestLogger.prototype = {
 				log: function(msg) {
-					this.called = true;
+					this.message = msg;
 				}
-			}
+			};
 
 			return TestLogger;
 		});
@@ -44,7 +44,7 @@
 				function(context) {
 					doh.register('init-facet', [
 						function(doh) {
-							doh.assertTrue(context.logger.called);
+							doh.assertTrue(typeof context.logger.message == 'string');
 						}
 					]);
 
