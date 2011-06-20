@@ -3,6 +3,9 @@
 <head>
 	<meta charset="UTF-8">
 	<title>init test</title>
+
+	<script type="text/javascript" src="util/doh/runner.js"></script>
+
 	<script>
 		require = { debug: true, baseUrl: '../', paths: {'wire': './wire' } };
 	</script>
@@ -10,13 +13,28 @@
 	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	
 	<script type="text/javascript">
+		define('test-logger', [], function() {
+			function TestLogger() {}
+
+			TestLogger.prototype = {
+				log: function(msg) {
+					this.called = true;
+				}
+			}
+
+			return TestLogger;
+		});
+
 		require(['wire'], function(wire) {
 			wire({
+				logger: {
+					create: 'test-logger'
+				},
 				controller: {
 					create: 'test/test1/Controller',
 					properties: {
 						name: 'me',
-						logger: { create: 'test/test1/ConsoleLogger' }
+						logger: { $ref: 'logger' }
 					},
 					init: {
 						ready: "Hello!"
@@ -24,12 +42,19 @@
 				}
 			}).then(
 				function(context) {
-					console.log("Done", context);
+					doh.register('init-facet', [
+						function(doh) {
+							doh.assertTrue(context.logger.called);
+						}
+					]);
+
+					doh.run();
 				},
 				function(err) {
 					console.log(err);
 				}
 			);
+
 		});
 	</script>
 </head>
