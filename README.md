@@ -20,6 +20,8 @@ Wire.js also has a plugin architecture that allows plugins to provide new capabi
 * Event and PubSub connectors. Write your components without any glue code, and connect them together in the wiring spec using events or pubsub.  The event connector works for DOM nodes, too!
 * Aspect Oriented Programming (AOP).  Wire.js comes with an AOP plugin that allows you to declaratively apply decorators, before/after/around advice, and to introduce mixins on the fly.
 
+### Framework integration
+
 Plugins also allow you to use capabilities of your existing modules/libraries/frameworks.  For example, wire.js has a set of plugins for Dojo that allow it to integrate with Dijit's widget system, to use dojo.connect as the event connector, and dojo.publish/subscribe as the pubsub connector.  If you are already using those aspects of Dojo, you can use wire.js's Dojo plugins to integrate easily with all your existing components.
 
 # Ok, What Now?
@@ -30,7 +32,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 1. See the [wiki for more documentation](https://github.com/briancavalier/wire/wiki).
 1. Fork it and try it out!
 
-# What's New
+# What's new
 
 ### 0.5.1
 
