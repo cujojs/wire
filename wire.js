@@ -743,7 +743,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		TODO: Figure out the best strategy for rejecting.
 	*/
 	function whenAll(promises) {
-		var toResolve, values, deferred;
+		var toResolve, values, deferred, resolver, rejecter, handleProgress;
 
 		toResolve = promises.length;
 
@@ -755,13 +755,13 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// Overwrites resolver var with a noop once promise has
 		// be resolved to cover case where n < promises.length
 		// var resolver = function handleResolve(val) {
-		function resolver(val) {
+		resolver = function(val) {
 			values.push(val);
 			if(--toResolve === 0) {
-				resolver = progress = noop;
+				resolver = handleProgress = noop;
 				deferred.resolve(values);
 			}
-		}
+		};
 
 		// Wrapper so that resolver can be replaced
 		function resolve(val) {
@@ -774,10 +774,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// TODO: Consider rejecting only when N (or promises.length - N?)
 		// promises have been rejected instead of only one?
 		// var rejecter = function handleReject(err) {
-		function rejecter(err) {
-			rejecter = progress = noop;
+		rejecter = function(err) {
+			rejecter = handleProgress = noop;
 			deferred.reject(err);			
-		}
+		};
 
 		// Wrapper so that rejecter can be replaced
 		function reject(err) {
@@ -787,8 +787,12 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// Progress updater.  Since this may be called many times,
 		// can't overwrite it until resolve/reject.  So, it is
 		// overwritten in resolve(), and reject().
-		function progress(update) {
+		handleProgress = function(update) {
 			deferred.progress(update);
+		};
+
+		function progress(update) {
+			handleProgress(update);
 		}
 
 		if(toResolve == 0) {
@@ -866,9 +870,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		only has then.
 	*/
 	function Deferred() {
-		var deferred, promise, resolver, result, listeners, tail;
+		var deferred, promise, resolver, result, listeners, tail,
+			_then, _progress, complete;
 
-		function _then(callback, errback, progback) {
+		_then = function(callback, errback, progback) {
 			var d, listener;
 
 			listener = {
@@ -887,7 +892,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			}
 
 			return d.promise;
-		}
+		};
 
 		function then(callback, errback, progback) {
 			return _then(callback, errback, progback);
@@ -901,7 +906,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			complete('reject', err);
 		}
 		
-		function _progress(update) {
+		_progress = function(update) {
 			var listener, progress;
 			
 			listener = listeners;
@@ -911,13 +916,13 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				progress && progress(update);
 				listener = listener.next;
 			}
-		}
+		};
 
 		function progress(update) {
 			_progress(update);
 		}
 
-		function complete(which, val) {
+		complete = function(which, val) {
 			// Save original thenImpl
 			var origThen = _then;
 
@@ -944,7 +949,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			// Notify listeners
 			notify(which, val);
-		}
+		};
 
 		function notify(which, val) {
 			// Traverse all listeners registered directly with this Deferred,
