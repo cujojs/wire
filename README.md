@@ -36,7 +36,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 ### 0.5.1
 
-* `create` factory now supports the `useNew` option, when `true`, forces an object instance to be created using `new`.  Read more about why this is necessary,
+* `create` factory now supports the `isConstructor` option, when `true`, forces an object instance to be created using `new`.
 * Improved debug output when using `wire/debug` plugin,
 * Slimmed down `wire/aop` plugin in preparation for a new version in an upcoming release,
 * Automated unit tests using [Dojo DOH](http://dojotoolkit.org/reference-guide/util/doh.html), 
