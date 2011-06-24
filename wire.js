@@ -485,7 +485,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			constructor or plain function to create the resulting item.
 		*/
 		function instanceFactory(promise, spec, wire) {
-			var fail, create, module, args, useNew;
+			var fail, create, module, args, isConstructor;
 			
 			fail = chainReject(promise);
 
@@ -495,14 +495,14 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			} else {
 				module = create.module;
 				args   = create.args;
-				useNew = create.useNew;
+				isConstructor = create.isConstructor;
 			}
 
 			// Load the module, and use it to create the object
 			loadModule(module, spec).then(
 				function(module) {
 					function resolve(resolvedArgs) {
-						promise.resolve(instantiate(module, resolvedArgs, useNew));
+						promise.resolve(instantiate(module, resolvedArgs, isConstructor));
 					}
 
 					try {

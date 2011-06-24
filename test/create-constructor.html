@@ -27,7 +27,7 @@
 				test1: {
 					create: {
 						module: 'no-prototype-constructor',
-						useNew: true
+						isConstructor: true
 					}
 				},
 				// test2 should should be called as a constructor using new
@@ -35,7 +35,7 @@
 					create: {
 						module: 'no-prototype-constructor',
 						args: 'test2',
-						useNew: true
+						isConstructor: true
 					}
 				},
 				// test3 should be undefined, since wire.js will guess
