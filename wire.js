@@ -14,7 +14,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	"use strict";
 
 	var VERSION, tos, rootContext, rootSpec, delegate;
-	
+
 	VERSION = "0.5.1";
     tos = Object.prototype.toString;
     rootSpec = global['wire']||{};
@@ -40,7 +40,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			}
 		);
 
-    	return d.promise;    	
+    	return d.promise;
     }
 
     wire.version = VERSION;
@@ -65,7 +65,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	//
 	// Private functions
 	//
-	
+
     function wireContext(spec, parent) {
 
     	var deferred = Deferred();
@@ -98,7 +98,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			modulesToLoad, moduleLoadPromises,
 			contextApi, modulesReady, scopeReady, scopeDestroyed,
 			promises, name;
-			
+
 
 		// Empty parent scope if none provided
 		parent = parent||{};
@@ -230,7 +230,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		function createItem(val, name) {
 			var created;
-			
+
 			if(isRef(val)) {
 				// Reference
 				created = resolveRef(val, name);
@@ -259,7 +259,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 				if(!m) {
 					modulesToLoad.push(moduleId);
-					m = moduleLoadPromises[moduleId] = { 
+					m = moduleLoadPromises[moduleId] = {
 						id: moduleId,
 						deferred: (d = Deferred())
 					};
@@ -279,7 +279,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				d = Deferred();
 				d.resolve(moduleId);
 			}
-			
+
 			return d;
 		}
 
@@ -293,7 +293,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 					if(plugin.proxies) {
 						proxies = plugin.proxies.concat(proxies);
-					}					
+					}
 				}
 			}
 		}
@@ -326,7 +326,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 					resolveArrayValue(itemPromise, result, i);
 				}
-				
+
 				chain(whenAll(promises), promise, result);
 			}
 
@@ -383,9 +383,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 							return;
 						}
 					}
-					
-					promise.reject();		
-				});				
+
+					promise.reject();
+				});
 			}
 
 			return promise;
@@ -394,7 +394,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		function processObject(target, spec) {
 			var promise, update, created, configured, initialized, destroyed, fail;
-			
+
 			promise = Deferred();
 
 			update = { spec: spec };
@@ -412,31 +412,27 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			// After the object has been created, update progress for
 			// the entire scope, then process the post-created facets
-			when(target).then(
-				function(object) {
-					chain(scopeDestroyed, destroyed, object);
+            when(target)
+            .then(function(object) {
+                chain(scopeDestroyed, destroyed, object);
 
-					// Notify progress about this object.
-					update.target = object;
-					scopeReady.progress(update);
+                // Notify progress about this object.
+                update.target = object;
+                scopeReady.progress(update);
 
-					var proxy = createProxy(object, spec);
-					chain(processFacets('configure', proxy, spec), configured).then(
-						function(object) {
-							return chain(processFacets('initialize', proxy, spec), initialized);
-						},
-						fail
-					).then(
-						function(object) {
-							return chain(processFacets('ready', proxy, spec), promise);
-						},
-						fail
-					);
-				},
-				fail
-			);
+                var proxy = createProxy(object, spec);
 
-			return promise;
+                chain(processFacets('configure', proxy, spec), configured)
+                .then(function() {
+                    return chain(processFacets('initialize', proxy, spec), initialized);
+                }, fail)
+                .then(function() {
+                    return chain(processFacets('ready', proxy, spec), promise);
+                }, fail);
+
+            }, fail);
+
+            return promise;
 		}
 
 		function createProxy(object, spec) {
@@ -486,7 +482,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		*/
 		function instanceFactory(promise, spec, wire) {
 			var fail, create, module, args, isConstructor;
-			
+
 			fail = chainReject(promise);
 
 			create = spec.create;
@@ -524,7 +520,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 						} else {
 							// Simply use the module as is
 							promise.resolve(module);
-							
+
 						}
 					} catch(e) {
 						fail(e);
@@ -572,10 +568,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 							if(resolver) {
 								refName = refName.substring(split+1);
 								resolver(promise, refName, refObj, pluginApi);
-						
+
 							} else {
 								promise.reject("No resolver found for ref: " + refObj);
-						
+
 							}
 						});
 					}
@@ -612,7 +608,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			for(p in local)   delete local[p];
 			for(p in objects) delete objects[p];
 			for(p in scope)   delete scope[p];
-			
+
 			// Retain a do-nothing destroy() func, in case
 			// it is called again for some reason.
 			doDestroy = noop;
@@ -633,10 +629,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	/*
 		Function: isArray
 		Standard array test
-		
+
 		Parameters:
 			it - anything
-			
+
 		Returns:
 		true iff it is an Array
 	*/
@@ -655,10 +651,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	/*
 		Function: isFunction
 		Standard function test
-		
+
 		Parameters:
 			it - anything
-			
+
 		Returns:
 		true iff it is a Function
 	*/
@@ -673,11 +669,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		T.prototype = prototype;
 		return new T();
 	}
-	
+
 	/*
 		Constructor: Begetter
 		Constructor used to beget objects that wire needs to create using new.
-		
+
 		Parameters:
 			ctor - real constructor to be invoked
 			args - arguments to be supplied to ctor
@@ -691,17 +687,17 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		Creates an object by either invoking ctor as a function and returning the
 		result, or by calling new ctor().  It uses a simple heuristic to try to
 		guess which approach is the "right" one.
-		
+
 		Parameters:
 			ctor - function or constructor to invoke
 			args - array of arguments to pass to ctor in either case
-			
+
 		Returns:
 		The result of invoking ctor with args, with or without new, depending on
 		the strategy selected.
 	*/
 	function instantiate(ctor, args, forceConstructor) {
-		
+
 		if(forceConstructor || isConstructor(ctor)) {
 			Begetter.prototype = ctor.prototype;
 			Begetter.prototype.constructor = ctor;
@@ -710,15 +706,15 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return ctor.apply(null, args);
 		}
 	}
-	
+
 	/*
 		Function: isConstructor
 		Determines with the supplied function should be invoked directly or
 		should be invoked using new in order to create the object to be wired.
-		
+
 		Parameters:
 			func - determine whether this should be called using new or not
-			
+
 		Returns:
 		true iff func should be invoked using new, false otherwise.
 	*/
@@ -730,7 +726,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				break;
 			}
 		}
-		
+
 		return is;
 	}
 
@@ -749,7 +745,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		deferred = Deferred();
 		values = [];
-		
+
 		// Resolver for promises.  Captures the value and resolves
 		// the returned promise when toResolve reaches zero.
 		// Overwrites resolver var with a noop once promise has
@@ -776,7 +772,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// var rejecter = function handleReject(err) {
 		rejecter = function(err) {
 			rejecter = handleProgress = noop;
-			deferred.reject(err);			
+			deferred.reject(err);
 		};
 
 		// Wrapper so that rejecter can be replaced
@@ -803,7 +799,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				when(promises[i]).then(resolve, reject, progress);
 			}
 		}
-		
+
 		return deferred;
 	}
 
@@ -832,7 +828,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			second - <Promise> to complete when first <Promise> completes
 			resolveValue - optional value to use as the resolution value
 				for first.
-		
+
 		Returns:
 			second
 	*/
@@ -898,17 +894,17 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return _then(callback, errback, progback);
 		}
 
-		function resolve(val) { 
+		function resolve(val) {
 			complete('resolve', val);
 		}
 
 		function reject(err) {
 			complete('reject', err);
 		}
-		
+
 		_progress = function(update) {
 			var listener, progress;
-			
+
 			listener = listeners;
 
 			while(listener) {
@@ -930,7 +926,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			// with the result.
 			_then = function newThen(callback, errback) {
 				var promise = origThen(callback, errback);
-				notify(which, result);
+				notify(which);
 				return promise;
 			};
 
@@ -948,11 +944,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			result = val;
 
 			// Notify listeners
-			notify(which, val);
+			notify(which);
 		};
 
-		function notify(which, val) {
-			// Traverse all listeners registered directly with this Deferred,
+        function notify(which) {
+            // Traverse all listeners registered directly with this Deferred,
 			// also making sure to handle chained thens
 			while(listeners) {
 				var listener, ldeferred, newResult, handler;
@@ -970,10 +966,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 							// If the handler returned a promise, chained deferreds
 							// should complete only after that promise does.
 							newResult.then(ldeferred.resolve, ldeferred.reject, ldeferred.progress);
-						
+
 						} else {
 							// Complete deferred from chained then()
-							ldeferred[which](newResult === undef ? result : newResult);							
+							ldeferred[which](newResult === undef ? result : newResult);
 
 						}
 					} catch(e) {
@@ -983,7 +979,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 						ldeferred.reject(e);
 					}
 				}
-			}			
+			}
 		}
 
 		// The full Deferred object, with both Promise and Resolver parts
