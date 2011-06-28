@@ -604,7 +604,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		}
 
-		function doDestroy() {
+        var doDestroy = function() {
 			scopeDestroyed.progress();
 
 			// TODO: Clear out the context prototypes?
