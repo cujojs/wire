@@ -19,11 +19,7 @@ define(['require'], function(require) {
 		return tos.call(it) == '[object Array]';
 	}
 
-	function argsToArray(a) {
-		return ap.slice.call(a);
-	}
-
-	//
+    //
 	// Decoration
 	//
 
