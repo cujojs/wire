@@ -70,45 +70,10 @@ define([], function() {
 			};
 		};
 	}
-	
-	function logError(err, message) {
-		console.error(time("Context ERROR: " + message));
-		console.error(err);
-	}
-	
-	/*
-		Function: logProgress
-		Logs progress info to the console
-		
-		Parameters:
-			progress - progress Object with status, target, and spec
-				- target - Object - object whose status is being reported
-				- status - String - current status of object
-				- spec - Any - wiring spec
-	*/
-	function logProgress(update, contextTimer) {
-		function logUpdate(message) {
-			return function(target) {
-				console.log(time(message, contextTimer), target, update.spec);		
-			};
-		}
-
-		function logError(message) {
-			return function(err) {
-				console.error(time(message, contextTimer), err, update.spec);
-				console.error(err);
-			};
-		}
-		
-		update.created.then(logUpdate('Object created'), logError('Object create ERROR'));
-		update.configured.then(logUpdate('Object configured'), logError('Object configure ERROR'));
-		update.initialized.then(logUpdate('Object initialized'), logError('Object initialize ERROR'));
-		update.destroyed.then(logUpdate('Object destroyed'), logError('Object destroy ERROR'));
-	}
 
 	return {
 		/*
-			Function: wire$wire
+			Function: wire$plugin
 			Invoked when wiring starts and provides two promises: one for wiring the context,
 			and one for destroying the context.  Plugins should register resolve, reject, and
 			promise handlers as necessary to do their work.
@@ -127,11 +92,7 @@ define([], function() {
 			function contextTime(msg) {
 				return time(msg, contextTimer);
 			}
-			
-			function logContextProgress(progress) {
-				logProgress(progress, contextTimer);
-			}
-			
+
 			console.log(contextTime("Context init"));
 			
 			ready.then(
@@ -141,8 +102,7 @@ define([], function() {
 				function onContextError(err) {
 					console.error(contextTime("Context ERROR: "), err);
 					console.error(err);
-				},
-				logContextProgress
+				}
 			);
 			
 			destroyed.then(
@@ -154,8 +114,23 @@ define([], function() {
 				}
 			);
 
-			// Debug plugin doesn't provide any additional functionality,
-			// so doesn't need to return anything
+			function makeListener(step) {
+				return function(promise, proxy, wire) {
+					console.log(time('Object ' + step, contextTimer), proxy.target);
+//					promise.resolve();
+					setTimeout(function() { promise.resolve(); }, 1000);
+				}
+			}
+
+			return {
+				listener: {
+					create:     makeListener('created'),
+					configure:  makeListener('configured'),
+					initialize: makeListener('initialized'),
+					ready:      makeListener('ready'),
+					destroy:    makeListener('destroyed')
+				}
+			};
 		}
 	};
 

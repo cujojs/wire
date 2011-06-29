@@ -8,6 +8,7 @@
 	File: wire.js
 */
 
+//noinspection ThisExpressionReferencesGlobalObjectJS
 (function(global, undef){
 define(['require', 'wire/base'], function(require, basePlugin) {
 
@@ -49,7 +50,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
     // AMD Plugin API
     //
 
-    function amdPlugin(name, require, callback, config) {
+    //noinspection JSUnusedLocalSymbols
+	function amdPlugin(name, require, callback, config) {
 		var promise = callback.resolve
 			? callback
 			: {
@@ -67,7 +69,6 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	//
 
     function wireContext(spec, parent) {
-
     	var deferred = Deferred();
 
     	// Function to do the actual wiring.  Capture the
@@ -94,7 +95,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	function createScope(scopeDef, parent) {
-		var scope, local, objects, resolvers, factories, facets, proxies,
+		var scope, local, objects, resolvers, factories, facets, listeners, proxies,
 			modulesToLoad, moduleLoadPromises,
 			contextApi, modulesReady, scopeReady, scopeDestroyed,
 			promises, name;
@@ -111,6 +112,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		resolvers = delegate(parent.resolvers||{});
 		factories = delegate(parent.factories||{});
 		facets    = delegate(parent.facets   ||{});
+
+		listeners = parent.listeners ? [].concat(parent.listeners) : [];
 
 		// Proxies is an array, have to concat
 		proxies = parent.proxies ? [].concat(parent.proxies) : [];
@@ -130,6 +133,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			resolvers:  resolvers,
 			factories:  factories,
 			facets:     facets,
+			listeners:  listeners,
 			proxies: 	proxies,
 			resolveRef: doResolveRef,
 			destroy:    destroy,
@@ -175,7 +179,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function apiWire(spec) {
-			return wireContext(spec, scope).promise;
+			return wireContext(spec, false).promise;
 		}
 
 		function apiDestroy() {
@@ -207,6 +211,23 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			modulesReady.resolve(modules);
 		});
 
+		var doDestroy = function() {
+			scopeDestroyed.progress();
+
+			// TODO: Clear out the context prototypes?
+			var p;
+			for(p in local)   delete local[p];
+			for(p in objects) delete objects[p];
+			for(p in scope)   delete scope[p];
+
+			// Retain a do-nothing destroy() func, in case
+			// it is called again for some reason.
+			doDestroy = noop;
+
+			// Resolve promise
+			scopeDestroyed.resolve();
+		};
+		
 		return scopeReady;
 
 		//
@@ -290,6 +311,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 					addPlugin(plugin.resolvers, resolvers);
 					addPlugin(plugin.factories, factories);
 					addPlugin(plugin.facets, facets);
+
+					if(plugin.listener) {
+						listeners.push(plugin.listener);
+					}
 
 					if(plugin.proxies) {
 						proxies = plugin.proxies.concat(proxies);
@@ -398,15 +423,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			promise = Deferred();
 
 			update = { spec: spec };
-			created     = target;
+			created     = Deferred();
 			configured  = Deferred();
 			initialized = Deferred();
 			destroyed   = Deferred();
-
-			update.created     = created.promise;
-			update.configured  = configured.promise;
-			update.initialized = initialized.promise;
-			update.destroyed   = destroyed.promise;
 
 			fail = chainReject(promise);
 
@@ -418,11 +438,13 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
                 // Notify progress about this object.
                 update.target = object;
-                scopeReady.progress(update);
 
                 var proxy = createProxy(object, spec);
 
-                chain(processFacets('configure', proxy, spec), configured)
+		        chain(processFacets('create', proxy, spec), created)
+		        .then(function() {
+					return chain(processFacets('configure', proxy, spec), configured);
+				}, fail)
                 .then(function() {
                     return chain(processFacets('initialize', proxy, spec), initialized);
                 }, fail)
@@ -453,14 +475,34 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			for(name in facets) {
 				options = facet.options = spec[name];
-				processFacet(facets[name], step, facet, promises);
+				if(options) {
+					processFacet(facets[name], step, facet, promises);
+				}
 			}
 
-			return chain(whenAll(promises), Deferred(), proxy.target);
+			var d = Deferred();
+
+			whenAll(promises).then(
+				function() {
+					processListeners(d, step, proxy);
+				},
+				chainReject(d)
+			);
+
+			return d;
+		}
+
+		function processListeners(promise, step, proxy) {
+			var listenerPromises = [];
+			for(var i=0; i<listeners.length; i++) {
+				processFacet(listeners[i], step, proxy, listenerPromises);
+			}
+
+			chain(whenAll(listenerPromises), promise, proxy.target);
 		}
 
 		function processFacet(processor, step, facet, promises) {
-			if(facet.options && processor && processor[step]) {
+			if(processor && processor[step]) {
 				var facetPromise = Deferred();
 				promises.push(facetPromise);
 				processor[step](facetPromise.resolver, facet, pluginApi);
@@ -471,7 +513,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// Built-in Factories
 		//
 
-		function moduleFactory(promise, spec, wire) {
+		function moduleFactory(promise, spec) {
 			chain(loadModule(spec.module, spec), promise);
 		}
 
@@ -480,7 +522,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			Factory that uses an AMD module either directly, or as a
 			constructor or plain function to create the resulting item.
 		*/
-		function instanceFactory(promise, spec, wire) {
+		function instanceFactory(promise, spec) {
 			var fail, create, module, args, isConstructor;
 
 			fail = chainReject(promise);
@@ -585,7 +627,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return promise;
 		}
 
-		function wireResolver(promise, name, refObj, wire) {
+		function wireResolver(promise /*, name, refObj, wire */) {
 			promise.resolve(contextApi);
 		}
 
@@ -599,31 +641,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return scopeDestroyed;
 
 		}
-
-        var doDestroy = function() {
-			scopeDestroyed.progress();
-
-			// TODO: Clear out the context prototypes?
-			var p;
-			for(p in local)   delete local[p];
-			for(p in objects) delete objects[p];
-			for(p in scope)   delete scope[p];
-
-			// Retain a do-nothing destroy() func, in case
-			// it is called again for some reason.
-			doDestroy = noop;
-
-			// Resolve promise
-			scopeDestroyed.resolve();
-		}
     } // createScope
 
 	function isRef(it) {
 		return it && it.$ref;
-	}
-
-	function isScope(it) {
-		return typeof it === 'object';
 	}
 
 	/*
@@ -663,7 +684,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	// In case Object.create isn't available
-	function T() {};
+	function T() {}
 
 	function createObject(prototype) {
 		T.prototype = prototype;
@@ -852,7 +873,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	// https://github.com/briancavalier/when.js
 	//
 
-	function noop() {};
+	function noop() {}
 
 	var freeze = Object.freeze || noop;
 
