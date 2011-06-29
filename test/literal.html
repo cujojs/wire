@@ -3,23 +3,17 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Literal factory test</title>
-	<script>
-		require = {
-			debug: true,
-			paths: {
-				wire: '../wire',
-				test: '../test'
-			}
-		};
-	</script>
+
+    <script src="util/doh/runner.js"></script>
+
+    <script>
+        require = { debug: true, baseUrl: '../', paths: {'wire': './wire' } };
+    </script>
 
 	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
 		require(['wire'], function(wire) {
 			wire({
-				plugins: [
-					{ module: 'wire/debug' }
-				],
 				// The module test/test1/Controller should NOT be loaded.
 				// Wiring should result in an object literal with a
 				// property named "module" whose value is "test/test1/Controller"
@@ -45,7 +39,19 @@
 				}
 			}).then(
 				function(context) {
-					console.log("Done", context);
+                    doh.register('literal-factory', [
+                        function(doh) {
+                            doh.assertEqual('test/test1/Controller', context.controller1.module);
+                        },
+                        function(doh) {
+                            doh.assertEqual('test/test1/Controller', context.controller2.create.module);
+                            doh.assertEqual('foo', context.controller2.create.args);
+                            doh.assertEqual(1, context.controller2.properties.prop1);
+                            doh.assertEqual(2, context.controller2.properties.prop2);
+                        }
+                    ]);
+
+                    doh.run();
 				},
 				function(err) {
 					console.log(err);

@@ -10,6 +10,10 @@ doh.registerUrl('create-constructor', '../../create-constructor.html');
 doh.registerUrl('init-facet', '../../init.html');
 doh.registerUrl('destroy-facet', '../../destroy.html');
 
+// Factories
+
+doh.registerUrl('literal-factory', '../../literal.html');
+
 // wire/dom
 doh.registerUrl('dom-resolver', '../../dom1.html');
 

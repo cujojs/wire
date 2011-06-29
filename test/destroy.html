@@ -45,13 +45,16 @@
 				function(context) {
 					doh.register('destroy-facet', [
 						function(doh) {
-							var logger = context.logger;
+							var logger, dohd;
+
+                            logger = context.logger;
+                            dohd = new doh.Deferred();
 
 							doh.assertEqual(logger.message, undefined);
 
-							context.destroy();
-
-							doh.assertTrue(typeof logger.message == 'string');
+							context.destroy().then(function() {
+                                dohd.callback(typeof logger.message == 'string');
+                            });
 						}
 					]);
 

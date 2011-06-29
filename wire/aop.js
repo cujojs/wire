@@ -61,9 +61,14 @@ define(['require'], function(require) {
 			promises.push(doDecorate(target, decorators[d]||d, options[d], wire));
 		}
 
-		wire.whenAll(promises).then(function() {
-			promise.resolve();
-		});
+		wire.whenAll(promises).then(
+			function() {
+				promise.resolve();
+			},
+			function() {
+				promise.reject();
+			}
+		);
 
 	}
 
@@ -108,9 +113,14 @@ define(['require'], function(require) {
 			promises.push(doIntroduction(target, introductions[intro]||intro, wire));
 		}
 
-		wire.whenAll(promises).then(function() {
-			promise.resolve();
-		});
+		wire.whenAll(promises).then(
+			function() {
+				promise.resolve();
+			},
+			function() {
+				promise.reject();
+			}
+		);
 	}
 
 	return {
