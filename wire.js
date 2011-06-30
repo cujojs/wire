@@ -179,7 +179,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function apiWire(spec) {
-			return wireContext(spec, false).promise;
+			return wireContext(spec, scope).promise;
 		}
 
 		function apiDestroy() {
@@ -484,7 +484,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			whenAll(promises).then(
 				function() {
-					processListeners(d, step, proxy);
+					var p = delegate(proxy);
+					p.spec = spec;
+					processListeners(d, step, p);
 				},
 				chainReject(d)
 			);

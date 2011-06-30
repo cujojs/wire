@@ -56,9 +56,11 @@ define([], function() {
 			toString() function that is useful in logging the time.
 		*/
 		return function getTime() {
-			var now = new Date().getTime(),
-				total = now - start,
-				splitTime = now - split;
+			var now, total, splitTime;
+
+			now = new Date().getTime();
+			total = now - start;
+			splitTime = now - split;
 			split = now;
 
 			return {
@@ -86,7 +88,7 @@ define([], function() {
 					rejected if there is an error while destroying the context, and will
 					receive progress events for objects being destroyed.
 		*/
-		wire$plugin: function debugPlugin(ready, destroyed, options) {
+		wire$plugin: function debugPlugin(ready, destroyed /*, options */) {
 			var contextTimer = createTimer();
 			
 			function contextTime(msg) {
@@ -115,10 +117,9 @@ define([], function() {
 			);
 
 			function makeListener(step) {
-				return function(promise, proxy, wire) {
-					console.log(time('Object ' + step, contextTimer), proxy.target);
-//					promise.resolve();
-					setTimeout(function() { promise.resolve(); }, 1000);
+				return function(promise, proxy /*, wire */) {
+					console.log(time('Object ' + step, contextTimer), proxy.target, proxy.spec);
+					promise.resolve();
 				}
 			}
 
