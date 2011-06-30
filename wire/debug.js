@@ -118,7 +118,12 @@ define([], function() {
 
 			function makeListener(step) {
 				return function(promise, proxy /*, wire */) {
-					console.log(time('Object ' + step, contextTimer), proxy.target, proxy.spec);
+					var message = time('Object ' + step, contextTimer);
+					if(proxy.target) {
+						console.log(message, proxy.target, proxy.spec);
+					} else {
+						console.log(message, proxy);
+					}
 					promise.resolve();
 				}
 			}

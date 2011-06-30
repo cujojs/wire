@@ -19,7 +19,7 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 		Function: dijitById
 		Resolver for dijits by id.		
 	*/
-	function dijitById(promise, name, refObj, wire) {
+	function dijitById(promise, name /*, refObj, wire */) {
 		dojo.ready(
 			function() {
 				var resolved = dijit.byId(name);
@@ -41,12 +41,12 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 		return it instanceof Widget;
 	}
 
-	function createDijitProxy(object, spec) {
+	function createDijitProxy(object /*, spec */) {
 		var proxy;
 
 		if(isDijit(object)) {
 			proxy = {
-				get: function(property, value) {
+				get: function(property) {
 					return object.get(property);
 				},
 				set: function(property, value) {
@@ -60,6 +60,19 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 
 		return proxy;
 	}
+
+	function destroyDijit(target) {
+		// It's a dijit, so we need to know when it is being
+		// destroyed so that we can do proper dijit cleanup on it
+		// Prefer destroyRecursive over destroy
+		if (typeof target.destroyRecursive == 'function') {
+			target.destroyRecursive(false);
+
+		} else if (typeof target.destroy == 'function') {
+			target.destroy(false);
+
+		}
+	}
 	
 	return {
 		wire$plugin: function onWire(ready, destroy, options) {
@@ -70,25 +83,6 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				dojo.ready(function() { parser.parse(); });
 			}
 
-			ready.then(null, null, function(update) {
-				// Only care about objects that are dijits
-				if(isDijit(update.target)) {
-
-					// It's a dijit, so we need to know when it is being
-					// destroyed so that we can do proper dijit cleanup on it
-					update.destroyed.then(function(target) {
-						// Prefer destroyRecursive over destroy
-						if(typeof target.destroyRecursive == 'function') {
-							target.destroyRecursive(false);
-
-						} else if(typeof target.destroy == 'function') {
-							target.destroy(false);
-
-						}
-					});					
-				}
-			});
-
 			// Return plugin
 			return {
 				resolvers: {
@@ -96,7 +90,16 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				},
 				proxies: [
 					createDijitProxy
-				]
+				],
+				listener: {
+					destroy: function(promise, target /*, wire */) {
+						// Only care about objects that are dijits
+						if(isDijit(target)) {
+							destroyDijit(target);
+						}
+						promise.resolve();
+					}
+				}
 			};
 		}
 	};

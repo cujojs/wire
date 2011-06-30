@@ -206,26 +206,36 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		// Once all modules have been loaded, resolve modulesReady
-		// chain(whenAll(moduleLoadPromises), modulesReady);
 		require(modulesToLoad, function(modules) {
 			modulesReady.resolve(modules);
 		});
 
 		var doDestroy = function() {
-			scopeDestroyed.progress();
-
-			// TODO: Clear out the context prototypes?
-			var p;
-			for(p in local)   delete local[p];
-			for(p in objects) delete objects[p];
-			for(p in scope)   delete scope[p];
-
-			// Retain a do-nothing destroy() func, in case
+			// Retain a do-nothing doDestroy() func, in case
 			// it is called again for some reason.
 			doDestroy = noop;
 
-			// Resolve promise
-			scopeDestroyed.resolve();
+			// TODO: Clear out the context prototypes?
+			var p, d;
+
+			d = Deferred();
+
+			d.then(function() {
+				var p;
+				for(p in local)   delete local[p];
+				for(p in objects) delete objects[p];
+				for(p in scope)   delete scope[p];
+			});
+
+			var promises = [];
+			for(p in local) {
+				var pDeferred = Deferred();
+				promises.push(pDeferred);
+				processListeners(pDeferred, 'destroy', local[p]);
+			}
+
+			// Resolve scopeDestroyed promise
+			chain(whenAll(pDeferred), scopeDestroyed);
 		};
 		
 		return scopeReady;
@@ -500,7 +510,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				processFacet(listeners[i], step, proxy, listenerPromises);
 			}
 
-			chain(whenAll(listenerPromises), promise, proxy.target);
+			// FIXME: Use only proxy here, call should resolve target
+			return chain(whenAll(listenerPromises), promise, proxy.target||proxy);
 		}
 
 		function processFacet(processor, step, facet, promises) {
