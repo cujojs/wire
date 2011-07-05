@@ -73,7 +73,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
     	// Function to do the actual wiring.  Capture the
     	// parent so it can be called after an async load
     	// if spec is an AMD module Id string.
-    	function doWireContext(spec) {
+    	function doWireContext() {
+		    var spec = mergeSpecs(arguments);
+
 			createScope(spec, parent).then(
 				function(scope) {
 					deferred.resolve(scope.objects);
@@ -85,12 +87,18 @@ define(['require', 'wire/base'], function(require, basePlugin) {
     	// If spec is a module Id, load it, then wire it.
     	// If it's a spec object, wire it now.
     	if(isString(spec)) {
-    		require([spec], doWireContext);
+		    var specIds = spec.split(',');
+		    
+    		require(specIds, doWireContext);
     	} else {
     		doWireContext(spec);
     	}
 
 		return deferred;
+	}
+
+	function mergeSpecs(specs) {
+		return specs[0];
 	}
 
 	function createScope(scopeDef, parent) {
@@ -181,6 +189,23 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		function apiDestroy() {
 			return destroy().promise;
 		}
+
+		var doDestroy = function() {
+			scopeDestroyed.progress();
+
+			// TODO: Clear out the context prototypes?
+			var p;
+			for(p in local)   delete local[p];
+			for(p in objects) delete objects[p];
+			for(p in scope)   delete scope[p];
+
+			// Retain a do-nothing destroy() func, in case
+			// it is called again for some reason.
+			doDestroy = noop;
+
+			// Resolve promise
+			scopeDestroyed.resolve();
+		};
 
 		var contextPromise = chain(scopeReady, Deferred(), objects).promise;
 
@@ -600,22 +625,6 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		}
 
-        var doDestroy = function() {
-			scopeDestroyed.progress();
-
-			// TODO: Clear out the context prototypes?
-			var p;
-			for(p in local)   delete local[p];
-			for(p in objects) delete objects[p];
-			for(p in scope)   delete scope[p];
-
-			// Retain a do-nothing destroy() func, in case
-			// it is called again for some reason.
-			doDestroy = noop;
-
-			// Resolve promise
-			scopeDestroyed.resolve();
-		}
     } // createScope
 
 	function isRef(it) {
