@@ -13,13 +13,15 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	"use strict";
 
-	var VERSION, tos, rootContext, rootSpec, delegate;
+	var VERSION, tos, rootContext, rootSpec, delegate, emptyObject;
 
 	VERSION = "0.5.1";
     tos = Object.prototype.toString;
     rootSpec = global['wire']||{};
 
 	delegate = Object.create || createObject;
+
+	emptyObject = {};
 
     //
     // AMD Module API
@@ -49,7 +51,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
     // AMD Plugin API
     //
 
-    function amdPlugin(name, require, callback, config) {
+    //noinspection JSUnusedLocalSymbols
+	function amdPlugin(name, require, callback, config) {
 		var promise = callback.resolve
 			? callback
 			: {
@@ -66,15 +69,15 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	// Private functions
 	//
 
-    function wireContext(spec, parent) {
+    function wireContext(specs, parent) {
 
     	var deferred = Deferred();
 
     	// Function to do the actual wiring.  Capture the
     	// parent so it can be called after an async load
     	// if spec is an AMD module Id string.
-    	function doWireContext() {
-		    var spec = mergeSpecs(arguments);
+    	function doWireContexts(specs) {
+		    var spec = mergeSpecs(specs);
 
 			createScope(spec, parent).then(
 				function(scope) {
@@ -84,21 +87,40 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			);
     	}
 
-    	// If spec is a module Id, load it, then wire it.
-    	// If it's a spec object, wire it now.
-    	if(isString(spec)) {
-		    var specIds = spec.split(',');
+    	// If spec is a module Id, or list of module Ids, load it/them, then wire.
+    	// If it's a spec object or array of objects, wire it now.
+    	if(isString(specs)) {
+		    var specIds = specs.split(',');
 		    
-    		require(specIds, doWireContext);
+    		require(specIds, function() { doWireContexts(arguments); });
     	} else {
-    		doWireContext(spec);
+    		doWireContexts(isArray(specs) ? specs : [specs]);
     	}
 
 		return deferred;
 	}
 
+	// Merge multiple specs together before wiring.
 	function mergeSpecs(specs) {
-		return specs[0];
+		for(var i=0, merged={}, s; (s = specs[i++]);) {
+			mixinSpec(merged,  s);
+		}
+		
+		return merged;
+	}
+
+	// Add components in from to those in to.  If duplicates are found, it
+	// is an error.
+	function mixinSpec(to, from) {
+		for(var name in from) {
+			if(from.hasOwnProperty(name) && !(name in emptyObject)) {
+				if(to.hasOwnProperty(name)) {
+					throw new Error("Duplicate component name in sibling specs: " + name);
+				} else {
+					to[name] = from[name];
+				}
+			}
+		}
 	}
 
 	function createScope(scopeDef, parent) {
