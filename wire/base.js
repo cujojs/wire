@@ -41,7 +41,12 @@ define([], function() {
 	}
 
 	function invoke(promise, func, target, args, wire) {
-		var f = target[func];
+		var f, rejecter;
+
+		f= target[func];
+
+		rejecter = reject(promise);
+
 		if(typeof f == 'function') {
 			if(args) {
 				wire(args).then(
@@ -53,12 +58,10 @@ define([], function() {
 
 							promise.resolve(result);
 						} catch(e) {
-							promise.reject(e);
+							rejecter(e);
 						}
 					},
-					function(err) {
-						promise.reject(err);
-					}
+					rejecter
 				);
 			}			
 		}

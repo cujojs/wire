@@ -7,7 +7,7 @@
 /*
 	File: aop.js
 */
-define(['require'], function(require) {
+define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 
 	var ap, obj, tos;
 	
@@ -32,8 +32,7 @@ define(['require'], function(require) {
 	function doDecorate(target, decorator, args, wire) {
 		var d = wire.deferred();
 
-		require([decorator], function(Decorator) {
-
+		function apply(Decorator) {
 			if(args) {
 				wire(args).then(function(resolvedArgs) {
 					applyDecorator(target, Decorator, resolvedArgs);
@@ -45,12 +44,18 @@ define(['require'], function(require) {
 				d.resolve();
 
 			}
-		});
-		
+		}
+
+		if(typeof decorator == 'string') {
+			require([decorator], apply);
+		} else {
+			apply(decorator);
+		}
+
 		return d;		
 	}
 
-	function decorateAspect(decorators, promise, facet, wire) {
+	function decorateFacet(decorators, promise, facet, wire) {
 		var target, options, promises;
 
 		target = facet.target;
@@ -98,7 +103,7 @@ define(['require'], function(require) {
 		return d;
 	}
 	
-	function introduceAspect(introductions, promise, facet, wire) {
+	function introduceFacet(introductions, promise, facet, wire) {
 		var target, intros, intro, i, promises;
 		
 		target = facet.target;
@@ -123,6 +128,32 @@ define(['require'], function(require) {
 		);
 	}
 
+	//
+	// Aspects
+	//
+
+	function adviseFacet(aspects, promise, facet, wire) {
+		promise.resolve();
+	}
+
+	function weave(resolver, target, wiredAspects) {
+		var aspect;
+		try {
+			for (var a in wiredAspects) {
+				aspect = wiredAspects[a];
+				if (aspect.pointcut) {
+					aop.add(target, aspect.pointcut, aspect);
+				}
+
+			}
+
+			resolver.resolve();
+			
+		} catch(e) {
+			resolver.reject(e);
+		}
+	}
+
 	return {
 		/*
 			Function: wire$plugin
@@ -139,22 +170,46 @@ define(['require'], function(require) {
 					receive progress events for objects being destroyed.
 		*/
 		wire$plugin: function(ready, destroyed, options) {
-			var decorators, introductions;
-			
-			decorators = options.decorators||{};
-			introductions = options.introductions||{};
+			var wiredOptions = {};
 
+			function whenOptions(key, wire) {
+				var wired = wiredOptions[key];
+				if(!wired) {
+					wired = wiredOptions[key] = wire.deferred();
+					globalWire(options[key]).then(
+						function(w) { wired.resolve(w); },
+						function(e) { wired.reject(e); }
+					);
+				}
+
+				return wired;
+			}
+
+			function makeFacet(step, name, callback) {
+				var facet = {};
+				facet[step] = function(resolver, facet, wire) {
+					whenOptions(name, wire).then(
+						function(wiredOpts) {
+							callback(wiredOpts, resolver, facet, wire);
+						}
+					)
+				};
+
+				return facet;
+			}
+
+			// Plugin
 			return {
 				facets: {
-					decorate: {
-						configure: function(promise, facet, wire) {
-							decorateAspect(decorators, promise, facet, wire);
-						}
-					},
-					introduce: {
-						configure: function(promise, facet, wire) {
-							introduceAspect(introductions, promise, facet, wire);
-						}
+					decorate:  makeFacet('configure', 'decorators', decorateFacet),
+					introduce: makeFacet('configure', 'introductions', introduceFacet),
+					advise:    makeFacet('create', 'aspects', adviseFacet)
+				},
+				listener: {
+					create: function(resolver, proxy, wire) {
+						whenOptions('aspects', wire).then(function(wiredAspects) {
+							weave(resolver, proxy.target, wiredAspects);
+						});
 					}
 				}
 			};

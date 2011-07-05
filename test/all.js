@@ -17,5 +17,8 @@ doh.registerUrl('literal-factory', '../../literal.html');
 // wire/dom
 doh.registerUrl('dom-resolver', '../../dom1.html');
 
+// wire/aop
+doh.registerUrl('aop-weaving', '../../wire/aop/weave1.html');
+
 // Go
 doh.run();

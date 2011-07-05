@@ -478,15 +478,13 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function processFacets(step, proxy, spec) {
-			var promises, facet, options, name;
-
+			var promises, options, name;
 			promises = [];
-			facet = delegate(proxy);
 
 			for(name in facets) {
-				options = facet.options = spec[name];
+				options = spec[name];
 				if(options) {
-					processFacet(facets[name], step, facet, promises);
+					processFacet(promises, facets[name], step, proxy, options);
 				}
 			}
 
@@ -507,17 +505,21 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		function processListeners(promise, step, proxy) {
 			var listenerPromises = [];
 			for(var i=0; i<listeners.length; i++) {
-				processFacet(listeners[i], step, proxy, listenerPromises);
+				processFacet(listenerPromises, listeners[i], step, proxy);
 			}
 
-			// FIXME: Use only proxy here, call should resolve target
+			// FIXME: Use only proxy here, caller should resolve target
 			return chain(whenAll(listenerPromises), promise, proxy.target||proxy);
 		}
 
-		function processFacet(processor, step, facet, promises) {
+		function processFacet(promises, processor, step, proxy, options) {
+			var facet, facetPromise;
 			if(processor && processor[step]) {
-				var facetPromise = Deferred();
+				facetPromise = Deferred();
 				promises.push(facetPromise);
+
+				facet = delegate(proxy);
+				facet.options = options;
 				processor[step](facetPromise.resolver, facet, pluginApi);
 			}
 		}
