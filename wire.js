@@ -48,11 +48,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
     wire.version = VERSION;
 
     //
-    // AMD Plugin API
+    // AMD loader plugin API
     //
 
     //noinspection JSUnusedLocalSymbols
-	function amdPlugin(name, require, callback, config) {
+	function amdLoad(name, require, callback, config) {
 		var promise = callback.resolve
 			? callback
 			: {
@@ -63,7 +63,76 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		chain(wire(name), promise);
 	}
 
-	wire.load = amdPlugin;
+	wire.load = amdLoad;
+
+	//
+	// AMD Analyze/Build plugin API
+	//
+
+	function amdAnalyze(myId, load, addDep) {
+		// Track all modules seen in wire spec, so we only include them once
+		// FIXME: Does this seem like the correct scope??
+		var seenModules, specs, spec, i;
+		seenModules = {};
+
+		function addModule(moduleId) {
+			// Only add the moduleId if we haven't already
+			if(moduleId in seenModules) return;
+
+			seenModules[moduleId] = 1;
+			addDep(moduleId);
+		}
+
+		function scanObj(obj) {
+			// Scan all keys.  This might be the spec itself, or any sub-object-literal
+			// in the spec.
+			for (var name in obj) {
+				scanItem(obj[name], name);
+			}
+		}
+
+		function scanItem(it, name) {
+			// Determine the kind of thing we're looking at
+			// 1. If it's a string, and the key is module or create, then assume it
+			//    is a moduleId, and add it as a dependency.
+			// 2. If it's an object or an array, scan it recursively
+			if ((name === 'module' || name === 'create') && typeof it === 'string') {
+				// Get module def
+				addModule(it);
+
+			} else if (isStrictlyObject(it)) {
+				// Descend into subscope
+				scanObj(it);
+
+			} else if (isArray(it)) {
+				// Descend into array
+				for (var i = 0, len = it.length; i < len; i++) {
+					scanItem(it[i]);
+				}
+
+			}
+		}
+
+		// Grab the spec module id, *or comma separated list of spec module ids*
+		specs = myId.split('!');
+
+		// If there are none, then there is nothing to do
+		if(!specs.length) return;
+
+		// Split in case it's a comma separated list of spec ids
+		specs = specs[1].split(',');
+
+		// For each spec id, add the spec itself as a dependency, and then
+		// scan the spec contents to find all modules that it needs (e.g.
+		// "module" and "create")
+		for(i = 0;(spec = specs[i++]);) {
+			scanObj(load(spec));
+			addDep(spec);
+		}
+
+	}
+
+	wire.analyze = amdAnalyze;
 
 	//
 	// Private functions
