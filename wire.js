@@ -70,18 +70,19 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	// AMD Analyze/Build plugin API
 	//
 
-	function amdAnalyze(myId, load, addDep) {
+	function amdAnalyze(myId, api, addDep) {
 		// Track all modules seen in wire spec, so we only include them once
 		// FIXME: Does this seem like the correct scope??
 		var seenModules, specs, spec, i;
 		seenModules = {};
 
-		function addModule(moduleId) {
+		function addDependency(moduleId) {
+			var absoluteId = api.toAbsMid(moduleId);
 			// Only add the moduleId if we haven't already
-			if(moduleId in seenModules) return;
+			if(absoluteId in seenModules) return;
 
-			seenModules[moduleId] = 1;
-			addDep(moduleId);
+			seenModules[absoluteId] = 1;
+			addDep(absoluteId);
 		}
 
 		function scanObj(obj) {
@@ -99,7 +100,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			// 2. If it's an object or an array, scan it recursively
 			if ((name === 'module' || name === 'create') && typeof it === 'string') {
 				// Get module def
-				addModule(it);
+				addDependency(it);
 
 			} else if (isStrictlyObject(it)) {
 				// Descend into subscope
@@ -122,8 +123,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// scan the spec contents to find all modules that it needs (e.g.
 		// "module" and "create")
 		for(i = 0;(spec = specs[i++]);) {
-			scanObj(load(spec));
-			addDep(spec);
+			scanObj(api.load(spec));
+			addDependency(spec);
 		}
 
 	}
