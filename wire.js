@@ -114,14 +114,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		// Grab the spec module id, *or comma separated list of spec module ids*
-		specs = myId.split('!');
-
-		// If there are none, then there is nothing to do
-		if(!specs.length) return;
-
 		// Split in case it's a comma separated list of spec ids
-		specs = specs[1].split(',');
-
+		specs = myId.split(',');
+		
 		// For each spec id, add the spec itself as a dependency, and then
 		// scan the spec contents to find all modules that it needs (e.g.
 		// "module" and "create")
