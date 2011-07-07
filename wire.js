@@ -8,6 +8,7 @@
 	File: wire.js
 */
 
+//noinspection ThisExpressionReferencesGlobalObjectJS
 (function(global, undef){
 define(['require', 'wire/base'], function(require, basePlugin) {
 
@@ -582,7 +583,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// Built-in Factories
 		//
 
-		function moduleFactory(promise, spec, wire) {
+		function moduleFactory(promise, spec /*, wire */) {
 			chain(loadModule(spec.module, spec), promise);
 		}
 
@@ -591,7 +592,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			Factory that uses an AMD module either directly, or as a
 			constructor or plain function to create the resulting item.
 		*/
-		function instanceFactory(promise, spec, wire) {
+		function instanceFactory(promise, spec /*, wire */) {
 			var fail, create, module, args, isConstructor;
 
 			fail = chainReject(promise);
@@ -696,7 +697,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			return promise;
 		}
 
-		function wireResolver(promise, name, refObj, wire) {
+		function wireResolver(promise /*, name, refObj, wire */) {
 			promise.resolve(contextApi);
 		}
 
@@ -715,10 +716,6 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	function isRef(it) {
 		return it && it.$ref;
-	}
-
-	function isScope(it) {
-		return typeof it === 'object';
 	}
 
 	/*
@@ -758,7 +755,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	// In case Object.create isn't available
-	function T() {};
+	function T() {}
 
 	function createObject(prototype) {
 		T.prototype = prototype;
@@ -947,7 +944,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	// https://github.com/briancavalier/when.js
 	//
 
-	function noop() {};
+	function noop() {}
 
 	var freeze = Object.freeze || noop;
 
