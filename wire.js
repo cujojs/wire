@@ -72,7 +72,6 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	function amdAnalyze(myId, api, addDep) {
 		// Track all modules seen in wire spec, so we only include them once
-		// FIXME: Does this seem like the correct scope??
 		var seenModules, specs, spec, i;
 		seenModules = {};
 
@@ -83,9 +82,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			seenModules[absoluteId] = 1;
 			addDep(absoluteId);
+//			print("ADDED", absoluteId);
 		}
 
 		function scanObj(obj) {
+//			print("SCANNING", JSON.stringify(obj));
 			// Scan all keys.  This might be the spec itself, or any sub-object-literal
 			// in the spec.
 			for (var name in obj) {
