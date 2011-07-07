@@ -82,11 +82,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			seenModules[absoluteId] = 1;
 			addDep(absoluteId);
-//			print("ADDED", absoluteId);
 		}
 
 		function scanObj(obj) {
-//			print("SCANNING", JSON.stringify(obj));
 			// Scan all keys.  This might be the spec itself, or any sub-object-literal
 			// in the spec.
 			for (var name in obj) {
