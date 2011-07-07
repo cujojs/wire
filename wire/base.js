@@ -10,16 +10,11 @@
 	proxy for plain JS objects.
 */
 define([], function() {
-	var tos, beget, undef;
-
+	var tos, beget;
 	tos = Object.prototype.toString;
 
-	function isArray(it) {
-		return tos.call(it) == '[object Array]';
-	}
-
 	// In case Object.create isn't available
-	function T() {};
+	function T() {}
 
 	function objectCreate(prototype) {
 		T.prototype = prototype;
@@ -110,7 +105,7 @@ define([], function() {
 	//
 	// which will result in myObject.create == "foo" rather than attempting
 	// to create an instance of an AMD module whose id is "foo".
-	function literalFactory(promise, spec, wire) {
+	function literalFactory(promise, spec /*, wire */) {
 		promise.resolve(spec.literal);
 	}
 
@@ -127,8 +122,7 @@ define([], function() {
 	}
 
 	function propertiesFacet(promise, facet, wire) {
-		var options, promises, p, prop;
-
+		var options, promises, prop;
 		promises = [];
 		options = facet.options;
 
@@ -157,7 +151,7 @@ define([], function() {
 		invokeAll(promise, facet, wire);
 	}
 
-	function pojoProxy(object, spec) {
+	function pojoProxy(object /*, spec */) {
 		return {
 			get: function(property) {
 				return object[property];
@@ -173,7 +167,7 @@ define([], function() {
 	}
 
 	return {
-		wire$plugin: function(ready, destroyed, options) {
+		wire$plugin: function(ready, destroyed /*, options */) {
 			var destroyFuncs = [];
 
 			destroyed.then(function() {
