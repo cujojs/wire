@@ -499,6 +499,7 @@
 			while(!(proxy = proxies[i++](object, spec))) {}
 
 			proxy.target = object;
+			proxy.spec = spec;
 
 			return proxy;
 		}
@@ -510,25 +511,31 @@
 			for(name in facets) {
 				options = spec[name];
 				if(options) {
-					processFacet(promises, facets[name], step, proxy, options);
+					processStep(promises, facets[name], step, proxy, options);
 				}
 			}
 
 			var d = Deferred();
 
 			whenAll(promises).then(
-				function() {
-					var p = delegate(proxy);
-					p.spec = spec;
-					processListeners(d, step, p);
-				},
+				function() { processListeners(d, step, proxy); },
 				chainReject(d)
 			);
 
 			return d;
 		}
 
-		function processFacet(promises, processor, step, proxy, options) {
+		function processListeners(promise, step, proxy) {
+			var listenerPromises = [];
+			for(var i=0; i<listeners.length; i++) {
+				processStep(listenerPromises, listeners[i], step, proxy);
+			}
+
+			// FIXME: Use only proxy here, caller should resolve target
+			return chain(whenAll(listenerPromises), promise, proxy.target);
+		}
+
+		function processStep(promises, processor, step, proxy, options) {
 			var facet, facetPromise;
 
 			if(processor && processor[step]) {
@@ -538,34 +545,6 @@
 				facet = delegate(proxy);
 				facet.options = options;
 				processor[step](facetPromise.resolver, facet, pluginApi);
-			}
-		}
-
-		function processListeners(promise, step, proxy) {
-			var listenerPromises = [];
-			for(var i=0; i<listeners.length; i++) {
-				processListener(listenerPromises, listeners[i], step, proxy);
-			}
-
-			// FIXME: Use only proxy here, caller should resolve target
-			return chain(whenAll(listenerPromises), promise, proxy.target||proxy);
-		}
-
-		function processListener(promises, processor, step, target) {
-			var d;
-
-			if(processor && processor[step]) {
-				d = Deferred();
-				promises.push(d);
-				processor[step](d.resolver, target, pluginApi);
-			}
-		}
-
-		function callProcessor(processor, step, target) {
-			var d;
-			if (processor && processor[step]) {
-				d = Deferred();
-				processor[step](d.resolver, target, pluginApi);
 			}
 		}
 
