@@ -5,7 +5,7 @@ define({
 	// dom: { module: 'wire/dom' }
 	// This seems like it could end up being a reasonable convention, tho.
 	plugins: [
-		// { module: 'wire/debug' },
+		{ module: 'wire/debug' },
 		{ module: 'wire/dojo/dijit', parse: true }, // Calls dojo.parser.parse
 		{ module: 'wire/dom' }
 	],

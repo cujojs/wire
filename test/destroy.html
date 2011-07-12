@@ -55,6 +55,8 @@
 							context.destroy().then(function() {
                                 dohd.callback(typeof logger.message == 'string');
                             });
+
+                            return dohd;
 						}
 					]);
 

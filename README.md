@@ -62,6 +62,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 * More documentation
 * AOP before, after, afterReturning, afterThrowing, and around advice
 * AOP weaving.  Apply cross-cutting AOP via pointcut queries
+* AMD Build API and build tool integrations.
 * Defer module loading, and object creation or initialization (lazy load, create, init) until object is referenced or used.
 * Fully automated test suite. (Test suite is comprehensive, but manual right now)
 * Support for more AMD loaders
