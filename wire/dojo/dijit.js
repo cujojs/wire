@@ -91,14 +91,12 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				proxies: [
 					createDijitProxy
 				],
-				listener: {
-					destroy: function(promise, target /*, wire */) {
-						// Only care about objects that are dijits
-						if(isDijit(target)) {
-							destroyDijit(target);
-						}
-						promise.resolve();
+				destroy: function(promise, target /*, wire */) {
+					// Only care about objects that are dijits
+					if (isDijit(target)) {
+						destroyDijit(target);
 					}
+					promise.resolve();
 				}
 			};
 		}

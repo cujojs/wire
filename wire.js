@@ -92,7 +92,7 @@
     	// If it's a spec object or array of objects, wire it now.
     	if(isString(specs)) {
 		    var specIds = specs.split(',');
-		    
+
     		require(specIds, function() { doWireContexts(arguments); });
     	} else {
     		doWireContexts(isArray(specs) ? specs : [specs]);
@@ -106,7 +106,7 @@
 		for(var i=0, merged={}, s; (s = specs[i++]);) {
 			mixinSpec(merged,  s);
 		}
-		
+
 		return merged;
 	}
 
@@ -267,7 +267,7 @@
 
 			});
 		};
-		
+
 		return scopeReady;
 
 		//
@@ -352,9 +352,7 @@
 					addPlugin(plugin.factories, factories);
 					addPlugin(plugin.facets, facets);
 
-					if(plugin.listener) {
-						listeners.push(plugin.listener);
-					}
+					listeners.push(plugin);
 
 					if(plugin.proxies) {
 						proxies = plugin.proxies.concat(proxies);

@@ -129,13 +129,11 @@ define([], function() {
 			}
 
 			return {
-				listener: {
-					create:     makeListener('created'),
-					configure:  makeListener('configured'),
-					initialize: makeListener('initialized'),
-					ready:      makeListener('ready'),
-					destroy:    makeListener('destroyed')
-				}
+				create:     makeListener('created'),
+				configure:  makeListener('configured'),
+				initialize: makeListener('initialized'),
+				ready:      makeListener('ready'),
+				destroy:    makeListener('destroyed')
 			};
 		}
 	};

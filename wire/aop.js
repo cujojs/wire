@@ -205,12 +205,10 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 					introduce: makeFacet('configure', 'introductions', introduceFacet),
 					advise:    makeFacet('create', 'aspects', adviseFacet)
 				},
-				listener: {
-					create: function(resolver, proxy, wire) {
-						whenOptions('aspects', wire).then(function(wiredAspects) {
-							weave(resolver, proxy.target, wiredAspects);
-						});
-					}
+				create: function(resolver, proxy, wire) {
+					whenOptions('aspects', wire).then(function(wiredAspects) {
+						weave(resolver, proxy.target, wiredAspects);
+					});
 				}
 			};
 		}
