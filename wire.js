@@ -17,49 +17,49 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	var VERSION, tos, rootContext, rootSpec, delegate, emptyObject;
 
 	VERSION = "0.5.1";
-    tos = Object.prototype.toString;
-    rootSpec = global['wire']||{};
+	tos = Object.prototype.toString;
+	rootSpec = global['wire'] || {};
 
 	delegate = Object.create || createObject;
 
 	emptyObject = {};
 
-    //
-    // AMD Module API
-    //
+	//
+	// AMD Module API
+	//
 
-    function wire(spec) {
-   		var d = Deferred();
+	function wire(spec) {
+		var d = Deferred();
 
-   		// If the root context is not yet wired, wire it first
-   		if(!rootContext) {
-   			rootContext = wireContext(rootSpec);
-   		}
+		// If the root context is not yet wired, wire it first
+		if (!rootContext) {
+			rootContext = wireContext(rootSpec);
+		}
 
-   		// Use the rootContext to wire all new contexts.
+		// Use the rootContext to wire all new contexts.
 		when(rootContext).then(
 			function(root) {
 				chain(root.wire(spec), d);
 			}
 		);
 
-    	return d.promise;
-    }
+		return d.promise;
+	}
 
-    wire.version = VERSION;
+	wire.version = VERSION;
 
-    //
-    // AMD loader plugin API
-    //
+	//
+	// AMD loader plugin API
+	//
 
-    //noinspection JSUnusedLocalSymbols
+	//noinspection JSUnusedLocalSymbols
 	function amdLoad(name, require, callback, config) {
 		var promise = callback.resolve
 			? callback
 			: {
-				resolve: callback,
+			resolve: callback,
 				reject: function(err) { throw err; }
-			};
+		};
 
 		chain(wire(name), promise);
 	}
@@ -70,58 +70,96 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	// AMD Analyze/Build plugin API
 	//
 
-	function amdAnalyze(myId, api, addDep) {
-		// Track all modules seen in wire spec, so we only include them once
-		var seenModules, specs, spec, i;
-		seenModules = {};
+	var defaultModuleRegex;
+	// default dependency regex
+	defaultModuleRegex = /\.(module|create)$/;
 
-		function addDependency(moduleId) {
-			var absoluteId = api.toAbsMid(moduleId);
+	function amdAnalyze(myId, api, addDep, config) {
+		// Track all modules seen in wire spec, so we only include them once
+		var seenModules, specs, spec, i, childSpecRegex, moduleRegex;
+
+		seenModules = {};
+		moduleRegex = defaultModuleRegex;
+
+		// Get config values
+		if(config) {
+			if(config.moduleRegex) moduleRegex = new RegExp(config.moduleRegex);
+			if(config.childSpecRegex) childSpecRegex = new RegExp(config.childSpecRegex);
+//		new RegExp("(resultSet\\[\\]\\.spec|Spec)$");
+		}
+
+		function addAbsoluteDep(absoluteId) {
 			// Only add the moduleId if we haven't already
-			if(absoluteId in seenModules) return;
+			if (absoluteId in seenModules) return;
 
 			seenModules[absoluteId] = 1;
 			addDep(absoluteId);
 		}
 
-		function scanObj(obj) {
+		function addDependency(moduleId) {
+			addAbsoluteDep(api.toAbsMid(moduleId));
+		}
+
+		function addChildSpec(specId) {
+			addAbsoluteDep('wire' + '!' + api.toAbsMid(specId));
+		}
+
+		function scanObj(obj, path) {
 			// Scan all keys.  This might be the spec itself, or any sub-object-literal
 			// in the spec.
 			for (var name in obj) {
-				scanItem(obj[name], name);
+				scanItem(obj[name], name, path ? ([path, name].join('.')) : name);
 			}
 		}
 
-		function scanItem(it, name) {
+		function scanItem(it, name, path) {
 			// Determine the kind of thing we're looking at
 			// 1. If it's a string, and the key is module or create, then assume it
 			//    is a moduleId, and add it as a dependency.
 			// 2. If it's an object or an array, scan it recursively
-			if ((name === 'module' || name === 'create') && typeof it === 'string') {
+			if (typeof it === 'string') {
+				// If it's a regular module, add it as a dependency
+				// If it's child spec, add it as a wire! dependency
+				if (isDep(path)) {
+					addDependency(it);
+				} else if (isWireDep(path)) {
+					addChildSpec(it);
+				}
+			}
+			if (isDep(name, path) && typeof it === 'string') {
 				// Get module def
 				addDependency(it);
 
 			} else if (isStrictlyObject(it)) {
 				// Descend into subscope
-				scanObj(it);
+				scanObj(it, path);
 
 			} else if (isArray(it)) {
 				// Descend into array
+				var arrayPath = path + '[]';
 				for (var i = 0, len = it.length; i < len; i++) {
-					scanItem(it[i]);
+					scanItem(it[i], "" + i, arrayPath);
 				}
 
 			}
 		}
 
+		function isWireDep(path) {
+			return childSpecRegex && childSpecRegex.test(path);
+		}
+
+		function isDep(path) {
+			return moduleRegex.test(path);
+		}
+
 		// Grab the spec module id, *or comma separated list of spec module ids*
 		// Split in case it's a comma separated list of spec ids
 		specs = myId.split(',');
-		
+
 		// For each spec id, add the spec itself as a dependency, and then
 		// scan the spec contents to find all modules that it needs (e.g.
 		// "module" and "create")
-		for(i = 0;(spec = specs[i++]);) {
+		for (i = 0; (spec = specs[i++]);) {
 			scanObj(api.load(spec));
 			addDependency(spec);
 		}
@@ -134,15 +172,15 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	// Private functions
 	//
 
-    function wireContext(specs, parent) {
+	function wireContext(specs, parent) {
 
-    	var deferred = Deferred();
+		var deferred = Deferred();
 
-    	// Function to do the actual wiring.  Capture the
-    	// parent so it can be called after an async load
-    	// if spec is an AMD module Id string.
-    	function doWireContexts(specs) {
-		    var spec = mergeSpecs(specs);
+		// Function to do the actual wiring.  Capture the
+		// parent so it can be called after an async load
+		// if spec is an AMD module Id string.
+		function doWireContexts(specs) {
+			var spec = mergeSpecs(specs);
 
 			createScope(spec, parent).then(
 				function(scope) {
@@ -150,36 +188,36 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				},
 				chainReject(deferred)
 			);
-    	}
+		}
 
-    	// If spec is a module Id, or list of module Ids, load it/them, then wire.
-    	// If it's a spec object or array of objects, wire it now.
-    	if(isString(specs)) {
-		    var specIds = specs.split(',');
-		    
+		// If spec is a module Id, or list of module Ids, load it/them, then wire.
+		// If it's a spec object or array of objects, wire it now.
+		if (isString(specs)) {
+			var specIds = specs.split(',');
+
     		require(specIds, function() { doWireContexts(arguments); });
-    	} else {
-    		doWireContexts(isArray(specs) ? specs : [specs]);
-    	}
+		} else {
+			doWireContexts(isArray(specs) ? specs : [specs]);
+		}
 
 		return deferred;
 	}
 
 	// Merge multiple specs together before wiring.
 	function mergeSpecs(specs) {
-		for(var i=0, merged={}, s; (s = specs[i++]);) {
-			mixinSpec(merged,  s);
+		for (var i = 0, merged = {}, s; (s = specs[i++]);) {
+			mixinSpec(merged, s);
 		}
-		
+
 		return merged;
 	}
 
 	// Add components in from to those in to.  If duplicates are found, it
 	// is an error.
 	function mixinSpec(to, from) {
-		for(var name in from) {
-			if(from.hasOwnProperty(name) && !(name in emptyObject)) {
-				if(to.hasOwnProperty(name)) {
+		for (var name in from) {
+			if (from.hasOwnProperty(name) && !(name in emptyObject)) {
+				if (to.hasOwnProperty(name)) {
 					throw new Error("Duplicate component name in sibling specs: " + name);
 				} else {
 					to[name] = from[name];
@@ -196,7 +234,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 
 		// Empty parent scope if none provided
-		parent = parent||{};
+		parent = parent || {};
 
 		local = {};
 
@@ -247,7 +285,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// When the parent begins its destroy phase, this child must
 		// begin its destroy phase and complete it before the parent.
 		// The context hierarchy will be destroyed from child to parent.
-		if(parent.destroyed) {
+		if (parent.destroyed) {
 			parent.destroyed.then(null, null, destroy);
 		}
 
@@ -257,7 +295,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		// Setup a promise for each item in this scope
 		var p;
-		for(name in scopeDef) {
+		for (name in scopeDef) {
 			promises.push(p = objects[name] = Deferred());
 		}
 
@@ -282,9 +320,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			// TODO: Clear out the context prototypes?
 			var p;
-			for(p in local)   delete local[p];
-			for(p in objects) delete objects[p];
-			for(p in scope)   delete scope[p];
+			for (p in local)   delete local[p];
+			for (p in objects) delete objects[p];
+			for (p in scope)   delete scope[p];
 
 			// Retain a do-nothing destroy() func, in case
 			// it is called again for some reason.
@@ -309,7 +347,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		// Process/create each item in scope and resolve its
 		// promise when completed.
-		for(name in scopeDef) {
+		for (name in scopeDef) {
 			createScopeItem(name, scopeDef[name], objects[name]);
 		}
 
@@ -343,15 +381,15 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		function createItem(val, name) {
 			var created;
 
-			if(isRef(val)) {
+			if (isRef(val)) {
 				// Reference
 				created = resolveRef(val, name);
 
-			} else if(isArray(val)) {
+			} else if (isArray(val)) {
 				// Array
 				created = createArray(val);
 
-			} else if(isStrictlyObject(val)) {
+			} else if (isStrictlyObject(val)) {
 				// Module or nested scope
 				created = createModule(val);
 
@@ -366,10 +404,10 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		function loadModule(moduleId, spec) {
 			var d;
 
-			if(isString(moduleId)) {
+			if (isString(moduleId)) {
 				var m = moduleLoadPromises[moduleId];
 
-				if(!m) {
+				if (!m) {
 					modulesToLoad.push(moduleId);
 					m = moduleLoadPromises[moduleId] = {
 						id: moduleId,
@@ -396,14 +434,14 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function scanPlugin(module, spec) {
-			if(typeof module == 'object' && isFunction(module.wire$plugin)) {
+			if (typeof module == 'object' && isFunction(module.wire$plugin)) {
 				var plugin = module.wire$plugin(contextPromise, scopeDestroyed, spec);
-				if(plugin) {
+				if (plugin) {
 					addPlugin(plugin.resolvers, resolvers);
 					addPlugin(plugin.factories, factories);
 					addPlugin(plugin.facets, facets);
 
-					if(plugin.proxies) {
+					if (plugin.proxies) {
 						proxies = plugin.proxies.concat(proxies);
 					}
 				}
@@ -411,8 +449,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function addPlugin(src, registry) {
-			for(var name in src) {
-				if(registry.hasOwnProperty(name)) {
+			for (var name in src) {
+				if (registry.hasOwnProperty(name)) {
 					throw new Error("Two plugins for same type in scope: " + name);
 				}
 
@@ -426,7 +464,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			promise = Deferred();
 			result = [];
 
-			if(arrayDef.length === 0) {
+			if (arrayDef.length === 0) {
 				promise.resolve(result);
 
 			} else {
@@ -483,14 +521,14 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			// Maybe need a special syntax for factories, something like:
 			// create: "factory!whatever-arg-the-factory-takes"
 			// args: [factory args here]
-			if(spec.module) {
+			if (spec.module) {
 				promise.resolve(moduleFactory);
-			} else if(spec.create) {
+			} else if (spec.create) {
 				promise.resolve(instanceFactory);
 			} else {
 				modulesReady.then(function() {
-					for(var f in factories) {
-						if(spec.hasOwnProperty(f)) {
+					for (var f in factories) {
+						if (spec.hasOwnProperty(f)) {
 							promise.resolve(factories[f]);
 							return;
 						}
@@ -524,27 +562,27 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			// After the object has been created, update progress for
 			// the entire scope, then process the post-created facets
-            when(target)
-            .then(function(object) {
-                chain(scopeDestroyed, destroyed, object);
+			when(target)
+				.then(function(object) {
+					chain(scopeDestroyed, destroyed, object);
 
-                // Notify progress about this object.
-                update.target = object;
-                scopeReady.progress(update);
+					// Notify progress about this object.
+					update.target = object;
+					scopeReady.progress(update);
 
-                var proxy = createProxy(object, spec);
+					var proxy = createProxy(object, spec);
 
-                chain(processFacets('configure', proxy, spec), configured)
-                .then(function() {
-                    return chain(processFacets('initialize', proxy, spec), initialized);
-                }, fail)
-                .then(function() {
-                    return chain(processFacets('ready', proxy, spec), promise);
-                }, fail);
+					chain(processFacets('configure', proxy, spec), configured)
+						.then(function() {
+							return chain(processFacets('initialize', proxy, spec), initialized);
+						}, fail)
+						.then(function() {
+							return chain(processFacets('ready', proxy, spec), promise);
+						}, fail);
 
-            }, fail);
+				}, fail);
 
-            return promise;
+			return promise;
 		}
 
 		function createProxy(object, spec) {
@@ -563,7 +601,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			promises = [];
 			facet = delegate(proxy);
 
-			for(name in facets) {
+			for (name in facets) {
 				options = facet.options = spec[name];
 				processFacet(facets[name], step, facet, promises);
 			}
@@ -572,7 +610,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		function processFacet(processor, step, facet, promises) {
-			if(facet.options && processor && processor[step]) {
+			if (facet.options && processor && processor[step]) {
 				var facetPromise = Deferred();
 				promises.push(facetPromise);
 				processor[step](facetPromise.resolver, facet, pluginApi);
@@ -588,21 +626,21 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		}
 
 		/*
-			Function: instanceFactory
-			Factory that uses an AMD module either directly, or as a
-			constructor or plain function to create the resulting item.
-		*/
+		 Function: instanceFactory
+		 Factory that uses an AMD module either directly, or as a
+		 constructor or plain function to create the resulting item.
+		 */
 		function instanceFactory(promise, spec /*, wire */) {
 			var fail, create, module, args, isConstructor;
 
 			fail = chainReject(promise);
 
 			create = spec.create;
-			if(isString(create)) {
+			if (isString(create)) {
 				module = create;
 			} else {
 				module = create.module;
-				args   = create.args;
+				args = create.args;
 				isConstructor = create.isConstructor;
 			}
 
@@ -616,9 +654,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 					try {
 						// We'll either use the module directly, or we need
 						// to instantiate/invoke it.
-						if(isFunction(module)) {
+						if (isFunction(module)) {
 							// Instantiate or invoke it and use the result
-							if(args) {
+							if (args) {
 								args = isArray(args) ? args : [args];
 								createArray(args).then(resolve, fail);
 
@@ -657,7 +695,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			registry = excludeSelf ? parent.objects : objects;
 
-			if(refName in registry) {
+			if (refName in registry) {
 				promise = registry[refName];
 
 			} else {
@@ -666,9 +704,9 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				promise = Deferred();
 				split = refName.indexOf('!');
 
-				if(split > 0) {
+				if (split > 0) {
 					var name = refName.substring(0, split);
-					if(name == 'wire') {
+					if (name == 'wire') {
 						wireResolver(promise, name, refObj, pluginApi);
 
 					} else {
@@ -677,8 +715,8 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 						modulesReady.then(function() {
 
 							var resolver = resolvers[name];
-							if(resolver) {
-								refName = refName.substring(split+1);
+							if (resolver) {
+								refName = refName.substring(split + 1);
 								resolver(promise, refName, refObj, pluginApi);
 
 							} else {
@@ -712,22 +750,22 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 		}
 
-    } // createScope
+	} // createScope
 
 	function isRef(it) {
 		return it && it.$ref;
 	}
 
 	/*
-		Function: isArray
-		Standard array test
+	 Function: isArray
+	 Standard array test
 
-		Parameters:
-			it - anything
+	 Parameters:
+	 it - anything
 
-		Returns:
-		true iff it is an Array
-	*/
+	 Returns:
+	 true iff it is an Array
+	 */
 	function isArray(it) {
 		return tos.call(it) == '[object Array]';
 	}
@@ -741,15 +779,15 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	/*
-		Function: isFunction
-		Standard function test
+	 Function: isFunction
+	 Standard function test
 
-		Parameters:
-			it - anything
+	 Parameters:
+	 it - anything
 
-		Returns:
-		true iff it is a Function
-	*/
+	 Returns:
+	 true iff it is a Function
+	 */
 	function isFunction(it) {
 		return typeof it == 'function';
 	}
@@ -763,34 +801,34 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	/*
-		Constructor: Begetter
-		Constructor used to beget objects that wire needs to create using new.
+	 Constructor: Begetter
+	 Constructor used to beget objects that wire needs to create using new.
 
-		Parameters:
-			ctor - real constructor to be invoked
-			args - arguments to be supplied to ctor
-	*/
+	 Parameters:
+	 ctor - real constructor to be invoked
+	 args - arguments to be supplied to ctor
+	 */
 	function Begetter(ctor, args) {
 		return ctor.apply(this, args);
 	}
 
 	/*
-		Function: instantiate
-		Creates an object by either invoking ctor as a function and returning the
-		result, or by calling new ctor().  It uses a simple heuristic to try to
-		guess which approach is the "right" one.
+	 Function: instantiate
+	 Creates an object by either invoking ctor as a function and returning the
+	 result, or by calling new ctor().  It uses a simple heuristic to try to
+	 guess which approach is the "right" one.
 
-		Parameters:
-			ctor - function or constructor to invoke
-			args - array of arguments to pass to ctor in either case
+	 Parameters:
+	 ctor - function or constructor to invoke
+	 args - array of arguments to pass to ctor in either case
 
-		Returns:
-		The result of invoking ctor with args, with or without new, depending on
-		the strategy selected.
-	*/
+	 Returns:
+	 The result of invoking ctor with args, with or without new, depending on
+	 the strategy selected.
+	 */
 	function instantiate(ctor, args, forceConstructor) {
 
-		if(forceConstructor || isConstructor(ctor)) {
+		if (forceConstructor || isConstructor(ctor)) {
 			Begetter.prototype = ctor.prototype;
 			Begetter.prototype.constructor = ctor;
 			return new Begetter(ctor, args);
@@ -800,20 +838,20 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	/*
-		Function: isConstructor
-		Determines with the supplied function should be invoked directly or
-		should be invoked using new in order to create the object to be wired.
+	 Function: isConstructor
+	 Determines with the supplied function should be invoked directly or
+	 should be invoked using new in order to create the object to be wired.
 
-		Parameters:
-			func - determine whether this should be called using new or not
+	 Parameters:
+	 func - determine whether this should be called using new or not
 
-		Returns:
-		true iff func should be invoked using new, false otherwise.
-	*/
+	 Returns:
+	 true iff func should be invoked using new, false otherwise.
+	 */
 	function isConstructor(func) {
 		var is = false, p;
-		for(p in func.prototype) {
-			if(p !== undef) {
+		for (p in func.prototype) {
+			if (p !== undef) {
 				is = true;
 				break;
 			}
@@ -823,13 +861,13 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	/*
-		Function: whenAll
-		Return a promise that will resolve when and only
-		when all of the supplied promises resolve.  The
-		resolution value will be an array containing the
-		resolution values of the triggering promises.
-		TODO: Figure out the best strategy for rejecting.
-	*/
+	 Function: whenAll
+	 Return a promise that will resolve when and only
+	 when all of the supplied promises resolve.  The
+	 resolution value will be an array containing the
+	 resolution values of the triggering promises.
+	 TODO: Figure out the best strategy for rejecting.
+	 */
 	function whenAll(promises) {
 		var toResolve, values, deferred, resolver, rejecter, handleProgress;
 
@@ -845,7 +883,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// var resolver = function handleResolve(val) {
 		resolver = function(val) {
 			values.push(val);
-			if(--toResolve === 0) {
+			if (--toResolve === 0) {
 				resolver = handleProgress = noop;
 				deferred.resolve(values);
 			}
@@ -883,7 +921,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			handleProgress(update);
 		}
 
-		if(toResolve == 0) {
+		if (toResolve == 0) {
 			deferred.resolve(values);
 
 		} else {
@@ -896,7 +934,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	function when(promiseOrValue) {
-		if(isPromise(promiseOrValue)) {
+		if (isPromise(promiseOrValue)) {
 			return promiseOrValue;
 		}
 
@@ -910,20 +948,20 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	}
 
 	/*
-		Function: chain
-		Chain two <Promises> such that when the first completes, the second
-		is completed with either the completion value of the first, or
-		in the case of resolve, completed with the optional resolveValue.
+	 Function: chain
+	 Chain two <Promises> such that when the first completes, the second
+	 is completed with either the completion value of the first, or
+	 in the case of resolve, completed with the optional resolveValue.
 
-		Parameters:
-			first - first <Promise>
-			second - <Promise> to complete when first <Promise> completes
-			resolveValue - optional value to use as the resolution value
-				for first.
+	 Parameters:
+	 first - first <Promise>
+	 second - <Promise> to complete when first <Promise> completes
+	 resolveValue - optional value to use as the resolution value
+	 for first.
 
-		Returns:
-			second
-	*/
+	 Returns:
+	 second
+	 */
 	function chain(first, second, resolveValue) {
 		var args = arguments;
 		first.then(
@@ -949,14 +987,14 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 	var freeze = Object.freeze || noop;
 
 	/*
-		Constructor: Deferred
-		Creates a new, CommonJS compliant, Deferred with fully isolated
-		resolver and promise parts, either or both of which may be given out
-		safely to consumers.
-		The Deferred itself has the full API: resolve, reject, progress, and
-		then. The resolver has resolve, reject, and progress.  The promise
-		only has then.
-	*/
+	 Constructor: Deferred
+	 Creates a new, CommonJS compliant, Deferred with fully isolated
+	 resolver and promise parts, either or both of which may be given out
+	 safely to consumers.
+	 The Deferred itself has the full API: resolve, reject, progress, and
+	 then. The resolver has resolve, reject, and progress.  The promise
+	 only has then.
+	 */
 	function Deferred() {
 		var deferred, promise, resolver, result, listeners, tail,
 			_then, _progress, complete;
@@ -971,7 +1009,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				progress: progback
 			};
 
-			if(listeners) {
+			if (listeners) {
 				// Append new listener if linked list already initialized
 				tail = tail.next = listener;
 			} else {
@@ -999,7 +1037,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 			listener = listeners;
 
-			while(listener) {
+			while (listener) {
 				progress = listener.progress;
 				progress && progress(update);
 				listener = listener.next;
@@ -1039,22 +1077,22 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			notify(which);
 		};
 
-        function notify(which) {
-            // Traverse all listeners registered directly with this Deferred,
+		function notify(which) {
+			// Traverse all listeners registered directly with this Deferred,
 			// also making sure to handle chained thens
-			while(listeners) {
+			while (listeners) {
 				var listener, ldeferred, newResult, handler;
 
-				listener  = listeners;
+				listener = listeners;
 				ldeferred = listener.deferred;
 				listeners = listeners.next;
 
 				handler = listener[which];
-				if(handler) {
+				if (handler) {
 					try {
 						newResult = handler(result);
 
-						if(isPromise(newResult)) {
+						if (isPromise(newResult)) {
 							// If the handler returned a promise, chained deferreds
 							// should complete only after that promise does.
 							newResult.then(ldeferred.resolve, ldeferred.reject, ldeferred.progress);
@@ -1080,7 +1118,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 		// Promise and Resolver parts
 
 		// Expose Promise API
-		promise = deferred.promise  = {
+		promise = deferred.promise = {
 			then: (deferred.then = then)
 		};
 
