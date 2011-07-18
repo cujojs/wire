@@ -29,14 +29,14 @@
         //     - context 3
         require(['wire'], function(wire) {
             wire({ a: 0 }).then(function(context0) {
-                doh.register('nested2-1', function(doh) {
+                doh.register('nested2-root', function(doh) {
                     // context0 is a child of the root context, but added nothing
                     doh.assertEqual(0, context0.a);
                 });
 
                 // Wire a child of context0, and override a
                 context0.wire({ a: 1 }).then(function(context1) {
-                    doh.register('nested2-2', function(doh) {
+                    doh.register('nested2-0', function(doh) {
                         // context1 is the child of context0
                         doh.assertEqual(0, context0.a);
                         doh.assertEqual(1, context1.a);
@@ -44,7 +44,7 @@
 
                     // Wire a child of context1, and override a again
                     context1.wire({ a: 2 }).then(function(context2) {
-                        doh.register('nested2-3', function(doh) {
+                        doh.register('nested2-1', function(doh) {
                             // context2 is the child of context1
                             doh.assertEqual(0, context0.a);
                             doh.assertEqual(1, context1.a);
@@ -53,7 +53,7 @@
 
                         // Wire a child of context2, and override a again
                         context2.wire({ a: 3 }).then(function(context3) {
-                            doh.register('nested2-3', function(doh) {
+                            doh.register('nested2-2', function(doh) {
                                 // context3 is the child of context2
                                 doh.assertEqual(0, context0.a);
                                 doh.assertEqual(1, context1.a);
@@ -62,7 +62,7 @@
                             });
 
 
-                            doh.register('nested2-3', function(doh) {
+                            doh.register('nested2-2', function(doh) {
                                 var dohd = new doh.Deferred();
 
                                 // This will destroy all contexts except the root
