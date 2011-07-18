@@ -289,7 +289,7 @@
 		// begin its destroy phase and complete it before the parent.
 		// The context hierarchy will be destroyed from child to parent.
 		if (parent.destroyed) {
-			parent.destroyed.then(null, null, destroy);
+			parent.destroyed.then(destroy);
 		}
 
 		scanPlugin(basePlugin);
@@ -343,7 +343,7 @@
 		});
 
 		doDestroy = function() {
-			var p, d;
+			var p, pDeferred;
 
 			// Retain a do-nothing doDestroy() func, in case
 			// it is called again for some reason.
@@ -355,7 +355,7 @@
 
 			var promises = [];
 			for (p in local) {
-				var pDeferred = Deferred();
+				pDeferred = Deferred();
 				promises.push(pDeferred);
 				processListeners(pDeferred, 'destroy', local[p]);
 			}
