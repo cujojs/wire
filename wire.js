@@ -108,11 +108,11 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 			// Scan all keys.  This might be the spec itself, or any sub-object-literal
 			// in the spec.
 			for (var name in obj) {
-				scanItem(obj[name], name, path ? ([path, name].join('.')) : name);
+				scanItem(obj[name], path ? ([path, name].join('.')) : name);
 			}
 		}
 
-		function scanItem(it, name, path) {
+		function scanItem(it, path) {
 			// Determine the kind of thing we're looking at
 			// 1. If it's a string, and the key is module or create, then assume it
 			//    is a moduleId, and add it as a dependency.
@@ -126,7 +126,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 					addChildSpec(it);
 				}
 			}
-			if (isDep(name, path) && typeof it === 'string') {
+			if (isDep(path) && typeof it === 'string') {
 				// Get module def
 				addDependency(it);
 
@@ -138,7 +138,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 				// Descend into array
 				var arrayPath = path + '[]';
 				for (var i = 0, len = it.length; i < len; i++) {
-					scanItem(it[i], "" + i, arrayPath);
+					scanItem(it[i], arrayPath);
 				}
 
 			}
