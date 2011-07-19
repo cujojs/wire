@@ -20,6 +20,8 @@ doh.registerUrl('literal-factory', '../../literal.html');
 doh.registerUrl('dom-resolver', '../../dom1.html');
 
 // wire/aop
+doh.registerUrl('decorate1', '../../wire/aop/decorate1.html');
+doh.registerUrl('introduce1', '../../wire/aop/introduce1.html');
 doh.registerUrl('aop-weaving', '../../wire/aop/weave1.html');
 
 // Go
