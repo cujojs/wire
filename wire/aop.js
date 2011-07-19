@@ -9,15 +9,15 @@
 */
 define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 
-	var ap, obj, tos;
+	var ap, obj, tos, isArray;
 	
 	ap = Array.prototype;
 	obj = {};
 	tos = Object.prototype.toString;
 
-	function isArray(it) {
+	isArray = Array.isArray || function(it) {
 		return tos.call(it) == '[object Array]';
-	}
+	};
 
     //
 	// Decoration
@@ -163,11 +163,18 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 		});
 	}
 
-	function weave(resolver, target, wire, aspects) {
+	function weave(resolver, target, wire, options) {
 
 		function fail(e) { resolver.reject(e); }
 
-		var aspect, a, promises, d;
+		var aspects, aspect, a, promises, d;
+		aspects = options.aspects;
+
+		if(!aspects) {
+			resolver.resolve();
+			return;
+		}
+
 		promises = [];
 
 		try {
@@ -221,21 +228,14 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 				return facet;
 			}
 
-			var aspects, decorators, introductions;
-
-			aspects       = options.aspects;
-			decorators    = options.decorators;
-			introductions = options.introductions;
-
 			// Plugin
 			return {
 				facets: {
-					decorate:  makeFacet('configure', decorators, decorateFacet),
-					introduce: makeFacet('configure', introductions, introduceFacet),
-					advise:    makeFacet('create', aspects, adviseFacet)
+					decorate:  makeFacet('configure', options.decorators, decorateFacet),
+					introduce: makeFacet('configure', options.introductions, introduceFacet)
 				},
 				create: function(resolver, proxy, wire) {
-					weave(resolver, proxy.target, wire, aspects);
+					weave(resolver, proxy.target, wire, options);
 				}
 			};
 		}
