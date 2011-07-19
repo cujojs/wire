@@ -136,21 +136,61 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 		promise.resolve();
 	}
 
-	function weave(resolver, target, wiredAspects) {
-		var aspect;
-		try {
-			for (var a in wiredAspects) {
-				aspect = wiredAspects[a];
-				if (aspect.pointcut) {
-					aop.add(target, aspect.pointcut, aspect);
-				}
+	function applyAspectCombined(promise, target, aspect) {
+		require([aspect], function(aspect) {
+			var pointcut = aspect.pointcut;
 
+			if(pointcut) {
+				aop.add(target, pointcut, aspect);
+			}
+			promise.resolve();
+		});
+	}
+
+	function applyAspectSeparate(promise, target, pointcut, advice) {
+		var modules = [advice];
+
+		if (typeof pointcut === 'string') {
+			modules.push(pointcut);
+		}
+
+		require(modules, function(aspect) {
+			aop.add(target,
+				arguments.length === 2 ? arguments[1] : pointcut,
+				aspect);
+
+			promise.resolve();
+		});
+	}
+
+	function weave(resolver, target, wire, aspects) {
+
+		function fail(e) { resolver.reject(e); }
+
+		var aspect, a, promises, d;
+		promises = [];
+
+		try {
+			for (a in aspects) {
+				aspect = aspects[a];
+
+				d = wire.deferred();
+				promises.push(d);
+
+				if (typeof aspect === 'string') {
+					applyAspectCombined(d, target, aspect);
+				} else {
+					applyAspectSeparate(d, target, aspect.pointcut, aspect.advice);
+				}
 			}
 
-			resolver.resolve();
-			
+			wire.whenAll(promises).then(
+				function() { resolver.resolve(); },
+				fail
+			);
+
 		} catch(e) {
-			resolver.reject(e);
+			fail(e);
 		}
 	}
 
@@ -170,45 +210,32 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 					receive progress events for objects being destroyed.
 		*/
 		wire$plugin: function(ready, destroyed, options) {
-			var wiredOptions = {};
 
-			function whenOptions(key, wire) {
-				var wired = wiredOptions[key];
-				if(!wired) {
-					wired = wiredOptions[key] = wire.deferred();
-					globalWire(options[key]).then(
-						function(w) { wired.resolve(w); },
-						function(e) { wired.reject(e); }
-					);
-				}
-
-				return wired;
-			}
-
-			function makeFacet(step, name, callback) {
+			function makeFacet(step, options, callback) {
 				var facet = {};
-				facet[step] = function(resolver, facet, wire) {
-					whenOptions(name, wire).then(
-						function(wiredOpts) {
-							callback(wiredOpts, resolver, facet, wire);
-						}
-					)
+				
+				facet[step] = function(resolver, proxy, wire) {
+					callback(options, resolver, proxy, wire);
 				};
 
 				return facet;
 			}
 
+			var aspects, decorators, introductions;
+
+			aspects       = options.aspects;
+			decorators    = options.decorators;
+			introductions = options.introductions;
+
 			// Plugin
 			return {
 				facets: {
-					decorate:  makeFacet('configure', 'decorators', decorateFacet),
-					introduce: makeFacet('configure', 'introductions', introduceFacet),
-					advise:    makeFacet('create', 'aspects', adviseFacet)
+					decorate:  makeFacet('configure', decorators, decorateFacet),
+					introduce: makeFacet('configure', introductions, introduceFacet),
+					advise:    makeFacet('create', aspects, adviseFacet)
 				},
 				create: function(resolver, proxy, wire) {
-					whenOptions('aspects', wire).then(function(wiredAspects) {
-						weave(resolver, proxy.target, wiredAspects);
-					});
+					weave(resolver, proxy.target, wire, aspects);
 				}
 			};
 		}

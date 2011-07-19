@@ -3,32 +3,49 @@
 <head>
 	<meta charset="UTF-8">
 	<title>aop test</title>
-	<script>
-		require = { debug: true, baseUrl: '../../../', paths: { 'wire': './wire' } };
-	</script>
-	<script src="../../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+
+    <script src="../../util/doh/runner.js"></script>
+
+    <script>
+        require = { debug: true, baseUrl: '../../../', paths: { 'wire': './wire' } };
+    </script>
+
+    <script src="../../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+
 	<script type="text/javascript">
-		require(['wire'], function(wire) {
+        define('Mixin', [], function() {
+            return {
+                doSomethingMixedIn: function(message) {
+                    this.introduced = true;
+                }
+            };
+        });
+        require(['wire'], function(wire) {
 			wire({
 				plugins: [
 					{ module: 'wire/debug' },
 					{
 						module: 'wire/aop',
 						introductions: {
-							mixin1: 'test/wire/aop/Mixin'
+							mixin1: 'Mixin'
 						}
 					}
 				],
 				thing: {
 					create: 'test/wire/aop/Thing',
-					introduce: 'mixin1',
-					init: {
-						doSomethingElse: "I'm the thing"
-					}
-				}				
+					introduce: 'mixin1'
+				}
 			}).then(
 				function(context) {
-					// context.thing.doSomethingElse("I'm the thing");
+                    doh.register('introduce1', [
+                        function(doh) {
+                            doh.assertFalse(context.thing.introduced);
+                            context.thing.doSomethingMixedIn('test1');
+                            doh.assertTrue(context.thing.introduced);
+                        }
+                    ]);
+
+                    doh.run();
 				},
 				function(err) {
 					console.log("aop: FAILED", err);
