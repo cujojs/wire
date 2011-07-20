@@ -4,13 +4,7 @@
 	<meta charset="UTF-8">
 	<title>Proto test</title>
 	<script>
-		require = {
-			debug: true,
-			paths: {
-				wire: '../wire',
-				test: '../test'
-			}
-		};
+        require = curl = { apiName: 'require', baseUrl: '../', paths: { curl: 'curl/src/curl' }, pluginPath: 'curl/plugin' };
 	</script>
 
 	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>

@@ -4,14 +4,12 @@
 	<meta charset="UTF-8">
 	<title>nested objects 2 test</title>
 	<script type="text/javascript">
-		(function(global) {
-			global.require = { debug: true, baseUrl: '../', paths: { wire: './wire' } };
+        require = curl = { apiName: 'require', baseUrl: '../', paths: { curl: 'curl/src/curl' }, pluginPath: 'curl/plugin' };
 
-			// The root context
-			global.wire = {
-				a: 0
-			};
-		})(window);
+        // The root context
+        wire = {
+            a: 0
+        };
 	</script>
 	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
