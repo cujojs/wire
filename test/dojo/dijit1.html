@@ -12,11 +12,12 @@
 				baseUrl: baseUrl
 			};
 
-			global.require = {
+			global.require = global.curl = {
+                apiName: 'require',
 				baseUrl: baseUrl,
-				pluginPath: 'curl/src/curl/plugin',
+				pluginPath: 'curl/plugin',
 				paths: {
-					'wire': './wire',
+                    wire: './wire',
 					curl: 'curl/src/curl'
 				},
 				packages: [
@@ -46,7 +47,7 @@
 	</script>
 	<script src="../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
-		require(['wire!test/dojo/dijit1'], function(context) {
+		require(['curl/dojo16Compat']).next(['wire!test/dojo/dijit1'], function(context) {
 			// Properties/objects from the parent context are available via the prototype!
 			console.log("initialValue", context.initialValue);
 			

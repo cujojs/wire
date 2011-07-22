@@ -7,7 +7,7 @@
     <script src="../../util/doh/runner.js"></script>
 
     <script>
-        require = { debug: true, baseUrl: '../../../', paths: { 'wire': './wire' } };
+        require = curl = { apiName: 'require', baseUrl: '../../../', paths: { wire: './wire', curl: 'curl/src/curl' }, pluginPath: 'curl/plugin' };
     </script>
 
     <script src="../../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>

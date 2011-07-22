@@ -21,9 +21,27 @@
 		'wire/domReady': 'path/to/my/domReady'
 	}
 */
-define(['require'], function(require) {
-	return require.ready ||
-		function (cb) {
-			require(['curl/domReady'], cb);
-		};
+// faster:
+define(['require'], function(req) {
+
+	var ready;
+
+	// Try require.ready first
+	ready = require.ready || function (cb) {
+		// If it's not available, assume curl's domReady module
+		req(['curl/domReady'], function (domReady) {
+			// Once we have it, we can replace ready with the
+			// domReady module directly.
+			ready = domReady;
+
+			// Call the callback
+			domReady(cb);
+		});
+	};
+
+	// Return a wrapper so that ready can be replaced if we're using
+	// curl's domReady
+	return function (cb) {
+		ready(cb);
+	};
 });
