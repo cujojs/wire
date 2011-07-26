@@ -21,13 +21,13 @@
 		'wire/domReady': 'path/to/my/domReady'
 	}
 */
-// faster:
+(function(global) {
 define(['require'], function(req) {
 
 	var ready;
 
 	// Try require.ready first
-	ready = require.ready || function (cb) {
+	ready = (global.require && global.require.ready) || function (cb) {
 		// If it's not available, assume curl's domReady module
 		req(['curl/domReady'], function (domReady) {
 			// Once we have it, we can replace ready with the
@@ -45,3 +45,4 @@ define(['require'], function(req) {
 		ready(cb);
 	};
 });
+})(this);
