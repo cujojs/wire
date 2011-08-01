@@ -225,7 +225,7 @@
 		}
 	}
 
-	function createScope(scopeDef, parent) {
+	function createScope(scopeDef, parent, scopeName) {
 		var scope, local, objects, resolvers, factories, facets, listeners, proxies,
 			modulesToLoad, moduleLoadPromises,
 			contextApi, modulesReady, scopeReady, scopeDestroyed,
@@ -259,6 +259,7 @@
 		// A proxy of this scope that can be used as a parent to
 		// any child scopes that may be created.
 		scope = {
+			name:       scopeName,
 			local:      local,
 			objects:    objects,
 			resolvers:  resolvers,
@@ -270,6 +271,8 @@
 			destroy:    destroy,
 			destroyed:  scopeDestroyed
 		};
+
+		scope.path = createPath(scopeName, parent.path);
 
 		// Plugin API
 		// wire() API that is passed to plugins.
@@ -375,6 +378,12 @@
 		// Scope functions
 		//
 
+		function createPath(name, basePath) {
+			var path = basePath || scope.path;
+
+			return (path && name) ? (path + '.' + name) : name;
+		}
+
 		function createScopeItem(name, val, itemPromise) {
 			// NOTE: Order is important here.
 			// The object & local property assignment MUST happen before
@@ -403,7 +412,7 @@
 
 			} else if (isStrictlyObject(val)) {
 				// Module or nested scope
-				created = createModule(val);
+				created = createModule(val, name);
 
 			} else {
 				// Plain value
@@ -503,7 +512,7 @@
 			});
 		}
 
-		function createModule(spec) {
+		function createModule(spec, name) {
 			var promise = Deferred();
 
 			// Look for a factory, then use it to create the object
@@ -511,11 +520,11 @@
 				function(factory) {
 					var factoryPromise = Deferred();
 					factory(factoryPromise.resolver, spec, pluginApi);
-					chain(processObject(factoryPromise, spec), promise);
+					chain(processObject(factoryPromise, spec, name), promise);
 				},
 				function() {
 					// No factory found, treat object spec as a nested scope
-					createScope(spec, scope).then(
+					createScope(spec, scope, name).then(
 						function(created) { promise.resolve(created.local); },
 						chainReject(promise)
 					);
@@ -556,7 +565,7 @@
 		}
 
 
-		function processObject(target, spec) {
+		function processObject(target, spec, name) {
 			var promise, created, configured, initialized, destroyed, fail;
 
 			promise = Deferred();
@@ -574,7 +583,7 @@
 				.then(function(object) {
 					chain(scopeDestroyed, destroyed, object);
 
-                var proxy = createProxy(object, spec);
+                var proxy = createProxy(object, spec, name);
 
 		        chain(processFacets('create', proxy, spec), created)
 		        .then(function() {
@@ -591,13 +600,15 @@
 			return promise;
 		}
 
-		function createProxy(object, spec) {
+		function createProxy(object, spec, name) {
 			var proxy, i = 0;
 
 			while(!(proxy = proxies[i++](object, spec))) {}
 
 			proxy.target = object;
 			proxy.spec = spec;
+			proxy.name = name;
+			proxy.path = createPath(name);
 
 			return proxy;
 		}
