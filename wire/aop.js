@@ -46,16 +46,18 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 			}
 		}
 
-		if(typeof decorator == 'string') {
-			require([decorator], apply);
-		} else {
-			apply(decorator);
-		}
+		wire.resolveRef(decorator).then(apply);
 
+//		if(typeof decorator == 'string') {
+//			require([decorator], apply);
+//		} else {
+//			apply(decorator);
+//		}
+//
 		return d;		
 	}
 
-	function decorateFacet(decorators, promise, facet, wire) {
+	function decorateFacet(promise, facet, wire) {
 		var target, options, promises;
 
 		target = facet.target;
@@ -63,7 +65,7 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 		promises = [];
 
 		for(var d in options) {
-			promises.push(doDecorate(target, decorators[d]||d, options[d], wire));
+			promises.push(doDecorate(target, d, options[d], wire));
 		}
 
 		wire.whenAll(promises).then(
@@ -95,15 +97,15 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 	function doIntroduction(target, introduction, wire) {
 		var d = wire.deferred();
 
-		require([introduction], function(resolved) {
+		wire.resolveRef(introduction).then(function(resolved) {
 			introduce(target, resolved);
 			d.resolve();
 		});
 
 		return d;
 	}
-	
-	function introduceFacet(introductions, promise, facet, wire) {
+
+function introduceFacet(promise, facet, wire) {
 		var target, intros, intro, i, promises;
 		
 		target = facet.target;
@@ -115,7 +117,7 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 		promises = [];
 
 		while((intro = intros[--i])) {
-			promises.push(doIntroduction(target, introductions[intro]||intro, wire));
+			promises.push(doIntroduction(target, intro, wire));
 		}
 
 		wire.whenAll(promises).then(
@@ -136,8 +138,8 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 		promise.resolve();
 	}
 
-	function applyAspectCombined(promise, target, aspect) {
-		require([aspect], function(aspect) {
+	function applyAspectCombined(promise, target, aspect, wire) {
+		wire.resolveRef(aspect).then(function(aspect) {
 			var pointcut = aspect.pointcut;
 
 			if(pointcut) {
@@ -147,47 +149,57 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 		});
 	}
 
-	function applyAspectSeparate(promise, target, pointcut, advice) {
-		var modules = [advice];
+	function applyAspectSeparate(promise, target, aspect, wire) {
+		var pointcut, advice;
+		
+		pointcut = aspect.pointcut;
+		advice = aspect.advice;
 
-		if (typeof pointcut === 'string') {
-			modules.push(pointcut);
+		function applyAdvice(pointcut) {
+			wire.resolveRef(advice).then(function(advice) {
+				aop.add(target, pointcut, advice);
+				promise.resolve();
+			});
 		}
 
-		require(modules, function(aspect) {
-			aop.add(target,
-				arguments.length === 2 ? arguments[1] : pointcut,
-				aspect);
-
-			promise.resolve();
-		});
+		if (typeof pointcut === 'string') {
+			wire.resolveRef(pointcut).then(applyAdvice);
+		} else {
+			applyAdvice(pointcut);
+		}
 	}
 
-	function weave(resolver, target, wire, options) {
+	function weave(resolver, proxy, wire, options) {
 
 		function fail(e) { resolver.reject(e); }
 
-		var aspects, aspect, a, promises, d;
-		aspects = options.aspects;
+		var target, path, aspects, aspect, aspectPath, a, promises, d, applyAdvice;
 
+		aspects = options.aspects;
+		
 		if(!aspects) {
 			resolver.resolve();
 			return;
 		}
 
+		target  = proxy.target;
+		path    = proxy.path;
+		applyAdvice = applyAspectCombined;
 		promises = [];
 
 		try {
 			for (a in aspects) {
-				aspect = aspects[a];
+				aspectPath = aspect = aspects[a];
 
-				d = wire.deferred();
-				promises.push(d);
+				if(aspect.advice) {
+					aspectPath = aspect.advice;
+					applyAdvice = applyAspectSeparate;
+				}
 
-				if (typeof aspect === 'string') {
-					applyAspectCombined(d, target, aspect);
-				} else {
-					applyAspectSeparate(d, target, aspect.pointcut, aspect.advice);
+				if(typeof aspectPath === 'string' && aspectPath !== path) {
+					d = wire.deferred();
+					promises.push(d);
+					applyAdvice(d, target, aspect, wire);
 				}
 			}
 
@@ -218,11 +230,11 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 		*/
 		wire$plugin: function(ready, destroyed, options) {
 
-			function makeFacet(step, options, callback) {
+			function makeFacet(step, callback) {
 				var facet = {};
 				
 				facet[step] = function(resolver, proxy, wire) {
-					callback(options, resolver, proxy, wire);
+					callback(resolver, proxy, wire);
 				};
 
 				return facet;
@@ -231,11 +243,11 @@ define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
 			// Plugin
 			return {
 				facets: {
-					decorate:  makeFacet('configure', options.decorators, decorateFacet),
-					introduce: makeFacet('configure', options.introductions, introduceFacet)
+					decorate:  makeFacet('configure', decorateFacet),
+					introduce: makeFacet('configure', introduceFacet)
 				},
 				create: function(resolver, proxy, wire) {
-					weave(resolver, proxy.target, wire, options);
+					weave(resolver, proxy, wire, options);
 				}
 			};
 		}

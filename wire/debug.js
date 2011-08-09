@@ -131,7 +131,7 @@ define([], function() {
 					}
 
 					if (verbose) {
-						var message = time(step + ' ' + (proxy.path || proxy.name), contextTimer);
+						var message = time(step + ' ' + (proxy.path || proxy.name || ''), contextTimer);
 						if (proxy.target) {
 							console.log(message, proxy.target, proxy.spec);
 						} else {

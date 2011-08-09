@@ -42,7 +42,7 @@
             }
 
             return {
-                pointcut:       /^doSomething/,
+                pointcut:       /^doSomething$/,
                 before:         makeAdvice('before'),
                 afterReturning: makeAdvice('afterReturning'),
                 afterThrowing:  makeAdvice('afterThrowing'),
@@ -60,14 +60,19 @@
         require(['wire'], function(wire) {
             wire({
                 plugins: [
-//                    { module: 'wire/debug' },
+//                    { module: 'wire/debug', verbose: true },
                     {
                         module: 'wire/aop',
                         aspects: {
-                            testAspect: 'Aspect'
+                            a1: 'testAspect',
+                            a2: {
+                                pointcut: ['doSomethingElse'],
+                                advice: 'testAspect'
+                            }
                         }
                     }
                 ],
+                testAspect: { create: 'Aspect' },
                 thing1: { create: 'Target' },
                 thing2: { create: 'Target' }
                 // Add your test wiring declarations here

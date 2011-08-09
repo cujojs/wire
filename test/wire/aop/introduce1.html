@@ -24,13 +24,9 @@
 			wire({
 				plugins: [
 //					{ module: 'wire/debug' },
-					{
-						module: 'wire/aop',
-						introductions: {
-							mixin1: 'Mixin'
-						}
-					}
-				],
+					{ module: 'wire/aop' }
+                ],
+                mixin1: { module: 'Mixin' },
 				thing: {
 					create: 'test/wire/aop/Thing',
 					introduce: 'mixin1'

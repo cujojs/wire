@@ -9,9 +9,9 @@
 // 2. Provide access to advisor
 (function(define) {
 define([], function() {
-	
-	var VERSION, ap, prepend, append, slice, isArray, undef;
 
+var VERSION, ap, prepend, append, slice, isArray;
+	
 	VERSION = "0.2.0";
 	
 	ap      = Array.prototype;
@@ -57,6 +57,8 @@ define([], function() {
 	// Returns the advisor for the target object-function pair.  A new advisor
 	// will be created if one does not already exist.
 	function getAdvisor(target, func) {
+		if(!(func in target)) return;
+
 		var advised = target[func];
 
 		if(typeof advised !== 'function') throw new Error('Advice can only be applied to functions: ' + func);
@@ -169,65 +171,77 @@ define([], function() {
 	function addAdvice(target, func, type, adviceFunc) {
 		var advisor = getAdvisor(findTarget(target), func);
 
-		advisor[type](adviceFunc);
-
+		if(advisor) {
+			advisor[type](adviceFunc);
+		}
+		
 		return advisor;
 	}
 	
 	// Add several advice types to func
-	function addToFunc(object, func, advices) {
-		// advices is an object, and should have keys for advice types,
+	function addToFunc(object, funcName, advice) {
+		// advice is an object, and should have keys for advice types,
 		// whose values are the advice functions.
 
 		// First, get the advisor for this object/func pair
 		var advisor, addAdvice;
 		
-		advisor = getAdvisor(object, func);
+		advisor = getAdvisor(object, funcName);
 
-		// Register all advices with the advisor
-		for (var a in advices) {
-			addAdvice = advisor[a];
-			if (addAdvice) {
-				addAdvice(advices[a]);
+		if(advisor) {
+			// Register all advices with the advisor
+			for (var a in advice) {
+				addAdvice = advisor[a];
+				if (addAdvice) {
+					addAdvice(advice[a]);
+				}
 			}
 		}
 	}
 
-	function addToArray(object, funcArray, advices) {
+	function adviseAll(object, funcArray, advice) {
 		var f, i = 0;
 		while((f = funcArray[i++])) {
-			addToFunc(object, f, advices);
+			advice(object, f);
 		}
 	}
 
-	function addAspect(target, pointcut, advices) {
-		// pointcut can be: string, Array of strings, RegExp, Function
-		var pointcutType;
+	function addAspect(target, pointcut, advice) {
+		// pointcut can be: string, Array of strings, RegExp, Function(targetObject): Array of strings
+		// advice can be: object, Function(targetObject, targetMethodName)
+		
+		var pointcutType, adviceFunc;
 
-        target = findTarget(target);
+		target = findTarget(target);
 
-		if(isArray(pointcut)) {
-			addToArray(target, pointcut, advices);
+		adviceFunc = typeof advice === 'function'
+			? advice
+			: function(object, funcName) {
+				addToFunc(object, funcName, advice);
+			};
+
+		if (isArray(pointcut)) {
+			adviseAll(target, pointcut, adviceFunc);
 
 		} else {
 			pointcutType = typeof pointcut;
 
-			if(pointcutType === 'string') {
-				if(typeof target[pointcut] === 'function') {
-					addToFunc(target, pointcut, advices);
+			if (pointcutType === 'string') {
+				if (typeof target[pointcut] === 'function') {
+					adviceFunc(target, pointcut);
 				}
 
-			} else if(pointcutType === 'function') {
-				addToArray(target, pointcut(target), advices);
+			} else if (pointcutType === 'function') {
+				adviseAll(target, pointcut(target), adviceFunc);
 
 			} else {
 				// Assume the pointcut is a RegExp
-				for(var p in target) {
+				for (var p in target) {
 					// TODO: Decide whether hasOwnProperty is correct here
 					// Only apply to own properties that are functions, and match the pointcut regexp
-					if(typeof target[p] === 'function' && pointcut.test(p)) {
-					// if(object.hasOwnProperty(p) && typeof object[p] === 'function' && pointcut.test(p)) {
-						addToFunc(target, p, advices);
+					if (typeof target[p] === 'function' && pointcut.test(p)) {
+						// if(object.hasOwnProperty(p) && typeof object[p] === 'function' && pointcut.test(p)) {
+						adviceFunc(target, p);
 
 					}
 				}

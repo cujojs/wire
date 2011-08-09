@@ -42,15 +42,11 @@
         require(['wire'], function(wire) {
             wire({
                 plugins: [
-//                    { module: 'wire/debug' },
-                    {
-                        module: 'wire/aop',
-                        decorators: {
-                            mydecorator1: 'Decorator',
-                            mydecorator2: 'Decorator'
-                        }
-                    }
+                    { module: 'wire/debug' },
+                    { module: 'wire/aop' }
                 ],
+                mydecorator1: { module: 'Decorator' },
+                mydecorator2: { module: 'Decorator' },
                 thing: {
                     create: 'Thing',
                     properties: { name: 'thing1' },
