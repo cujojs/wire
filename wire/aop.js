@@ -173,8 +173,7 @@ function introduceFacet(promise, facet, wire) {
 
 		function fail(e) { resolver.reject(e); }
 
-		var target, path, aspects, aspect, aspectPath, a, promises, d, applyAdvice;
-
+		var target, path, aspects, aspect, aspectPath, promises, d, applyAdvice, i;
 		aspects = options.aspects;
 		
 		if(!aspects) {
@@ -188,9 +187,9 @@ function introduceFacet(promise, facet, wire) {
 		promises = [];
 
 		try {
-			for (a in aspects) {
-				aspectPath = aspect = aspects[a];
-
+			i = 0;
+			while((aspectPath = aspect = aspects[i++])) {
+				
 				if(aspect.advice) {
 					aspectPath = aspect.advice;
 					applyAdvice = applyAspectSeparate;

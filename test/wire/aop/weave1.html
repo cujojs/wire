@@ -63,13 +63,14 @@
 //                    { module: 'wire/debug', verbose: true },
                     {
                         module: 'wire/aop',
-                        aspects: {
-                            a1: 'testAspect',
-                            a2: {
+                        aspects: [
+                            'testAspect', // points to testAspect directly
+                            {
+                                // Override pointcut, but use testAspect advices
                                 pointcut: ['doSomethingElse'],
                                 advice: 'testAspect'
                             }
-                        }
+                        ]
                     }
                 ],
                 testAspect: { create: 'Aspect' },
