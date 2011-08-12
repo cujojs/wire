@@ -1,3 +1,6 @@
 [submodule "test/util"]
 	path = test/util
 	url = https://github.com/dojo/util.git
+[submodule "support/aop"]
+	path = support/aop
+	url = git@github.com:briancavalier/aop.js.git

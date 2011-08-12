@@ -7,7 +7,7 @@
 /*
 	File: aop.js
 */
-define(['require', 'wire', 'wire/lib/aop'], function(require, globalWire, aop) {
+define(['require', 'aop'], function(require, aop) {
 
 	var ap, obj, tos, isArray;
 	
