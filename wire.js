@@ -393,7 +393,6 @@
 			var p = createItem(val, name);
 
 			p.then(function(resolved) {
-				console.log('LOCAL', name);
 				objects[name] = local[name] = resolved;
 			});
 

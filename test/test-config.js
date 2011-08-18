@@ -34,7 +34,7 @@
 	global.require = global.curl = {
 		apiName: 'require',
 		baseUrl: baseUrl,
-		paths: { curl: 'curl/src/curl' },
+		paths: { curl: 'test/curl/src/curl' },
 		pluginPath: 'curl/plugin',
 		packages: [
 			{ name: 'dojo', path: 'dojo', lib: '.', main: './lib/main-browser' },

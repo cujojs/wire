@@ -62,8 +62,6 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 	}
 
 	function destroyDijit(target) {
-		// It's a dijit, so we need to know when it is being
-		// destroyed so that we can do proper dijit cleanup on it
 		// Prefer destroyRecursive over destroy
 		if (typeof target.destroyRecursive == 'function') {
 			target.destroyRecursive(false);
@@ -75,13 +73,25 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 	}
 	
 	return {
-		wire$plugin: function onWire(ready, destroy, options) {
+		wire$plugin: function(ready, destroy, options) {
 			// Only ever parse the page once, even if other child
 			// contexts are created with this plugin present.
 			if(options.parse && !parsed) {
 				parsed = true;
 				dojo.ready(function() { parser.parse(); });
 			}
+
+			// Track dijits that this plugin instance creates, so we only
+			// destroy those, and skip any that might have been created in the
+			// HTML via dojoType and then $ref'd.
+			var dijitsToDestroy = [];
+
+			destroy.then(function() {
+				var destroyMe, i;
+				for(i = 0; (destroyMe = dijitsToDestroy[i]); i++) {
+					destroyDijit(destroyMe);
+				}
+			});
 
 			// Return plugin
 			return {
@@ -91,13 +101,14 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				proxies: [
 					createDijitProxy
 				],
-				destroy: function(promise, proxy /*, wire */) {
-					// Only care about objects that are dijits
+				create: function(resolver, proxy /*, wire */) {
+					// It's a dijit, so we need to know when it is being
+					// destroyed so that we can do proper dijit cleanup on it
 					var target = proxy.target;
 					if (isDijit(target)) {
-						destroyDijit(target);
+						dijitsToDestroy.push(target);
 					}
-					promise.resolve();
+					resolver.resolve();
 				}
 			};
 		}

@@ -50,11 +50,12 @@ define({
 		create: 'test/test2/Controller',
 		properties: {
 			name: "controller2",
-			widget: { $ref: 'dijit!widget' }
+			widget: { $ref: 'widget2' }
 		},
 		init: 'ready', // Called as soon as all properties have been set
 		destroy: 'destroy' // Called when the context is destroyed
 	},
+	widget2: { $ref: 'dijit!widget' },
 	// Wire in a reference to the destroy button.
 	destroyButton: { $ref: 'dom!destroy' }
 });
