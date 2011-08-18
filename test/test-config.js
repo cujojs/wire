@@ -3,16 +3,21 @@
 	function noop() {}
 
 	var doc, head, scripts, script, i, baseUrl, baseUrlSuffix,
-		selfName, selfRegex;
+		selfName, selfRegex, loaderName, loaderPath, loaderConfig;
 	
 	selfName = 'test-config.js';
 	selfRegex = new RegExp(selfName + '$');
 
 	baseUrlSuffix = '../';
 
+	// TODO: Parameterize loader to allow testing w/curl, requirejs, etc.
+	loaderName = 'curl';
+	loaderPath = 'test/curl/src/curl';
+
 	doc = global.document;
 	head = doc.head || doc.getElementsByTagName('head')[0];
 
+	// Find self script tag, use it to construct baseUrl
 	i = 0;
 	scripts = head.getElementsByTagName('script');
 	while((script = scripts[i++]) && !baseUrl) {
@@ -31,10 +36,11 @@
 		baseUrl: baseUrl
 	};
 
-	global.require = global.curl = {
+	// Setup loader config
+	global[loaderName] = loaderConfig = {
 		apiName: 'require',
 		baseUrl: baseUrl,
-		paths: { curl: 'test/curl/src/curl' },
+		paths: {},
 		pluginPath: 'curl/plugin',
 		packages: [
 			{ name: 'dojo', path: 'dojo', lib: '.', main: './lib/main-browser' },
@@ -43,5 +49,11 @@
 			{ name: 'wire', path: '.', lib: './wire', main: 'wire' }
 		]
 	};
+
+	// Other loaders may not need this
+	loaderConfig.paths[loaderName] = loaderPath;
+
+	// That's right y'all, document.write FTW
+	doc.write('<script src="' + baseUrl + loaderPath + '.js' + '"></script>');
 
 })(window);
