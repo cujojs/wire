@@ -34,6 +34,12 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
+### 0.6.0
+
+* `wire/aop` plugin: AOP weaving with pointcuts, and before, after, afterReturning, afterThrowing, after (aka "afterFinally") advice using [aop.js](https://github.com/briancavalier/aop.js)
+* `wire/debug` plugin: tracks components and tells you which ones couldn't be wired and why
+* Experimental optimizer/build tool support for [cram](https://github.com/unscriptable/cram). Point cram at your wire spec and let cram optimize your entire app! *Docs coming soon*
+
 ### 0.5.1
 
 * `create` factory now supports the `isConstructor` option, when `true`, forces an object instance to be created using `new`.
@@ -59,12 +65,14 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # Roadmap
 
-* More documentation
-* AOP before, after, afterReturning, afterThrowing, and around advice
-* AOP weaving.  Apply cross-cutting AOP via pointcut queries
-* AMD Build API and build tool integrations.
+### 0.7.0
+
+* Library/Framework agnostic event and pubsub connectors
+* AOP weaving support for decorators and introductions
+
+### Future
+
 * Defer module loading, and object creation or initialization (lazy load, create, init) until object is referenced or used.
-* Fully automated test suite. (Test suite is comprehensive, but manual right now)
 * Support for more AMD loaders
 * Integration with more libs and frameworks.
 * Node.js support
