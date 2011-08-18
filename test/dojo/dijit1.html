@@ -3,49 +3,17 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
+
+    <script src="../util/doh/runner.js"></script>
+    <script src="../test-config.js"></script>
+    <script src="../../curl/src/curl.js"></script>
+
 	<script type="text/javascript">
-		(function(global) {
-			var
-				baseUrl = '../../';
-
-			global.djConfig = {
-				baseUrl: baseUrl
-			};
-
-			global.require = global.curl = {
-                apiName: 'require',
-				baseUrl: baseUrl,
-				pluginPath: 'curl/plugin',
-				paths: {
-                    wire: './wire',
-					curl: 'curl/src/curl'
-				},
-				packages: [
-					{
-						name: 'dojo',
-						lib: '.',
-						main: './lib/main-browser'
-					},
-					{
-						name: 'dijit',
-						lib: '.',
-						main: './lib/main'
-					}
-				]
-			};
-
-			// Anything in this wiring spec will be part of the root
-			// context, which is the parent (or ultimate ancestor) of
-			// all other contexts.
-			// What that means is that the initialValue "object" will be available
-			// in any context via context.initialValue (although child contexts can
-			// override its value)
-			global.wire = {
-				initialValue: "Initial Value from page!"
-			};
-		})(window);
+		wire = {
+            initialValue: "Initial Value from page!"
+        };
 	</script>
-	<script src="../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+
 	<script type="text/javascript">
 		require(['curl/dojo16Compat']).next(['wire!test/dojo/dijit1'], function(context) {
 			// Properties/objects from the parent context are available via the prototype!

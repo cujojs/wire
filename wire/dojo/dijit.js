@@ -91,8 +91,9 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				proxies: [
 					createDijitProxy
 				],
-				destroy: function(promise, target /*, wire */) {
+				destroy: function(promise, proxy /*, wire */) {
 					// Only care about objects that are dijits
+					var target = proxy.target;
 					if (isDijit(target)) {
 						destroyDijit(target);
 					}

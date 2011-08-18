@@ -4,13 +4,9 @@
 	<meta charset="UTF-8">
 	<title>init test</title>
 
-	<script src="util/doh/runner.js"></script>
-
-	<script>
-        require = curl = { apiName: 'require', baseUrl: '../', paths: { curl: 'curl/src/curl' }, pluginPath: 'curl/plugin' };
-	</script>
-
-	<script src="../curl/src/curl.js"></script>
+    <script src="util/doh/runner.js"></script>
+    <script src="test-config.js"></script>
+    <script src="../curl/src/curl.js"></script>
 	
 	<script type="text/javascript">
 		define('test-logger', [], function() {

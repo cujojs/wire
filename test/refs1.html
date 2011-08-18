@@ -3,10 +3,11 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
-	<script>
-        require = curl = { apiName: 'require', baseUrl: '../', paths: { curl: 'curl/src/curl' }, pluginPath: 'curl/plugin' };
-	</script>
-	<script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+
+    <script src="util/doh/runner.js"></script>
+    <script src="test-config.js"></script>
+    <script src="../curl/src/curl.js"></script>
+
 	<script type="text/javascript">
 		// Simple example of wiring in objects by reference using JSON ref syntax
 

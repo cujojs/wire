@@ -4,17 +4,16 @@
     <meta charset="UTF-8">
     <title>nested objects 2 test</title>
 
-    <script type="text/javascript" src="util/doh/runner.js"></script>
+    <script src="util/doh/runner.js"></script>
+    <script src="test-config.js"></script>
+    <script src="../curl/src/curl.js"></script>
 
     <script type="text/javascript">
-        require = curl = { apiName: 'require', baseUrl: '../', paths: { curl: 'curl/src/curl' }, pluginPath: 'curl/plugin' };
-
         // The root context
         wire = {
             a: -1
         };
     </script>
-    <script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
     <script type="text/javascript">
         // This wires a direct child of the root context, adding
         // nothing to it.  So context0 is *not* the root context, but

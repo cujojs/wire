@@ -5,20 +5,8 @@
     <title>aop test</title>
 
     <script src="../../util/doh/runner.js"></script>
-
-    <script>
-        require = curl = {
-            apiName: 'require',
-            paths: { curl: 'curl/src/curl' },
-            pluginPath: 'curl/plugin',
-            baseUrl: '../../../',
-            packages: [
-                { name: 'aop', lib: 'support/aop/aop' }
-            ]
-        };
-    </script>
-
-    <script src="../../../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
+    <script src="../../test-config.js"></script>
+    <script src="../../../curl/src/curl.js"></script>
 
     <script type="text/javascript">
         define('Thing', [], function() {
@@ -81,6 +69,7 @@
             );
         });
     </script>
+
 </head>
 <body>
 

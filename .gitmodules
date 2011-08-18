@@ -4,3 +4,6 @@
 [submodule "support/aop"]
 	path = support/aop
 	url = git@github.com:briancavalier/aop.js.git
+[submodule "test/curl"]
+	path = test/curl
+	url = git@github.com:unscriptable/curl.git

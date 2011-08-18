@@ -359,7 +359,7 @@
 			for (p in local) {
 				pDeferred = Deferred();
 				promises.push(pDeferred);
-				processListeners(pDeferred, 'destroy', local[p]);
+				processListeners(pDeferred, 'destroy', { target: local[p] });
 			}
 
 			// *After* listeners are processed,
@@ -393,6 +393,7 @@
 			var p = createItem(val, name);
 
 			p.then(function(resolved) {
+				console.log('LOCAL', name);
 				objects[name] = local[name] = resolved;
 			});
 
@@ -747,7 +748,7 @@
 				if (split > 0) {
 					var name = refName.substring(0, split);
 					if (name == 'wire') {
-						wireResolver(promise, name, refObj, pluginApi);
+						wireResolver(promise/*, name, refObj, pluginApi*/);
 
 					} else {
 						// Wait for modules, since the reference may need to be
