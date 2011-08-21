@@ -165,7 +165,8 @@ define([], function() {
 			},
 			invoke: function(method, args) {
 				return method.apply(object, args);
-			}
+			},
+			destroy: function() {}
 		};
 	}
 

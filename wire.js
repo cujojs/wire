@@ -226,7 +226,7 @@
 	}
 
 	function createScope(scopeDef, parent, scopeName) {
-		var scope, local, objects, resolvers, factories, facets, listeners, proxies,
+		var scope, local, proxied, objects, resolvers, factories, facets, listeners, proxies,
 			modulesToLoad, moduleLoadPromises,
 			contextApi, modulesReady, scopeReady, scopeDestroyed,
 			promises, name, contextPromise, doDestroy;
@@ -248,6 +248,7 @@
 
 		// Proxies is an array, have to concat
 		proxies = parent.proxies ? [].concat(parent.proxies) : [];
+		proxied = {};
 
 		modulesToLoad = [];
 		moduleLoadPromises = {};
@@ -356,10 +357,11 @@
 			// TODO: Clear out the context prototypes?
 
 			var promises = [];
-			for (p in local) {
+			for (p in proxied) {
+				console.log("destroy listeners", p, proxied[p]);
 				pDeferred = Deferred();
 				promises.push(pDeferred);
-				processListeners(pDeferred, 'destroy', { target: local[p] });
+				processListeners(pDeferred, 'destroy', proxied[p]);
 			}
 
 			// *After* listeners are processed,
@@ -369,6 +371,12 @@
 				for (p in objects) delete objects[p];
 				for (p in scope)   delete scope[p];
 
+				for (p in proxied) {
+					if(proxied[p]) {
+						proxied[p].destroy();
+						delete proxied[p];
+					}
+				}
 			});
 		};
 
@@ -583,7 +591,8 @@
 				.then(function(object) {
 					chain(scopeDestroyed, destroyed, object);
 
-                var proxy = createProxy(object, spec, name);
+				console.log("Creating proxy", name,  object);
+                var proxy = proxied[name] = createProxy(object, spec, name);
 
 		        chain(processFacets('create', proxy, spec), created)
 		        .then(function() {

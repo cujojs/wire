@@ -54,6 +54,9 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				},
 				invoke: function(method, args) {
 					return method.invoke(object, args);
+				},
+				destroy: function() {
+					destroyDijit(object);
 				}
 			};
 		}
@@ -81,18 +84,6 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				dojo.ready(function() { parser.parse(); });
 			}
 
-			// Track dijits that this plugin instance creates, so we only
-			// destroy those, and skip any that might have been created in the
-			// HTML via dojoType and then $ref'd.
-			var dijitsToDestroy = [];
-
-			destroy.then(function() {
-				var destroyMe, i;
-				for(i = 0; (destroyMe = dijitsToDestroy[i]); i++) {
-					destroyDijit(destroyMe);
-				}
-			});
-
 			// Return plugin
 			return {
 				resolvers: {
@@ -100,16 +91,7 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 				},
 				proxies: [
 					createDijitProxy
-				],
-				create: function(resolver, proxy /*, wire */) {
-					// It's a dijit, so we need to know when it is being
-					// destroyed so that we can do proper dijit cleanup on it
-					var target = proxy.target;
-					if (isDijit(target)) {
-						dijitsToDestroy.push(target);
-					}
-					resolver.resolve();
-				}
+				]
 			};
 		}
 	};

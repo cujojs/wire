@@ -49,7 +49,7 @@
 
                         // Wire a child of context2, and override a again
                         context2.wire({ a: 3 }).then(function(context3) {
-                            doh.register('nested2-2', function(doh) {
+                            doh.register('nested2-2a', function(doh) {
                                 // context3 is the child of context2
                                 doh.assertEqual(0, context0.a);
                                 doh.assertEqual(1, context1.a);
@@ -58,7 +58,7 @@
                             });
 
 
-                            doh.register('nested2-2', function(doh) {
+                            doh.register('nested2-2b', function(doh) {
                                 var dohd = new doh.Deferred();
 
                                 // This will destroy all contexts except the root
