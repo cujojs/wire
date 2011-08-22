@@ -53,7 +53,11 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
 					return object.set(property, value);
 				},
 				invoke: function(method, args) {
-					return method.invoke(object, args);
+					if(typeof method === 'string') {
+						method = object[method];
+					}
+
+					return method.apply(object, args);
 				},
 				destroy: function() {
 					destroyDijit(object);

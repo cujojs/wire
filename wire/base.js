@@ -164,6 +164,10 @@ define([], function() {
 				return value;
 			},
 			invoke: function(method, args) {
+				if(typeof method === 'string') {
+					method = object[method];
+				}
+
 				return method.apply(object, args);
 			},
 			destroy: function() {}
