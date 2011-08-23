@@ -343,8 +343,7 @@
 		// Once all modules have been loaded, resolve modulesReady
 		require(modulesToLoad, function(modules) {
 			modulesReady.resolve(modules);
-			moduleLoadPromises = null;
-			modulesToLoad = null;
+			moduleLoadPromises = modulesToLoad = null;
 		});
 
 		doDestroy = function() {
@@ -373,10 +372,12 @@
 				for (p in scope)   delete scope[p];
 
 				for (i = 0; (p = proxied[i++]);) {
-					if(p) p.destroy();
-			}
+					p.destroy();
+				}
 
-				proxied = null;
+				local = objects = scope = proxied = proxies = parent
+					= resolvers = factories = facets = contextApi
+					= listeners = null;
 			});
 		};
 
