@@ -343,6 +343,7 @@
 		// Once all modules have been loaded, resolve modulesReady
 		require(modulesToLoad, function(modules) {
 			modulesReady.resolve(modules);
+			modulesToLoad = null;
 		});
 
 		doDestroy = function() {
