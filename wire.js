@@ -498,10 +498,13 @@
 				promise.resolve(result);
 
 			} else {
-				var promises = [];
+				var promises, itemPromise, item, id, i;
 
-				for (var i = 0; i < arrayDef.length; i++) {
-					var itemPromise = result[i] = createItem(arrayDef[i], name + '[' + i + ']');
+				promises = [];
+
+				for (i = 0; (item = arrayDef[i]); i++) {
+					id = item.id || name + '[' + i + ']';
+					itemPromise = result[i] = createItem(arrayDef[i], id);
 					promises.push(itemPromise);
 
 					resolveArrayValue(itemPromise, result, i);
@@ -589,8 +592,6 @@
 			when(target)
 				.then(function(object) {
 					chain(scopeDestroyed, destroyed, object);
-
-				console.log("proxy", name, object, spec);
 
                 var proxy = createProxy(object, spec);
 				proxied.push(proxy);
