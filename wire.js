@@ -248,7 +248,7 @@
 
 		// Proxies is an array, have to concat
 		proxies = parent.proxies ? [].concat(parent.proxies) : [];
-		proxied = {};
+		proxied = [];
 
 		modulesToLoad = [];
 		moduleLoadPromises = {};
@@ -346,7 +346,7 @@
 		});
 
 		doDestroy = function() {
-			var p, pDeferred;
+			var p, promises, pDeferred, i;
 
 			// Retain a do-nothing doDestroy() func, in case
 			// it is called again for some reason.
@@ -356,27 +356,25 @@
 
 			// TODO: Clear out the context prototypes?
 
-			var promises = [];
-			for (p in proxied) {
-				console.log("destroy listeners", p, proxied[p]);
+			promises = [];
+			for (i = 0; (p = proxied[i++]);) {
 				pDeferred = Deferred();
 				promises.push(pDeferred);
-				processListeners(pDeferred, 'destroy', proxied[p]);
+				processListeners(pDeferred, 'destroy', p);
 			}
 
 			// *After* listeners are processed,
 			whenAll(promises).then(function() {
-				var p;
+				var p, i;
 				for (p in local)   delete local[p];
 				for (p in objects) delete objects[p];
 				for (p in scope)   delete scope[p];
 
-				for (p in proxied) {
-					if(proxied[p]) {
-						proxied[p].destroy();
-						delete proxied[p];
-					}
-				}
+				for (i = 0; (p = proxied[i++]);) {
+					if(p) p.destroy();
+			}
+
+				proxied = null;
 			});
 		};
 
@@ -416,11 +414,12 @@
 
 			} else if (isArray(val)) {
 				// Array
-				created = createArray(val);
+				created = createArray(val, name);
 
 			} else if (isStrictlyObject(val)) {
 				// Module or nested scope
-				created = createModule(val, name);
+				if(!val.id) val.id = name;
+				created = createModule(val);
 
 			} else {
 				// Plain value
@@ -489,7 +488,7 @@
 			}
 		}
 
-		function createArray(arrayDef) {
+		function createArray(arrayDef, name) {
 			var promise, result;
 
 			promise = Deferred();
@@ -502,7 +501,7 @@
 				var promises = [];
 
 				for (var i = 0; i < arrayDef.length; i++) {
-					var itemPromise = result[i] = createItem(arrayDef[i]);
+					var itemPromise = result[i] = createItem(arrayDef[i], name + '[' + i + ']');
 					promises.push(itemPromise);
 
 					resolveArrayValue(itemPromise, result, i);
@@ -520,7 +519,7 @@
 			});
 		}
 
-		function createModule(spec, name) {
+		function createModule(spec) {
 			var promise = Deferred();
 
 			// Look for a factory, then use it to create the object
@@ -528,11 +527,11 @@
 				function(factory) {
 					var factoryPromise = Deferred();
 					factory(factoryPromise.resolver, spec, pluginApi);
-					chain(processObject(factoryPromise, spec, name), promise);
+					chain(processObject(factoryPromise, spec), promise);
 				},
 				function() {
 					// No factory found, treat object spec as a nested scope
-					createScope(spec, scope, name).then(
+					createScope(spec, scope).then(
 						function(created) { promise.resolve(created.local); },
 						chainReject(promise)
 					);
@@ -573,7 +572,7 @@
 		}
 
 
-		function processObject(target, spec, name) {
+		function processObject(target, spec) {
 			var promise, created, configured, initialized, destroyed, fail;
 
 			promise = Deferred();
@@ -591,8 +590,10 @@
 				.then(function(object) {
 					chain(scopeDestroyed, destroyed, object);
 
-				console.log("Creating proxy", name,  object);
-                var proxy = proxied[name] = createProxy(object, spec, name);
+				console.log("proxy", name, object, spec);
+
+                var proxy = createProxy(object, spec);
+				proxied.push(proxy);
 
 		        chain(processFacets('create', proxy, spec), created)
 		        .then(function() {
@@ -609,15 +610,18 @@
 			return promise;
 		}
 
-		function createProxy(object, spec, name) {
-			var proxy, i = 0;
+		function createProxy(object, spec) {
+			var proxy, id, i;
+
+			i = 0;
+			id = spec.id;
 
 			while(!(proxy = proxies[i++](object, spec))) {}
 
 			proxy.target = object;
-			proxy.spec = spec;
-			proxy.name = name;
-			proxy.path = createPath(name);
+			proxy.spec   = spec;
+			proxy.id     = id;
+			proxy.path   = createPath(id);
 
 			return proxy;
 		}
@@ -670,7 +674,7 @@
 		// Built-in Factories
 		//
 
-		function moduleFactory(promise, spec /*, wire */) {
+		function moduleFactory(promise, spec /*, wire, name*/) {
 			chain(loadModule(spec.module, spec), promise);
 		}
 
@@ -679,7 +683,7 @@
 		 Factory that uses an AMD module either directly, or as a
 		 constructor or plain function to create the resulting item.
 		 */
-		function instanceFactory(promise, spec /*, wire */) {
+		function instanceFactory(promise, spec, wire, name) {
 			var fail, create, module, args, isConstructor;
 
 			fail = chainReject(promise);
@@ -707,7 +711,7 @@
 							// Instantiate or invoke it and use the result
 							if (args) {
 								args = isArray(args) ? args : [args];
-								createArray(args).then(resolve, fail);
+								createArray(args, name).then(resolve, fail);
 
 							} else {
 								// No args, don't need to process them, so can directly

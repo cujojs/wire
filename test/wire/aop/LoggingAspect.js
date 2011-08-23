@@ -17,7 +17,6 @@ define([], function() {
 		afterReturning: makeAdvice('afterReturning'),
 		afterThrowing:  makeAdvice('afterThrowing'),
 		around: function(joinpoint) {
-			console.log("LOGGER around", joinpoint);
 			try {
 				return joinpoint.proceed();
 			} catch(e) {
