@@ -418,8 +418,7 @@
 
 			} else if (isStrictlyObject(val)) {
 				// Module or nested scope
-				if(!val.id) val.id = name;
-				created = createModule(val);
+				created = createModule(val, name);
 
 			} else {
 				// Plain value
@@ -522,12 +521,13 @@
 			});
 		}
 
-		function createModule(spec) {
+		function createModule(spec, name) {
 			var promise = Deferred();
 
 			// Look for a factory, then use it to create the object
 			findFactory(spec).then(
 				function(factory) {
+					if(!spec.id) spec.id = name;
 					var factoryPromise = Deferred();
 					factory(factoryPromise.resolver, spec, pluginApi);
 					chain(processObject(factoryPromise, spec), promise);
