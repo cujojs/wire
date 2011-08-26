@@ -16,11 +16,13 @@ define(['sizzle'], function(sizzle) {
 
 	function resolveQuery(promise, name, refObj, wire) {
 
-		require(['wire/domReady'], function() {
-			var result = sizzle(name);
-			promise.resolve(typeof refObj.i == 'number' && refObj.i < result.length
-				? result[refObj.i]
-				: result);
+		require(['wire/domReady'], function(ready) {
+			ready(function() {
+				var result = sizzle(name);
+				promise.resolve(typeof refObj.i == 'number' && refObj.i < result.length
+					? result[refObj.i]
+					: result);
+			});
 		});
 
 	}
