@@ -40,7 +40,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 * `wire/debug` plugin: tracks components and tells you which ones couldn't be wired and why
 * Experimental optimizer/build tool support for [cram](https://github.com/unscriptable/cram). Point cram at your wire spec and let cram optimize your entire app! *Docs coming soon*
 * **Breaking Changes**
-    * The plugin format has changed to support new, more powerful async plugins.  [See the Plugin format wiki[(https://github.com/briancavalier/wire/wiki/Plugin-format) for more information
+    * The plugin format has changed to support new, more powerful async plugins.  [See the Plugin format wiki](https://github.com/briancavalier/wire/wiki/Plugin-format) for more information
     * `wire/aop` decorator and introduction options have changes.  See the wiki for more information
 
 
