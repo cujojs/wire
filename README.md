@@ -59,7 +59,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 * Improved plugin system,
 * AOP plugin, `wire/aop`: Decorators and Introductions.  *Coming Soon*: before, after, afterReturning, afterThrowing, and around advice,
 * Prototype factory plugin allows using the JS prototype chain to create new objects directly from other objects in your wire spec.
-* Sizzle plugin, `wire/sizzle`, courtesy of [@unscriptable](https://twitter.com/unscriptfable)
+* Sizzle plugin, `wire/sizzle`, courtesy of [@unscriptable](https://twitter.com/unscriptable)
 * Not entirely new to 0.5, but worth mentioning Dojo integration, including:
 	* pubsub connector, subscribe *and publish* non-invasively using `dojo.publish/subscribe`
 	* event connector that uses dojo.connect
