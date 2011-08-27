@@ -24,8 +24,8 @@ define(['wire/domReady'], function(domReady) {
 			promise - factory-provided <Promise> that will be resolved with the
 				dom node.
 	*/
-	function byId(promise, name, refObj, wire) {
-		domReady(function resolveDomId() {
+	function byId(promise, name /*, refObj, wire*/) {
+		domReady(function() {
 			var node = document.getElementById(name);
 			if(node) promise.resolve(node);
 			// Best to throw here since this may be happening async)
@@ -42,9 +42,9 @@ define(['wire/domReady'], function(domReady) {
 		}		
 	};
 
-	// return function wire$plugin(ready, options) {
 	return {
-		wire$plugin: function domPlugin(ready, destroyed, options) {
+		wire$plugin: function domPlugin(/*ready, destroyed, options*/) {
+			// return the same instance every time, see above.
 			return wirePlugin;
 		}
 	};
