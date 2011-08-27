@@ -12,7 +12,7 @@
 */
 define(['dojo', 'wire/domReady'], function(dojo, domReady) {
 
-	function resolveQuery(promise, name, refObj, wire) {
+	function resolveQuery(promise, name, refObj /*, wire */) {
 		// Could use dojo.ready() here, but it also waits for the dijit
 		// parser, which may not be necessary in all situations, e.g. if
 		// you're using dojo, but not dijit.  So, just use domReady.
@@ -51,7 +51,7 @@ define(['dojo', 'wire/domReady'], function(dojo, domReady) {
 	// }
 	
 	return {
-		wire$plugin: function(ready, destroyed, options) {
+		wire$plugin: function(/* ready, destroyed, options */) {
 			return {
 				resolvers: {
 					'dom.query': resolveQuery

@@ -24,5 +24,8 @@ doh.registerUrl('decorate1', '../../wire/aop/decorate1.html');
 doh.registerUrl('introduce1', '../../wire/aop/introduce1.html');
 doh.registerUrl('aop-weaving', '../../wire/aop/weave1.html');
 
+// wire/sizzle
+doh.registerUrl('sizzle', '../../sizzle.html');
+
 // Go
 doh.run();

@@ -45,6 +45,7 @@
 		packages: [
 			{ name: 'dojo', path: 'dojo', lib: '.', main: './lib/main-browser' },
 			{ name: 'dijit', path: 'dijit', lib: '.', main: './lib/main' },
+			{ name: 'sizzle', path: 'support/sizzle', main: 'sizzle' },
 			{ name: 'aop', path: 'support/aop', main: 'aop' },
 			{ name: 'wire', path: '.', lib: './wire', main: 'wire' }
 		]

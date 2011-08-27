@@ -12,11 +12,11 @@
 	
 	Author: John Hann (@unscriptable)
 */
-define(['sizzle'], function(sizzle) {
+define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
 
-	function resolveQuery(promise, name, refObj, wire) {
+	function resolveQuery(promise, name, refObj /*, wire */) {
 
-		require(['wire/domReady'], function() {
+		domReady(function() {
 			var result = sizzle(name);
 			promise.resolve(typeof refObj.i == 'number' && refObj.i < result.length
 				? result[refObj.i]
@@ -26,7 +26,7 @@ define(['sizzle'], function(sizzle) {
 	}
 
 	return {
-		wire$plugin: function(ready, destroyed, options) {
+		wire$plugin: function(/*ready, destroyed, options*/) {
 			return {
 				resolvers: {
 					'dom.query': resolveQuery
