@@ -15,7 +15,7 @@ define(['require', 'wire/base'], function(require, basePlugin) {
 
 	var VERSION, tos, rootContext, rootSpec, delegate;
 	
-	VERSION = "0.5.1";
+	VERSION = "0.5.2";
     tos = Object.prototype.toString;
     rootSpec = global['wire']||{};
 
