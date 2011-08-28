@@ -5,8 +5,18 @@
 	<title>wire/sizzle test</title>
 
     <script src="util/doh/runner.js"></script>
-    <script src="test-config.js"></script>
 
+    <script>
+        require = { debug: true,
+            baseUrl: '../',
+            paths: {
+                curl: 'curl/src/curl',
+                sizzle: 'support/sizzle/sizzle'
+            }
+        };
+    </script>
+
+    <script src="../curl/src/curl.js" type="text/javascript" charset="utf-8"></script>
 	<script type="text/javascript">
 		require(['wire'], function(wire) {
 			wire({

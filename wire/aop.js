@@ -154,4 +154,4 @@ define(['require'], function(require) {
 			};
 		}
 	};
-});
+}); 
