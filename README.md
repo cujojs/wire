@@ -43,6 +43,12 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
     * The plugin format has changed to support new, more powerful async plugins.  See the [Plugin format wiki](https://github.com/briancavalier/wire/wiki/Plugin-format) for more information
     * `wire/aop` decorator and introduction options have changes.  See the [wire/aop wiki](https://github.com/briancavalier/wire/wiki/wire-aop) for more information
 
+### 0.5.2
+
+* Fix for `wire/sizzle` plugin
+* Updated to work with [curl v0.5](https://github.com/unscriptable/curl) domReady.
+* **NOTE** wire.js v0.5.2 now requires curl.js 0.5 or later.  It will also work with any recent version of RequireJS, and with dojo 1.6 or later.
+
 ### 0.5.1
 
 * `create` factory now supports the `isConstructor` option, when `true`, forces an object instance to be created using `new`.
