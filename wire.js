@@ -506,15 +506,15 @@
                 var proxy = createProxy(object, spec);
 				proxied.push(proxy);
 
-		        chain(processFacets('create', proxy, spec), created)
+		        chain(processFacets('create', proxy), created)
 		        .then(function() {
-					return chain(processFacets('configure', proxy, spec), configured);
+					return chain(processFacets('configure', proxy), configured);
 				}, fail)
                 .then(function() {
-                    return chain(processFacets('initialize', proxy, spec), initialized);
+                    return chain(processFacets('initialize', proxy), initialized);
                 }, fail)
                 .then(function() {
-                    return chain(processFacets('ready', proxy, spec), promise);
+                    return chain(processFacets('ready', proxy), promise);
                 }, fail);
 			}, fail);
 
@@ -537,9 +537,10 @@
 			return proxy;
 		}
 
-		function processFacets(step, proxy, spec) {
-			var promises, options, name;
+		function processFacets(step, proxy) {
+			var promises, options, name, spec;
 			promises = [];
+			spec = proxy.spec;
 
 			for(name in facets) {
 				options = spec[name];
