@@ -140,7 +140,7 @@ define([], function() {
 	}
 
 	function setProperty(proxy, name, val, wire) {
-		var promise = wire(val);
+		var promise = wire(val, name, proxy.path);
 
 		promise.then(function(resolvedValue) {
 			proxy.set(name, resolvedValue);

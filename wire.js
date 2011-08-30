@@ -184,8 +184,8 @@
 
 		// Plugin API
 		// wire() API that is passed to plugins.
-		function pluginApi(spec) {
-			return createItem(spec);
+		function pluginApi(spec, name, path) {
+			return createItem(spec, createPath(name, path));
 		}
 
 		// It has additional methods that plugins can use
