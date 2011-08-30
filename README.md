@@ -39,9 +39,10 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 * [wire/aop](https://github.com/briancavalier/wire/wiki/wire-aop) plugin: AOP weaving with pointcuts, and before, after, afterReturning, afterThrowing, after (aka "afterFinally") advice using [aop.js](https://github.com/briancavalier/aop.js)
 * Experimental optimizer/build tool support for [cram](https://github.com/unscriptable/cram). Point cram at your wire spec and let it optimize your entire app! *Docs coming soon*
 * [wire/debug](https://github.com/briancavalier/wire/wiki/wire-debug) plugin: tracks components and tells you which ones couldn't be wired and why
+* Improved memory management, especially when destroying contexts.
 * **Breaking Changes**
     * The plugin format has changed to support new, more powerful async plugins.  See the [Plugin format wiki](https://github.com/briancavalier/wire/wiki/Plugin-format) for more information
-    * [wire/aop](https://github.com/briancavalier/wire/wiki/wire-aop) decorator and introduction options have changes.  See the [wire/aop wiki](https://github.com/briancavalier/wire/wiki/wire-aop) for more information
+    * [wire/aop](https://github.com/briancavalier/wire/wiki/wire-aop) decorator and introduction options have changed.  See the [wire/aop wiki](https://github.com/briancavalier/wire/wiki/wire-aop) for more information
 
 ### 0.5.2
 
