@@ -36,12 +36,12 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 ### 0.6.0
 
-* `wire/aop` plugin: AOP weaving with pointcuts, and before, after, afterReturning, afterThrowing, after (aka "afterFinally") advice using [aop.js](https://github.com/briancavalier/aop.js)
+* [wire/aop](https://github.com/briancavalier/wire/wiki/wire-aop) plugin: AOP weaving with pointcuts, and before, after, afterReturning, afterThrowing, after (aka "afterFinally") advice using [aop.js](https://github.com/briancavalier/aop.js)
 * Experimental optimizer/build tool support for [cram](https://github.com/unscriptable/cram). Point cram at your wire spec and let it optimize your entire app! *Docs coming soon*
-* `wire/debug` plugin: tracks components and tells you which ones couldn't be wired and why
+* [wire/debug](https://github.com/briancavalier/wire/wiki/wire-debug) plugin: tracks components and tells you which ones couldn't be wired and why
 * **Breaking Changes**
     * The plugin format has changed to support new, more powerful async plugins.  See the [Plugin format wiki](https://github.com/briancavalier/wire/wiki/Plugin-format) for more information
-    * `wire/aop` decorator and introduction options have changes.  See the [wire/aop wiki](https://github.com/briancavalier/wire/wiki/wire-aop) for more information
+    * [wire/aop](https://github.com/briancavalier/wire/wiki/wire-aop) decorator and introduction options have changes.  See the [wire/aop wiki](https://github.com/briancavalier/wire/wiki/wire-aop) for more information
 
 ### 0.5.2
 
@@ -52,8 +52,8 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 ### 0.5.1
 
 * `create` factory now supports the `isConstructor` option, when `true`, forces an object instance to be created using `new`.
-* Improved debug output when using `wire/debug` plugin,
-* Slimmed down `wire/aop` plugin in preparation for a new version in an upcoming release,
+* Improved debug output when using [wire/debug](https://github.com/briancavalier/wire/wiki/wire-debug) plugin,
+* Slimmed down [wire/aop](https://github.com/briancavalier/wire/wiki/wire-aop) plugin in preparation for a new version in an upcoming release,
 * Automated unit tests using [Dojo DOH](http://dojotoolkit.org/reference-guide/util/doh.html), 
 * Semantic versioning
 
@@ -63,7 +63,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 * Can be used as either an AMD module or an AMD plugin,
 * Tested with [curl.js](https://github.com/unscriptable/curl), and [RequireJS](http://requirejs.org/).  Should also work with the upcoming [dojo 1.7 loader](http://dojotoolkit.org/) (but hasn't been tested yet),
 * Improved plugin system,
-* AOP plugin, `wire/aop`: Decorators and Introductions.  *Coming Soon*: before, after, afterReturning, afterThrowing, and around advice,
+* AOP plugin, [wire/aop](https://github.com/briancavalier/wire/wiki/wire-aop): Decorators and Introductions.  *Coming Soon*: before, after, afterReturning, afterThrowing, and around advice,
 * Prototype factory plugin allows using the JS prototype chain to create new objects directly from other objects in your wire spec.
 * Sizzle plugin, `wire/sizzle`, courtesy of [@unscriptable](https://twitter.com/unscriptable)
 * Not entirely new to 0.5, but worth mentioning Dojo integration, including:
