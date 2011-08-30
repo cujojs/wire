@@ -38,7 +38,7 @@ define([], function() {
 	function invoke(promise, func, target, args, wire) {
 		var f, rejecter;
 
-		f= target[func];
+		f = target[func];
 
 		rejecter = reject(promise);
 
