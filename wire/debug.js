@@ -8,13 +8,45 @@
 	Package: debug.js
 	wire plugin that logs timing and debug information about wiring context and object
 	lifecycle events (e.g. creation, properties set, initialized, etc.).
+	
+	Usage:
+	{
+		module: 'wire/debug',
+
+		// verbose
+		// If set to true, even more (a LOT) info will be output.
+		// Default is false if not specified.
+		verbose: false,
+
+		// timeout
+		// Milliseconds to wait for wiring to finish before reporting
+		// failed components.  There may be failures caused by 3rd party
+		// wire plugins and components that wire.js cannot detect.  This
+		// provides a last ditch way to try to report those failures.
+		// Default is 5000ms (5 seconds)
+		timeout: 5000,
+
+		// filter
+		// String or RegExp to match against a component's name.  Only
+		// components whose path matches will be reported in the debug
+		// diagnostic output.
+		// All components will still be tracked for failures.
+		// This can be useful in reducing the amount of diagnostic output and
+		// focusing it on specific components.
+		// Defaults to matching all components
+		// Examples:
+		//   filter: ".*View"
+		//   filter: /.*View/
+		//   filter: "[fF]oo[bB]ar"
+		filter: ".*"
+	}
 */
 define([], function() {
 	var timer, defaultTimeout;
 
 	timer = createTimer();
 	defaultTimeout = 5000; // 5 second wiring failure timeout
-	
+
 	/*
 	 Function: time
 	 Builds a string with timing info and a message for debug output
@@ -76,6 +108,10 @@ define([], function() {
 		};
 	}
 
+	function defaultFilter(path) {
+		return !!path;
+	}
+
 	return {
 		/*
 		 Function: wire$plugin
@@ -92,9 +128,19 @@ define([], function() {
 		 receive progress events for objects being destroyed.
 		 */
 		wire$plugin: function debugPlugin(ready, destroyed, options) {
-			var contextTimer, timeout, paths, logCreated, checkPathsTimeout, verbose, plugin;
+			var contextTimer, timeout, paths, logCreated, checkPathsTimeout, verbose, filter, filterRegex, plugin;
 
 			verbose = options.verbose;
+
+			if(options.filter) {
+				filterRegex = options.filter.test ? options.filter : new RegExp(options.filter);
+				filter = function(path) {
+					return filterRegex.test(path);
+				}
+			} else {
+				filter = defaultFilter;
+			}
+
 			contextTimer = createTimer();
 
 			function contextTime(msg) {
@@ -126,12 +172,14 @@ define([], function() {
 
 			function makeListener(step, verbose) {
 				return function(promise, proxy /*, wire */) {
-					if (proxy.path) {
-						paths[proxy.path].status = step;
+					var path = proxy.path;
+
+					if (path) {
+						paths[path].status = step;
 					}
 
-					if (verbose) {
-						var message = time(step + ' ' + (proxy.path || proxy.id || ''), contextTimer);
+					if (verbose && filter(path)) {
+						var message = time(step + ' ' + (path || proxy.id || ''), contextTimer);
 						if (proxy.target) {
 							console.log(message, proxy.target, proxy.spec);
 						} else {
@@ -169,8 +217,10 @@ define([], function() {
 
 			plugin = {
 				create: function(promise, proxy) {
-					if (proxy.path) {
-						paths[proxy.path] = {
+					var path = proxy.path;
+
+					if (path) {
+						paths[path] = {
 							spec: proxy.spec
 						};
 					}
