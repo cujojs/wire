@@ -19,13 +19,17 @@
     "maintainers": [
         {
             "name": "Brian Cavalier",
-            "email": "brian@hovercraftstudios.com"
+            "web": "http://hovercraftstudios.com"
         }
     ],
     "contributors": [
         {
             "name": "Brian Cavalier",
-            "email": "brian@hovercraftstudios.com"
+            "web": "http://hovercraftstudios.com"
+        },
+        {
+            "name": "John Hann",
+            "web": "http://unscriptable.com"
         }
     ],
     "dependencies": {
