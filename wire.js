@@ -19,6 +19,11 @@
 	VERSION = "0.6.0";
 	tos = Object.prototype.toString;
 	rootSpec = global['wire'] || {};
+	var VERSION, tos, rootContext, rootSpec, delegate;
+	
+	VERSION = "0.5.2";
+    tos = Object.prototype.toString;
+    rootSpec = global['wire']||{};
 
 	delegate = Object.create || createObject;
 
