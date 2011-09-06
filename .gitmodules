@@ -10,3 +10,6 @@
 [submodule "support/sizzle"]
 	path = support/sizzle
 	url = https://github.com/kriszyp/sizzle.git
+[submodule "support/when"]
+	path = support/when
+	url = git://github.com/briancavalier/when.js.git

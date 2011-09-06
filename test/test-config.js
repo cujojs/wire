@@ -47,6 +47,7 @@
 			{ name: 'dijit', path: 'dijit', lib: '.', main: './lib/main' },
 			{ name: 'sizzle', path: 'support/sizzle', main: 'sizzle' },
 			{ name: 'aop', path: 'support/aop', main: 'aop' },
+			{ name: 'when', path: 'support/when', main: 'when' },
 			{ name: 'wire', path: '.', lib: './wire', main: 'wire' }
 		]
 	};

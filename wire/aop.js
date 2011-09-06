@@ -48,12 +48,6 @@ define(['require', 'aop'], function(require, aop) {
 
 		wire.resolveRef(decorator).then(apply);
 
-//		if(typeof decorator == 'string') {
-//			require([decorator], apply);
-//		} else {
-//			apply(decorator);
-//		}
-//
 		return d;		
 	}
 
@@ -105,7 +99,7 @@ define(['require', 'aop'], function(require, aop) {
 		return d;
 	}
 
-function introduceFacet(promise, facet, wire) {
+	function introduceFacet(promise, facet, wire) {
 		var target, intros, intro, i, promises;
 		
 		target = facet.target;

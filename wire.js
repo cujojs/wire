@@ -10,19 +10,31 @@
 
 //noinspection ThisExpressionReferencesGlobalObjectJS
 (function(global, undef){
-	define(['require', 'wire/base'], function(require, basePlugin) {
+	define(['require', 'wire/base', 'when'], function(require, basePlugin, when) {
 
 	"use strict";
 
-	var VERSION, tos, rootContext, rootSpec, delegate, emptyObject;
+	var VERSION, tos, rootContext, rootSpec, delegate, emptyObject,
+		Deferred, chain, whenAll, isPromise;
 
-	VERSION = "0.6.0";
+	wire.version = VERSION = "0.6.0";
 	tos = Object.prototype.toString;
 	rootSpec = global['wire'] || {};
 
 	delegate = Object.create || createObject;
 
 	emptyObject = {};
+
+	// Local refs to when.js
+	Deferred = when.Deferred;
+	chain = when.chain;
+	whenAll = when.all;
+	isPromise = when.isPromise;
+
+	// Helper to reject a deferred when another is rejected
+	function chainReject(resolver) {
+		return function(err) { resolver.reject(err); };
+	}
 
 	//
 	// AMD Module API
@@ -45,8 +57,6 @@
 
 		return d.promise;
 	}
-
-	wire.version = VERSION;
 
 	//
 	// AMD loader plugin API
@@ -217,7 +227,7 @@
 		// the caller.  It will also have properties for all the
 		// objects that were created in this scope.
 		function apiResolveRef(ref) {
-			return when(doResolveRef(ref)).promise;
+			return when(doResolveRef(ref));
 		}
 
 		function apiWire(spec) {
@@ -258,7 +268,7 @@
 
 			// Retain a do-nothing doDestroy() func, in case
 			// it is called again for some reason.
-			doDestroy = noop;
+			doDestroy = function() {};
 
 			scopeDestroyed.resolve();
 
@@ -595,6 +605,7 @@
 		 Factory that uses an AMD module either directly, or as a
 		 constructor or plain function to create the resulting item.
 		 */
+		//noinspection JSUnusedLocalSymbols
 		function instanceFactory(promise, spec, wire, name) {
 			var fail, create, module, args, isConstructor;
 
@@ -823,282 +834,6 @@
 		}
 
 		return is;
-	}
-
-	/*
-	 Function: whenAll
-	 Return a promise that will resolve when and only
-	 when all of the supplied promises resolve.  The
-	 resolution value will be an array containing the
-	 resolution values of the triggering promises.
-	 TODO: Figure out the best strategy for rejecting.
-	 */
-	function whenAll(promises) {
-		var toResolve, values, deferred, resolver, rejecter, handleProgress;
-
-		toResolve = promises.length;
-
-		deferred = Deferred();
-		values = [];
-
-		// Resolver for promises.  Captures the value and resolves
-		// the returned promise when toResolve reaches zero.
-		// Overwrites resolver var with a noop once promise has
-		// be resolved to cover case where n < promises.length
-		// var resolver = function handleResolve(val) {
-		resolver = function(val) {
-			values.push(val);
-			if (--toResolve === 0) {
-				resolver = handleProgress = noop;
-				deferred.resolve(values);
-			}
-		};
-
-		// Wrapper so that resolver can be replaced
-		function resolve(val) {
-			resolver(val);
-		}
-
-		// Rejecter for promises.  Rejects returned promise
-		// immediately, and overwrites rejecter var with a noop
-		// once promise to cover case where n < promises.length.
-		// TODO: Consider rejecting only when N (or promises.length - N?)
-		// promises have been rejected instead of only one?
-		// var rejecter = function handleReject(err) {
-		rejecter = function(err) {
-			rejecter = handleProgress = noop;
-			deferred.reject(err);
-		};
-
-		// Wrapper so that rejecter can be replaced
-		function reject(err) {
-			rejecter(err);
-		}
-
-		// Progress updater.  Since this may be called many times,
-		// can't overwrite it until resolve/reject.  So, it is
-		// overwritten in resolve(), and reject().
-		handleProgress = function(update) {
-			deferred.progress(update);
-		};
-
-		function progress(update) {
-			handleProgress(update);
-		}
-
-		if (toResolve == 0) {
-			deferred.resolve(values);
-
-		} else {
-			for (var i = 0, len = promises.length; i < len; i++) {
-				when(promises[i]).then(resolve, reject, progress);
-			}
-		}
-
-		return deferred;
-	}
-
-	function when(promiseOrValue) {
-		if (isPromise(promiseOrValue)) {
-			return promiseOrValue;
-		}
-
-		var d = Deferred();
-		d.resolve(promiseOrValue);
-		return d;
-	}
-
-	function isPromise(promiseOrValue) {
-		return promiseOrValue && isFunction(promiseOrValue.then);
-	}
-
-	/*
-	 Function: chain
-	 Chain two <Promises> such that when the first completes, the second
-	 is completed with either the completion value of the first, or
-	 in the case of resolve, completed with the optional resolveValue.
-
-	 Parameters:
-	 first - first <Promise>
-	 second - <Promise> to complete when first <Promise> completes
-	 resolveValue - optional value to use as the resolution value
-	 for first.
-
-	 Returns:
-	 second
-	 */
-	function chain(first, second, resolveValue) {
-		var args = arguments;
-		first.then(
-			function(val)    { second.resolve(args.length > 2 ? resolveValue : val); },
-			function(err)    { second.reject(err); },
-			function(update) { second.progress(update); }
-		);
-
-		return second;
-	}
-
-	function chainReject(resolver) {
-		return function(err) { resolver.reject(err); };
-	}
-
-	//
-	// The following Deferred promise implementation is from when.js:
-	// https://github.com/briancavalier/when.js
-	//
-
-	function noop() {}
-
-	var freeze = Object.freeze || noop;
-
-	/*
-	 Constructor: Deferred
-	 Creates a new, CommonJS compliant, Deferred with fully isolated
-	 resolver and promise parts, either or both of which may be given out
-	 safely to consumers.
-	 The Deferred itself has the full API: resolve, reject, progress, and
-	 then. The resolver has resolve, reject, and progress.  The promise
-	 only has then.
-	 */
-	function Deferred() {
-		var deferred, promise, resolver, result, listeners, tail,
-			_then, _progress, complete;
-
-		_then = function(callback, errback, progback) {
-			var d, listener;
-
-			listener = {
-				deferred: (d = Deferred()),
-				resolve: callback,
-				reject: errback,
-				progress: progback
-			};
-
-			if (listeners) {
-				// Append new listener if linked list already initialized
-				tail = tail.next = listener;
-			} else {
-				// Init linked list
-				listeners = tail = listener;
-			}
-
-			return d.promise;
-		};
-
-		function then(callback, errback, progback) {
-			return _then(callback, errback, progback);
-		}
-
-		function resolve(val) {
-			complete('resolve', val);
-		}
-
-		function reject(err) {
-			complete('reject', err);
-		}
-
-		_progress = function(update) {
-			var listener, progress;
-
-			listener = listeners;
-
-			while (listener) {
-				progress = listener.progress;
-				progress && progress(update);
-				listener = listener.next;
-			}
-		};
-
-		function progress(update) {
-			_progress(update);
-		}
-
-		complete = function(which, val) {
-			// Save original thenImpl
-			var origThen = _then;
-
-			// Replace thenImpl with one that immediately notifies
-			// with the result.
-			_then = function newThen(callback, errback) {
-				var promise = origThen(callback, errback);
-				notify(which);
-				return promise;
-			};
-
-			// Replace complete so that this Deferred
-			// can only be completed once.  Note that this leaves
-			// notify() intact so that it can be used in the
-			// rewritten thenImpl above.
-			// Replace progressImpl, so that subsequent attempts
-			// to issue progress throw.
-			complete = _progress = function alreadyCompleted() {
-				throw new Error("already completed");
-			};
-
-			// Final result of this Deferred.  This is immutable
-			result = val;
-
-			// Notify listeners
-			notify(which);
-		};
-
-		function notify(which) {
-			// Traverse all listeners registered directly with this Deferred,
-			// also making sure to handle chained thens
-			while (listeners) {
-				var listener, ldeferred, newResult, handler;
-
-				listener = listeners;
-				ldeferred = listener.deferred;
-				listeners = listeners.next;
-
-				handler = listener[which];
-				if (handler) {
-					try {
-						newResult = handler(result);
-
-						if (isPromise(newResult)) {
-							// If the handler returned a promise, chained deferreds
-							// should complete only after that promise does.
-							newResult.then(ldeferred.resolve, ldeferred.reject, ldeferred.progress);
-
-						} else {
-							// Complete deferred from chained then()
-							ldeferred[which](newResult === undef ? result : newResult);
-
-						}
-					} catch(e) {
-						// Exceptions cause chained deferreds to reject
-						// TODO: Should this also switch remaining listeners to reject?
-						// which = 'reject';
-						ldeferred.reject(e);
-					}
-				}
-			}
-		}
-
-		// The full Deferred object, with both Promise and Resolver parts
-		deferred = {};
-
-		// Promise and Resolver parts
-
-		// Expose Promise API
-		promise = deferred.promise = {
-			then: (deferred.then = then)
-		};
-
-		// Expose Resolver API
-		resolver = deferred.resolver = {
-			resolve:  (deferred.resolve  = resolve),
-			reject:   (deferred.reject   = reject),
-			progress: (deferred.progress = progress)
-		};
-
-		// Freeze Promise and Resolver APIs
-		freeze(promise);
-		freeze(resolver);
-
-		return deferred;
 	}
 
 	return wire;
