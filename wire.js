@@ -36,6 +36,14 @@
 		return function(err) { resolver.reject(err); };
 	}
 
+	function indexOf(array, item) {
+		for (var i = 0, len = array.length; i < len; i++) {
+			if(array[i] === item) return i;
+		}
+
+		return -1;
+	}
+
 	//
 	// AMD Module API
 	//
@@ -393,11 +401,24 @@
 
 					listeners.push(plugin);
 
-					if (plugin.proxies) {
-						proxies = plugin.proxies.concat(proxies);
-					}
+					addProxies(plugin.proxies);
 				}
 			}
+		}
+
+		function addProxies(proxiesToAdd) {
+			if(!proxiesToAdd) return;
+			
+			var newProxies, p;
+			newProxies = [];
+			for (var i = 0, len = proxiesToAdd.length; i < len; i++) {
+				p = proxiesToAdd[i];
+				if(indexOf(proxies, p) < 0) {
+					newProxies.push(p)
+				}
+			}
+
+			scope.proxies = proxies = newProxies.concat(proxies);
 		}
 
 		function addPlugin(src, registry) {
@@ -457,7 +478,7 @@
 				},
 				function() {
 					// No factory found, treat object spec as a nested scope
-					createScope(spec, scope).then(
+					createScope(spec, scope, name).then(
 						function(created) { promise.resolve(created.local); },
 						chainReject(promise)
 					);

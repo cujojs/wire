@@ -56,6 +56,17 @@ define({
 		destroy: 'destroy' // Called when the context is destroyed
 	},
 	widget2: { $ref: 'dijit!widget' },
+	nested: {
+		widget3: {
+			create: 'dijit/form/TextBox',
+			properties: {
+				value: 'nested worked'
+			},
+			init: {
+				placeAt: [{ $ref: 'dom!container' }, 'last']
+			}
+		}
+	},
 	// Wire in a reference to the destroy button.
 	destroyButton: { $ref: 'dom!destroy' }
 });

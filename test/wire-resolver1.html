@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>wire! resolver test</title>
+
+    <script src="util/doh/runner.js"></script>
+    <script src="test-config.js"></script>
+
+	<script type="text/javascript">
+		require(['wire'], function(wire) {
+            
+			wire({
+                _wire: { $ref: 'wire!' }
+			}).then(
+				function(context) {
+					doh.register('wire-resolver ref has correct API', [
+						function(doh) {
+							doh.assertTrue(typeof context._wire == 'function');
+							doh.assertTrue(typeof context._wire.then == 'function');
+							doh.assertTrue(typeof context._wire.destroy == 'function');
+							doh.assertTrue(typeof context._wire.resolve == 'function');
+						},
+                        function(doh) {
+                            var d = new doh.Deferred();
+
+                            context._wire({ win: true }).then(function(child) {
+                                d.resolve(child.win);
+                            });
+                        }
+					]);
+
+					doh.run();
+				},
+				function(err) {
+					console.error(err);
+				}
+			);
+
+		});
+	</script>
+</head>
+<body>
+
+</body>
+</html>
