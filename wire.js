@@ -10,14 +10,14 @@
 
 //noinspection ThisExpressionReferencesGlobalObjectJS
 (function(global, undef){
-	define(['require', 'wire/base', 'when'], function(require, basePlugin, when) {
+	define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
 	"use strict";
 
 	var VERSION, tos, rootContext, rootSpec, delegate, emptyObject,
 		Deferred, chain, whenAll, isPromise;
 
-	wire.version = VERSION = "0.6.0";
+	wire.version = VERSION = "0.6.1";
 	tos = Object.prototype.toString;
 	rootSpec = global['wire'] || {};
 
@@ -145,7 +145,7 @@
 	function createScope(scopeDef, parent, scopeName) {
 		var scope, local, proxied, objects, resolvers, factories, facets, listeners, proxies,
 			modulesToLoad, moduleLoadPromises,
-			contextApi, modulesReady, scopeReady, scopeDestroyed,
+			wireApi, modulesReady, scopeReady, scopeDestroyed,
 			promises, name, contextPromise, doDestroy;
 
 
@@ -176,20 +176,24 @@
 
 		// A proxy of this scope that can be used as a parent to
 		// any child scopes that may be created.
-		scope = {
+		var scopeParent = {
 			name:       scopeName,
-			local:      local,
 			objects:    objects,
-			resolvers:  resolvers,
-			factories:  factories,
-			facets:     facets,
-			listeners:  listeners,
-			proxies: 	proxies,
-			resolveRef: doResolveRef,
-			destroy:    destroy,
 			destroyed:  scopeDestroyed
 		};
 
+		// Full scope definition.  This will be given to sub-scopes,
+		// but should never be given to child contexts
+		scope = delegate(scopeParent);
+		
+		scope.local = local;
+		scope.resolvers = resolvers;
+		scope.factories = factories;
+		scope.facets = facets;
+		scope.listeners = listeners;
+		scope.proxies = proxies;
+		scope.resolveRef = doResolveRef;
+		scope.destroy = destroy;
 		scope.path = createPath(scopeName, parent.path);
 
 		// Plugin API
@@ -222,6 +226,8 @@
 			promises.push(p = objects[name] = Deferred());
 		}
 
+		contextPromise = chain(scopeReady, Deferred(), objects).promise;
+
 		// Context API
 		// API of a wired context that is returned, via promise, to
 		// the caller.  It will also have properties for all the
@@ -230,22 +236,19 @@
 			return when(doResolveRef(ref));
 		}
 
-		function apiWire(spec) {
-			return wireContext(spec, scope).promise;
-		}
-
 		function apiDestroy() {
 			return destroy().promise;
 		}
 
-		contextPromise = chain(scopeReady, Deferred(), objects).promise;
+		function wireChild(spec) {
+			return wireContext(spec, scopeParent);
+		}
 
-		contextApi = {
-			then:       contextPromise.then,
-			wire:       (objects.wire    = apiWire),
-			destroy:    (objects.destroy = apiDestroy),
-			resolve:    (objects.resolve = apiResolveRef)
-		};
+		wireApi = objects.wire = wireChild;
+
+		wireApi.then    = contextPromise.then;
+		wireApi.destroy = objects.destroy = apiDestroy;
+		wireApi.resolve = objects.resolve = apiResolveRef;
 
 		// When all scope item promises are resolved, the scope
 		// is resolved.
@@ -293,7 +296,7 @@
 				}
 
 				local = objects = scope = proxied = proxies = parent
-					= resolvers = factories = facets = contextApi
+					= resolvers = factories = facets = wireApi
 					= listeners = null;
 			});
 		};
@@ -478,6 +481,8 @@
 				promise.resolve(moduleFactory);
 			} else if (spec.create) {
 				promise.resolve(instanceFactory);
+			} else if (spec.wire) {
+				promise.resolve(wireFactory);
 			} else {
 				modulesReady.then(function() {
 					for (var f in factories) {
@@ -596,8 +601,8 @@
 		// Built-in Factories
 		//
 
-		function moduleFactory(promise, spec /*, wire, name*/) {
-			chain(loadModule(spec.module, spec), promise);
+		function moduleFactory(resolver, spec /*, wire, name*/) {
+			chain(loadModule(spec.module, spec), resolver);
 		}
 
 		/*
@@ -606,10 +611,11 @@
 		 constructor or plain function to create the resulting item.
 		 */
 		//noinspection JSUnusedLocalSymbols
-		function instanceFactory(promise, spec, wire, name) {
-			var fail, create, module, args, isConstructor;
+		function instanceFactory(resolver, spec, wire) {
+			var fail, create, module, args, isConstructor, name;
 
-			fail = chainReject(promise);
+			fail = chainReject(resolver);
+			name = spec.id;
 
 			create = spec.create;
 			if (isString(create)) {
@@ -624,7 +630,7 @@
 			loadModule(module, spec).then(
 				function(module) {
 					function resolve(resolvedArgs) {
-						promise.resolve(instantiate(module, resolvedArgs, isConstructor));
+						resolver.resolve(instantiate(module, resolvedArgs, isConstructor));
 					}
 
 					try {
@@ -645,7 +651,7 @@
 
 						} else {
 							// Simply use the module as is
-							promise.resolve(module);
+							resolver.resolve(module);
 
 						}
 					} catch(e) {
@@ -654,6 +660,33 @@
 				},
 				fail
 			);
+		}
+
+		function wireFactory(resolver, spec/*, wire, name*/) {
+			var options, module, wait;
+
+			options = spec.wire;
+			wait = false;
+
+			// Get child spec and options
+			if(typeof options === 'string') {
+				module = options;
+			} else {
+				module = options.spec;
+				wait = options.wait;
+			}
+
+			// Start wiring the child
+			var context = wireChild(module);
+
+			// If wait is true, only resolve this factory call when
+			// the child has completed wiring.
+			// Otherwise, resolve immediately with the child promise
+			if (options.wait === true) {
+				chain(context, resolver);
+			} else {
+				resolver.resolve(context);
+			}
 		}
 
 		//
@@ -711,8 +744,8 @@
 			return promise;
 		}
 
-		function wireResolver(promise /*, name, refObj, wire */) {
-			promise.resolve(contextApi);
+		function wireResolver(promise /*, name, refObj, wire*/) {
+			promise.resolve(wireApi);
 		}
 
 		//
