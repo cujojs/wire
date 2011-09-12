@@ -1,5 +1,7 @@
 tools/
 curl/
+dojo/
+!test/dojo
 dijit/
 dojo.js
 bin/
