@@ -1,11 +1,22 @@
 <!DOCTYPE HTML>
-<html lang="en-US">
+<html lang="en-US" class="loading">
 <head>
 	<meta charset="UTF-8">
 	<title>Launcher test</title>
 
     <script src="../util/doh/runner.js"></script>
     <script src="../test-config.js"></script>
+
+    <style>
+        body {
+            -webkit-transition: opacity 250ms ease;
+            -moz-transition: opacity 250ms ease;
+            transition: opacity 250ms ease;
+        }
+        .loading body {
+            opacity: 0;
+        }
+    </style>
 
 	<script type="text/javascript">
 		wire = {

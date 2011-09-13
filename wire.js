@@ -15,7 +15,7 @@
 	"use strict";
 
 	var VERSION, tos, rootContext, rootSpec, delegate, emptyObject,
-		Deferred, chain, whenAll, isPromise;
+		defer, chain, whenAll, isPromise;
 
 	wire.version = VERSION = "0.6.1";
 	tos = Object.prototype.toString;
@@ -26,7 +26,7 @@
 	emptyObject = {};
 
 	// Local refs to when.js
-	Deferred = when.Deferred;
+	defer = when.defer;
 	chain = when.chain;
 	whenAll = when.all;
 	isPromise = when.isPromise;
@@ -49,7 +49,7 @@
 	//
 
 	function wire(spec) {
-		var d = Deferred();
+		var d = defer();
 
 		// If the root context is not yet wired, wire it first
 		if (!rootContext) {
@@ -98,7 +98,7 @@
 
 	function wireContext(specs, parent) {
 
-		var deferred = Deferred();
+		var deferred = defer();
 
 		// Function to do the actual wiring.  Capture the
 		// parent so it can be called after an async load
@@ -177,10 +177,10 @@
 
 		modulesToLoad = [];
 		moduleLoadPromises = {};
-		modulesReady = Deferred();
+		modulesReady = defer();
 
-		scopeReady = Deferred();
-		scopeDestroyed = Deferred();
+		scopeReady = defer();
+		scopeDestroyed = defer();
 
 		// A proxy of this scope that can be used as a parent to
 		// any child scopes that may be created.
@@ -212,7 +212,7 @@
 
 		// It has additional methods that plugins can use
 		pluginApi.resolveRef = apiResolveRef;
-		pluginApi.deferred   = Deferred;
+		pluginApi.deferred   = defer;
 		pluginApi.when       = when;
 		pluginApi.whenAll    = whenAll;
 		pluginApi.ready      = scopeReady.promise;
@@ -231,10 +231,10 @@
 		// Setup a promise for each item in this scope
 		var p;
 		for (name in scopeDef) {
-			promises.push(p = objects[name] = Deferred());
+			promises.push(p = objects[name] = defer());
 		}
 
-		contextPromise = chain(scopeReady, Deferred(), objects).promise;
+		contextPromise = chain(scopeReady, defer(), objects);
 
 		// Context API
 		// API of a wired context that is returned, via promise, to
@@ -287,7 +287,7 @@
 
 			promises = [];
 			for (i = 0; (p = proxied[i++]);) {
-				pDeferred = Deferred();
+				pDeferred = defer();
 				promises.push(pDeferred);
 				processListeners(pDeferred, 'destroy', p);
 			}
@@ -356,7 +356,7 @@
 				created = val;
 			}
 
-			return chain(when(created), Deferred());
+			return chain(when(created), defer());
 		}
 
 		function loadModule(moduleId, spec) {
@@ -369,7 +369,7 @@
 					modulesToLoad.push(moduleId);
 					m = moduleLoadPromises[moduleId] = {
 						id: moduleId,
-						deferred: (d = Deferred())
+						deferred: (d = defer())
 					};
 
 					moduleLoadPromises[moduleId] = m;
@@ -384,7 +384,7 @@
 				}
 
 			} else {
-				d = Deferred();
+				d = defer();
 				d.resolve(moduleId);
 			}
 
@@ -434,7 +434,7 @@
 		function createArray(arrayDef, name) {
 			var promise, result;
 
-			promise = Deferred();
+			promise = defer();
 			result = [];
 
 			if (arrayDef.length === 0) {
@@ -466,13 +466,13 @@
 		}
 
 		function createModule(spec, name) {
-			var promise = Deferred();
+			var promise = defer();
 
 			// Look for a factory, then use it to create the object
 			findFactory(spec).then(
 				function(factory) {
 					if(!spec.id) spec.id = name;
-					var factoryPromise = Deferred();
+					var factoryPromise = defer();
 					factory(factoryPromise.resolver, spec, pluginApi);
 					chain(processObject(factoryPromise, spec), promise);
 				},
@@ -489,7 +489,7 @@
 		}
 
 		function findFactory(spec) {
-			var promise = Deferred();
+			var promise = defer();
 
 			// FIXME: Should not have to wait for all modules to load,
 			// but rather only the module containing the particular
@@ -524,12 +524,12 @@
 		function processObject(target, spec) {
 			var promise, created, configured, initialized, destroyed, fail;
 
-			promise = Deferred();
+			promise = defer();
 
-			created     = Deferred();
-			configured  = Deferred();
-			initialized = Deferred();
-			destroyed   = Deferred();
+			created     = defer();
+			configured  = defer();
+			initialized = defer();
+			destroyed   = defer();
 
 			fail = chainReject(promise);
 
@@ -585,7 +585,7 @@
 				}
 			}
 
-			var d = Deferred();
+			var d = defer();
 
 			whenAll(promises).then(
 				function() { processListeners(d, step, proxy); },
@@ -609,7 +609,7 @@
 			var facet, facetPromise;
 
 			if(processor && processor[step]) {
-				facetPromise = Deferred();
+				facetPromise = defer();
 				promises.push(facetPromise);
 
 				facet = delegate(proxy);
@@ -731,7 +731,7 @@
 			} else {
 				var split;
 
-				promise = Deferred();
+				promise = defer();
 				split = refName.indexOf('!');
 
 				if (split > 0) {

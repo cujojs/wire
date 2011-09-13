@@ -5,9 +5,9 @@ define({
 	// dom: { module: 'wire/dom' }
 	// This seems like it could end up being a reasonable convention, tho.
 	plugins: [
-		{ module: 'wire/debug' },
+//		{ module: 'wire/debug' },
 		{ module: 'wire/dojo/dijit', parse: true }, // Calls dojo.parser.parse
-		{ module: 'wire/dom' }
+		{ module: 'wire/dom', classes: { init: 'loading' } }
 	],
 	// Create a controller, and inject a dijit.form.TextBox that is also
 	// created and wired to a dom node here in the spec.
