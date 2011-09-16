@@ -356,7 +356,7 @@
 				created = val;
 			}
 
-			return chain(when(created), defer());
+			return when(created);
 		}
 
 		function loadModule(moduleId, spec) {

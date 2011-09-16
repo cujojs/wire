@@ -86,17 +86,16 @@ define(['wire/domReady'], function(domReady) {
 			if(classes) {
 
 				node = document.getElementsByTagName('html')[0];
-				if(classes.init) {
-					// Add classes for wiring start
-					handleClasses(node, classes.init);
+				
+				// Add classes for wiring start
+				handleClasses(node, classes.init);
 
-					// Add/remove classes for context ready
-					ready.then(function() { handleClasses(node, classes.ready, classes.init); });
-				}
+				// Add/remove classes for context ready
+				ready.then(function() { handleClasses(node, classes.ready, classes.init); });
 
 				if(classes.ready) {
 					// Remove classes for context destroyed
-					destroyed.then(function() { handleClasses(node, classes.ready); });
+					destroyed.then(function() { handleClasses(node, null, classes.ready); });
 				}
 			}
 
