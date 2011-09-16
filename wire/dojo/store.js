@@ -60,21 +60,37 @@ define(['dojo/store/JsonRest'], function(JsonRest) {
 				resource at the referenced url.
 	*/
 	function resolveResource(promise, name, refObj, wire) {
-		var store = new JsonRest({ target: name });
-			
-		if(refObj.get) {
-			// If get was specified, get it, and resolve with the resulting item.
-			resolveData(store.get(refObj.get), promise, refObj.wait);
+		wire({ create: { module: 'dojo/store/JsonRest', args: { target: name } } })
+			.then(function(store) {
+				if(refObj.get) {
+					// If get was specified, get it, and resolve with the resulting item.
+					resolveData(store.get(refObj.get), promise, refObj.wait);
 
-		} else if(refObj.query) {
-			// Similarly, query and resolve with the result set.
-			resolveData(store.query(refObj.query), promise, refObj.wait);
-		
-		} else {
-			// Neither get nor query was specified, so resolve with
-			// the store itself.
-			promise.resolve(store);
-		}		
+				} else if(refObj.query) {
+					// Similarly, query and resolve with the result set.
+					resolveData(store.query(refObj.query), promise, refObj.wait);
+
+				} else {
+					// Neither get nor query was specified, so resolve with
+					// the store itself.
+					promise.resolve(store);
+				}						
+			});
+//		var store = new JsonRest({ target: name });
+			
+//		if(refObj.get) {
+//			// If get was specified, get it, and resolve with the resulting item.
+//			resolveData(store.get(refObj.get), promise, refObj.wait);
+//
+//		} else if(refObj.query) {
+//			// Similarly, query and resolve with the result set.
+//			resolveData(store.query(refObj.query), promise, refObj.wait);
+//
+//		} else {
+//			// Neither get nor query was specified, so resolve with
+//			// the store itself.
+//			promise.resolve(store);
+//		}
 	}
 	
 	return {
