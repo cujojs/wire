@@ -2,6 +2,7 @@ tools/
 curl/
 dojo/
 !test/dojo
+!wire/dojo
 dijit/
 dojo.js
 bin/

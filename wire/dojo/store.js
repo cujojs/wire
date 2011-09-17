@@ -12,7 +12,7 @@
 	options, you can alternatively resolve references to actual data.
 */
 
-define(['dojo/store/JsonRest'], function(JsonRest) {
+define([], function() {
 	
 	function resolveData(dataPromise, refPromise, wait) {
 		if(wait === true) {
@@ -21,7 +21,7 @@ define(['dojo/store/JsonRest'], function(JsonRest) {
 					refPromise.resolve(data);
 				},
 				function(err) {
-					refPromise.unresolved();
+					refPromise.reject(err);
 				}
 			);
 		} else {
@@ -76,25 +76,10 @@ define(['dojo/store/JsonRest'], function(JsonRest) {
 					promise.resolve(store);
 				}						
 			});
-//		var store = new JsonRest({ target: name });
-			
-//		if(refObj.get) {
-//			// If get was specified, get it, and resolve with the resulting item.
-//			resolveData(store.get(refObj.get), promise, refObj.wait);
-//
-//		} else if(refObj.query) {
-//			// Similarly, query and resolve with the result set.
-//			resolveData(store.query(refObj.query), promise, refObj.wait);
-//
-//		} else {
-//			// Neither get nor query was specified, so resolve with
-//			// the store itself.
-//			promise.resolve(store);
-//		}
 	}
 	
 	return {
-		wire$plugin: function restPlugin(ready, options) {
+		wire$plugin: function restPlugin(/* ready, destroyed, options */) {
 			return {
 				resolvers: {
 					resource: resolveResource
