@@ -60,7 +60,8 @@
 		when(rootContext).then(
 			function(root) {
 				chain(root.wire(spec), d);
-			}
+			},
+			chainReject(d)
 		);
 
 		return d.promise;
@@ -75,9 +76,9 @@
 		var promise = callback.resolve
 			? callback
 			: {
-			resolve: callback,
+				resolve: callback,
 				reject: function(err) { throw err; }
-		};
+			};
 
 		chain(wire(name), promise);
 	}
@@ -356,6 +357,7 @@
 				created = val;
 			}
 
+			// Always return a promise
 			return when(created);
 		}
 
