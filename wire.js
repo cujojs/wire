@@ -17,7 +17,7 @@
 	var VERSION, tos, rootContext, rootSpec, delegate, emptyObject,
 		defer, chain, whenAll, isPromise;
 
-	wire.version = VERSION = "0.6.1";
+	wire.version = VERSION = "0.6.5";
 	tos = Object.prototype.toString;
 	rootSpec = global['wire'] || {};
 
@@ -651,7 +651,12 @@
 			loadModule(module, spec).then(
 				function(module) {
 					function resolve(resolvedArgs) {
-						resolver.resolve(instantiate(module, resolvedArgs, isConstructor));
+						try {
+							var instantiated = instantiate(module, resolvedArgs, isConstructor);
+							resolver.resolve(instantiated);
+						} catch(e) {
+							resolver.reject(e);
+						}
 					}
 
 					try {

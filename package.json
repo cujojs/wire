@@ -1,6 +1,6 @@
 {
     "name": "wire",
-    "version": "0.6.0",
+    "version": "0.6.5",
     "description": "A light, fast, flexible Javascript IOC container.",
     "keywords": ["ioc"],
     "licenses": [
@@ -34,10 +34,12 @@
     ],
     "dependencies": {
         "aop": "0.x",
+        "when": "0.9.2",
         "sizzle": "1.5.x"
     },
     "mappings": {
         "aop": "https://github.com/briancavalier/aop.js/zipball/master",
+        "when": "https://github.com/briancavalier/aop.js/zipball/0.9.2",
         "sizzle": "https://github.com/kriszyp/sizzle/zipball/1.5.2"
     },
     "main": "./wire",
