@@ -19,7 +19,7 @@
 					create: Controller,
 					properties: {
 						name: 'me',
-						logger: { create: Logger }
+						logger: { module: Logger }
 					},
 					init: {
 						ready: "Hello!"

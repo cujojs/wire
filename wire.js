@@ -625,7 +625,13 @@
 		//
 
 		function moduleFactory(resolver, spec /*, wire, name*/) {
-			chain(loadModule(spec.module, spec), resolver);
+			var module = spec.module;
+			
+			if(isString(module)) {
+				chain(loadModule(module, spec), resolver);
+			} else {
+				resolver.resolve(module);
+			}
 		}
 
 		/*
@@ -641,53 +647,57 @@
 			name = spec.id;
 
 			create = spec.create;
-			if (isString(create)) {
-				module = create;
-			} else {
+			if (isStrictlyObject(create)) {
+				if(create.module)
 				module = create.module;
 				args = create.args;
 				isConstructor = create.isConstructor;
+			} else {
+				module = create;
 			}
 
 			// Load the module, and use it to create the object
-			loadModule(module, spec).then(
-				function(module) {
-					function resolve(resolvedArgs) {
-						try {
-							var instantiated = instantiate(module, resolvedArgs, isConstructor);
-							resolver.resolve(instantiated);
-						} catch(e) {
-							resolver.reject(e);
-						}
-					}
-
+			function handleModule(module) {
+				function resolve(resolvedArgs) {
 					try {
-						// We'll either use the module directly, or we need
-						// to instantiate/invoke it.
-						if (isFunction(module)) {
-							// Instantiate or invoke it and use the result
-							if (args) {
-								args = isArray(args) ? args : [args];
-								createArray(args, name).then(resolve, fail);
+						var instantiated = instantiate(module, resolvedArgs, isConstructor);
+						resolver.resolve(instantiated);
+					} catch(e) {
+						resolver.reject(e);
+					}
+				}
 
-							} else {
-								// No args, don't need to process them, so can directly
-								// insantiate the module and resolve
-								resolve([]);
-
-							}
+				try {
+					// We'll either use the module directly, or we need
+					// to instantiate/invoke it.
+					if (isFunction(module)) {
+						// Instantiate or invoke it and use the result
+						if (args) {
+							args = isArray(args) ? args : [args];
+							createArray(args, name).then(resolve, fail);
 
 						} else {
-							// Simply use the module as is
-							resolver.resolve(module);
+							// No args, don't need to process them, so can directly
+							// insantiate the module and resolve
+							resolve([]);
 
 						}
-					} catch(e) {
-						fail(e);
+
+					} else {
+						// Simply use the module as is
+						resolver.resolve(module);
+
 					}
-				},
-				fail
-			);
+				} catch(e) {
+					fail(e);
+				}
+			}
+
+			if (isString(module)) {
+				loadModuleForSpec(module, spec).then(handleModule, fail);
+			} else {
+				handleModule(module);
+			}
 		}
 
 		function wireFactory(resolver, spec/*, wire, name*/) {
