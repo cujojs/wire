@@ -33,7 +33,7 @@
         }
     ],
     "dependencies": {
-        "aop": "0.5",
+        "aop": "0.2.0",
         "when": "0.9.3",
         "sizzle": "1.5.x"
     },
