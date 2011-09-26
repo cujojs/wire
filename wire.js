@@ -9,13 +9,13 @@
 */
 
 //noinspection ThisExpressionReferencesGlobalObjectJS
-(function(global, undef){
+(function(global){
 	define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
 	"use strict";
 
 	var VERSION, tos, rootContext, rootSpec, delegate, emptyObject,
-		defer, chain, whenAll, isPromise;
+		defer, chain, whenAll, isPromise, undef;
 
 	wire.version = VERSION = "0.6.5";
 	tos = Object.prototype.toString;
@@ -648,7 +648,6 @@
 
 			create = spec.create;
 			if (isStrictlyObject(create)) {
-				if(create.module)
 				module = create.module;
 				args = create.args;
 				isConstructor = create.isConstructor;
@@ -694,7 +693,7 @@
 			}
 
 			if (isString(module)) {
-				loadModuleForSpec(module, spec).then(handleModule, fail);
+				when(loadModule(module, spec), handleModule, fail);
 			} else {
 				handleModule(module);
 			}

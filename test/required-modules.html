@@ -14,6 +14,19 @@
 			'test/test1/ConsoleLogger'
 		],
 		function(wire, Controller, Logger) {
+
+            var undef;
+
+            function Thing1(val) { this.val = val; }
+            Thing1.prototype = {
+                // prototype property so wire knows Thing1 is a constructor
+                success: true
+            };
+
+            function Thing2(val) { this.val = val; }
+
+            function createThing3(val) { return { val: val, success: true }; }
+
 			wire({
 				controller: {
 					create: Controller,
@@ -24,10 +37,64 @@
 					init: {
 						ready: "Hello!"
 					}
-				}
+				},
+                thing1a: {
+                    create: Thing1
+                },
+                thing1b: {
+                    create: {
+                        module: Thing1,
+                        args: 1
+                    }
+                },
+                thing2a: {
+                    create: {
+                        module: Thing2,
+                        args: 1,
+                        isConstructor: true
+                    }
+                },
+                thing3a: {
+                    create: createThing3
+                },
+                thing3a: {
+                    create: {
+                        module: createThing3,
+                        args: 1
+                    }
+                }
 			}).then(
 				function(context) {
-					console.log("Done", context);
+                    doh.register('plain-constructor', [
+                        function(doh) {
+                            doh.assertTrue(context.controller instanceof Controller);
+                            doh.assertTrue(context.controller.logger !== undef);
+                        },
+                        function(doh) {
+                            doh.assertTrue(context.thing1a instanceof Thing1);
+                            doh.assertTrue(context.thing1a.success);
+                        },
+                        function(doh) {
+                            doh.assertTrue(context.thing1b instanceof Thing1);
+                            doh.assertTrue(context.thing1b.success);
+                            doh.assertEqual(1, context.thing1b.val);
+                        },
+                        function(doh) {
+                            doh.assertTrue(context.thing2a instanceof Thing2);
+                            doh.assertEqual(1, context.thing2a.val);
+                        },
+                        function(doh) {
+                            doh.assertEqual('object', typeof context.thing3a);
+                            doh.assertTrue(context.thing3a.success);
+                        },
+                        function(doh) {
+                            doh.assertEqual('object', typeof context.thing3a);
+                            doh.assertTrue(context.thing3a.success);
+                            doh.assertEqual(1, context.thing3a.val);
+                        }
+                    ]);
+
+                    doh.run();
 				},
 				function(err) {
 					console.log(err);

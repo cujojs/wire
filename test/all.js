@@ -2,9 +2,11 @@ doh.registerUrl('_fake', '../../_fake-doh.html');
 
 // Core
 doh.registerUrl('basic-types1', '../../basic-types1.html');
-doh.registerUrl('create-constructor', '../../create-constructor.html');
 doh.registerUrl('nested1', '../../nested2.html');
 doh.registerUrl('nested2', '../../nested2.html');
+doh.registerUrl('create-constructor', '../../create-constructor.html');
+// create with raw constructors/functions
+doh.registerUrl('plain-constructors', '../../required-modules.html');
 
 // Facets
 
@@ -14,6 +16,7 @@ doh.registerUrl('destroy-facet', '../../destroy.html');
 
 // Factories
 
+// literal
 doh.registerUrl('literal-factory', '../../literal.html');
 
 // wire/dom
