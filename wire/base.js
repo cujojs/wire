@@ -9,6 +9,7 @@
 	Base wire plugin that provides properties, init, and destroy facets, and a
 	proxy for plain JS objects.
 */
+(function(define) {
 define([], function() {
 	var tos, beget;
 	tos = Object.prototype.toString;
@@ -22,13 +23,13 @@ define([], function() {
 	}
 
 	beget = Object.create || objectCreate;
-	
+
 	function reject(resolver) {
 		return function(err) {
 			resolver.reject(err);
 		};
 	}
-	
+
 	function resolve(resolver) {
 		return function(result) {
 			resolver.resolve(result);
@@ -58,7 +59,7 @@ define([], function() {
 					},
 					rejecter
 				);
-			}			
+			}
 		}
 	}
 
@@ -80,7 +81,7 @@ define([], function() {
 				promises.push(p);
 				invoke(p, func, target, options[func], wire);
 			}
-			
+
 			wire.whenAll(promises).then(
 				resolve(promise),
 				reject(promise)
@@ -135,7 +136,7 @@ define([], function() {
 
 		wire.whenAll(promises).then(
 			resolve(promise),
-			reject(promise)	
+			reject(promise)
 		);
 	}
 
@@ -187,9 +188,9 @@ define([], function() {
 
 			function destroyFacet(promise, facet, wire) {
 				promise.resolve();
-				
+
 				var target, options, w;
-				
+
 				target = facet.target;
 				options = facet.options;
 				w = wire;
@@ -198,7 +199,7 @@ define([], function() {
 					invokeAll(wire.deferred(), { options: options, target: target }, w);
 				});
 			}
-			
+
 			return {
 				factories: {
 					literal: literalFactory,
@@ -224,7 +225,13 @@ define([], function() {
 				proxies: [
 					pojoProxy
 				]
-			};				
+			};
 		}
 	};
 });
+})(typeof define != 'undefined'
+	// use define for AMD if available
+	? define
+	// If no define or module, attach to current context.
+	: function(deps, factory) { this.wire_base = factory(); }
+);

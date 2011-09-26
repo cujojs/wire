@@ -9,17 +9,17 @@
 */
 
 //noinspection ThisExpressionReferencesGlobalObjectJS
-(function(global){
+(function(rootSpec, define){
 	define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
 	"use strict";
 
-	var VERSION, tos, rootContext, rootSpec, delegate, emptyObject,
+	var VERSION, tos, rootContext, delegate, emptyObject,
 		defer, chain, whenAll, isPromise, undef;
 
 	wire.version = VERSION = "0.6.5";
 	tos = Object.prototype.toString;
-	rootSpec = global['wire'] || {};
+	rootSpec = rootSpec || {};
 
 	delegate = Object.create || createObject;
 
@@ -363,7 +363,7 @@
 			return when(created);
 		}
 
-		function loadModule(moduleId, spec) {
+		function getModule(moduleId, spec) {
 			var d;
 
 			if (isString(moduleId)) {
@@ -373,7 +373,7 @@
 					modulesToLoad.push(moduleId);
 					m = moduleLoadPromises[moduleId] = {
 						id: moduleId,
-						deferred: (d = defer())
+						deferred: defer()
 					};
 
 					moduleLoadPromises[moduleId] = m;
@@ -383,11 +383,13 @@
 						m.module = module;
 						chain(modulesReady, m.deferred, m.module);
 					});
-				} else {
-					d = m.deferred;
 				}
 
+				d = m.deferred;
+
 			} else {
+				scanPlugin(moduleId);
+
 				d = defer();
 				d.resolve(moduleId);
 			}
@@ -509,7 +511,7 @@
 			} else if (spec.wire) {
 				promise.resolve(wireFactory);
 			} else {
-				modulesReady.then(function() {
+				when(modulesReady, function() {
 					for (var f in factories) {
 						if (spec.hasOwnProperty(f)) {
 							promise.resolve(factories[f]);
@@ -543,10 +545,10 @@
 				.then(function(object) {
 					chain(scopeDestroyed, destroyed, object);
 
-                var proxy = createProxy(object, spec);
-				proxied.push(proxy);
+					var proxy = createProxy(object, spec);
+					proxied.push(proxy);
 
-		        chain(processFacets('create', proxy), created)
+					chain(processFacets('create', proxy), created)
 		        .then(function() {
 					return chain(processFacets('configure', proxy), configured);
 				}, fail)
@@ -627,13 +629,7 @@
 		//
 
 		function moduleFactory(resolver, spec /*, wire, name*/) {
-			var module = spec.module;
-			
-			if(isString(module)) {
-				chain(loadModule(module, spec), resolver);
-			} else {
-				resolver.resolve(module);
-			}
+			chain(getModule(spec.module, spec), resolver);
 		}
 
 		/*
@@ -694,11 +690,7 @@
 				}
 			}
 
-			if (isString(module)) {
-				when(loadModule(module, spec), handleModule, fail);
-			} else {
-				handleModule(module);
-			}
+			when(getModule(module, spec), handleModule, fail);
 		}
 
 		function wireFactory(resolver, spec/*, wire, name*/) {
@@ -769,7 +761,7 @@
 					} else {
 						// Wait for modules, since the reference may need to be
 						// resolved by a resolver plugin
-						modulesReady.then(function() {
+						when(modulesReady, function() {
 
 							var resolver = resolvers[name];
 							if (resolver) {
@@ -919,4 +911,10 @@
 
 	return wire;
 });
-})(this);
+})(this['wire'],
+	typeof define != 'undefined'
+	// use define for AMD if available
+	? define
+	// If no define or module, attach to current context.
+	: function(deps, factory) { this.wire = factory(function() {}, this.when, this.wire_base); }
+);

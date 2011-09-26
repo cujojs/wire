@@ -34,6 +34,12 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
+### 0.6.5
+
+* `wire/dom` plugin now supports options for adding/removing classes to `<html>` during wiring.
+* wire.js can now create components using raw constructors in addition to AMD module ids.  This allows wire.js to be used, albeit in a limited way, in systems that haven't yet fully committed to AMD.
+	* *I can pretty much guarantee that a future version of wire.js will remove this functionality again, as AMD and CommonJS modules become even more widely used.*
+
 ### 0.6.0
 
 * [wire/aop](https://github.com/briancavalier/wire/wiki/wire-aop) plugin: AOP weaving with pointcuts, and before, after, afterReturning, afterThrowing, after (aka "afterFinally") advice using [aop.js](https://github.com/briancavalier/aop.js)
