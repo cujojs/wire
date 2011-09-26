@@ -304,9 +304,11 @@
 					p.destroy();
 				}
 
+				// Free Objects
 				local = objects = scope = proxied = proxies = parent
-					= resolvers = factories = facets = wireApi
-					= listeners = null;
+					= resolvers = factories = facets = wireApi = undef;
+				// Free Arrays
+				listeners = undef;
 			});
 		};
 
