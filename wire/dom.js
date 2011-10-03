@@ -16,13 +16,6 @@ define(['wire/domReady'], function(domReady) {
 	/*
 		Function: byId
 		Resolves a reference to a dom node on the page by its id
-		
-		Parameters:
-			factory - wiring factory
-			name - id of dom node
-			refObj - complete JSON ref
-			promise - factory-provided <Promise> that will be resolved with the
-				dom node.
 	*/
 	function byId(promise, name /*, refObj, wire*/) {
 		domReady(function() {

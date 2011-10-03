@@ -13,90 +13,149 @@
 	or destroy) dijits instantiated "programmatically" in a wiring context.
 */
 define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser, dijit, Widget) {
-	var parsed = false;
+    var parsed, tos, isArray, loadTheme, placeAtFacet;
 
-	/*
-		Function: dijitById
-		Resolver for dijits by id.		
-	*/
-	function dijitById(promise, name /*, refObj, wire */) {
-		dojo.ready(
-			function() {
-				var resolved = dijit.byId(name);
+    parsed = false;
 
-				if(resolved) {
-					promise.resolve(resolved);
-				} else {
-					throw new Error("No dijit with id: " + name);
-				}
-			}
-		);
-	}
+    tos = Object.prototype.toString;
+    isArray = Array.isArray || function(it) {
+        return tos.call(it) == '[object Array]';
+    };
 
-	function isDijit(it) {
-		// NOTE: It is possible to create inheritance hierarchies with dojo.declare
-		// where the following evaluates to false *even though* dijit._Widget is
-		// most certainly an ancestor of it.
-		// So, may need to modify this test if that seems to happen in practice.
-		return it instanceof Widget;
-	}
+    /*
+     Function: dijitById
+     Resolver for dijits by id.
+     */
+    function dijitById(promise, name /*, refObj, wire */) {
+        dojo.ready(
+            function() {
+                var resolved = dijit.byId(name);
 
-	function createDijitProxy(object /*, spec */) {
-		var proxy;
+                if (resolved) {
+                    promise.resolve(resolved);
+                } else {
+                    throw new Error("No dijit with id: " + name);
+                }
+            }
+        );
+    }
 
-		if(isDijit(object)) {
-			proxy = {
-				get: function(property) {
-					return object.get(property);
-				},
-				set: function(property, value) {
-					return object.set(property, value);
-				},
-				invoke: function(method, args) {
-					if(typeof method === 'string') {
-						method = object[method];
-					}
+    function isDijit(it) {
+        // NOTE: It is possible to create inheritance hierarchies with dojo.declare
+        // where the following evaluates to false *even though* dijit._Widget is
+        // most certainly an ancestor of it.
+        // So, may need to modify this test if that seems to happen in practice.
+        return it instanceof Widget;
+    }
 
-					return method.apply(object, args);
-				},
-				destroy: function() {
-					destroyDijit(object);
-				}
-			};
-		}
+    function createDijitProxy(object /*, spec */) {
+        var proxy;
 
-		return proxy;
-	}
+        if (isDijit(object)) {
+            proxy = {
+                get:function(property) {
+                    return object.get(property);
+                },
+                set:function(property, value) {
+                    return object.set(property, value);
+                },
+                invoke:function(method, args) {
+                    if (typeof method === 'string') {
+                        method = object[method];
+                    }
 
-	function destroyDijit(target) {
-		// Prefer destroyRecursive over destroy
-		if (typeof target.destroyRecursive == 'function') {
-			target.destroyRecursive(false);
+                    return method.apply(object, args);
+                },
+                destroy:function() {
+                    destroyDijit(object);
+                }
+            };
+        }
 
-		} else if (typeof target.destroy == 'function') {
-			target.destroy(false);
+        return proxy;
+    }
 
-		}
-	}
-	
-	return {
-		wire$plugin: function(ready, destroy, options) {
-			// Only ever parse the page once, even if other child
-			// contexts are created with this plugin present.
-			if(options.parse && !parsed) {
-				parsed = true;
-				dojo.ready(function() { parser.parse(); });
-			}
+    function destroyDijit(target) {
+        // Prefer destroyRecursive over destroy
+        if (typeof target.destroyRecursive == 'function') {
+            target.destroyRecursive(false);
 
-			// Return plugin
-			return {
-				resolvers: {
-					dijit: dijitById
-				},
-				proxies: [
-					createDijitProxy
-				]
-			};
-		}
-	};
+        } else if (typeof target.destroy == 'function') {
+            target.destroy(false);
+
+        }
+    }
+
+    loadTheme = function(theme) {
+        // Clobber loadTheme so we only do it once?
+        loadTheme = function() {};
+
+        // Rely on the AMD css! plugin for now
+        require(['css!' + 'dijit/themes/' + theme + '/' + theme + '.css']);
+        dojo.addClass(dojo.body(), theme);
+    };
+
+    placeAtFacet = {
+        /**
+         * Provides a placeAt feature for dijits in the wire spec.
+         * Usage:
+         *      {
+         *          create: //create a dijit
+         *          placeAt: { $ref: 'dom!targetNode }
+         *      }
+         * @param resolver
+         * @param proxy
+         * @param wire
+         */
+        initialize: function(resolver, proxy, wire) {
+            var dijit, nodeRef;
+
+            dijit = proxy.target;
+            nodeRef = proxy.options;
+
+            if (isDijit(dijit)) {
+                wire(nodeRef).then(
+                    function(args) {
+                        dijit.placeAt.apply(dijit, isArray(args) ? args : [args]);
+                        resolver.resolve();
+                    },
+                    function(e) {
+                        resolver.reject(e);
+                    }
+                );
+            } else {
+                resolver.reject("Not a dijit: " + proxy.path);
+            }
+        }
+    };
+
+    return {
+        wire$plugin:function(ready, destroy, options) {
+            // Only ever parse the page once, even if other child
+            // contexts are created with this plugin present.
+            if (options.parse && !parsed) {
+                parsed = true;
+                dojo.ready(function() {
+                    parser.parse();
+                });
+            }
+
+            var theme = options.theme;
+
+            if (theme) loadTheme(theme);
+
+            // Return plugin
+            return {
+                resolvers:{
+                    dijit:dijitById
+                },
+                proxies:[
+                    createDijitProxy
+                ],
+                facets: {
+                    placeAt: placeAtFacet
+                }
+            };
+        }
+    };
 });
