@@ -7,9 +7,9 @@
 /*
 	File: aop.js
 */
-define(['require', 'aop'], function(require, aop) {
+define(['require', 'aop', 'when'], function(require, aop, when) {
 
-	var ap, obj, tos, isArray;
+	var ap, obj, tos, isArray, whenAll, deferred;
 	
 	ap = Array.prototype;
 	obj = {};
@@ -18,6 +18,9 @@ define(['require', 'aop'], function(require, aop) {
 	isArray = Array.isArray || function(it) {
 		return tos.call(it) == '[object Array]';
 	};
+
+    whenAll = when.all;
+    deferred = when.defer;
 
     //
 	// Decoration
@@ -30,7 +33,7 @@ define(['require', 'aop'], function(require, aop) {
 	}
 	
 	function doDecorate(target, decorator, args, wire) {
-		var d = wire.deferred();
+		var d = deferred();
 
 		function apply(Decorator) {
 			if(args) {
@@ -62,7 +65,7 @@ define(['require', 'aop'], function(require, aop) {
 			promises.push(doDecorate(target, d, options[d], wire));
 		}
 
-		wire.whenAll(promises).then(
+		whenAll(promises).then(
 			function() {
 				promise.resolve();
 			},
@@ -89,7 +92,7 @@ define(['require', 'aop'], function(require, aop) {
 	}
 
 	function doIntroduction(target, introduction, wire) {
-		var d = wire.deferred();
+		var d = deferred();
 
 		wire.resolveRef(introduction).then(function(resolved) {
 			introduce(target, resolved);
@@ -114,7 +117,7 @@ define(['require', 'aop'], function(require, aop) {
 			promises.push(doIntroduction(target, intro, wire));
 		}
 
-		wire.whenAll(promises).then(
+		whenAll(promises).then(
 			function() {
 				promise.resolve();
 			},
@@ -128,9 +131,9 @@ define(['require', 'aop'], function(require, aop) {
 	// Aspects
 	//
 
-	function adviseFacet(aspects, promise, facet, wire) {
-		promise.resolve();
-	}
+//	function adviseFacet(aspects, promise, facet, wire) {
+//		promise.resolve();
+//	}
 
 	function applyAspectCombined(promise, target, aspect, wire) {
 		wire.resolveRef(aspect).then(function(aspect) {
@@ -190,13 +193,13 @@ define(['require', 'aop'], function(require, aop) {
 				}
 
 				if(typeof aspectPath === 'string' && aspectPath !== path) {
-					d = wire.deferred();
+					d = deferred();
 					promises.push(d);
 					applyAdvice(d, target, aspect, wire);
 				}
 			}
 
-			wire.whenAll(promises).then(
+			whenAll(promises).then(
 				function() { resolver.resolve(); },
 				fail
 			);

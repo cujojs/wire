@@ -152,7 +152,8 @@
 	}
 
 	function createScope(scopeDef, parent, scopeName) {
-		var scope, local, proxied, objects, resolvers, factories, facets, listeners, proxies,
+		var scope, scopeParent, local, proxied, objects,
+            pluginApi, resolvers, factories, facets, listeners, proxies,
 			modulesToLoad, moduleLoadPromises,
 			wireApi, modulesReady, scopeReady, scopeDestroyed,
 			promises, name, contextPromise, doDestroy;
@@ -160,113 +161,38 @@
 
 		// Empty parent scope if none provided
 		parent = parent || {};
+        
+        initFromParent(parent);
+        initPluginApi();
 
-		local = {};
-
-		// Descend scope and plugins from parent so that this scope can
-		// use them directly via the prototype chain
-		objects   = delegate(parent.objects  ||{});
-		resolvers = delegate(parent.resolvers||{});
-		factories = delegate(parent.factories||{});
-		facets    = delegate(parent.facets   ||{});
-
-		listeners = parent.listeners ? [].concat(parent.listeners) : [];
-
-		// Proxies is an array, have to concat
-		proxies = parent.proxies ? [].concat(parent.proxies) : [];
-		proxied = [];
-
-		modulesToLoad = [];
-		moduleLoadPromises = {};
-		modulesReady = defer();
-
-		scopeReady = defer();
-		scopeDestroyed = defer();
-
-		// A proxy of this scope that can be used as a parent to
-		// any child scopes that may be created.
-		var scopeParent = {
-			name:       scopeName,
-			objects:    objects,
-			destroyed:  scopeDestroyed
-		};
-
-		// Full scope definition.  This will be given to sub-scopes,
-		// but should never be given to child contexts
-		scope = delegate(scopeParent);
-		
-		scope.local = local;
-		scope.resolvers = resolvers;
-		scope.factories = factories;
-		scope.facets = facets;
-		scope.listeners = listeners;
-		scope.proxies = proxies;
-		scope.resolveRef = doResolveRef;
-		scope.destroy = destroy;
-		scope.path = createPath(scopeName, parent.path);
-
-		// Plugin API
-		// wire() API that is passed to plugins.
-		function pluginApi(spec, name, path) {
-			return createItem(spec, createPath(name, path));
-		}
-
-		// It has additional methods that plugins can use
-		pluginApi.resolveRef = apiResolveRef;
-		pluginApi.deferred   = defer;
-		pluginApi.when       = when;
-		pluginApi.whenAll    = whenAll;
-		pluginApi.ready      = scopeReady.promise;
-
-		// When the parent begins its destroy phase, this child must
-		// begin its destroy phase and complete it before the parent.
-		// The context hierarchy will be destroyed from child to parent.
-		if (parent.destroyed) {
-			parent.destroyed.then(destroy);
-		}
-
+        // TODO: Find a better way to load and scan the base plugin
 		scanPlugin(basePlugin);
 
 		promises = [];
-
+        
 		// Setup a promise for each item in this scope
-		var p;
 		for (name in scopeDef) {
-			promises.push(p = objects[name] = defer());
+            if(scopeDef.hasOwnProperty(name)) {
+    			promises.push(local[name] = objects[name] = defer());
+            }
 		}
 
+        // When all scope item promises are resolved, the scope
+        // is resolved.
+        chain(whenAll(promises), scopeReady, scope);
+
+        // When this scope is ready, resolve the contextPromise
+        // with the objects that were created
 		contextPromise = chain(scopeReady, defer(), objects);
 
-		// Context API
-		// API of a wired context that is returned, via promise, to
-		// the caller.  It will also have properties for all the
-		// objects that were created in this scope.
-		function apiResolveRef(ref) {
-			return when(doResolveRef(ref));
-		}
-
-		function apiDestroy() {
-			return destroy().promise;
-		}
-
-		function wireChild(spec) {
-			return wireContext(spec, scopeParent);
-		}
-
-		wireApi = objects.wire = wireChild;
-
-		wireApi.then    = contextPromise.then;
-		wireApi.destroy = objects.destroy = apiDestroy;
-		wireApi.resolve = objects.resolve = apiResolveRef;
-
-		// When all scope item promises are resolved, the scope
-		// is resolved.
-		chain(whenAll(promises), scopeReady, scope);
-
+        initWireApi(contextPromise, objects);
+        
 		// Process/create each item in scope and resolve its
 		// promise when completed.
-		for (name in scopeDef) {
-			createScopeItem(name, scopeDef[name], objects[name]);
+		for (name in local) {
+            // No need to check hasOwnProperty since we know local
+            // only contains scopeDef's own prop names.
+            createScopeItem(name, scopeDef[name], objects[name]);
 		}
 
 		// Once all modules have been loaded, resolve modulesReady
@@ -313,6 +239,115 @@
 		};
 
 		return scopeReady;
+
+        //
+        // Initialization
+        //
+
+        function initFromParent(parent) {
+            local = {};
+
+            // Descend scope and plugins from parent so that this scope can
+            // use them directly via the prototype chain
+            objects   = delegate(parent.objects  ||{});
+            resolvers = delegate(parent.resolvers||{});
+            factories = delegate(parent.factories||{});
+            facets    = delegate(parent.facets   ||{});
+
+            listeners = parent.listeners ? [].concat(parent.listeners) : [];
+
+            // Proxies is an array, have to concat
+            proxies = parent.proxies ? [].concat(parent.proxies) : [];
+            proxied = [];
+
+            modulesToLoad = [];
+            moduleLoadPromises = {};
+            modulesReady = defer();
+
+            scopeReady = defer();
+            scopeDestroyed = defer();
+
+            // A proxy of this scope that can be used as a parent to
+            // any child scopes that may be created.
+            scopeParent = {
+                name:       scopeName,
+                objects:    objects,
+                destroyed:  scopeDestroyed
+            };
+
+            // Full scope definition.  This will be given to sub-scopes,
+            // but should never be given to child contexts
+            scope = delegate(scopeParent);
+
+            scope.local = local;
+            scope.resolvers = resolvers;
+            scope.factories = factories;
+            scope.facets = facets;
+            scope.listeners = listeners;
+            scope.proxies = proxies;
+            scope.resolveRef = doResolveRef;
+            scope.destroy = destroy;
+            scope.path = createPath(scopeName, parent.path);
+
+            // When the parent begins its destroy phase, this child must
+            // begin its destroy phase and complete it before the parent.
+            // The context hierarchy will be destroyed from child to parent.
+            if (parent.destroyed) {
+                parent.destroyed.then(destroy);
+            }
+        }
+
+        function initWireApi(contextPromise, objects) {
+            wireApi = objects.wire = wireChild;
+
+            wireApi.then = contextPromise.then;
+            wireApi.destroy = objects.destroy = apiDestroy;
+            wireApi.resolve = objects.resolve = apiResolveRef;
+        }
+
+        function initPluginApi() {
+            // Plugin API
+            // wire() API that is passed to plugins.
+            pluginApi = function(spec, name, path) {
+                return createItem(spec, createPath(name, path));
+            };
+
+            // It has additional methods that plugins can use
+            pluginApi.resolveRef = apiResolveRef;
+
+            // DEPRECATED
+            // To be removed in 0.7.0
+            // These will be removed from the plugin API in v0.7.0 in favor
+            // of using when.js (or any other CommonJS Promises/A compliant
+            // deferred/when) directly in plugins
+            pluginApi.deferred   = defer;
+            pluginApi.when       = when;
+            pluginApi.whenAll    = whenAll;
+
+            // DEPRECATED
+            // To be removed in 0.7.0
+            // Should not be used
+            pluginApi.ready      = scopeReady.promise;
+        }
+
+        //
+        // Context API
+        //
+
+        // API of a wired context that is returned, via promise, to
+        // the caller.  It will also have properties for all the
+        // objects that were created in this scope.
+        function apiResolveRef(ref) {
+            return when(doResolveRef(ref));
+        }
+
+        function apiDestroy() {
+            return destroy().promise;
+        }
+
+        function wireChild(spec) {
+            return wireContext(spec, scopeParent);
+        }
 
 		//
 		// Scope functions
@@ -916,5 +951,8 @@
 	// use define for AMD if available
 	? define
 	// If no define or module, attach to current context.
-	: function(deps, factory) { this.wire = factory(function() {}, this.when, this.wire_base); }
+	: function(deps, factory) {
+        this.wire = factory(function() {
+            throw new Error('Non-AMD environment, modules cannot be loaded');
+        }, this.when, this.wire_base); }
 );
