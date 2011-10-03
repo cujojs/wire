@@ -10,8 +10,8 @@
 	proxy for plain JS objects.
 */
 (function(define) {
-define([], function() {
-	var tos, beget;
+define(['when'], function(when) {
+	var tos, createObject;
 	tos = Object.prototype.toString;
 
 	// In case Object.create isn't available
@@ -22,7 +22,7 @@ define([], function() {
 		return new T();
 	}
 
-	beget = Object.create || objectCreate;
+	createObject = Object.create || objectCreate;
 
 	function reject(resolver) {
 		return function(err) {
@@ -77,38 +77,37 @@ define([], function() {
 			promises = [];
 
 			for(func in options) {
-				p = wire.deferred();
+				p = when.defer();
 				promises.push(p);
 				invoke(p, func, target, options[func], wire);
 			}
 
-			wire.whenAll(promises).then(
-				resolve(promise),
-				reject(promise)
-			);
+			when.all(promises, resolve(promise), reject(promise));
 		}
 	}
 
-	// Factory that handles cases where you need to create an object literal
-	// that has a property whose name would trigger another wire factory.
-	// For example, if you need an object literal with a property named "create",
-	// which would normally cause wire to try to construct an instance using
-	// a constructor or other function, and will probably result in an error,
-	// or an unexpected result:
-	// myObject: {
-	//	 create: "foo"
-	//   ...
-	// }
-	//
-	// You can use the literal factory to force creation of an object literal:
-	// myObject: {
-	//   literal: {
-	//     create: "foo"
-	//   }
-	// }
-	//
-	// which will result in myObject.create == "foo" rather than attempting
-	// to create an instance of an AMD module whose id is "foo".
+    /**
+     * Factory that handles cases where you need to create an object literal
+     * that has a property whose name would trigger another wire factory.
+     * For example, if you need an object literal with a property named "create",
+     * which would normally cause wire to try to construct an instance using
+     * a constructor or other function, and will probably result in an error,
+     * or an unexpected result:
+     * myObject: {
+     *      create: "foo"
+     *    ...
+     * }
+     *
+     * You can use the literal factory to force creation of an object literal:
+     * myObject: {
+     *    literal: {
+     *      create: "foo"
+     *    }
+     * }
+     *
+     * which will result in myObject.create == "foo" rather than attempting
+     * to create an instance of an AMD module whose id is "foo".
+     */
 	function literalFactory(promise, spec /*, wire */) {
 		promise.resolve(spec.literal);
 	}
@@ -118,7 +117,7 @@ define([], function() {
 
 		wire.resolveRef(parentRef).then(
 			function(parent) {
-				var child = beget(parent);
+				var child = createObject(parent);
 				promise.resolve(child);
 			},
 			reject(promise)
@@ -134,10 +133,7 @@ define([], function() {
 			promises.push(setProperty(facet, prop, options[prop], wire));
 		}
 
-		wire.whenAll(promises).then(
-			resolve(promise),
-			reject(promise)
-		);
+        when.all(promises, resolve(promise), reject(promise));
 	}
 
 	function setProperty(proxy, name, val, wire) {
@@ -177,6 +173,8 @@ define([], function() {
 
 	return {
 		wire$plugin: function(ready, destroyed /*, options */) {
+            // Components in the current context that will be destroyed
+            // when this context is destroyed
 			var destroyFuncs = [];
 
 			destroyed.then(function() {
@@ -196,7 +194,7 @@ define([], function() {
 				w = wire;
 
 				destroyFuncs.push(function destroyObject() {
-					invokeAll(wire.deferred(), { options: options, target: target }, w);
+					invokeAll(when.defer(), { options: options, target: target }, w);
 				});
 			}
 

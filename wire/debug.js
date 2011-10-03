@@ -4,60 +4,57 @@
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
-/*
-	Package: debug.js
-	wire plugin that logs timing and debug information about wiring context and object
-	lifecycle events (e.g. creation, properties set, initialized, etc.).
-	
-	Usage:
-	{
-		module: 'wire/debug',
-
-		// verbose
-		// If set to true, even more (a LOT) info will be output.
-		// Default is false if not specified.
-		verbose: false,
-
-		// timeout
-		// Milliseconds to wait for wiring to finish before reporting
-		// failed components.  There may be failures caused by 3rd party
-		// wire plugins and components that wire.js cannot detect.  This
-		// provides a last ditch way to try to report those failures.
-		// Default is 5000ms (5 seconds)
-		timeout: 5000,
-
-		// filter
-		// String or RegExp to match against a component's name.  Only
-		// components whose path matches will be reported in the debug
-		// diagnostic output.
-		// All components will still be tracked for failures.
-		// This can be useful in reducing the amount of diagnostic output and
-		// focusing it on specific components.
-		// Defaults to matching all components
-		// Examples:
-		//   filter: ".*View"
-		//   filter: /.*View/
-		//   filter: "[fF]oo[bB]ar"
-		filter: ".*"
-	}
-*/
+/**
+ * debug.js
+ * wire plugin that logs timing and debug information about wiring context and object
+ * lifecycle events (e.g. creation, properties set, initialized, etc.).
+ *
+ * Usage:
+ * {
+ *     module: 'wire/debug',
+ *
+ *     // verbose
+ *     // If set to true, even more (a LOT) info will be output.
+ *     // Default is false if not specified.
+ *     verbose: false,
+ *
+ *     // timeout
+ *     // Milliseconds to wait for wiring to finish before reporting
+ *     // failed components.  There may be failures caused by 3rd party
+ *     // wire plugins and components that wire.js cannot detect.  This
+ *     // provides a last ditch way to try to report those failures.
+ *     // Default is 5000ms (5 seconds)
+ *     timeout: 5000,
+ *
+ *     // filter
+ *     // String or RegExp to match against a component's name.  Only
+ *     // components whose path matches will be reported in the debug
+ *     // diagnostic output.
+ *     // All components will still be tracked for failures.
+ *     // This can be useful in reducing the amount of diagnostic output and
+ *     // focusing it on specific components.
+ *     // Defaults to matching all components
+ *     // Examples:
+ *     //   filter: ".*View"
+ *     //   filter: /.*View/
+ *     //   filter: "[fF]oo[bB]ar"
+ *     filter: ".*"
+ * }
+ */
 define([], function() {
 	var timer, defaultTimeout;
 
 	timer = createTimer();
 	defaultTimeout = 5000; // 5 second wiring failure timeout
 
-	/*
-	 Function: time
-	 Builds a string with timing info and a message for debug output
-
-	 Params:
-	 text - String message
-	 contextTimer - per-context timer information
-
-	 Returns:
-	 A formatted string for output
-	 */
+    /**
+     * Builds a string with timing info and a message for debug output
+     *
+     * @param text {String} message
+     * @param contextTimer per-context timer information
+     *
+     * @returns A formatted string for output
+     */
 	function time(text, contextTimer) {
 		var all = timer(),
 			timing = "(total: " +
@@ -68,28 +65,24 @@ define([], function() {
 		return "DEBUG " + timing + text;
 	}
 
-	/*
-	 Function: createTimer
-	 Creates a timer function that, when called, returns an object containing
-	 the total elapsed time since the timer was created, and the split time
-	 since the last time the timer was called.  All times in milliseconds
-
-	 Returns:
-	 Timer function
-	 */
+    /**
+     * Creates a timer function that, when called, returns an object containing
+     * the total elapsed time since the timer was created, and the split time
+     * since the last time the timer was called.  All times in milliseconds
+     *
+     * @returns timer
+     */
 	function createTimer() {
 		var start = new Date().getTime(),
 			split = start;
 
-		/*
-		 Function: getTime
-		 Returns the total elapsed time since this timer was created, and the
-		 split time since this getTime was last called.
-
-		 Returns:
-		 Object containing total and split times in milliseconds, plus a
-		 toString() function that is useful in logging the time.
-		 */
+        /**
+         * Returns the total elapsed time since this timer was created, and the
+         * split time since this getTime was last called.
+         *
+         * @returns Object containing total and split times in milliseconds, plus a
+         * toString() function that is useful in logging the time.
+         */
 		return function getTime() {
 			var now, total, splitTime;
 
@@ -113,20 +106,6 @@ define([], function() {
 	}
 
 	return {
-		/*
-		 Function: wire$plugin
-		 Invoked when wiring starts and provides two promises: one for wiring the context,
-		 and one for destroying the context.  Plugins should register resolve, reject, and
-		 promise handlers as necessary to do their work.
-
-		 Parameters:
-		 ready - promise that will be resolved when the context has been wired, rejected
-		 if there is an error during the wiring process, and will receive progress
-		 events for object creation, property setting, and initialization.
-		 destroy - promise that will be resolved when the context has been destroyed,
-		 rejected if there is an error while destroying the context, and will
-		 receive progress events for objects being destroyed.
-		 */
 		wire$plugin: function debugPlugin(ready, destroyed, options) {
 			var contextTimer, timeout, paths, logCreated, checkPathsTimeout, verbose, filter, filterRegex, plugin;
 
