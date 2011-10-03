@@ -37,7 +37,10 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 ### 0.6.5
 
 * New [wire factory](https://github.com/briancavalier/wire/wiki/Factories) (aka wire inception!) that allows wiring chains of other specs, or injecting functions for deferred wiring.  [See the docs](https://github.com/briancavalier/wire/wiki/Factories)
-* [wire/dojo/dijit](https://github.com/briancavalier/wire/wiki/wire-dojo-dijit) plugin now has a `placeAt` feature that allows easier placement of Dijit widgets.
+* [wire/dojo/dijit](https://github.com/briancavalier/wire/wiki/wire-dojo-dijit) plugin:
+    * `placeAt` feature that allows easier placement of Dijit widgets.
+    * supports easy dijit theming via its `theme` option
+* New [wire/dojo/data](https://github.com/briancavalier/wire/wiki/wire-dojo-data) plugin that supports legacy `dojo/data` datastores
 * [wire/dom](https://github.com/briancavalier/wire/wiki/wire-dom) plugin now supports options for adding/removing classes to `<html>` during wiring.
 * *Limited support* for using wire in a non-AMD setup.  This is intended to aid in transitioning to AMD and CommonJS modules, and *it's unlikely that wire's full functionality will ever be extended to cover non-AMD/CommonJS environments.*
 	* wire.js can now create components using raw constructors in addition to AMD module ids.  This allows wire.js to create components instances from libraries that haven't yet fully committed to AMD or CommonJS.
