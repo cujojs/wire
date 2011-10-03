@@ -14,11 +14,11 @@
  */
 define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
 
-	function resolveQuery(promise, name, refObj /*, wire */) {
+	function resolveQuery(resolver, name, refObj /*, wire */) {
 
 		domReady(function() {
 			var result = sizzle(name);
-			promise.resolve(typeof refObj.i == 'number' && refObj.i < result.length
+			resolver.resolve(typeof refObj.i == 'number' && refObj.i < result.length
 				? result[refObj.i]
 				: result);
 		});
