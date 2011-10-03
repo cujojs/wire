@@ -4,14 +4,14 @@
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
-/*
-	File: sizzle.js
-	Adds querySelectorAll functionality to wire using John Resig's Sizzle library.
-	Sizzle must be wrapped in an AMD define().  Kris Zyp has a version of this at
-	http://github.com/kriszyp/sizzle
-	
-	Author: John Hann (@unscriptable)
-*/
+/**
+ * sizzle.js
+ * Adds querySelectorAll functionality to wire using John Resig's Sizzle library.
+ * Sizzle must be wrapped in an AMD define().  Kris Zyp has a version of this at
+ * http://github.com/kriszyp/sizzle
+ *
+ * @author John Hann (@unscriptable)
+ */
 define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
 
 	function resolveQuery(promise, name, refObj /*, wire */) {
@@ -25,13 +25,18 @@ define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
 
 	}
 
+    /**
+     * The plugin instance.  Can be the same for all wiring runs
+     */
+    var plugin = {
+        resolvers: {
+            'dom.query': resolveQuery
+        }
+    };
+
 	return {
 		wire$plugin: function(/*ready, destroyed, options*/) {
-			return {
-				resolvers: {
-					'dom.query': resolveQuery
-				}
-			};
+            return plugin;
 		}
 	};
 
