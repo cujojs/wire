@@ -156,10 +156,9 @@
             pluginApi, resolvers, factories, facets, listeners, proxies,
 			modulesToLoad, moduleLoadPromises,
 			wireApi, modulesReady, scopeReady, scopeDestroyed,
-			name, contextPromise, doDestroy;
-
-
-		// Empty parent scope if none provided
+            contextPromise, doDestroy;
+        
+        // Empty parent scope if none provided
 		parent = parent || {};
         
         initFromParent(parent);
