@@ -156,7 +156,7 @@
             pluginApi, resolvers, factories, facets, listeners, proxies,
 			modulesToLoad, moduleLoadPromises,
 			wireApi, modulesReady, scopeReady, scopeDestroyed,
-			promises, name, contextPromise, doDestroy;
+			name, contextPromise, doDestroy;
 
 
 		// Empty parent scope if none provided
@@ -167,33 +167,12 @@
 
         // TODO: Find a better way to load and scan the base plugin
 		scanPlugin(basePlugin);
-
-		promises = [];
         
-		// Setup a promise for each item in this scope
-		for (name in scopeDef) {
-            if(scopeDef.hasOwnProperty(name)) {
-    			promises.push(local[name] = objects[name] = defer());
-            }
-		}
-
-        // When all scope item promises are resolved, the scope
-        // is resolved.
-        chain(whenAll(promises), scopeReady, scope);
-
-        // When this scope is ready, resolve the contextPromise
-        // with the objects that were created
-		contextPromise = chain(scopeReady, defer(), objects);
+        contextPromise = initContextPromise(scopeDef, scopeReady);
 
         initWireApi(contextPromise, objects);
-        
-		// Process/create each item in scope and resolve its
-		// promise when completed.
-		for (name in local) {
-            // No need to check hasOwnProperty since we know local
-            // only contains scopeDef's own prop names.
-            createScopeItem(name, scopeDef[name], objects[name]);
-		}
+
+        createComponents(local, scopeDef);
 
 		// Once all modules have been loaded, resolve modulesReady
 		require(modulesToLoad, function(modules) {
@@ -328,6 +307,39 @@
             // To be removed in 0.7.0
             // Should not be used
             pluginApi.ready      = scopeReady.promise;
+        }
+
+        function initContextPromise(scopeDef, scopeReady) {
+            var promises = [];
+
+            // Setup a promise for each item in this scope
+            for (var name in scopeDef) {
+                  if(scopeDef.hasOwnProperty(name)) {
+                    promises.push(local[name] = objects[name] = defer());
+                  }
+            }
+
+            // When all scope item promises are resolved, the scope
+            // is resolved.
+            chain(whenAll(promises), scopeReady, scope);
+
+            // When this scope is ready, resolve the contextPromise
+            // with the objects that were created
+            return chain(scopeReady, defer(), objects);
+        }
+
+        //
+        // Context Startup
+        //
+
+        function createComponents(names, scopeDef) {
+            // Process/create each item in scope and resolve its
+            // promise when completed.
+            for (var name in names) {
+                // No need to check hasOwnProperty since we know local
+                // only contains scopeDef's own prop names.
+                createScopeItem(name, scopeDef[name], objects[name]);
+            }
         }
 
         //
