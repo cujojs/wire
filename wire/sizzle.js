@@ -18,9 +18,15 @@ define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
 
 		domReady(function() {
 			var result = sizzle(name);
-			promise.resolve(typeof refObj.i == 'number' && refObj.i < result.length
-				? result[refObj.i]
-				: result);
+			if (typeof refObj.i == 'number') {
+			  if (refObj.i < result.length) {
+          promise.resolve(result[refObj.i]);
+        } else {
+          promise.reject("Query '" + name + "' returned " + result.length + " items while expecting at least " + (refObj.i + 1));
+        }
+			} else {
+        promise.resolve(result)
+			}
 		});
 
 	}
