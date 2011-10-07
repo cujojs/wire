@@ -173,50 +173,22 @@
 
         createComponents(local, scopeDef);
 
-		// Once all modules have been loaded, resolve modulesReady
-		require(modulesToLoad, function(modules) {
-			modulesReady.resolve(modules);
-			moduleLoadPromises = modulesToLoad = null;
-		});
+        // Once all modules are loaded, all the components can finish
+        ensureAllModulesLoaded();
 
+        // Setup overwritable doDestroy so that this context
+        // can only be destroyed once
 		doDestroy = function() {
-			var p, promises, pDeferred, i;
+            // Retain a do-nothing doDestroy() func, in case
+            // it is called again for some reason.
+            doDestroy = function() {};
 
-			// Retain a do-nothing doDestroy() func, in case
-			// it is called again for some reason.
-			doDestroy = function() {};
+            destroyContext();
+        };
 
-			scopeDestroyed.resolve();
-
-			// TODO: Clear out the context prototypes?
-
-			promises = [];
-			for (i = 0; (p = proxied[i++]);) {
-				pDeferred = defer();
-				promises.push(pDeferred);
-				processListeners(pDeferred, 'destroy', p);
-			}
-
-			// *After* listeners are processed,
-			whenAll(promises).then(function() {
-				var p, i;
-				for (p in local)   delete local[p];
-				for (p in objects) delete objects[p];
-				for (p in scope)   delete scope[p];
-
-				for (i = 0; (p = proxied[i++]);) {
-					p.destroy();
-				}
-
-				// Free Objects
-				local = objects = scope = proxied = proxies = parent
-					= resolvers = factories = facets = wireApi = undef;
-				// Free Arrays
-				listeners = undef;
-			});
-		};
-
-		return scopeReady;
+        // Return promise
+        // Context will be ready when this promise resolves
+		return scopeReady.promise;
 
         //
         // Initialization
@@ -339,6 +311,51 @@
                 // only contains scopeDef's own prop names.
                 createScopeItem(name, scopeDef[name], objects[name]);
             }
+        }
+
+        function ensureAllModulesLoaded() {
+            // Once all modules have been loaded, resolve modulesReady
+            require(modulesToLoad, function(modules) {
+                modulesReady.resolve(modules);
+                moduleLoadPromises = modulesToLoad = null;
+            });
+        }
+
+        //
+        // Context Destroy
+        //
+
+        function destroyContext() {
+            var p, promises, pDeferred, i;
+
+            scopeDestroyed.resolve();
+
+            // TODO: Clear out the context prototypes?
+
+            promises = [];
+            for (i = 0; (p = proxied[i++]);) {
+                pDeferred = defer();
+                promises.push(pDeferred);
+                processListeners(pDeferred, 'destroy', p);
+            }
+
+            // *After* listeners are processed,
+            whenAll(promises).then(function() {
+                var p, i;
+                for (p in local)   delete local[p];
+                for (p in objects) delete objects[p];
+                for (p in scope)   delete scope[p];
+
+                for (i = 0; (p = proxied[i++]);) {
+                    p.destroy();
+                }
+
+                // Free Objects
+                local = objects = scope = proxied = proxies = parent
+                    = resolvers = factories = facets = wireApi = undef;
+                // Free Arrays
+                listeners = undef;
+            });
         }
 
         //
@@ -961,9 +978,15 @@
 	typeof define != 'undefined'
 	// use define for AMD if available
 	? define
+    // Browser
 	// If no define or module, attach to current context.
 	: function(deps, factory) {
-        this.wire = factory(function() {
-            throw new Error('Non-AMD environment, modules cannot be loaded');
-        }, this.when, this.wire_base); }
+        this.wire = factory(
+            // Fake require()
+            function(modules, callback) { callback(modules); },
+            // dependencies
+            this.when, this.wire_base
+        );
+    }
+    // NOTE: Node not supported yet, coming soon
 );

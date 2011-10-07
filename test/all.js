@@ -7,6 +7,8 @@ doh.registerUrl('nested2', '../../nested2.html');
 doh.registerUrl('create-constructor', '../../create-constructor.html');
 // create with raw constructors/functions
 doh.registerUrl('plain-constructors', '../../required-modules.html');
+// Non-amd environment limited support
+doh.registerUrl('non-amd', '../../non-amd.html');
 
 // Facets
 
