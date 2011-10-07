@@ -14,16 +14,22 @@
  */
 define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
 
-	function resolveQuery(resolver, name, refObj /*, wire */) {
+    function resolveQuery(resolver, name, refObj /*, wire */) {
 
-		domReady(function() {
-			var result = sizzle(name);
-			resolver.resolve(typeof refObj.i == 'number' && refObj.i < result.length
-				? result[refObj.i]
-				: result);
-		});
+        domReady(function() {
+            var result = sizzle(name);
+            if (typeof refObj.i == 'number') {
+                if (refObj.i < result.length) {
+                    resolver.resolve(result[refObj.i]);
+                } else {
+                    resolver.reject("Query '" + name + "' returned " + result.length + " items while expecting at least " + (refObj.i + 1));
+                }
+            } else {
+                resolver.resolve(result)
+            }
+        });
 
-	}
+    }
 
     /**
      * The plugin instance.  Can be the same for all wiring runs
@@ -34,10 +40,10 @@ define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
         }
     };
 
-	return {
-		wire$plugin: function(/*ready, destroyed, options*/) {
+    return {
+        wire$plugin: function(/*ready, destroyed, options*/) {
             return plugin;
-		}
-	};
+        }
+    };
 
 });
