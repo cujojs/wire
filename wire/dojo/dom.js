@@ -4,24 +4,30 @@
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
-/*
-	Package: dom.js
-	Plugin that adds dom query resolver and unload handler capabilities.
-	IMPORTANT: Use the unload capability carefully, as once an unload function
-	has been registered, it cannot be removed, even when the context is destroyed!
-*/
+/**
+ * dom.js
+ * Plugin that adds dom query resolver that uses dojo.query
+ */
 define(['dojo', 'wire/domReady'], function(dojo, domReady) {
 
-	function resolveQuery(promise, name, refObj /*, wire */) {
+	function resolveQuery(resolver, name, refObj /*, wire */) {
 		// Could use dojo.ready() here, but it also waits for the dijit
 		// parser, which may not be necessary in all situations, e.g. if
 		// you're using dojo, but not dijit.  So, just use domReady.
 		domReady(function() {
-			var result = dojo.query(name);
-			promise.resolve(typeof refObj.i == 'number' && refObj.i < result.length
-				? result[refObj.i]
-				: result);
-		});		
+
+            var result = dojo.query(name);
+
+            if (typeof refObj.i == 'number') {
+                if (refObj.i < result.length) {
+                    resolver.resolve(result[refObj.i]);
+                } else {
+                    resolver.reject("Query '" + name + "' returned " + result.length + " items while expecting at least " + (refObj.i + 1));
+                }
+            } else {
+                resolver.resolve(result)
+            }
+		});
 	}
 
 	// function unloadAspect(promise, facet, wire) {
