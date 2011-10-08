@@ -763,7 +763,7 @@
 			wait = false;
 
 			// Get child spec and options
-			if(typeof options === 'string') {
+			if(typeof isString(options)) {
 				module = options;
 			} else {
 				module = options.spec;
@@ -787,7 +787,7 @@
 				if(wait) {
 					chain(context, resolver);
 				} else {
-					resolver.resolve(context);
+					resolver.resolve(context.promise);
 				}
 			}
 		}

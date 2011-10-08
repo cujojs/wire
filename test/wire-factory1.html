@@ -1,0 +1,106 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>wire factory test</title>
+
+    <script src="util/doh/runner.js"></script>
+    <script src="test-config.js"></script>
+
+	<script type="text/javascript">
+		require(['wire'], function(wire) {
+            
+            define('Thing', function() {
+                function Thing() {}
+                
+                Thing.prototype = {
+                    go: function() { throw new Error('failed') }
+                };
+                
+                return Thing;
+            });
+
+            var parentSpec = {
+                parent: {
+                    create: 'Thing',
+                    properties: {
+                        child: { wire: { spec: 'child' } }
+                    }
+                }
+            };
+
+            define('parent', parentSpec);
+            define('child', { success: true });
+            
+            function fail(dohd) {
+                return function(err) {
+                    dohd.errback(err);
+                }
+            }
+
+            doh.register('wire-factory works', [
+                function wireChildImmediate(doh) {
+
+                    var dohd = new doh.Deferred();
+
+                    wire('parent').then(
+                        function(context) {
+
+                            var success = typeof context.parent.child.then == 'function';
+
+                            context.parent.child.then(function(childContext) {
+                                success = success && !!childContext.success;
+
+                                childContext.destroy().then(
+                                    function() {
+                                        dohd.callback(success);
+                                    },
+                                    fail(dohd)
+                                );
+                            });
+
+                        },
+                        fail(dohd)
+                    );
+
+                    return dohd;
+                },
+                function wireChildDeferred(doh) {
+
+                    var dohd = new doh.Deferred();
+
+                    // Defer the child wiring
+                    // Child will be a function
+                    parentSpec.parent.properties.child.wire.defer = true;
+
+                    wire('parent').then(
+                        function(context) {
+
+                            context.parent.child().then(function(childContext) {
+                                var success = childContext.success;
+
+                                childContext.destroy().then(
+                                    function() {
+                                        dohd.callback(success);
+                                    },
+                                    fail(dohd)
+                                );
+                            });
+
+                        },
+                        fail(dohd)
+                    );
+
+                    return dohd;
+                }
+            ]);
+
+            doh.run();
+
+        });
+	</script>
+</head>
+<body>
+
+</body>
+</html>
