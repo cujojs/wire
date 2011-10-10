@@ -44,8 +44,8 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 * [wire/dom](https://github.com/briancavalier/wire/wiki/wire-dom) plugin now supports options for adding/removing classes to `<html>` during wiring.
 * *Limited support* for using wire in a non-AMD setup.  This is intended to aid in transitioning to AMD and CommonJS modules, and *it's unlikely that wire's full functionality will ever be extended to cover non-AMD/CommonJS environments.*
 	* wire.js can now create components using raw constructors in addition to AMD module ids.  This allows wire.js to create components instances from libraries that haven't yet fully committed to AMD or CommonJS.
-* Now using [when.js](https://github.com/briancavalier/when.js) for promises and async handling.
-* The wire.js core is now **2.5k** with closure + gzip!
+* Now using [when.js](https://github.com/briancavalier/when.js) v.9.3 for promises and async handling.
+* The wire.js core is now **2.5k** with Google Closure + gzip!
 
 ### 0.6.0
 
@@ -59,7 +59,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 ### 0.5.2
 
-* Fix for `wire/sizzle` plugin
+* Fix for [wire/sizzle](https://github.com/briancavalier/wire/wiki/wire-aop) plugin
 * Updated to work with [curl v0.5](https://github.com/unscriptable/curl) domReady.
 * **NOTE** wire.js v0.5.2 now requires curl.js 0.5 or later.  It will also work with any recent version of RequireJS, and with dojo 1.6 or later.
 

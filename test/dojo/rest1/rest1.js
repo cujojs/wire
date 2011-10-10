@@ -31,5 +31,7 @@ define({
 		init: 'ready'
 	},
 	person: { $ref: 'resource!people/', get: 1, wait: true },
-	people: { $ref: 'resource!people/', query: { name: "Sergei" }, wait: true}
+	personPromise: { $ref: 'resource!people/', get: 1 },
+	people: { $ref: 'resource!people/', query: { name: "Sergei" }, wait: true},
+	peoplePromise: { $ref: 'resource!people/', query: { name: "Sergei" }}
 });
