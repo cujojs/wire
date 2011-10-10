@@ -76,8 +76,8 @@
                     wire('parent').then(
                         function(context) {
 
-                            context.parent.child().then(function(childContext) {
-                                var success = childContext.success;
+                            context.parent.child({ mixin: true }).then(function(childContext) {
+                                var success = childContext.success && childContext.mixin;
 
                                 childContext.destroy().then(
                                     function() {

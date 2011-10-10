@@ -11,7 +11,9 @@
 		require(['wire'], function(wire) {
             
 			wire({
-                _wire: { $ref: 'wire!' }
+                _wire: { $ref: 'wire!' },
+                _context: { $ref: 'wire!context' },
+                success: true
 			}).then(
 				function(context) {
 					doh.register('wire-resolver ref has correct API', [
@@ -27,6 +29,9 @@
                             context._wire({ win: true }).then(function(child) {
                                 d.resolve(child.win);
                             });
+                        },
+                        function(doh) {
+                            doh.assertTrue(context._context.success);
                         }
 					]);
 

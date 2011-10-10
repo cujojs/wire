@@ -10,6 +10,10 @@ doh.registerUrl('plain-constructors', '../../required-modules.html');
 // Non-amd environment limited support
 doh.registerUrl('non-amd', '../../non-amd.html');
 
+// wire resolver
+doh.registerUrl('wire-resolver', '../../wire-resolver1.html');
+doh.registerUrl('wire-factory', '../../wire-factory1.html');
+
 // Facets
 
 // Base

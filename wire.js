@@ -9,17 +9,18 @@
 */
 
 //noinspection ThisExpressionReferencesGlobalObjectJS
-(function(rootSpec, define){
+(function(global, define){
 	define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
 	"use strict";
 
-	var VERSION, tos, rootContext, delegate, emptyObject,
+	var VERSION, tos, slice, rootSpec, rootContext, delegate, emptyObject,
 		defer, chain, whenAll, isPromise, undef;
 
 	wire.version = VERSION = "0.6.5";
 	tos = Object.prototype.toString;
-	rootSpec = rootSpec || {};
+    slice = Array.prototype.slice;
+	rootSpec = global['wire'] || {};
 
 	delegate = Object.create || createObject;
 
@@ -36,6 +37,12 @@
 		return function(err) { resolver.reject(err); };
 	}
 
+    function rejected(err) {
+        var d = defer();
+        d.reject(err);
+        return d;
+    }
+
 	function indexOf(array, item) {
 		for (var i = 0, len = array.length; i < len; i++) {
 			if(array[i] === item) return i;
@@ -49,7 +56,6 @@
 	//
 
 	function wire(spec) {
-		var d = defer();
 
 		// If the root context is not yet wired, wire it first
 		if (!rootContext) {
@@ -57,14 +63,12 @@
 		}
 
 		// Use the rootContext to wire all new contexts.
-		when(rootContext).then(
+        // TODO: Remove .then() for when.js 0.9.4
+		return when(rootContext).then(
 			function(root) {
-				chain(root.wire(spec), d);
-			},
-			chainReject(d)
+				return root.wire(spec);
+			}
 		);
-
-		return d.promise;
 	}
 
 	//
@@ -97,7 +101,7 @@
 	// Private functions
 	//
 
-	function wireContext(specs, parent) {
+	function wireContext(specs, parent, mixin) {
 
 		var deferred = defer();
 
@@ -105,6 +109,9 @@
 		// parent so it can be called after an async load
 		// if spec is an AMD module Id string.
 		function doWireContexts(specs) {
+            
+            if(mixin) specs.push(mixin);
+            
 			var spec = mergeSpecs(specs);
 
 			createScope(spec, parent).then(
@@ -120,7 +127,7 @@
     	if(isString(specs)) {
 		    var specIds = specs.split(',');
 
-    		require(specIds, function() { doWireContexts(arguments); });
+    		require(specIds, function() { doWireContexts(slice.call(arguments)); });
 		} else {
 			doWireContexts(isArray(specs) ? specs : [specs]);
 		}
@@ -130,7 +137,9 @@
 
 	// Merge multiple specs together before wiring.
 	function mergeSpecs(specs) {
-		for (var i = 0, merged = {}, s; (s = specs[i++]);) {
+        var i = 0, merged = {}, s;
+
+        while(s = specs[i++]) {
 			mixinSpec(merged, s);
 		}
 
@@ -250,9 +259,12 @@
         function initWireApi(contextPromise, objects) {
             wireApi = objects.wire = wireChild;
 
-            wireApi.then = contextPromise.then;
             wireApi.destroy = objects.destroy = apiDestroy;
             wireApi.resolve = objects.resolve = apiResolveRef;
+
+            // DEPRECATED
+            // To be removed after 0.7.0
+            wireApi.then =    objects.then    = contextPromise.then;
         }
 
         function initPluginApi() {
@@ -266,8 +278,8 @@
             pluginApi.resolveRef = apiResolveRef;
 
             // DEPRECATED
-            // To be removed in 0.7.0
-            // These will be removed from the plugin API in v0.7.0 in favor
+            // To be removed after 0.7.0
+            // These will be removed from the plugin API after v0.7.0 in favor
             // of using when.js (or any other CommonJS Promises/A compliant
             // deferred/when) directly in plugins
             pluginApi.deferred   = defer;
@@ -275,7 +287,7 @@
             pluginApi.whenAll    = whenAll;
 
             // DEPRECATED
-            // To be removed in 0.7.0
+            // To be removed after 0.7.0
             // Should not be used
             pluginApi.ready      = scopeReady.promise;
         }
@@ -307,7 +319,7 @@
             // Process/create each item in scope and resolve its
             // promise when completed.
             for (var name in names) {
-                // No need to check hasOwnProperty since we know local
+                // No need to check hasOwnProperty since we know names
                 // only contains scopeDef's own prop names.
                 createScopeItem(name, scopeDef[name], objects[name]);
             }
@@ -340,7 +352,7 @@
             }
 
             // *After* listeners are processed,
-            whenAll(promises).then(function() {
+            whenAll(promises, function() {
                 var p, i;
                 for (p in local)   delete local[p];
                 for (p in objects) delete objects[p];
@@ -373,8 +385,13 @@
             return destroy().promise;
         }
 
-        function wireChild(spec) {
-            return wireContext(spec, scopeParent);
+        /**
+         * Wires a child spec with this context as its parent
+         * @param spec
+         * @param [mixin] {Object}
+         */
+        function wireChild(spec, /* {Object}? */ mixin) {
+            return wireContext(spec, scopeParent, mixin);
         }
 
 		//
@@ -395,7 +412,7 @@
 			// the final item has been resolved.
 			var p = createItem(val, name);
 
-			p.then(function(resolved) {
+			when(p, function(resolved) {
 				objects[name] = local[name] = resolved;
 			});
 
@@ -427,7 +444,7 @@
 		}
 
 		function getModule(moduleId, spec) {
-			var d;
+			var module;
 
 			if (isString(moduleId)) {
 				var m = moduleLoadPromises[moduleId];
@@ -448,16 +465,14 @@
 					});
 				}
 
-				d = m.deferred;
+				module = m.deferred;
 
 			} else {
-				scanPlugin(moduleId);
-
-				d = defer();
-				d.resolve(moduleId);
+                module = moduleId;
+                scanPlugin(module);
 			}
 
-			return d;
+			return module;
 		}
 
 		function scanPlugin(module, spec) {
@@ -478,10 +493,9 @@
 		function addProxies(proxiesToAdd) {
 			if(!proxiesToAdd) return;
 			
-			var newProxies, p;
+			var newProxies, p, i = 0;
 			newProxies = [];
-			for (var i = 0, len = proxiesToAdd.length; i < len; i++) {
-				p = proxiesToAdd[i];
+            while(p = proxiesToAdd[i++]) {
 				if(indexOf(proxies, p) < 0) {
 					newProxies.push(p)
 				}
@@ -501,17 +515,11 @@
 		}
 
 		function createArray(arrayDef, name) {
-			var promise, result;
+			var result, promises, itemPromise, item, id, i;
 
-			promise = defer();
-			result = [];
+            result = [];
 
-			if (arrayDef.length === 0) {
-				promise.resolve(result);
-
-			} else {
-				var promises, itemPromise, item, id, i;
-
+			if (arrayDef.length) {
 				promises = [];
 
 				for (i = 0; (item = arrayDef[i]); i++) {
@@ -522,43 +530,44 @@
 					resolveArrayValue(itemPromise, result, i);
 				}
 
-				chain(whenAll(promises), promise, result);
-			}
+				result = chain(whenAll(promises), defer(), result);
 
-			return promise;
+            }
+
+            return result;
 		}
 
 		function resolveArrayValue(promise, array, i) {
-			promise.then(function(value) {
+			when(promise, function(value) {
 				array[i] = value;
 			});
 		}
 
 		function createModule(spec, name) {
-			var promise = defer();
+//			var promise = defer();
 
 			// Look for a factory, then use it to create the object
-			findFactory(spec).then(
+			return when(findFactory(spec)).then(
 				function(factory) {
 					if(!spec.id) spec.id = name;
 					var factoryPromise = defer();
 					factory(factoryPromise.resolver, spec, pluginApi);
-					chain(processObject(factoryPromise, spec), promise);
+					return processObject(factoryPromise, spec);
 				},
 				function() {
 					// No factory found, treat object spec as a nested scope
-					createScope(spec, scope, name).then(
-						function(created) { promise.resolve(created.local); },
-						chainReject(promise)
+					return createScope(spec, scope, name).then(
+						function(created) { return created.local; },
+						rejected
 					);
 				}
 			);
 
-			return promise;
+//			return promise;
 		}
 
 		function findFactory(spec) {
-			var promise = defer();
+			var promise;
 
 			// FIXME: Should not have to wait for all modules to load,
 			// but rather only the module containing the particular
@@ -568,21 +577,21 @@
 			// create: "factory!whatever-arg-the-factory-takes"
 			// args: [factory args here]
 			if (spec.module) {
-				promise.resolve(moduleFactory);
+                promise = moduleFactory;
 			} else if (spec.create) {
-				promise.resolve(instanceFactory);
+                promise = instanceFactory;
 			} else if (spec.wire) {
-				promise.resolve(wireFactory);
+                promise = wireFactory;
 			} else {
-				when(modulesReady, function() {
+                // TODO: Switch to when() without then() for when.js 0.9.4+
+				promise = modulesReady.then(function() {
 					for (var f in factories) {
 						if (spec.hasOwnProperty(f)) {
-							promise.resolve(factories[f]);
-							return;
+							return factories[f];
 						}
 					}
 
-					promise.reject();
+                    throw spec;
 				});
 			}
 
@@ -591,39 +600,33 @@
 
 
 		function processObject(target, spec) {
-			var promise, created, configured, initialized, destroyed, fail;
-
-			promise = defer();
+			var created, configured, initialized, destroyed;
 
 			created     = defer();
 			configured  = defer();
 			initialized = defer();
 			destroyed   = defer();
 
-			fail = chainReject(promise);
-
 			// After the object has been created, update progress for
 			// the entire scope, then process the post-created facets
-			when(target)
-				.then(function(object) {
+			return when(target,
+                function(object) {
 					chain(scopeDestroyed, destroyed, object);
 
 					var proxy = createProxy(object, spec);
 					proxied.push(proxy);
 
-					chain(processFacets('create', proxy), created)
+					processFacets('create', proxy)
 		        .then(function() {
-					return chain(processFacets('configure', proxy), configured);
-				}, fail)
+					return processFacets('configure', proxy)
+				}, rejected)
                 .then(function() {
-                    return chain(processFacets('initialize', proxy), initialized);
-                }, fail)
+                    return processFacets('initialize', proxy);
+                }, rejected)
                 .then(function() {
-                    return chain(processFacets('ready', proxy), promise);
-                }, fail);
-			}, fail);
-
-			return promise;
+                    return processFacets('ready', proxy);
+                }, rejected);
+			    }, rejected);
 		}
 
 		function createProxy(object, spec) {
@@ -763,7 +766,7 @@
 			wait = false;
 
 			// Get child spec and options
-			if(typeof isString(options)) {
+			if(isString(options)) {
 				module = options;
 			} else {
 				module = options.spec;
@@ -771,8 +774,8 @@
 				wait = options.wait;
 			}
 
-			function createChild() {
-				return wireChild(module);
+			function createChild(/** {Object}? */ mixin) {
+				return wireChild(module, mixin);
 			}
 
 			if(defer) {
@@ -818,8 +821,9 @@
 
 				if (split > 0) {
 					var name = refName.substring(0, split);
+                    refName = refName.substring(split + 1);
 					if (name == 'wire') {
-						wireResolver(promise/*, name, refObj, pluginApi*/);
+						wireResolver(promise, refName /*, refObj, pluginApi*/);
 
 					} else {
 						// Wait for modules, since the reference may need to be
@@ -828,7 +832,6 @@
 
 							var resolver = resolvers[name];
 							if (resolver) {
-								refName = refName.substring(split + 1);
 								resolver(promise, refName, refObj, pluginApi);
 
 							} else {
@@ -847,8 +850,8 @@
 			return promise;
 		}
 
-		function wireResolver(promise /*, name, refObj, wire*/) {
-			promise.resolve(wireApi);
+		function wireResolver(promise, name /*, refObj, wire*/) {
+			promise.resolve(name ? objects : wireApi);
 		}
 
 		//
@@ -974,7 +977,7 @@
 
 	return wire;
 });
-})(this['wire'],
+})(this,
 	typeof define != 'undefined'
 	// use define for AMD if available
 	? define
