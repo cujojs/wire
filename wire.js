@@ -257,18 +257,26 @@
         }
 
         function initWireApi(contextPromise, objects) {
+            // DEPRECATED
+            // Access to objects will be removed after 0.7.0, so it
+            // won't need to be decorated anymore.  May provide access
+            // to contextPromise instead, if there are valid use cases
+            // wireApi is be the preferred way to inject access to
+            // wire in 0.7.0+
+            
             wireApi = objects.wire = wireChild;
 
             wireApi.destroy = objects.destroy = apiDestroy;
 
-            // Consider deprecating
+            // Consider deprecating resolve
             // Any reference you could resolve using this should simply be
             // injected instead.
             wireApi.resolve = objects.resolve = apiResolveRef;
 
             // DEPRECATED objects.then
-            // To be removed after 0.7.0
-            wireApi.then =    objects.then    = contextPromise.then;
+            // To be removed after 0.7.0 - See notes above about objects,
+            // contextPromise, and wireApi
+            objects.then = contextPromise.then;
         }
 
         function initPluginApi() {
@@ -442,7 +450,8 @@
 				created = val;
 			}
 
-			// Always return a promise
+			// Always return a promise for <= 0.7.0
+            // For 0.8.0 + when.js 0.9.4+ it should be possible to simply return created
 			return when(created);
 		}
 
