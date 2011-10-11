@@ -42,7 +42,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
     * supports easy dijit theming via its `theme` option
 * New [wire/dojo/data](https://github.com/briancavalier/wire/wiki/wire-dojo-data) plugin that supports legacy `dojo/data` datastores
 * [wire/dom](https://github.com/briancavalier/wire/wiki/wire-dom) plugin now supports options for adding/removing classes to `<html>` during wiring.
-* Now using [when.js](https://github.com/briancavalier/when.js) v.9.3 for promises and async handling.  See also the Deprecated Functionality below.
+* Now using [when.js](https://github.com/briancavalier/when.js) v0.9.3 for promises and async handling.  See also the Deprecated Functionality below.
 * The wire.js core is now **only 2.5k** with Google Closure + gzip!
 * **Limited support** for using wire in a non-AMD setup.  This is intended to aid in transitioning to AMD and CommonJS modules, and *it's unlikely that wire's full functionality will ever be extended to cover non-AMD/CommonJS environments.*
 	* wire.js can now create components using raw constructors in addition to AMD module ids.  This allows wire.js to create components instances from libraries that haven't yet fully committed to AMD or CommonJS.
