@@ -260,9 +260,13 @@
             wireApi = objects.wire = wireChild;
 
             wireApi.destroy = objects.destroy = apiDestroy;
+
+            // Consider deprecating
+            // Any reference you could resolve using this should simply be
+            // injected instead.
             wireApi.resolve = objects.resolve = apiResolveRef;
 
-            // DEPRECATED
+            // DEPRECATED objects.then
             // To be removed after 0.7.0
             wireApi.then =    objects.then    = contextPromise.then;
         }
@@ -274,7 +278,6 @@
                 return createItem(spec, createPath(name, path));
             };
 
-            // It has additional methods that plugins can use
             pluginApi.resolveRef = apiResolveRef;
 
             // DEPRECATED
@@ -851,6 +854,11 @@
 		}
 
 		function wireResolver(promise, name /*, refObj, wire*/) {
+            // DEPRECATED access to objects
+            // Providing access to objects here is dangerous since not all
+            // the components in objects have been initialized--that is, they
+            // may still be promises, and it's possible to deadlock by waiting
+            // on one of those promises (via when() or promise.then())
 			promise.resolve(name ? objects : wireApi);
 		}
 
