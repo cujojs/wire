@@ -772,10 +772,9 @@
 		}
 
 		function wireFactory(resolver, spec/*, wire, name*/) {
-			var options, module, wait, defer;
+			var options, module, defer;
 
 			options = spec.wire;
-			wait = false;
 
 			// Get child spec and options
 			if(isString(options)) {
@@ -783,7 +782,6 @@
 			} else {
 				module = options.spec;
 				defer = options.defer;
-				wait = options.wait;
 			}
 
 			function createChild(/** {Object}? */ mixin) {
@@ -791,19 +789,15 @@
 			}
 
 			if(defer) {
+                // Resolve with the createChild function itself
+                // which can be used later to wire the spec
 				resolver.resolve(createChild);
 			} else {
 				// Start wiring the child
 				var context = createChild();
 
-				// If wait is true, only resolve this factory call when
-				// the child has completed wiring.
-				// Otherwise, resolve immediately with the child promise
-				if(wait) {
-					chain(context, resolver);
-				} else {
-					resolver.resolve(context.promise);
-				}
+				// Resolve immediately with the child promise
+				resolver.resolve(context.promise);
 			}
 		}
 
