@@ -17,7 +17,7 @@
 	var VERSION, tos, slice, rootSpec, rootContext, delegate, emptyObject,
 		defer, chain, whenAll, isPromise, undef;
 
-	wire.version = VERSION = "0.6.5";
+	wire.version = VERSION = "0.7.0";
 	tos = Object.prototype.toString;
     slice = Array.prototype.slice;
 	rootSpec = global['wire'] || {};
