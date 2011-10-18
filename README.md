@@ -94,12 +94,18 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # Roadmap
 
+### v0.8.0
+
+* Plugin namespacing
+* CommonJS compatibility
+* Node.js compatibility
+
+## Future
+
 * Library/Framework agnostic event and pubsub connectors
 * AOP weaving support for decorators and introductions
 * Support for more AMD loaders
 * Integration with more libs and frameworks.
-* Node.js support
-* More modular, reusable wire specs by "#include"ing one spec in another
 
 # License
 
