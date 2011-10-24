@@ -22,7 +22,9 @@ define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
                 if (refObj.i < result.length) {
                     resolver.resolve(result[refObj.i]);
                 } else {
-                    resolver.reject("Query '" + name + "' returned " + result.length + " items while expecting at least " + (refObj.i + 1));
+                  var error = new Error("Query '" + name + "' returned " + result.length + " items while expecting at least " + (refObj.i + 1));
+                  resolver.reject(error);
+                  throw error;
                 }
             } else {
                 resolver.resolve(result)

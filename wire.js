@@ -488,7 +488,7 @@
 		}
 
 		function scanPlugin(module, spec) {
-			if (typeof module == 'object' && isFunction(module.wire$plugin)) {
+			if (module && typeof module == 'object' && isFunction(module.wire$plugin)) {
 				var plugin = module.wire$plugin(contextPromise, scopeDestroyed, spec);
 				if (plugin) {
 					addPlugin(plugin.resolvers, resolvers);
