@@ -26,9 +26,7 @@ define(['wire/domReady'], function(domReady) {
 			if(node) resolver.resolve(node);
 			// Best to throw here since this may be happening async)
 			else {
-                var error = new Error("No DOM node with id: " + name);
-                resolver.reject(error);
-                throw error;
+                resolver.reject(new Error("No DOM node with id: " + name));
             }
 		});
 	}
