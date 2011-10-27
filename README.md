@@ -34,6 +34,11 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
+### 0.7.1
+
+* Improved logging in `wire/debug`, and guards against missing `console` in IE.
+* Minor cleanup
+
 ### 0.7.0
 
 * New [wire factory](https://github.com/briancavalier/wire/wiki/Factories) (aka wire inception!) that allows wiring chains of other specs, or injecting functions for deferred wiring.  [See the docs](https://github.com/briancavalier/wire/wiki/Factories)
