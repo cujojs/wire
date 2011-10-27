@@ -38,7 +38,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 * Improved logging in `wire/debug`, now with stack traces, and guards against missing `console` in IE.
 * Guard against null when scanning plugins
-* Update to when.js v0.9.4
+* Update to [when.js](https://github.com/briancavalier/when.js) v0.9.4
 
 ### 0.7.0
 
