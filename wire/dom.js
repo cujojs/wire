@@ -23,9 +23,9 @@ define(['wire/domReady'], function(domReady) {
 	function byId(resolver, name /*, refObj, wire*/) {
 		domReady(function() {
 			var node = document.getElementById(name);
-			if(node) resolver.resolve(node);
-			// Best to throw here since this may be happening async)
-			else {
+			if(node) {
+                resolver.resolve(node);
+            } else {
                 resolver.reject(new Error("No DOM node with id: " + name));
             }
 		});
