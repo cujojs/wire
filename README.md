@@ -36,8 +36,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 ### 0.7.1
 
-* Improved logging in `wire/debug`, and guards against missing `console` in IE.
-* Minor cleanup
+* Improved logging in `wire/debug`, now with stack traces, and guards against missing `console` in IE.
 
 ### 0.7.0
 
