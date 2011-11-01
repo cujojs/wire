@@ -4,11 +4,10 @@
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
-/*
-	File: builder.js
-	Builder plugin for cram
-	https://github.com/unscriptable/cram
-*/
+/**
+ * Builder plugin for cram
+ * https://github.com/unscriptable/cram
+ */
 define([], function() {
 
 	var defaultModuleRegex;

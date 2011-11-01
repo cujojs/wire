@@ -34,6 +34,10 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
+### 0.7.2
+
+* Updated build/optimizer support for [cram](https://github.com/unscriptable/cram) v0.2+
+
 ### 0.7.1
 
 * Improved logging in `wire/debug`, now with stack traces, and guards against missing `console` in IE.
