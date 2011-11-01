@@ -14,18 +14,47 @@
 
     "use strict";
 
-    var VERSION, tos, slice, rootSpec, rootContext, delegate, emptyObject,
-        defer, chain, whenAll, isPromise, isArray, undef;
+    var VERSION, tos, arrayProto, apIndexOf, apSlice, rootSpec, rootContext, delegate, emptyObject,
+        defer, chain, whenAll, isPromise, isArray, indexOf, undef;
 
     wire.version = VERSION = "0.7.2";
-    tos = Object.prototype.toString;
-    slice = Array.prototype.slice;
+
     rootSpec = global['wire'] || {};
 
+    tos = Object.prototype.toString;
+    
+    arrayProto = Array.prototype;
+    apSlice = arrayProto.slice;
+    apIndexOf = arrayProto.indexOf;
+        
+    /**
+     * Object.create polyfill
+     */
     delegate = Object.create || createObject;
+
+    // Array polyfills
+
+    /**
+     * Array.indexOf polyfill
+     */
     isArray = Array.isArray || function (it) {
         return tos.call(it) == '[object Array]';
     };
+
+    /**
+     * Array.prototype.indexOf polyfill
+     */
+    indexOf = apIndexOf
+        ? function(array, item) {
+            apIndexOf.call(array, item);
+        }
+        : function (array, item) {
+            for (var i = 0, len = array.length; i < len; i++) {
+                if(array[i] === item) return i;
+            }
+
+            return -1;
+        };
 
     emptyObject = {};
 
@@ -44,14 +73,6 @@
         var d = defer();
         d.reject(err);
         return d;
-    }
-
-    function indexOf(array, item) {
-        for (var i = 0, len = array.length; i < len; i++) {
-            if(array[i] === item) return i;
-        }
-
-        return -1;
     }
 
     //
@@ -132,7 +153,7 @@
         if(isString(specs)) {
             var specIds = specs.split(',');
 
-            require(specIds, function() { doWireContexts(slice.call(arguments)); });
+            require(specIds, function() { doWireContexts(apSlice.call(arguments)); });
         } else {
             doWireContexts(isArray(specs) ? specs : [specs]);
         }
@@ -858,13 +879,13 @@
             return promise;
         }
 
-        function wireResolver(promise, name /*, refObj, wire*/) {
+        function wireResolver(promise /*, name, refObj, wire*/) {
             // DEPRECATED access to objects
             // Providing access to objects here is dangerous since not all
             // the components in objects have been initialized--that is, they
             // may still be promises, and it's possible to deadlock by waiting
             // on one of those promises (via when() or promise.then())
-            promise.resolve(name ? objects : wireApi);
+            promise.resolve(wireApi);
         }
 
         //
