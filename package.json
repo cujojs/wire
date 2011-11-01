@@ -34,7 +34,7 @@
     ],
     "dependencies": {
         "aop": "0.2.0",
-        "when": "0.9.3",
+        "when": "0.9.4",
         "sizzle": "1.5.x"
     },
     "mappings": {
