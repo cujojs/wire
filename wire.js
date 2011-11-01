@@ -15,7 +15,7 @@
     "use strict";
 
     var VERSION, tos, slice, rootSpec, rootContext, delegate, emptyObject,
-        defer, chain, whenAll, isPromise, undef;
+        defer, chain, whenAll, isPromise, isArray, undef;
 
     wire.version = VERSION = "0.7.2";
     tos = Object.prototype.toString;
@@ -23,6 +23,9 @@
     rootSpec = global['wire'] || {};
 
     delegate = Object.create || createObject;
+    isArray = Array.isArray || function (it) {
+        return tos.call(it) == '[object Array]';
+    };
 
     emptyObject = {};
 
@@ -879,20 +882,6 @@
 
     function isRef(it) {
         return it && it.$ref;
-    }
-
-    /*
-     Function: isArray
-     Standard array test
-
-     Parameters:
-     it - anything
-
-     Returns:
-     true iff it is an Array
-     */
-    function isArray(it) {
-        return tos.call(it) == '[object Array]';
     }
 
     function isString(it) {
