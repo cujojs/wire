@@ -39,7 +39,7 @@
     },
     "mappings": {
         "aop": "https://github.com/briancavalier/aop.js/zipball/master",
-        "when": "https://github.com/briancavalier/aop.js/zipball/0.9.3",
+        "when": "https://github.com/briancavalier/when.js/zipball/0.9.4",
         "sizzle": "https://github.com/kriszyp/sizzle/zipball/1.5.2"
     },
     "main": "./wire",

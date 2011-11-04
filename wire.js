@@ -26,27 +26,27 @@
     arrayProto = Array.prototype;
     apSlice = arrayProto.slice;
     apIndexOf = arrayProto.indexOf;
-        
+
+    // Polyfills
+
     /**
-     * Object.create polyfill
+     * Object.create
      */
     delegate = Object.create || createObject;
 
-    // Array polyfills
-
     /**
-     * Array.indexOf polyfill
+     * Array.isArray
      */
     isArray = Array.isArray || function (it) {
         return tos.call(it) == '[object Array]';
     };
 
     /**
-     * Array.prototype.indexOf polyfill
+     * Array.prototype.indexOf
      */
     indexOf = apIndexOf
         ? function(array, item) {
-            apIndexOf.call(array, item);
+            return apIndexOf.call(array, item);
         }
         : function (array, item) {
             for (var i = 0, len = array.length; i < len; i++) {
@@ -88,7 +88,7 @@
 
         // Use the rootContext to wire all new contexts.
         // TODO: Remove .then() for when.js 0.9.4
-        return when(rootContext).then(
+        return when(rootContext,
             function(root) {
                 return root.wire(spec);
             }
@@ -140,7 +140,7 @@
             
             var spec = mergeSpecs(specs);
 
-            createScope(spec, parent).then(
+            when(createScope(spec, parent),
                 function(scope) {
                     deferred.resolve(scope.objects);
                 },
@@ -218,7 +218,7 @@
             // it is called again for some reason.
             doDestroy = function() {};
 
-            destroyContext();
+            return destroyContext();
         };
 
         // Return promise
@@ -278,7 +278,7 @@
             // begin its destroy phase and complete it before the parent.
             // The context hierarchy will be destroyed from child to parent.
             if (parent.destroyed) {
-                parent.destroyed.then(destroy);
+                when(parent.destroyed, destroy);
             }
         }
 
@@ -309,7 +309,12 @@
             // Plugin API
             // wire() API that is passed to plugins.
             pluginApi = function(spec, name, path) {
-                return createItem(spec, createPath(name, path));
+
+                // FIXME: Why does returning when(item) here cause
+                // the resulting, returned promise never to resolve
+                // in wire-factory1.html?
+                var item = createItem(spec, createPath(name, path));
+                return when.isPromise(item) ? item : when(item);
             };
 
             pluginApi.resolveRef = apiResolveRef;
@@ -334,18 +339,22 @@
 
             // Setup a promise for each item in this scope
             for (var name in scopeDef) {
-                  if(scopeDef.hasOwnProperty(name)) {
+                if (scopeDef.hasOwnProperty(name)) {
                     promises.push(local[name] = objects[name] = defer());
-                  }
+                }
             }
 
             // When all scope item promises are resolved, the scope
             // is resolved.
-            chain(whenAll(promises), scopeReady, scope);
-
             // When this scope is ready, resolve the contextPromise
             // with the objects that were created
-            return chain(scopeReady, defer(), objects);
+            return whenAll(promises,
+                function() {
+                    scopeReady.resolve(scope);
+                    return objects;
+                },
+                chainReject(scopeReady)
+            );
         }
 
         //
@@ -405,6 +414,8 @@
                 // Free Arrays
                 listeners = undef;
             });
+
+            return scopeDestroyed;
         }
 
         //
@@ -419,7 +430,7 @@
         }
 
         function apiDestroy() {
-            return destroy().promise;
+            return destroy();
         }
 
         /**
@@ -449,11 +460,10 @@
             // the final item has been resolved.
             var p = createItem(val, name);
 
-            when(p, function(resolved) {
+            return when(p, function(resolved) {
                 objects[name] = local[name] = resolved;
-            });
-
-            chain(p, itemPromise);
+                itemPromise.resolve(resolved);
+            }, chainReject(itemPromise));
         }
 
         function createItem(val, name) {
@@ -476,9 +486,7 @@
                 created = val;
             }
 
-            // Always return a promise for <= 0.7.0
-            // For 0.8.0 + when.js 0.9.4+ it should be possible to simply return created
-            return when(created);
+            return created;
         }
 
         function getModule(moduleId, spec) {
@@ -514,8 +522,8 @@
         }
 
         function scanPlugin(module, spec) {
-            if (module && typeof module == 'object' && isFunction(module.wire$plugin)) {
-                var plugin = module.wire$plugin(contextPromise, scopeDestroyed, spec);
+            if (module && isFunction(module.wire$plugin)) {
+                var plugin = module.wire$plugin(contextPromise, scopeDestroyed.promise, spec);
                 if (plugin) {
                     addPlugin(plugin.resolvers, resolvers);
                     addPlugin(plugin.factories, factories);
@@ -584,7 +592,7 @@
         function createModule(spec, name) {
 
             // Look for a factory, then use it to create the object
-            return when(findFactory(spec)).then(
+            return when(findFactory(spec),
                 function(factory) {
                     if(!spec.id) spec.id = name;
                     var factoryPromise = defer();
@@ -593,7 +601,7 @@
                 },
                 function() {
                     // No factory found, treat object spec as a nested scope
-                    return createScope(spec, scope, name).then(
+                    return when(createScope(spec, scope, name),
                         function(created) { return created.local; },
                         rejected
                     );
@@ -619,14 +627,14 @@
                 promise = wireFactory;
             } else {
                 // TODO: Switch to when() without then() for when.js 0.9.4+
-                promise = modulesReady.then(function() {
+                promise = when(modulesReady, function() {
                     for (var f in factories) {
                         if (spec.hasOwnProperty(f)) {
                             return factories[f];
                         }
                     }
 
-                    throw spec;
+                    return rejected(spec);
                 });
             }
 
@@ -644,6 +652,7 @@
 
             // After the object has been created, update progress for
             // the entire scope, then process the post-created facets
+
             return when(target,
                 function(object) {
                     chain(scopeDestroyed, destroyed, object);
@@ -651,26 +660,21 @@
                     var proxy = createProxy(object, spec);
                     proxied.push(proxy);
 
-                    processFacets('create', proxy)
-                .then(function() {
-                    return processFacets('configure', proxy)
-                }, rejected)
-                .then(function() {
-                    return processFacets('initialize', proxy);
-                }, rejected)
-                .then(function() {
-                    return processFacets('ready', proxy);
+                    return when.reduce(['create', 'configure', 'initialize', 'ready'],
+                        function(object, step) {
+                            return processFacets(step, proxy);
+                        }, proxy);
                 }, rejected);
-                }, rejected);
+
         }
 
         function createProxy(object, spec) {
-            var proxy, id, i;
+            var proxier, proxy, id, i;
 
             i = 0;
             id = spec.id;
 
-            while(!(proxy = proxies[i++](object, spec))) {}
+            while((proxier = proxies[i++]) && !(proxy = proxier(object, spec))) {}
 
             proxy.target = object;
             proxy.spec   = spec;
@@ -694,7 +698,7 @@
 
             var d = defer();
 
-            whenAll(promises).then(
+            whenAll(promises,
                 function() { processListeners(d, step, proxy); },
                 chainReject(d)
             );
@@ -772,7 +776,7 @@
                         // Instantiate or invoke it and use the result
                         if (args) {
                             args = isArray(args) ? args : [args];
-                            createArray(args, name).then(resolve, fail);
+                            when(createArray(args, name), resolve, fail);
 
                         } else {
                             // No args, don't need to process them, so can directly
@@ -893,10 +897,7 @@
         //
 
         function destroy() {
-            scopeReady.then(doDestroy, doDestroy);
-
-            return scopeDestroyed;
-
+            return when(scopeReady, doDestroy, doDestroy);
         }
 
     } // createScope

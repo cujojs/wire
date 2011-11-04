@@ -180,8 +180,14 @@ define([], function() {
                 return function(promise, proxy /*, wire */) {
                     var path = proxy.path;
 
-                    if (path) {
+                    if(step === 'destroyed') {
+                        // stop tracking destroyed components, since we don't
+                        // care anymore
+                        delete paths[path];
+
+                    } else if (path) {
                         paths[path].status = step;
+
                     }
 
                     if (verbose && filter(path)) {
