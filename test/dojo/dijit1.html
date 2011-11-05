@@ -25,7 +25,7 @@
 	</script>
 
 	<script type="text/javascript">
-		require(['curl/dojo16Compat']).next(['wire!test/dojo/dijit1'], function(context) {
+		require(['curl/dojo16Compat', 'dijit/form/TextBox']).next(['wire!test/dojo/dijit1'], function(context) {
 			// Properties/objects from the parent context are available via the prototype!
 			console.log("initialValue", context.initialValue);
 			

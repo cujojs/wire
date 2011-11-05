@@ -204,7 +204,7 @@
         
         contextPromise = initContextPromise(scopeDef, scopeReady);
 
-        initWireApi(contextPromise, objects);
+        initWireApi(objects);
 
         createComponents(local, scopeDef);
 
@@ -282,7 +282,7 @@
             }
         }
 
-        function initWireApi(contextPromise, objects) {
+        function initWireApi(objects) {
             // DEPRECATED
             // Access to objects will be removed after 0.7.0, so it
             // won't need to be decorated anymore.  May provide access
@@ -291,7 +291,6 @@
             // wire in 0.7.0+
             
             wireApi = objects.wire = wireChild;
-
             wireApi.destroy = objects.destroy = apiDestroy;
 
             // Consider deprecating resolve
@@ -302,7 +301,7 @@
             // DEPRECATED objects.then
             // To be removed after 0.7.0 - See notes above about objects,
             // contextPromise, and wireApi
-            objects.then = contextPromise.then;
+//            objects.then = contextPromise.then;
         }
 
         function initPluginApi() {
@@ -331,7 +330,7 @@
             // DEPRECATED
             // To be removed after 0.7.0
             // Should not be used
-            pluginApi.ready      = scopeReady.promise;
+//            pluginApi.ready      = scopeReady.promise;
         }
 
         function initContextPromise(scopeDef, scopeReady) {
@@ -375,7 +374,8 @@
             // Once all modules have been loaded, resolve modulesReady
             require(modulesToLoad, function(modules) {
                 modulesReady.resolve(modules);
-                moduleLoadPromises = modulesToLoad = null;
+                // FIXME: reinstate this
+//                moduleLoadPromises = modulesToLoad = null;
             });
         }
 
@@ -493,6 +493,7 @@
             var module;
 
             if (isString(moduleId)) {
+                console.log('getModule', moduleId);
                 var m = moduleLoadPromises[moduleId];
 
                 if (!m) {
@@ -560,19 +561,52 @@
             }
         }
 
+//        function createArray(arrayDef, name) {
+//            return arrayDef.length
+////                ? when.map(arrayDef, function(item, i) {
+////                    return createItem(item, item.id || name + '[' + i + ']');
+////                })
+//                    ? when.reduce(arrayDef, function(array, item, i) {
+//                        return when(createItem(item, item.id || name + '[' + i + ']'), function(resolved) {
+//                            array[i] = resolved;
+//                            return array;
+//                        });
+//                    })
+//                : [];
+//        }
+
         function createArray(arrayDef, name) {
-            var result, id;
+           var result, promises, itemPromise, item, id, i;
+
+//            var result, id;
             result = [];
 
             if (arrayDef.length) {
-                
-                result = when.map(arrayDef, function(item) {
-                    return createItem(item, id);
-                });
+                promises = [];
+
+                for (i = 0; (item = arrayDef[i]); i++) {
+                    id = item.id || name + '[' + i + ']';
+                    itemPromise = result[i] = createItem(arrayDef[i], id);
+                    promises.push(itemPromise);
+
+                    resolveArrayValue(itemPromise, result, i);
+                }
+
+                result = chain(whenAll(promises), defer(), result);
+
+//                result = when.map(arrayDef, function (item) {
+//                    return createItem(item, id);
+//                });
 
             }
 
             return result;
+        }
+
+        function resolveArrayValue(promise, array, i) {
+            when(promise, function (value) {
+                array[i] = value;
+            });
         }
 
         function createModule(spec, name) {
