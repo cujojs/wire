@@ -561,32 +561,18 @@
         }
 
         function createArray(arrayDef, name) {
-            var result, promises, itemPromise, item, id, i;
-
+            var result, id;
             result = [];
 
             if (arrayDef.length) {
-                promises = [];
-
-                for (i = 0; (item = arrayDef[i]); i++) {
-                    id = item.id || name + '[' + i + ']';
-                    itemPromise = result[i] = createItem(arrayDef[i], id);
-                    promises.push(itemPromise);
-
-                    resolveArrayValue(itemPromise, result, i);
-                }
-
-                result = chain(whenAll(promises), defer(), result);
+                
+                result = when.map(arrayDef, function(item) {
+                    return createItem(item, id);
+                });
 
             }
 
             return result;
-        }
-
-        function resolveArrayValue(promise, array, i) {
-            when(promise, function(value) {
-                array[i] = value;
-            });
         }
 
         function createModule(spec, name) {
