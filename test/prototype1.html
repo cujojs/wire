@@ -18,6 +18,7 @@
 		//
 		require(['wire'], function(wire) {
 			wire({
+                debug: {module:'wire/debug'},
 				// A simple example using object literals
 
 				//
@@ -64,6 +65,17 @@
 						ready: "Hi Mom"
 					}
 				},
+                
+                parent3: {
+                    a: 'a'
+                },
+                child3: {
+                    prototype: { $ref: 'parent3' },
+                    properties: {
+                        a: 'a-child',
+                        b: 'b-child'
+                    }
+                },
 
 				//
 				// Create a logger for use above
@@ -72,7 +84,19 @@
 				}
 			}).then(
 				function(context) {
-					console.log("DONE", context);
+                    var undef;
+                    
+                    doh.register('prototype-factory', [
+                        function testPrototypeWithRef(doh) {
+                            doh.assertEqual('a', context.parent3.a);
+                            doh.assertEqual(undef, context.parent3.b);
+
+                            doh.assertEqual('a-child', context.child3.a);
+                            doh.assertEqual('b-child', context.child3.b);
+                        }
+                    ]);
+
+                    doh.run();
 				},
 				function(err) {
 					console.error(err);
