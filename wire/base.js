@@ -112,15 +112,21 @@ define(['when'], function(when) {
 		promise.resolve(spec.literal);
 	}
 
-	function protoFactory(promise, spec, wire) {
-		var parentRef = spec.prototype;
-
-		wire.resolveRef(parentRef).then(
+	function protoFactory(resolver, spec, wire) {
+		var parentRef, promise;
+        
+        parentRef = spec.prototype;
+        
+        promise = typeof parentRef === 'string'
+                ? wire.resolveRef(parentRef)
+                : wire(parentRef);
+        
+        when(promise,
 			function(parent) {
 				var child = createObject(parent);
-				promise.resolve(child);
+				resolver.resolve(child);
 			},
-			reject(promise)
+			reject(resolver)
 		);
 	}
 
@@ -139,7 +145,7 @@ define(['when'], function(when) {
 	function setProperty(proxy, name, val, wire) {
 		var promise = wire(val, name, proxy.path);
 
-		promise.then(function(resolvedValue) {
+		when(promise, function(resolvedValue) {
 			proxy.set(name, resolvedValue);
 		});
 
@@ -177,7 +183,7 @@ define(['when'], function(when) {
             // when this context is destroyed
 			var destroyFuncs = [];
 
-			destroyed.then(function() {
+			when(destroyed, function() {
 				for(var i = 0, destroy; (destroy = destroyFuncs[i++]);) {
 					destroy();
 				}

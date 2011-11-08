@@ -25,6 +25,9 @@ doh.registerUrl('destroy-facet', '../../destroy.html');
 // literal
 doh.registerUrl('literal-factory', '../../literal.html');
 
+// prototype
+doh.registerUrl('prototype-factory', '../../prototype1.html');
+
 // wire/dom
 doh.registerUrl('dom-resolver', '../../dom1.html');
 
