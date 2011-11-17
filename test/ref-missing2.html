@@ -14,24 +14,23 @@
 				// Parent context with nothing useful
 				notTheThing: 123
 			}).then(
-				function(context) {
-					// Now wire a child and try to resolve a missing reference
-					context.wire({
-						plugins: [
-							{ module: 'wire/debug' }
-						],
-						// Unresolvable reference should fail
-						thingRef: { $ref: 'thing' },
-						notTheThingRef: { $ref: 'notTheThing' }				
-					}).then(
-						function(child) {
-							console.error("TEST FAILED: Should not have been able to wire", child);
-						},
-						function(err) {
-							console.log("Seeing an error is CORRECT");
-							console.error(err);
-						}
-					)
+				function(parent) {
+                    doh.register('ref-missing2', [
+                        function(doh) {
+                            var dohd = new doh.Deferred();
+                            
+                            parent.wire({
+                                thingRef: { $ref: 'thing' }
+                            }).then(
+                                function(child) { dohd.errback("Missing ref did not cause failure"); },
+                                function (e) { dohd.callback(true); }
+                            );
+
+                            return dohd;
+                        }
+                    ]);
+                    
+                    doh.run();
 				}
 			);
 			

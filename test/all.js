@@ -10,6 +10,12 @@ doh.registerUrl('plain-constructors', '../../required-modules.html');
 // Non-amd environment limited support
 doh.registerUrl('non-amd', '../../non-amd.html');
 
+// Error cases
+
+// Unresolvable refs
+doh.registerUrl('ref-missing1', '../../ref-missing1.html');
+doh.registerUrl('ref-missing2', '../../ref-missing2.html');
+
 // wire resolver
 doh.registerUrl('wire-resolver', '../../wire-resolver1.html');
 doh.registerUrl('wire-factory', '../../wire-factory1.html');
