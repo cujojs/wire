@@ -52,13 +52,19 @@ define([], function() {
         log: noop,
         error: noop
     };
+    function log(level, args) {
+          console.firebug ? console[ level ].apply( window, args )
+          : (console[ level ] && typeof console[ level ].apply == "function") ? console[ level ].apply(console, args)
+          : console[ level ] ? console[ level ]( args )
+          : console.log( args );
+    }
     
     function logInfo() {
-        console.log.apply(console, arguments);
+        log('log', arguments);
     }
 
     function logError() {
-        console.error.apply(console, arguments);
+        log('error', arguments);
     }
 
     // TODO: Consider using stacktrace.js
