@@ -9,7 +9,7 @@
 */
 define(['require', 'aop', 'when'], function(require, aop, when) {
 
-	var ap, obj, tos, isArray, whenAll, deferred;
+	var ap, obj, tos, isArray, whenAll, deferred, undef;
 	
 	ap = Array.prototype;
 	obj = {};
@@ -148,7 +148,7 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 
 	function applyAspectSeparate(promise, target, aspect, wire) {
 		var pointcut, advice;
-		
+
 		pointcut = aspect.pointcut;
 		advice = aspect.advice;
 
@@ -171,15 +171,16 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 		function fail(e) { resolver.reject(e); }
 
 		var target, path, aspects, aspect, aspectPath, promises, d, applyAdvice, i;
+
 		aspects = options.aspects;
-		
-		if(!aspects) {
+        path    = proxy.path;
+
+		if(!aspects || path === undef) {
 			resolver.resolve();
 			return;
 		}
 
 		target  = proxy.target;
-		path    = proxy.path;
 		applyAdvice = applyAspectCombined;
 		promises = [];
 
@@ -199,10 +200,7 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 				}
 			}
 
-			whenAll(promises).then(
-				function() { resolver.resolve(); },
-				fail
-			);
+			whenAll(promises, resolver.resolve, fail);
 
 		} catch(e) {
 			fail(e);

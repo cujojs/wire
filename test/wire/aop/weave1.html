@@ -74,37 +74,37 @@
                 // Add your test wiring declarations here
 
             }).then(
-                    function(context) {
-                        var t1, t2;
+                function(context) {
+                    var t1, t2;
 
-                        t1 = context.thing1;
-                        t2 = context.thing2;
+                    t1 = context.thing1;
+                    t2 = context.thing2;
 
-                        doh.register('aop-weaving', [
-                            function(doh) {
-                                // doSomething should have been advised with around
-                                // that always returns 1
-                                doh.assertEqual(1, t1.doSomething());
-                                doh.assertEqual(1, t2.doSomething());
-                            },
-                            function(doh) {
-                                // doSomethingElse throws, and should have been
-                                // advised with around that will return 2
-                                doh.assertEqual(2, t1.doSomethingElse());
-                                doh.assertEqual(2, t2.doSomethingElse());
-                            },
-                            function(doh) {
-                                // doOneMoreThing should not be advised
-                                doh.assertEqual(0, t1.doOneMoreThing());
-                                doh.assertEqual(0, t2.doOneMoreThing());
-                            }
-                        ]);
+                    doh.register('aop-weaving', [
+                        function(doh) {
+                            // doSomething should have been advised with around
+                            // that always returns 1
+                            doh.assertEqual(1, t1.doSomething());
+                            doh.assertEqual(1, t2.doSomething());
+                        },
+                        function(doh) {
+                            // doSomethingElse throws, and should have been
+                            // advised with around that will return 2
+                            doh.assertEqual(2, t1.doSomethingElse());
+                            doh.assertEqual(2, t2.doSomethingElse());
+                        },
+                        function(doh) {
+                            // doOneMoreThing should not be advised
+                            doh.assertEqual(0, t1.doOneMoreThing());
+                            doh.assertEqual(0, t2.doOneMoreThing());
+                        }
+                    ]);
 
-                        doh.run();
-                    },
-                    function(err) {
-                        console.log("aop: FAILED", err);
-                    }
+                    doh.run();
+                },
+                function(err) {
+                    console.log("aop: FAILED", err);
+                }
             );
         });
     </script>
