@@ -1,40 +1,49 @@
-doh.registerUrl('_fake', '../../_fake-doh.html');
+(function(g) {
 
-// Core
-doh.registerUrl('basic-types1', '../../basic-types1.html');
-doh.registerUrl('nested1', '../../nested2.html');
-doh.registerUrl('nested2', '../../nested2.html');
-doh.registerUrl('create-constructor', '../../create-constructor.html');
-// create with raw constructors/functions
-doh.registerUrl('plain-constructors', '../../required-modules.html');
-// Non-amd environment limited support
-doh.registerUrl('non-amd', '../../non-amd.html');
+    var hash = '';
+    try {
+        hash = g.location.hash;
+    } catch(e) {}
 
-// wire resolver
-doh.registerUrl('wire-resolver', '../../wire-resolver1.html');
-doh.registerUrl('wire-factory', '../../wire-factory1.html');
+    doh.registerUrl('_fake', '../../_fake-doh.html' + hash);
 
-// Facets
+    // Core
+    doh.registerUrl('basic-types1', '../../basic-types1.html' + hash);
+    doh.registerUrl('nested1', '../../nested1.html' + hash);
+    doh.registerUrl('nested2', '../../nested2.html' + hash);
+    doh.registerUrl('create-constructor', '../../create-constructor.html' + hash);
+    // create with raw constructors/functions
+    doh.registerUrl('plain-constructors', '../../required-modules.html' + hash);
+    // Non-amd environment limited support
+    doh.registerUrl('non-amd', '../../non-amd.html' + hash);
 
-// Base
-doh.registerUrl('init-facet', '../../init.html');
-doh.registerUrl('destroy-facet', '../../destroy.html');
+    // wire resolver
+    doh.registerUrl('wire-resolver', '../../wire-resolver1.html' + hash);
+    doh.registerUrl('wire-factory', '../../wire-factory1.html' + hash);
 
-// Factories
+    // Facets
 
-// literal
-doh.registerUrl('literal-factory', '../../literal.html');
+    // Base
+    doh.registerUrl('init-facet', '../../init.html' + hash);
+    doh.registerUrl('destroy-facet', '../../destroy.html' + hash);
 
-// wire/dom
-doh.registerUrl('dom-resolver', '../../dom1.html');
+    // Factories
 
-// wire/aop
-doh.registerUrl('decorate1', '../../wire/aop/decorate1.html');
-doh.registerUrl('introduce1', '../../wire/aop/introduce1.html');
-doh.registerUrl('aop-weaving', '../../wire/aop/weave1.html');
+    // literal
+    doh.registerUrl('literal-factory', '../../literal.html' + hash);
 
-// wire/sizzle
-doh.registerUrl('sizzle', '../../sizzle.html');
+    // wire/dom
+    doh.registerUrl('dom-resolver', '../../dom1.html' + hash);
 
-// Go
-doh.run();
+    // wire/aop
+    doh.registerUrl('decorate1', '../../wire/aop/decorate1.html' + hash);
+    doh.registerUrl('introduce1', '../../wire/aop/introduce1.html' + hash);
+    doh.registerUrl('aop-weaving', '../../wire/aop/weave1.html' + hash);
+
+    // wire/sizzle
+    doh.registerUrl('sizzle', '../../sizzle.html' + hash);
+
+    // Go
+    doh.run();
+
+})(this);

@@ -13,3 +13,6 @@
 [submodule "support/when"]
 	path = support/when
 	url = git://github.com/briancavalier/when.js.git
+[submodule "test/requirejs"]
+	path = test/requirejs
+	url = https://github.com/jrburke/requirejs.git

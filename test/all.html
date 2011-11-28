@@ -3,7 +3,16 @@
 <head>
 	<meta charset="UTF-8">
 	<title>wire.js All Unit Tests</title>
-	<meta http-equiv="REFRESH" content="0;url=util/doh/runner.html?testUrl=../../all">
+    <script type="text/javascript">
+        (function(w) {
+            var hash = '';
+            try {
+                hash = w.location.hash;
+            } catch(e) {}
+            
+            document.write('<meta http-equiv="REFRESH" content="0;url=util/doh/runner.html?testUrl=../../all' + hash +'">')
+        })(window);
+    </script>
 </head>
 <body>
 	<div id="testBody"></div>

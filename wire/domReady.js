@@ -24,25 +24,15 @@
 (function(global) {
 define(['require'], function(req) {
 
-	var ready;
-
 	// Try require.ready first
-	ready = (global.require && global.require.ready) || function (cb) {
-		// If it's not available, assume curl's domReady module
-		req(['curl/domReady'], function (domReady) {
-			// Once we have it, we can replace ready with the
-			// domReady module directly.
-			ready = domReady;
-
-			// Call the callback
-			domReady(cb);
+	return (global.require && global.require.ready) || function (cb) {
+		// If it's not available, assume a domReady! plugin is available
+		req(['domReady!'], function () {
+            // Using domReady! as a plugin will automatically wait for domReady
+            // so we can just call the callback.
+            cb();
 		});
 	};
 
-	// Return a wrapper so that ready can be replaced if we're using
-	// curl's domReady
-	return function (cb) {
-		ready(cb);
-	};
 });
 })(this);

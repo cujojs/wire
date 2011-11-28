@@ -17,9 +17,9 @@
 		require(['wire'], function(wire) {
 			wire({
 				// Plugins
-				// plugins: [
-				// 	{ module: 'wire/debug' }
-				// ],
+				plugins: [
+					{ module: 'wire/debug' }
+				],
 				// The particular logger we want.
 				// Pick either the AlertLogger or SilentLogger and reload.
 				// Can inject concrete dependencies without having to modify Controller.
@@ -48,7 +48,7 @@
 				context.wire({
 					// Plugins
 					plugins: [
-						// { module: 'wire/debug' },
+						{ module: 'wire/debug' },
 						{ module: 'wire/dom' }
 					],
 					name: "Test 2",
@@ -85,7 +85,7 @@
                         function(doh) {
                             doh.assertEqual("Test 2", context2.controller.name);
                             doh.assertEqual(10, context2.controller.number);
-                            doh.assertTrue(context2.controller.logger.logged);
+//                            doh.assertTrue(context2.controller.logger.logged);
                         }
                     ]);
 

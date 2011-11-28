@@ -34,6 +34,10 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
+### 0.7.3
+
+* Updated `wire/domReady` helper to work with RequireJS's `domReady` module, while maintaining backward compatibility with older versions of RequireJS that use `require.ready`
+
 ### 0.7.2
 
 * Updated build/optimizer support for [cram](https://github.com/unscriptable/cram) v0.2+
