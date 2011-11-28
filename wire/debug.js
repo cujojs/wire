@@ -43,40 +43,42 @@
  */
 (function(global) {
 define([], function() {
-    var timer, defaultTimeout, console;
+    var timer, defaultTimeout, console, infoLogger, errorLogger, logTrace;
 
     function noop() {}
 
     // Fake console to prevent IE breakage
-    console = global.console || {
-        log: noop,
-        error: noop
-    };
-    function log(level, args) {
-          console.firebug ? console[ level ].apply( window, args )
-          : (console[ level ] && typeof console[ level ].apply == "function") ? console[ level ].apply(console, args)
-          : console[ level ] ? console[ level ]( args )
-          : console.log( args );
+    console = global['console'] || { log: noop };
+
+    function createLogger(level) {
+        var logFunc = console[level];
+        return console.firebug
+            ? function(args) { logFunc.apply(window, args); }
+            : (logFunc && typeof logFunc.apply == 'function')
+                ? function(args) { logFunc.apply(console, args); }
+                : logFunc
+                    ? function(args) { console[level](args); }
+                    : function(args) { console.log(args); }
     }
-    
+
+    infoLogger = createLogger('log');
+    errorLogger = createLogger('error');
+
     function logInfo() {
-        log('log', arguments);
+        infoLogger(arguments);
     }
 
     function logError() {
-        log('error', arguments);
+        errorLogger(arguments);
     }
 
     // TODO: Consider using stacktrace.js
     // https://github.com/eriwen/javascript-stacktrace
     // For now, quick and dirty, based on how stacktrace.js chooses the appropriate field
-    function logTrace(e) {
-        if(console.trace) {
-            console.trace(e);
-        } else {
-            logError(e.stack || e.stacktrace || e.message || e);
-        }
-    }
+    // If console.trace exists, use it, otherwise use logError
+    logTrace = typeof console.trace == 'function'
+        ? function(e) { console.trace(e); }
+        : function(e) { logError(e.stack || e.stacktrace || e.message || e); };
 
     timer = createTimer();
     defaultTimeout = 5000; // 5 second wiring failure timeout
