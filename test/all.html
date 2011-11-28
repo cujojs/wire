@@ -10,7 +10,7 @@
                 hash = w.location.hash;
             } catch(e) {}
             
-            document.write('<meta http-equiv="REFRESH" content="0;url=util/doh/runner.html?testUrl=../../all' + hash +'">')
+            w.document.location.href = 'util/doh/runner.html?testUrl=../../all' + hash;
         })(window);
     </script>
 </head>
