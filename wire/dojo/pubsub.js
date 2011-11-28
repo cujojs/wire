@@ -11,7 +11,7 @@
 	This implementation uses dojo.publish, dojo.subscribe and dojo.unsubscribe
 	to do the work of connecting and disconnecting event handlers.
 */
-define(['dojo', 'dojo/_base/connect'], function(pubsub) {
+define(['dojo', 'aop', 'dojo/_base/connect'], function(pubsub, aop) {
 
 	return {
 		wire$plugin: function pubsubPlugin(ready, destroyed, options) {
@@ -29,23 +29,20 @@ define(['dojo', 'dojo/_base/connect'], function(pubsub) {
 					publish - hash of method names to topics each should publish
 			*/
 			function proxyPublish(target, publish) {
-				var originals = {};
+				var remove;
 
 				for(var f in publish) {
 					if(typeof target[f] == 'function') {
-						var orig = originals[f] = target[f],
-							topic = publish[f];
 
-						target[f] = function publishProxy() {
-							var result = orig.apply(target, arguments);
-							pubsub.publish(topic, [result]);
-						};
-					}
+                        // Add after advice and save remove function to remove
+                        // advice when this context is destroyed
+                        remove = aop.after(target, f, function (result) {
+                            pubsub.publish(publish[f], [result]);
+                        });
+
+                        destroyHandlers.push(remove);
+                    }
 				}
-
-				destroyHandlers.push(function() {
-					unproxyPublish(target, originals);
-				});
 			}
 
 			/*
