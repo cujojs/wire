@@ -37,7 +37,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 ### 0.7.3
 
 * Updated `wire/domReady` helper to work with RequireJS's `domReady` module, while maintaining backward compatibility with older versions of RequireJS that use `require.ready`
-* `wire/debug` plugin - Another workaround for broken/missing console in IE
+* `wire/debug` plugin - Simplified solution for broken/missing console in IE
 
 ### 0.7.2
 

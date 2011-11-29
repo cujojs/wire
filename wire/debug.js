@@ -43,42 +43,20 @@
  */
 (function(global) {
 define([], function() {
-    var timer, defaultTimeout, console, infoLogger, errorLogger, logTrace;
+    var timer, defaultTimeout, console, logTrace;
 
     function noop() {}
 
     // Fake console to prevent IE breakage
-    console = global['console'] || { log: noop };
-
-    function createLogger(level) {
-        var logFunc = console[level];
-        return console.firebug
-            ? function(args) { logFunc.apply(window, args); }
-            : (logFunc && typeof logFunc.apply == 'function')
-                ? function(args) { logFunc.apply(console, args); }
-                : logFunc
-                    ? function(args) { console[level](args); }
-                    : function(args) { console.log(args); }
-    }
-
-    infoLogger = createLogger('log');
-    errorLogger = createLogger('error');
-
-    function logInfo() {
-        infoLogger(arguments);
-    }
-
-    function logError() {
-        errorLogger(arguments);
-    }
+    console = global['console'] || { log: noop, error: noop, trace: noop };
 
     // TODO: Consider using stacktrace.js
     // https://github.com/eriwen/javascript-stacktrace
     // For now, quick and dirty, based on how stacktrace.js chooses the appropriate field
-    // If console.trace exists, use it, otherwise use logError
+    // If console.trace exists, use it, otherwise use console.error
     logTrace = typeof console.trace == 'function'
         ? function(e) { console.trace(e); }
-        : function(e) { logError(e.stack || e.stacktrace || e.message || e); };
+        : function(e) { console.error(e.stack || e.stacktrace || e.message || e); };
 
     timer = createTimer();
     defaultTimeout = 5000; // 5 second wiring failure timeout
@@ -92,11 +70,15 @@ define([], function() {
      * @returns A formatted string for output
      */
     function time(text, contextTimer) {
-        var all = timer(), timing = "(total: " +
-                (contextTimer
-                        ? all.total + "ms, context: " + contextTimer()
-                        : all)
-                + "): ";
+        var all, timing;
+
+        all = timer();
+        timing = "(total: " +
+                 (contextTimer
+                     ? all.total + "ms, context: " + contextTimer()
+                     : all)
+            + "): ";
+
         return "DEBUG " + timing + text;
     }
 
@@ -160,26 +142,26 @@ define([], function() {
                 return time(msg, contextTimer);
             }
 
-            logInfo(contextTime("Context init"));
+            console.log(contextTime("Context init"));
 
             ready.then(
                     function onContextReady(context) {
                         cancelPathsTimeout();
-                        logInfo(contextTime("Context ready"), context);
+                        console.log(contextTime("Context ready"), context);
                     },
                     function onContextError(err) {
                         cancelPathsTimeout();
-                        logError(contextTime("Context ERROR: "), err);
+                        console.error(contextTime("Context ERROR: "), err);
                         logTrace(err);
                     }
             );
 
             destroyed.then(
                     function onContextDestroyed() {
-                        logInfo(contextTime("Context destroyed"));
+                        console.log(contextTime("Context destroyed"));
                     },
                     function onContextDestroyError(err) {
-                        logError(contextTime("Context destroy ERROR"), err);
+                        console.error(contextTime("Context destroy ERROR"), err);
                         logTrace(err);
                     }
             );
@@ -195,9 +177,9 @@ define([], function() {
                     if (verbose && filter(path)) {
                         var message = time(step + ' ' + (path || proxy.id || ''), contextTimer);
                         if (proxy.target) {
-                            logInfo(message, proxy.target, proxy.spec);
+                            console.log(message, proxy.target, proxy.spec);
                         } else {
-                            logInfo(message, proxy);
+                            console.log(message, proxy);
                         }
                     }
 
@@ -222,7 +204,7 @@ define([], function() {
                 for (p in paths) {
                     path = paths[p];
                     if (path.status !== 'ready') {
-                        logError("WIRING FAILED at " + path.status, p, path.spec);
+                        console.error("WIRING FAILED at " + path.status, p, path.spec);
                     }
                 }
             }
