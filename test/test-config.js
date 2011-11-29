@@ -19,8 +19,6 @@
     } catch(e) {
     }
 
-    console.log('USING LOADER: ' + loaderName);
-
 	selfName = 'test-config.js';
 	selfRegex = new RegExp(selfName + '$');
 
