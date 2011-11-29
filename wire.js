@@ -900,7 +900,10 @@
     }
 
     function isStrictlyObject(it) {
-        return tos.call(it) == '[object Object]';
+        // In IE7 tos.call(null) is '[object Object]'
+        // so we need to check to see if 'it' is
+        // even set
+        return (it && tos.call(it) == '[object Object]');
     }
 
     /*
