@@ -17,7 +17,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     var VERSION, tos, arrayProto, apIndexOf, apSlice, rootSpec, rootContext, delegate, emptyObject,
             defer, chain, whenAll, isPromise, isArray, indexOf, lifecycleSteps, undef;
 
-    wire.version = VERSION = "0.7.2";
+    wire.version = VERSION = "0.7.3";
 
     rootSpec = global['wire'] || {};
     lifecycleSteps = ['create', 'configure', 'initialize', 'ready'];
@@ -613,20 +613,19 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             // the entire scope, then process the post-created facets
 
             return when(target,
-                    function (object) {
-                        chain(scopeDestroyed, destroyed, object);
+                function (object) {
+                    chain(scopeDestroyed, destroyed, object);
 
-                        var proxy = createProxy(object, spec);
-                        proxied.push(proxy);
+                    var proxy = createProxy(object, spec);
+                    proxied.push(proxy);
 
-                        // Push the object through the lifecycle steps, processing
-                        // facets at each step.
-                        return when.reduce(lifecycleSteps,
-                                function (object, step) {
-                                    return processFacets(step, proxy);
-                                }, proxy);
-                    }, rejected);
-
+                    // Push the object through the lifecycle steps, processing
+                    // facets at each step.
+                    return when.reduce(lifecycleSteps,
+                            function (object, step) {
+                                return processFacets(step, proxy);
+                            }, proxy);
+                }, rejected);
         }
 
         function createProxy(object, spec) {
@@ -908,7 +907,10 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     }
 
     function isStrictlyObject(it) {
-        return tos.call(it) == '[object Object]';
+        // In IE7 tos.call(null) is '[object Object]'
+        // so we need to check to see if 'it' is
+        // even set
+        return (it && tos.call(it) == '[object Object]');
     }
 
     /**
