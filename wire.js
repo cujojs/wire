@@ -49,15 +49,15 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
      */
     indexOf = apIndexOf
             ? function (array, item) {
-        return apIndexOf.call(array, item);
-    }
+                return apIndexOf.call(array, item);
+            }
             : function (array, item) {
-        for (var i = 0, len = array.length; i < len; i++) {
-            if (array[i] === item) return i;
-        }
+                for (var i = 0, len = array.length; i < len; i++) {
+                    if (array[i] === item) return i;
+                }
 
-        return -1;
-    };
+                return -1;
+            };
 
     emptyObject = {};
 
@@ -100,9 +100,9 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
         // Use the rootContext to wire all new contexts.
         return when(rootContext,
-                function (root) {
-                    return root.wire(spec);
-                }
+            function (root) {
+                return root.wire(spec);
+            }
         );
     }
 
@@ -113,13 +113,13 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     //noinspection JSUnusedLocalSymbols
     function amdLoad(name, require, callback, config) {
         var promise = callback.resolve
-                ? callback
-                : {
-            resolve: callback,
-            reject: function (err) {
-                throw err;
-            }
-        };
+            ? callback
+            : {
+                resolve: callback,
+                reject: function (err) {
+                    throw err;
+                }
+            };
 
         chain(wire(name), promise);
     }
@@ -153,10 +153,10 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             var spec = mergeSpecs(specs);
 
             when(createScope(spec, parent),
-                    function (scope) {
-                        deferred.resolve(scope.objects);
-                    },
-                    chainReject(deferred)
+                function (scope) {
+                    deferred.resolve(scope.objects);
+                },
+                chainReject(deferred)
             );
         }
 
@@ -602,19 +602,14 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
 
         function processObject(target, spec) {
-            var created, configured, initialized, destroyed;
-
-            created = defer();
-            configured = defer();
-            initialized = defer();
-            destroyed = defer();
+//            var destroyed = defer();
 
             // After the object has been created, update progress for
             // the entire scope, then process the post-created facets
 
             return when(target,
                 function (object) {
-                    chain(scopeDestroyed, destroyed, object);
+//                    chain(scopeDestroyed, destroyed, object);
 
                     var proxy = createProxy(object, spec);
                     proxied.push(proxy);

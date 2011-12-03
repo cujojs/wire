@@ -135,77 +135,77 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 //		promise.resolve();
 //	}
 
-	function applyAspectCombined(promise, target, aspect, wire) {
-		wire.resolveRef(aspect).then(function(aspect) {
-			var pointcut = aspect.pointcut;
+    function applyAspectCombined(promise, target, aspect, wire, add) {
+        wire.resolveRef(aspect).then(function (aspect) {
+            var pointcut = aspect.pointcut;
 
-			if(pointcut) {
-				aop.add(target, pointcut, aspect);
-			}
-			promise.resolve();
-		});
-	}
+            if (pointcut) {
+                add(target, pointcut, aspect);
+            }
+            promise.resolve();
+        });
+    }
 
-	function applyAspectSeparate(promise, target, aspect, wire) {
-		var pointcut, advice;
+    function applyAspectSeparate(promise, target, aspect, wire, add) {
+        var pointcut, advice;
 
-		pointcut = aspect.pointcut;
-		advice = aspect.advice;
+        pointcut = aspect.pointcut;
+        advice = aspect.advice;
 
-		function applyAdvice(pointcut) {
-			wire.resolveRef(advice).then(function(advice) {
-				aop.add(target, pointcut, advice);
-				promise.resolve();
-			});
-		}
+        function applyAdvice(pointcut) {
+            wire.resolveRef(advice).then(function (aspect) {
+                add(target, pointcut, aspect);
+                promise.resolve();
+            });
+        }
 
-		if (typeof pointcut === 'string') {
-			wire.resolveRef(pointcut).then(applyAdvice);
-		} else {
-			applyAdvice(pointcut);
-		}
-	}
+        if (typeof pointcut === 'string') {
+            wire.resolveRef(pointcut).then(applyAdvice);
+        } else {
+            applyAdvice(pointcut);
+        }
+    }
 
-	function weave(resolver, proxy, wire, options) {
+    function weave(resolver, proxy, wire, options, add) {
 
-		function fail(e) { resolver.reject(e); }
+        function fail(e) { resolver.reject(e); }
 
-		var target, path, aspects, aspect, aspectPath, promises, d, applyAdvice, i;
+        var target, path, aspects, aspect, aspectPath, promises, d, applyAdvice, i;
 
-		aspects = options.aspects;
-        path    = proxy.path;
+        aspects = options.aspects;
+        path = proxy.path;
 
-		if(!aspects || path === undef) {
-			resolver.resolve();
-			return;
-		}
+        if (!aspects || path === undef) {
+            resolver.resolve();
+            return;
+        }
 
-		target  = proxy.target;
-		applyAdvice = applyAspectCombined;
-		promises = [];
+        target = proxy.target;
+        applyAdvice = applyAspectCombined;
+        promises = [];
 
-		try {
-			i = 0;
-			while((aspectPath = aspect = aspects[i++])) {
-				
-				if(aspect.advice) {
-					aspectPath = aspect.advice;
-					applyAdvice = applyAspectSeparate;
-				}
+        try {
+            i = 0;
+            while ((aspectPath = aspect = aspects[i++])) {
 
-				if(typeof aspectPath === 'string' && aspectPath !== path) {
-					d = deferred();
-					promises.push(d);
-					applyAdvice(d, target, aspect, wire);
-				}
-			}
+                if (aspect.advice) {
+                    aspectPath = aspect.advice;
+                    applyAdvice = applyAspectSeparate;
+                }
 
-			whenAll(promises, resolver.resolve, fail);
+                if (typeof aspectPath === 'string' && aspectPath !== path) {
+                    d = deferred();
+                    promises.push(d);
+                    applyAdvice(d, target, aspect, wire, add);
+                }
+            }
 
-		} catch(e) {
-			fail(e);
-		}
-	}
+            whenAll(promises, resolver.resolve, fail);
+
+        } catch (e) {
+            fail(e);
+        }
+    }
 
 	return {
 		/*
@@ -224,6 +224,27 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 		*/
 		wire$plugin: function(ready, destroyed, options) {
 
+            // Track aspects so they can be removed when the context is destroyed
+            var woven = [];
+
+            // Remove all aspects that we added in this context
+            when(destroyed, function() {
+                for(var i = woven.length; i >= 0; --i) {
+                    woven[i].remove();
+                } 
+            });
+
+            /**
+             * Function to add an aspect and remember it in the current context
+             * so that it can be removed when the context is destroyed.
+             * @param target
+             * @param pointcut
+             * @param aspect
+             */
+            function add(target, pointcut, aspect) {
+                woven.push(aop.add(target, pointcut, aspect))
+            }
+
 			function makeFacet(step, callback) {
 				var facet = {};
 				
@@ -241,7 +262,7 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 					introduce: makeFacet('configure', introduceFacet)
 				},
 				create: function(resolver, proxy, wire) {
-					weave(resolver, proxy, wire, options);
+					weave(resolver, proxy, wire, options, add);
 				}
 			};
 		}
