@@ -229,6 +229,9 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             factories = delegate(parent.factories || {});
             facets = delegate(parent.facets || {});
 
+            // Set/override integral resolvers and factories
+            resolvers.wire   = wireResolver;
+
             factories.module = moduleFactory;
             factories.create = instanceFactory;
             factories.wire   = wireFactory;
@@ -277,13 +280,6 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         }
 
         function initWireApi(objects) {
-            // DEPRECATED
-            // Access to objects will be removed after 0.7.0, so it
-            // won't need to be decorated anymore.  May provide access
-            // to contextPromise instead, if there are valid use cases
-            // wireApi is be the preferred way to inject access to
-            // wire in 0.7.0+
-
             wireApi = objects.wire = wireChild;
             wireApi.destroy = objects.destroy = apiDestroy;
 
@@ -291,11 +287,6 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             // Any reference you could resolve using this should simply be
             // injected instead.
             wireApi.resolve = objects.resolve = apiResolveRef;
-
-            // DEPRECATED objects.then
-            // To be removed after 0.7.0 - See notes above about objects,
-            // contextPromise, and wireApi
-//            objects.then = contextPromise.then;
         }
 
         function initPluginApi() {
@@ -328,11 +319,11 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             // When this scope is ready, resolve the contextPromise
             // with the objects that were created
             return whenAll(promises,
-                    function () {
-                        scopeReady.resolve(scope);
-                        return objects;
-                    },
-                    chainReject(scopeReady)
+                function () {
+                    scopeReady.resolve(scope);
+                    return objects;
+                },
+                chainReject(scopeReady)
             );
         }
 
@@ -404,6 +395,13 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         // API of a wired context that is returned, via promise, to
         // the caller.  It will also have properties for all the
         // objects that were created in this scope.
+
+        /**
+         * Resolves a reference in the current context, using any reference resolvers
+         * available in the current context
+         *
+         * @param ref {String} reference name (may contain resolver prefix, e.g. "resolver!refname"
+         */
         function apiResolveRef(ref) {
             return when(doResolveRef(ref));
         }
@@ -539,7 +537,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             }
         }
 
-        function createArray(arrayDef, name) {
+        function createArray(arrayDef /*, name */) {
             // TODO: Reintroduce name, or ditch it?
             return arrayDef.length
                     ? when.map(arrayDef, createItem)
@@ -586,6 +584,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                         return factories[f];
                     }
                 }
+                // Intentionally returns undefined if no factory found
             }
             
             return getFactory() || when(modulesReady, function () {
@@ -804,26 +803,21 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                 split = refName.indexOf('!');
 
                 if (split > 0) {
-                    var name = refName.substring(0, split);
+                    var resolverName = refName.substring(0, split);
                     refName = refName.substring(split + 1);
-                    if (name == 'wire') {
-                        wireResolver(promise, refName /*, refObj, pluginApi*/);
+                    // Wait for modules, since the reference may need to be
+                    // resolved by a resolver plugin
+                    when(modulesReady, function () {
 
-                    } else {
-                        // Wait for modules, since the reference may need to be
-                        // resolved by a resolver plugin
-                        when(modulesReady, function () {
+                        var resolver = resolvers[resolverName];
+                        if (resolver) {
+                            resolver(promise, refName, refObj, pluginApi);
 
-                            var resolver = resolvers[name];
-                            if (resolver) {
-                                resolver(promise, refName, refObj, pluginApi);
+                        } else {
+                            promise.reject("No resolver found for ref: " + refName);
 
-                            } else {
-                                promise.reject("No resolver found for ref: " + refObj);
-
-                            }
-                        });
-                    }
+                        }
+                    });
 
                 } else {
                     promise.reject("Cannot resolve ref: " + refName);
