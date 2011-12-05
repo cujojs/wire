@@ -27,7 +27,7 @@
 
                     wire({
                         plugins: [
-                            // { module: 'wire/debug' },
+//                            { module: 'wire/debug' },
                             { module: 'wire/dom' }
                         ],
                         node: { $ref: 'dom!node1' }
@@ -47,7 +47,7 @@
 
                     wire({
                         plugins: [
-                            // { module: 'wire/debug' },
+//                            { module: 'wire/debug' },
                             { module: 'wire/dom' }
                         ],
                         node: { $ref: 'dom!node2' }
@@ -61,36 +61,32 @@
                     );
                     
                     return dohd;
-                }//,
-                    // FIXME: This unit test fails, and is related to the promise "hole"
-                    // that current exists in the component lifecycle handling in wire.js
-                    // processObject().  It will be fixed in v0.7.2
-//                function(doh) {
-//                    var dohd = new doh.Deferred();
-//
-//                    wire({
-//                        plugins: [
-////                            { module: 'wire/debug' },
-//                            { module: 'wire/dom' }
-//                        ],
-//                        test: {
-//                            create: 'test',
-//                            properties: {
-//                                node: { $ref: 'dom!node2' }
-//                            }
-//                        }
-//                    }).then(
-//                        function(context) {
-//                            dohd.errback('node2 should not have been resolvable');
-//                        },
-//                        function(e) {
-//                            console.log("OK!");
-//                            dohd.callback(true);
-//                        }
-//                    );
-//
-//                    return dohd;
-//                }
+                },
+                function(doh) {
+                    var dohd = new doh.Deferred();
+
+                    wire({
+                        plugins: [
+//                            { module: 'wire/debug' },
+                            { module: 'wire/dom' }
+                        ],
+                        test: {
+                            create: 'test',
+                            properties: {
+                                node: { $ref: 'dom!node2' }
+                            }
+                        }
+                    }).then(
+                        function(context) {
+                            dohd.errback('node2 should not have been resolvable');
+                        },
+                        function(e) {
+                            dohd.callback(true);
+                        }
+                    );
+
+                    return dohd;
+                }
             ]);
 
             doh.run();

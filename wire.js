@@ -229,6 +229,10 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             factories = delegate(parent.factories || {});
             facets = delegate(parent.facets || {});
 
+            factories.module = moduleFactory;
+            factories.create = instanceFactory;
+            factories.wire   = wireFactory;
+
             listeners = parent.listeners ? [].concat(parent.listeners) : [];
 
             // Proxies is an array, have to concat
@@ -567,7 +571,6 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         }
 
         function findFactory(spec) {
-            var promise;
 
             // FIXME: Should not have to wait for all modules to load,
             // but rather only the module containing the particular
@@ -577,27 +580,17 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             // create: "factory!whatever-arg-the-factory-takes"
             // args: [factory args here]
 
-            // FIXME: Need to ditch this if/else tree in favor
-            // of something more elegant
-            if (spec.module) {
-                promise = moduleFactory;
-            } else if (spec.create) {
-                promise = instanceFactory;
-            } else if (spec.wire) {
-                promise = wireFactory;
-            } else {
-                promise = when(modulesReady, function () {
-                    for (var f in factories) {
-                        if (spec.hasOwnProperty(f)) {
-                            return factories[f];
-                        }
+            function getFactory() {
+                for (var f in factories) {
+                    if (spec.hasOwnProperty(f)) {
+                        return factories[f];
                     }
-
-                    return rejected(spec);
-                });
+                }
             }
-
-            return promise;
+            
+            return getFactory() || when(modulesReady, function () {
+                return getFactory() || rejected(spec);
+            });
         }
 
 
