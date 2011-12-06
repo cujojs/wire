@@ -15,7 +15,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     "use strict";
 
     var VERSION, tos, arrayProto, apIndexOf, apSlice, rootSpec, rootContext, delegate, emptyObject,
-            defer, chain, whenAll, isPromise, isArray, indexOf, lifecycleSteps, undef;
+        defer, chain, whenAll, isArray, indexOf, lifecycleSteps, undef;
 
     wire.version = VERSION = "0.7.3";
 
@@ -91,7 +91,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     function rejected(err) {
         var d = defer();
         d.reject(err);
-        return d;
+        return d.promise;
     }
 
     //
@@ -127,6 +127,13 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     //
 
     //noinspection JSUnusedLocalSymbols
+    /**
+     * AMD Loader plugin API
+     * @param name {String} spec module id, or comma-separated list of module ids
+     * @param require unused
+     * @param callback {Function|Promise} callback to call or promise to resolve when wiring is completed
+     * @param config unused
+     */
     function amdLoad(name, require, callback, config) {
         var resolver = callback.resolve
             ? callback
@@ -167,35 +174,18 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
      * @return {Promise} a promise for the new context
      */
     function wireContext(specs, parent) {
-
-        var deferred, fail;
-
-        deferred = defer();
-        fail = chainReject(deferred);
-
         // Function to do the actual wiring.  Capture the
         // parent so it can be called after an async load
         // if spec is an AMD module Id string.
         function doWireContexts(specs) {
-            when(createScope(mergeSpecs(specs), parent),
-                function (scope) { deferred.resolve(scope.objects); },
-                fail
+            return when(createScope(mergeSpecs(specs), parent),
+                function (scope) {
+                    return scope.objects;
+                }
             );
         }
 
-        if (isString(specs)) { specs = [specs]; }
-
-        if (isArray(specs)) {
-            // If it's an array, it's allowed to be a mix of module ids and concrete
-            // specs, so we need to ensure all the module ids are loaded
-            // NOTE: we may have just created an array by splitting a string!)
-            when(ensureAllSpecsLoaded(specs), doWireContexts, fail);
-        } else {
-            // Neither string nor array, so just try to wire it.
-            doWireContexts([specs]);
-        }
-
-        return deferred;
+        return when(ensureAllSpecsLoaded(isArray(specs) ? specs : [specs]), doWireContexts);
     }
 
     /**
@@ -867,7 +857,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             }
 
             if (defer) {
-                // Resolve with the createChild function itself
+                // Resolve with the createChild *function* itself
                 // which can be used later to wire the spec
                 resolver.resolve(createChild);
             } else {
@@ -875,7 +865,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                 var context = createChild();
 
                 // Resolve immediately with the child promise
-                resolver.resolve(context.promise);
+                resolver.resolve(context);
             }
         }
 
