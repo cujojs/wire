@@ -65,15 +65,29 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     defer = when.defer;
     chain = when.chain;
     whenAll = when.all;
-    isPromise = when.isPromise;
 
-    // Helper to reject a deferred when another is rejected
+    /**
+     * Helper to always return a promise
+     * @param it anything
+     */
+    function promise(it) {
+        return when.isPromise(it) ? it : when(it);
+    }
+
+    /**
+     * Helper to reject a deferred when another is rejected
+     * @param resolver {Object} resolver to reject
+     */
     function chainReject(resolver) {
         return function (err) {
             resolver.reject(err);
         };
     }
 
+    /**
+     * Creates an already-rejected Deferred using err as the rejection reason
+     * @param err anything - the rejection reason
+     */
     function rejected(err) {
         var d = defer();
         d.reject(err);
@@ -89,7 +103,9 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
      * of the (possibly implicit) root context.  It ensures that the root
      * context has been wired before wiring children.
      *
-     * @param spec
+     * @public
+     *
+     * @param spec {String|Array|*}
      */
     function wire(spec) {
 
@@ -112,16 +128,16 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
     //noinspection JSUnusedLocalSymbols
     function amdLoad(name, require, callback, config) {
-        var promise = callback.resolve
+        var resolver = callback.resolve
             ? callback
             : {
                 resolve: callback,
-                reject: function (err) {
-                    throw err;
-                }
+                reject: function (err) { throw err; }
             };
 
-        chain(wire(name), promise);
+        // If it's a string, try to split on ',' since it could be a comma-separated
+        // list of spec module ids
+        chain(wire(name.split(',')), resolver);
     }
 
     wire.load = amdLoad;
@@ -140,39 +156,114 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     // Private functions
     //
 
-    function wireContext(specs, parent, mixin) {
+    /**
+     * Creates a new context from the supplied specs, with the supplied parent context.
+     *
+     * @private
+     *
+     * @param specs {String|Array|*}
+     * @param parent {Object} parent content
+     *
+     * @return {Promise} a promise for the new context
+     */
+    function wireContext(specs, parent) {
 
-        var deferred = defer();
+        var deferred, fail;
+
+        deferred = defer();
+        fail = chainReject(deferred);
 
         // Function to do the actual wiring.  Capture the
         // parent so it can be called after an async load
         // if spec is an AMD module Id string.
         function doWireContexts(specs) {
-            if (mixin) specs.push(mixin);
-
-            var spec = mergeSpecs(specs);
-
-            when(createScope(spec, parent),
-                function (scope) {
-                    deferred.resolve(scope.objects);
-                },
-                chainReject(deferred)
+            when(createScope(mergeSpecs(specs), parent),
+                function (scope) { deferred.resolve(scope.objects); },
+                fail
             );
         }
 
-        // If spec is a module Id, or list of module Ids, load it/them, then wire.
-        // If it's a spec object or array of objects, wire it now.
-        if (isString(specs)) {
-            var specIds = specs.split(',');
+        if (isString(specs)) { specs = [specs]; }
 
-            require(specIds, function () {
-                doWireContexts(apSlice.call(arguments));
-            });
+        if (isArray(specs)) {
+            // If it's an array, it's allowed to be a mix of module ids and concrete
+            // specs, so we need to ensure all the module ids are loaded
+            // NOTE: we may have just created an array by splitting a string!)
+            when(ensureAllSpecsLoaded(specs), doWireContexts, fail);
         } else {
-            doWireContexts(isArray(specs) ? specs : [specs]);
+            // Neither string nor array, so just try to wire it.
+            doWireContexts([specs]);
         }
 
         return deferred;
+    }
+
+    /**
+     * Given a mixed array of strings and non-strings, returns a promise that will resolve
+     * to an array containing resolved modules by loading all the strings found in the
+     * specs array as module ids
+     *
+     * @param specs {Array} mixed array of strings and non-strings
+     *
+     * @returns {Promise} a promise that resolves to an array of resolved modules
+     */
+    function ensureAllSpecsLoaded(specs) {
+
+        var specsToWire, moduleSpecs, moduleIndices, len, i, spec, deferred;
+        moduleSpecs = [];
+
+        if(!specs.length) return moduleSpecs;
+
+        moduleIndices = [];
+        specsToWire = new Array(specs.length);
+        deferred = defer();
+
+        /**
+         * Resolves the deferred with an array of the fully-loaded specs to wire
+         */
+        function done() {
+            deferred.resolve(specsToWire);
+        }
+        
+        // Collect the string modules so we can load them.
+        // Maintaining the order of the specs is key.
+
+        // If spec is a string, put it in moduleSpecs so we can load it, *and*
+        // remember it's index in the input specs so we can put it in the corresponding
+        // position in specsToWire.
+        // If it's not a string, put it directly into specsToWire
+        for (i = 0, len = specs.length; i < len; ++i) {
+            spec = specs[i];
+            if (isString(spec)) {
+                moduleSpecs.push(spec);
+                moduleIndices.push(i);
+            } else {
+                // This may create a sparse array.  We'll fill in the
+                // loaded specs below.
+                specsToWire[i] = spec;
+            }
+        }
+
+        // If we found some spec module ids, we need to load them
+        if (moduleSpecs.length) {
+            // Load the spec module ids, then re-insert them into specsToWire in
+            // their remembered positions
+            require(moduleSpecs, function () {
+                var loadedSpecs, i, len;
+
+                loadedSpecs = arguments;
+                // Insert newly loaded specs into the array of specs to wire
+                for (i = 0, len = loadedSpecs.length; i < len; ++i) {
+                    specsToWire[moduleIndices[i]] = loadedSpecs[i];
+                }
+
+                done();
+            });
+        } else {
+            done();
+        }
+
+        return deferred.promise;
     }
 
     function createScope(scopeDef, parent, scopeName) {
@@ -293,12 +384,10 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             // Plugin API
             // wire() API that is passed to plugins.
             pluginApi = function (spec, name, path) {
-
                 // FIXME: Why does returning when(item) here cause
                 // the resulting, returned promise never to resolve
                 // in wire-factory1.html?
-                var item = createItem(spec, createPath(name, path));
-                return isPromise(item) ? item : when(item);
+                return promise(createItem(spec, createPath(name, path)));
             };
 
             pluginApi.resolveRef = apiResolveRef;
@@ -413,10 +502,9 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         /**
          * Wires a child spec with this context as its parent
          * @param spec
-         * @param [mixin] {Object}
          */
-        function wireChild(spec, /* {Object}? */ mixin) {
-            return wireContext(spec, scopeParent, mixin);
+        function wireChild(spec) {
+            return wireContext(spec, scopeParent);
         }
 
         //
@@ -579,12 +667,17 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             // args: [factory args here]
 
             function getFactory() {
-                for (var f in factories) {
+                var f, factory;
+
+                for (f in factories) {
                     if (spec.hasOwnProperty(f)) {
-                        return factories[f];
+                        factory = factories[f];
+                        break;
                     }
                 }
+
                 // Intentionally returns undefined if no factory found
+                return factory;
             }
             
             return getFactory() || when(modulesReady, function () {
@@ -593,15 +686,22 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         }
 
 
+        /**
+         * When the target component has been created, create its proxy,
+         * then push it through all its lifecycle stages.
+         *
+         * @private
+         *
+         * @param target the component being created, may be a promise
+         * @param spec the component's spec (the portion of the overall spec used to
+         *  create the target component)
+         *
+         * @returns {Promise} a promise for the fully wired component
+         */
         function processObject(target, spec) {
-//            var destroyed = defer();
-
-            // After the object has been created, update progress for
-            // the entire scope, then process the post-created facets
 
             return when(target,
                 function (object) {
-//                    chain(scopeDestroyed, destroyed, object);
 
                     var proxy = createProxy(object, spec);
                     proxied.push(proxy);
@@ -761,8 +861,9 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                 defer = options.defer;
             }
 
-            function createChild(/** {Object}? */ mixin) {
-                return wireChild(module, mixin);
+            function createChild(/** {Object|String}? */ mixin) {
+                var toWire = mixin ? [].concat(module, mixin) : module;
+                return wireChild(toWire);
             }
 
             if (defer) {
