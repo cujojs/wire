@@ -448,10 +448,15 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
             // *After* listeners are processed,
             whenAll(promises, function () {
+                function deleteAll(container) {
+                    for(var p in container) delete container[p];
+                }
+                
+                deleteAll(local);
+                deleteAll(objects);
+                deleteAll(scope);
+
                 var p, i;
-                for (p in local)   delete local[p];
-                for (p in objects) delete objects[p];
-                for (p in scope)   delete scope[p];
 
                 for (i = 0; (p = proxied[i++]);) {
                     p.destroy();
