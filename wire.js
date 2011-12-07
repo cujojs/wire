@@ -315,11 +315,11 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             factories.module = moduleFactory;
             factories.create = instanceFactory;
             factories.wire   = wireFactory;
-
-            listeners = parent.listeners ? [].concat(parent.listeners) : [];
+            
+            listeners = delegateArray(parent.listeners);// ? [].concat(parent.listeners) : [];
 
             // Proxies is an array, have to concat
-            proxies = parent.proxies ? [].concat(parent.proxies) : [];
+            proxies = delegateArray(parent.proxies);// ? [].concat(parent.proxies) : [];
             proxied = [];
 
             modulesToLoad = [];
@@ -1024,6 +1024,16 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
      */
     function isFunction(it) {
         return typeof it == 'function';
+    }
+
+    /**
+     * Creates a new {Array} with the same contents as array
+     * @param array {Array}
+     * @return {Array} a new {Array} with the same contents as array. If array is falsey,
+     *  returns a new empty {Array}
+     */
+    function delegateArray(array) {
+        return array ? [].concat(array) : [];
     }
 
     // In case Object.create isn't available
