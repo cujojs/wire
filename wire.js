@@ -4,11 +4,10 @@
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
-/*
-    File: wire.js
-*/
-
 //noinspection ThisExpressionReferencesGlobalObjectJS
+/**
+ * wire.js IOC Container
+ */
 (function(global, define){
 define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
@@ -600,6 +599,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             if (!proxiesToAdd) return;
 
             var newProxies, p, i = 0;
+
             newProxies = [];
             while (p = proxiesToAdd[i++]) {
                 if (indexOf(proxies, p) < 0) {
@@ -620,10 +620,13 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             }
         }
 
-        function createArray(arrayDef /*, name */) {
-            // TODO: Reintroduce name, or ditch it?
+        function createArray(arrayDef, name) {
+            // Minor optimization, if it's an empty array spec, just return
+            // an empty array.
             return arrayDef.length
-                    ? when.map(arrayDef, createItem)
+                    ? when.map(arrayDef, function(item) {
+                        return createItem(item, name + '[]');
+                    })
                     : [];
         }
 
@@ -632,20 +635,23 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             // Look for a factory, then use it to create the object
             return when(findFactory(spec),
                     function (factory) {
-                        if (!spec.id) spec.id = name;
                         var factoryPromise = defer();
+
+                        if (!spec.id) spec.id = name;
+
                         factory(factoryPromise.resolver, spec, pluginApi);
+
                         return processObject(factoryPromise, spec);
                     },
                     function () {
                         // No factory found, treat object spec as a nested scope
                         return when(createScope(spec, scope, name),
-                                function (created) {
-                                    // Return *only* the objects, and none of the
-                                    // other scope stuff (like plugins, promises etc)
-                                    return created.local;
-                                },
-                                rejected
+                            function (created) {
+                                // Return *only* the objects, and none of the
+                                // other scope stuff (like plugins, promises etc)
+                                return created.local;
+                            },
+                            rejected
                         );
                     }
             );
@@ -679,7 +685,6 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                 return getFactory() || rejected(spec);
             });
         }
-
 
         /**
          * When the target component has been created, create its proxy,
@@ -716,8 +721,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             i = 0;
             id = spec.id;
 
-            while ((proxier = proxies[i++]) && !(proxy = proxier(object, spec))) {
-            }
+            while ((proxier = proxies[i++]) && !(proxy = proxier(object, spec))) {}
 
             proxy.target = object;
             proxy.spec = spec;
@@ -778,17 +782,24 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         // Built-in Factories
         //
 
-        function moduleFactory(resolver, spec /*, wire, name*/) {
+        /**
+         * Factory that loads an AMD module
+         *
+         * @param resolver {Resolver} resolver to resolve with the created component
+         * @param spec {Object} portion of the spec for the component to be created
+         */
+        function moduleFactory(resolver, spec /*, wire */) {
             chain(getModule(spec.module, spec), resolver);
         }
 
-        /*
-         Function: instanceFactory
-         Factory that uses an AMD module either directly, or as a
-         constructor or plain function to create the resulting item.
+        /**
+         * Factory that uses an AMD module either directly, or as a
+         * constructor or plain function to create the resulting item.
+         *
+         * @param resolver {Resolver} resolver to resolve with the created component
+         * @param spec {Object} portion of the spec for the component to be created
          */
-        //noinspection JSUnusedLocalSymbols
-        function instanceFactory(resolver, spec, wire) {
+        function instanceFactory(resolver, spec /*, wire */) {
             var fail, create, module, args, isConstructor, name;
 
             fail = chainReject(resolver);
@@ -843,6 +854,14 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             when(getModule(module, spec), handleModule, fail);
         }
 
+        /**
+         * Factory that creates either a child context, or a *function* that will create
+         * that child context.  In the case that a child is created, this factory returns
+         * a promise that will resolve when the child has completed wiring.
+         *
+         * @param resolver {Resolver} resolver to resolve with the created component
+         * @param spec {Object} portion of the spec for the component to be created
+         */
         function wireFactory(resolver, spec/*, wire, name*/) {
             var options, module, defer;
 
@@ -924,19 +943,27 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             return promise;
         }
 
-        function wireResolver(promise /*, name, refObj, wire*/) {
-            // DEPRECATED access to objects
-            // Providing access to objects here is dangerous since not all
-            // the components in objects have been initialized--that is, they
-            // may still be promises, and it's possible to deadlock by waiting
-            // on one of those promises (via when() or promise.then())
-            promise.resolve(wireApi);
+        /**
+         * Builtin reference resolver that resolves to the context-specific
+         * wire function.
+         *
+         * @param resolver {Resolver} resolver to resolve
+         */
+        function wireResolver(resolver /*, name, refObj, wire*/) {
+            resolver.resolve(wireApi);
         }
 
         //
         // Destroy
         //
 
+        /**
+         * Destroy the current context.  Waits for the context to finish
+         * wiring and then immediately destroys it.
+         *
+         * @return {Promise} a promise that will resolve once the context
+         * has been destroyed
+         */
         function destroy() {
             return when(scopeReady, doDestroy, doDestroy);
         }
@@ -1012,31 +1039,25 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         return new T();
     }
 
-    /*
-     Constructor: Begetter
-     Constructor used to beget objects that wire needs to create using new.
-
-     Parameters:
-     ctor - real constructor to be invoked
-     args - arguments to be supplied to ctor
+    /**
+     * Constructor used to beget objects that wire needs to create using new.
+     * @param ctor {Function} real constructor to be invoked
+     * @param args {Array} arguments to be supplied to ctor
      */
     function Begetter(ctor, args) {
         return ctor.apply(this, args);
     }
 
-    /*
-     Function: instantiate
-     Creates an object by either invoking ctor as a function and returning the
-     result, or by calling new ctor().  It uses a simple heuristic to try to
-     guess which approach is the "right" one.
-
-     Parameters:
-     ctor - function or constructor to invoke
-     args - array of arguments to pass to ctor in either case
-
-     Returns:
-     The result of invoking ctor with args, with or without new, depending on
-     the strategy selected.
+    /**
+     * Creates an object by either invoking ctor as a function and returning the result,
+     * or by calling new ctor().  It uses a simple heuristic to try to guess which approach
+     * is the "right" one.
+     *
+     * @param ctor {Function} function or constructor to invoke
+     * @param args {Array} array of arguments to pass to ctor in either case
+     *
+     * @returns The result of invoking ctor with args, with or without new, depending on
+     * the strategy selected.
      */
     function instantiate(ctor, args, forceConstructor) {
 
@@ -1075,7 +1096,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     return wire;
 });
 })(this,
-    typeof define != 'undefined'
+    typeof define == 'function'
     // use define for AMD if available
     ? define
     // Browser
