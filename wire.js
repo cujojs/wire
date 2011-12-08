@@ -93,6 +93,20 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         return d.promise;
     }
 
+    /**
+     * Abstract the platform's loader
+     * @param moduleId {String} moduleId to load
+     * @returns {Promise} a promise that resolves to the loaded module
+     */
+    function loadModule(moduleId) {
+        // TODO: Choose loadModule implementation based on platform
+        var deferred = defer();
+
+        require([moduleId], deferred.resolve);
+
+        return deferred.promise;
+    }
+
     //
     // AMD Module API
     //
@@ -164,6 +178,10 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
     /**
      * Creates a new context from the supplied specs, with the supplied parent context.
+     * If specs is an {Array}, it may be a mixed array of string module ids, and object
+     * literal specs.  All spec module ids will be loaded, and then all specs will be
+     * merged from left-to-right (rightmost wins), and the resulting, merged spec will
+     * be wired.
      *
      * @private
      *
@@ -173,11 +191,9 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
      * @return {Promise} a promise for the new context
      */
     function wireContext(specs, parent) {
-        // Function to do the actual wiring.  Capture the
-        // parent so it can be called after an async load
-        // if spec is an AMD module Id string.
-        function doWireContexts(specs) {
-            return when(createScope(mergeSpecs(specs), parent),
+        // Do the actual wiring after all specs have been loaded
+        function doWireContexts(spec) {
+            return when(createScope(spec, parent),
                 function (scope) {
                     return scope.objects;
                 }
@@ -186,75 +202,36 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
         return when(ensureAllSpecsLoaded(isArray(specs) ? specs : [specs]), doWireContexts);
     }
-
+    
     /**
      * Given a mixed array of strings and non-strings, returns a promise that will resolve
      * to an array containing resolved modules by loading all the strings found in the
      * specs array as module ids
+     * @private
      *
      * @param specs {Array} mixed array of strings and non-strings
      *
      * @returns {Promise} a promise that resolves to an array of resolved modules
      */
     function ensureAllSpecsLoaded(specs) {
-
-        var specsToWire, moduleSpecs, moduleIndices, len, i, spec, deferred;
-        moduleSpecs = [];
-
-        if(!specs.length) return moduleSpecs;
-
-        moduleIndices = [];
-        specsToWire = new Array(specs.length);
-        deferred = defer();
-
-        /**
-         * Resolves the deferred with an array of the fully-loaded specs to wire
-         */
-        function done() {
-            deferred.resolve(specsToWire);
-        }
-        
-        // Collect the string modules so we can load them.
-        // Maintaining the order of the specs is key.
-
-        // If spec is a string, put it in moduleSpecs so we can load it, *and*
-        // remember it's index in the input specs so we can put it in the corresponding
-        // position in specsToWire.
-        // If it's not a string, put it directly into specsToWire
-        for (i = 0, len = specs.length; i < len; ++i) {
-            spec = specs[i];
-            if (isString(spec)) {
-                moduleSpecs.push(spec);
-                moduleIndices.push(i);
-            } else {
-                // This may create a sparse array.  We'll fill in the
-                // loaded specs below.
-                specsToWire[i] = spec;
-            }
-        }
-
-        // If we found some spec module ids, we need to load them
-        if (moduleSpecs.length) {
-            // Load the spec module ids, then re-insert them into specsToWire in
-            // their remembered positions
-            require(moduleSpecs, function () {
-                var loadedSpecs, i, len;
-
-                loadedSpecs = arguments;
-                // Insert newly loaded specs into the array of specs to wire
-                for (i = 0, len = loadedSpecs.length; i < len; ++i) {
-                    specsToWire[moduleIndices[i]] = loadedSpecs[i];
-                }
-
-                done();
-            });
-        } else {
-            done();
-        }
-
-        return deferred.promise;
+        return when.reduce(specs, function(merged, module) {
+            return isString(module)
+                ? when(loadModule(module), function(spec) { return mixinSpec(merged, spec); })
+                : mixinSpec(merged, module)
+        }, {});
     }
 
+    /**
+     * Do the work of creating a new scope and fully wiring its contents
+     * @private
+     *
+     * @param scopeDef {Object} The spec (or portion of a spec) to be wired into a new scope
+     * @param parent {scope} scope to use as the parent, and thus from which to inherit
+     *  plugins, components, etc.
+     * @param [scopeName] {String} optional name for the new scope
+     *
+     * @return {Promise} a promise for the new scope
+     */
     function createScope(scopeDef, parent, scopeName) {
         var scope, scopeParent, local, proxied, objects,
                 pluginApi, resolvers, factories, facets, listeners, proxies,
@@ -421,7 +398,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
         function ensureAllModulesLoaded() {
             // Once all modules have been loaded, resolve modulesReady
-            require(modulesToLoad, function (modules) {
+            whenAll(modulesToLoad, function (modules) {
                 modulesReady.resolve(modules);
                 moduleLoadPromises = modulesToLoad = null;
             });
@@ -489,6 +466,9 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             return when(doResolveRef(ref));
         }
 
+        /**
+         * Destroys the current context
+         */
         function apiDestroy() {
             return destroy();
         }
@@ -549,7 +529,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         }
 
         function getModule(moduleId, spec) {
-            var module;
+            var module, loadPromise;
 
             if (isString(moduleId)) {
                 var m = moduleLoadPromises[moduleId];
@@ -562,12 +542,12 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                     };
 
                     moduleLoadPromises[moduleId] = m;
-
-                    require([moduleId], function (module) {
+                    loadPromise = when(loadModule(moduleId), function (module) {
                         scanPlugin(module, spec);
-                        m.module = module;
-                        chain(modulesReady, m.deferred, m.module);
+                        chain(modulesReady, m.deferred, module);
                     });
+
+                    modulesToLoad.push(loadPromise);
                 }
 
                 module = m.deferred;
@@ -746,10 +726,8 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             var d = defer();
 
             whenAll(promises,
-                    function () {
-                        processListeners(d, step, proxy);
-                    },
-                    chainReject(d)
+                function () { processListeners(d, step, proxy); },
+                chainReject(d)
             );
 
             return d;
@@ -971,21 +949,6 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     } // createScope
 
     /**
-     * Merge multiple specs together before wiring.
-     *
-     * @param specs {Array} array of specs to merge
-     */
-    function mergeSpecs(specs) {
-        var i = 0, merged = {}, s;
-
-        while (s = specs[i++]) {
-            mixinSpec(merged, s);
-        }
-
-        return merged;
-    }
-
-    /**
      * Add components in from to those in to.  If duplicates are found, it
      * is an error.
      * @param to {Object} target object
@@ -1001,6 +964,8 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                 }
             }
         }
+
+        return to;
     }
 
     function isRef(it) {
