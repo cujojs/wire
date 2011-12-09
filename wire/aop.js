@@ -9,7 +9,7 @@
 */
 define(['require', 'aop', 'when'], function(require, aop, when) {
 
-	var ap, obj, tos, isArray, whenAll, deferred, undef;
+	var ap, obj, tos, isArray, whenAll, chain, deferred, undef;
 	
 	ap = Array.prototype;
 	obj = {};
@@ -19,7 +19,8 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 		return tos.call(it) == '[object Array]';
 	};
 
-    whenAll = when.all;
+    whenAll  = when.all;
+    chain    = when.chain;
     deferred = when.defer;
 
     //
@@ -55,7 +56,7 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 			promises.push(doDecorate(target, d, options[d], wire));
 		}
 
-		whenAll(promises, promise.resolve, promise.reject);
+		chain(whenAll(promises), promise);
 	}
 
 	//
@@ -93,7 +94,7 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 			promises.push(doIntroduction(target, intros, wire));
 		}
 
-		whenAll(promises, promise.resolve, promise.reject);
+		chain(whenAll(promises), promise);
 	}
 
 	//
@@ -104,42 +105,39 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 //		promise.resolve();
 //	}
 
-    function applyAspectCombined(promise, target, aspect, wire, add) {
-        wire.resolveRef(aspect).then(function (aspect) {
+    function applyAspectCombined(target, aspect, wire, add) {
+        return when(wire.resolveRef(aspect), function (aspect) {
             var pointcut = aspect.pointcut;
 
             if (pointcut) {
                 add(target, pointcut, aspect);
             }
-            promise.resolve();
+            
+            return target;
         });
     }
 
-    function applyAspectSeparate(promise, target, aspect, wire, add) {
+    function applyAspectSeparate(target, aspect, wire, add) {
         var pointcut, advice;
 
         pointcut = aspect.pointcut;
         advice = aspect.advice;
 
         function applyAdvice(pointcut) {
-            wire.resolveRef(advice).then(function (aspect) {
+            return when(wire.resolveRef(advice), function (aspect) {
                 add(target, pointcut, aspect);
-                promise.resolve();
+                return target;
             });
         }
 
-        if (typeof pointcut === 'string') {
-            wire.resolveRef(pointcut).then(applyAdvice);
-        } else {
-            applyAdvice(pointcut);
-        }
+        return typeof pointcut === 'string'
+            ? when(wire.resolveRef(pointcut, applyAdvice))
+            : applyAdvice(pointcut);
     }
 
     function weave(resolver, proxy, wire, options, add) {
 
-        function fail(e) { resolver.reject(e); }
-
-        var target, path, aspects, aspect, aspectPath, promises, d, applyAdvice, i;
+        var target, path, aspects, applyAdvice;
 
         aspects = options.aspects;
         path = proxy.path;
@@ -151,29 +149,23 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 
         target = proxy.target;
         applyAdvice = applyAspectCombined;
-        promises = [];
 
-        try {
-            i = 0;
-            while ((aspectPath = aspect = aspects[i++])) {
+        // Reduce will preserve order of aspects being applied
+        chain(when.reduce(aspects, function(target, aspect) {
+            var aspectPath;
 
-                if (aspect.advice) {
-                    aspectPath = aspect.advice;
-                    applyAdvice = applyAspectSeparate;
-                }
-
-                if (typeof aspectPath === 'string' && aspectPath !== path) {
-                    d = deferred();
-                    promises.push(d);
-                    applyAdvice(d, target, aspect, wire, add);
-                }
+            if (aspect.advice) {
+                aspectPath = aspect.advice;
+                applyAdvice = applyAspectSeparate;
+            } else {
+                aspectPath = aspect;
             }
 
-            whenAll(promises, resolver.resolve, fail);
+            return typeof aspectPath === 'string' && aspectPath !== path
+                ? applyAdvice(target, aspect, wire, add)
+                : target;
 
-        } catch (e) {
-            fail(e);
-        }
+        }, target), resolver);
     }
 
 	return {
