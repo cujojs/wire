@@ -4,9 +4,11 @@
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
-/*
-	File: aop.js
-*/
+/**
+ * wire/aop plugin
+ * Provides AOP for components created via wire, including Decorators,
+ * Introductions (mixins), and Pointcut-based Aspect Weaving.
+ */
 define(['require', 'aop', 'when'], function(require, aop, when) {
 
 	var ap, obj, tos, isArray, whenAll, chain, deferred, undef;
@@ -45,7 +47,7 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
         return when(wire.resolveRef(decorator), apply);
 	}
 
-	function decorateFacet(promise, facet, wire) {
+	function decorateFacet(resolver, facet, wire) {
 		var target, options, promises;
 
 		target = facet.target;
@@ -56,7 +58,7 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 			promises.push(doDecorate(target, d, options[d], wire));
 		}
 
-		chain(whenAll(promises), promise);
+		chain(whenAll(promises), resolver);
 	}
 
 	//
@@ -72,6 +74,8 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 				target[name] = s;
 			}
 		}
+
+        return target;
 	}
 
 	function doIntroduction(target, introduction, wire) {
@@ -80,30 +84,22 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
         });
 	}
 
-	function introduceFacet(promise, facet, wire) {
-		var target, intros, intro, i, promises;
+	function introduceFacet(resolver, facet, wire) {
+		var target, intros;
 		
 		target = facet.target;
 		intros = facet.options;
 		
 		if(!isArray(intros)) intros = [intros];
-
-		promises = [];
-
-		for(i = 0; (intro = intros[i]); ++i) {
-			promises.push(doIntroduction(target, intros, wire));
-		}
-
-		chain(whenAll(promises), promise);
+        
+        chain(when.reduce(intros, function(target, intro) {
+            return doIntroduction(target, intro, wire);
+        }, target), resolver);
 	}
 
 	//
-	// Aspects
+	// Aspect Weaving
 	//
-
-//	function adviseFacet(aspects, promise, facet, wire) {
-//		promise.resolve();
-//	}
 
     function applyAspectCombined(target, aspect, wire, add) {
         return when(wire.resolveRef(aspect), function (aspect) {
@@ -169,20 +165,17 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
     }
 
 	return {
-		/*
-			Function: wire$plugin
-			Invoked when wiring starts and provides two promises: one for wiring the context,
-			and one for destroying the context.  Plugins should register resolve, reject, and
-			promise handlers as necessary to do their work.
-			
-			Parameters:
-				ready - promise that will be resolved when the context has been wired, rejected
-					if there is an error during the wiring process, and will receive progress
-					events for object creation, property setting, and initialization.
-				destroy - promise that will be resolved when the context has been destroyed,
-					rejected if there is an error while destroying the context, and will
-					receive progress events for objects being destroyed.
-		*/
+		/**
+         * Creates wire/aop plugin instances.
+         *
+         * @param ready {Promise} promise that will be resolved when the context has been wired,
+         *  rejected if there is an error during the wiring process, and will receive progress
+         *  events for object creation, property setting, and initialization.
+         * @param destroy {Promise} promise that will be resolved when the context has been destroyed,
+         *  rejected if there is an error while destroying the context, and will receive progress
+         *  events for objects being destroyed.
+         * @param options {Object}
+         */
 		wire$plugin: function(ready, destroyed, options) {
 
             // Track aspects so they can be removed when the context is destroyed
