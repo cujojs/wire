@@ -13,12 +13,12 @@
  * {
  *     module: 'wire/debug',
  *
- *     // verbose
+ *     // verbose (Optional)
  *     // If set to true, even more (a LOT) info will be output.
  *     // Default is false if not specified.
  *     verbose: false,
  *
- *     // timeout
+ *     // timeout (Optional)
  *     // Milliseconds to wait for wiring to finish before reporting
  *     // failed components.  There may be failures caused by 3rd party
  *     // wire plugins and components that wire.js cannot detect.  This
@@ -26,7 +26,7 @@
  *     // Default is 5000ms (5 seconds)
  *     timeout: 5000,
  *
- *     // filter
+ *     // filter (Optional)
  *     // String or RegExp to match against a component's name.  Only
  *     // components whose path matches will be reported in the debug
  *     // diagnostic output.
@@ -39,27 +39,60 @@
  *     //   filter: /.*View/
  *     //   filter: "[fF]oo[bB]ar"
  *     filter: ".*"
+ *
+ *     // trace (Optional)
+ *     // Enables application component tracing that will log information about component
+ *     // method calls while your application runs.  This provides a powerful way to watch
+ *     // and debug your application as it runs.
+ *     // To enable full tracing, which is a LOT of information:
+ *     trace: true
+ *     // Or, specify options to enable more focused tracing:
+ *     trace: {
+ *          // filter (Optional)
+ *          // Similar to above, can be string pattern or RegExp
+ *          // Default ".*"
+ *          filter: ".*View",
+ *
+ *          // pointcut (Optional)
+ *          // Matches *method names*.  Can be used with or without specifying filter
+ *          // When filter is not specified, this will match methods across all components.
+ *          // For example, if all your components name their event emitters "on<Event>", e.g. "onClick"
+ *          // you could trace all your event emitters:
+ *          // Default: "^[^_]" (all methods not starting with '_')
+ *          pointcut: "on.*",
+ *
+ *          // step (Optional)
+ *          // At what step in the wiring process should tracing start.  This can be helpful
+ *          // if you need to trace a component during wiring.
+ *          // Values: 'create', 'configure', 'initialize', 'ready', 'destroy'
+ *          // Default: 'initialize'
+ *          step: 'initialize'
+ *     }
  * }
  */
 (function(global) {
-define([], function() {
-    var timer, defaultTimeout, console, logTrace;
+define(['aop'], function(aop) {
+    var timer, defaultTimeout, console, logStack,
+        defaultTraceStep, defaultTracePointcut, traceDepth, tracePadding;
 
     function noop() {}
 
     // Fake console to prevent IE breakage
-    console = global['console'] || { log: noop, error: noop, trace: noop };
+    console = global['console'] || { log:noop, error:noop, trace:noop };
 
     // TODO: Consider using stacktrace.js
     // https://github.com/eriwen/javascript-stacktrace
     // For now, quick and dirty, based on how stacktrace.js chooses the appropriate field
     // If console.trace exists, use it, otherwise use console.error
-    logTrace = typeof console.trace == 'function'
-        ? function(e) { console.trace(e); }
-        : function(e) { console.error(e.stack || e.stacktrace || e.message || e); };
+    logStack = typeof console.trace == 'function'
+        ? function (e) { console.trace(e); }
+        : function (e) { console.error(e.stack || e.stacktrace || e.message || e); };
 
     timer = createTimer();
     defaultTimeout = 5000; // 5 second wiring failure timeout
+
+    defaultTraceStep = 'initialize';
+    defaultTracePointcut = /^[^_]/;
 
     /**
      * Builds a string with timing info and a message for debug output
@@ -90,7 +123,10 @@ define([], function() {
      * @returns timer
      */
     function createTimer() {
-        var start = new Date().getTime(), split = start;
+        var start, split;
+
+        start = new Date().getTime();
+        split = start;
 
         /**
          * Returns the total elapsed time since this timer was created, and the
@@ -108,9 +144,9 @@ define([], function() {
             split = now;
 
             return {
-                total: total,
-                split: splitTime,
-                toString: function() {
+                total:total,
+                split:splitTime,
+                toString:function () {
                     return '' + splitTime + 'ms / ' + total + 'ms';
                 }
             };
@@ -121,22 +157,126 @@ define([], function() {
         return !!path;
     }
 
+    function createPathFilter(filter) {
+        if (!filter) return defaultFilter;
+
+        var rx = filter.test ? filter : new RegExp(filter);
+
+        return function (path) {
+            return rx.test(path);
+        }
+
+    }
+
+    // Setup tracing
+
+    /**
+     * Current trace depth
+     */
+    traceDepth = 0;
+
+    /**
+     * Padding character for indenting traces
+     */
+    tracePadding =  '.';
+
+    // 2^8 padding = 128
+    for(var i=0; i<8; i++) {
+        tracePadding += tracePadding;
+    }
+
+    /**
+     * Creates an aspect to be applied to components that are being traced
+     * @param path {String} component path
+     */
+    function createTraceAspect(path) {
+        return {
+            around:function (joinpoint) {
+                var val, tag, context, start, indent;
+
+                tag = ' RETURN (';
+
+                // Setup current indent level
+                indent = tracePadding.substr(0, traceDepth);
+                // Form full path to invoked method
+                context = indent + 'DEBUG: ' + path + '.' + joinpoint.method;
+
+                // Increase the depth before proceeding so that nested traces will be indented
+                ++traceDepth;
+
+                console.log(context, joinpoint.args);
+
+                try {
+                    start = new Date();
+                    val = joinpoint.proceed();
+
+                    // return result
+                    return val;
+
+                } catch (e) {
+
+                    // rethrow
+                    val = e;
+                    tag = ' THROW (';
+                    throw e;
+
+                } finally {
+                    console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms) ', val);
+
+                    // And now decrease the depth after
+                    --traceDepth;
+                }
+            }
+        };
+    }
+
+    function createTracer(options, plugin) {
+        var trace, untrace, traceStep, traceFilter, tracePointcut, traceAspects;
+
+        traceFilter = createPathFilter(options.trace.filter);
+        tracePointcut = options.trace.pointcut || defaultTracePointcut;
+        traceStep = options.trace.step || defaultTraceStep;
+
+        traceAspects = [];
+        trace = function (path, target) {
+            if (traceFilter(path)) {
+                // Create the aspect, if the path matched
+                traceAspects.push(aop.add(target, tracePointcut, createTraceAspect(path)));
+            }
+            // trace intentionally does not resolve the promise
+            // trace relies on the existing plugin method to resolve it
+        };
+
+        untrace = function () {
+            for (var i = traceAspects.length; i >= 0; --i) {
+                traceAspects[i].remove();
+            }
+        };
+
+        // Defend against changes to the plugin in future revs
+        var orig = plugin[traceStep] || function (promise) { promise.resolve(); };
+
+        // Replace the plugin listener method with one that will call trace()
+        // and add traceAspect
+        plugin[traceStep] = function (promise, proxy, wire) {
+            trace(proxy.path, proxy.target);
+            orig(promise, proxy, wire);
+        };
+
+        return { trace: trace, untrace: untrace };
+    }
+
     return {
-        wire$plugin: function debugPlugin(ready, destroyed, options) {
-            var contextTimer, timeout, paths, logCreated, checkPathsTimeout, verbose, filter, filterRegex, plugin;
+        wire$plugin:function debugPlugin(ready, destroyed, options) {
+            var contextTimer, timeout, paths, logCreated, checkPathsTimeout,
+                verbose, filter, plugin, tracer;
 
             verbose = options.verbose;
-
-            if (options.filter) {
-                filterRegex = options.filter.test ? options.filter : new RegExp(options.filter);
-                filter = function(path) {
-                    return filterRegex.test(path);
-                }
-            } else {
-                filter = defaultFilter;
-            }
-
             contextTimer = createTimer();
+
+            tracer = { trace: noop, untrace: noop };
+
+            filter = createPathFilter(options.filter);
 
             function contextTime(msg) {
                 return time(msg, contextTimer);
@@ -145,32 +285,34 @@ define([], function() {
             console.log(contextTime("Context init"));
 
             ready.then(
-                    function onContextReady(context) {
-                        cancelPathsTimeout();
-                        console.log(contextTime("Context ready"), context);
-                    },
-                    function onContextError(err) {
-                        cancelPathsTimeout();
-                        console.error(contextTime("Context ERROR: "), err);
-                        logTrace(err);
-                    }
+                function onContextReady(context) {
+                    cancelPathsTimeout();
+                    console.log(contextTime("Context ready"), context);
+                },
+                function onContextError(err) {
+                    cancelPathsTimeout();
+                    console.error(contextTime("Context ERROR: "), err);
+                    logStack(err);
+                }
             );
 
             destroyed.then(
-                    function onContextDestroyed() {
-                        console.log(contextTime("Context destroyed"));
-                    },
-                    function onContextDestroyError(err) {
-                        console.error(contextTime("Context destroy ERROR"), err);
-                        logTrace(err);
-                    }
+                function onContextDestroyed() {
+                    untrace();
+                    console.log(contextTime("Context destroyed"));
+                },
+                function onContextDestroyError(err) {
+                    untrace();
+                    console.error(contextTime("Context destroy ERROR"), err);
+                    logStack(err);
+                }
             );
 
             function makeListener(step, verbose) {
-                return function(promise, proxy /*, wire */) {
+                return function (promise, proxy /*, wire */) {
                     var path = proxy.path;
 
-                    if(step === 'destroyed') {
+                    if (step === 'destroyed') {
                         // stop tracking destroyed components, since we don't
                         // care anymore
                         delete paths[path];
@@ -218,21 +360,25 @@ define([], function() {
             checkPathsTimeout = setTimeout(checkPaths, timeout);
 
             plugin = {
-                create: function(promise, proxy) {
+                create:function (promise, proxy) {
                     var path = proxy.path;
 
                     if (path) {
                         paths[path] = {
-                            spec: proxy.spec
+                            spec:proxy.spec
                         };
                     }
                     logCreated(promise, proxy);
                 },
-                configure:  makeListener('configured', verbose),
-                initialize: makeListener('initialized', verbose),
-                ready:      makeListener('ready', true),
-                destroy:    makeListener('destroyed', true)
+                configure:makeListener('configured', verbose),
+                initialize:makeListener('initialized', verbose),
+                ready:makeListener('ready', true),
+                destroy:makeListener('destroyed', true)
             };
+
+            if (options.trace) {
+                tracer = createTracer(options, plugin);
+            }
 
             return plugin;
         }
