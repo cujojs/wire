@@ -33,25 +33,15 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 	}
 	
 	function doDecorate(target, decorator, args, wire) {
-		var d = deferred();
-
 		function apply(Decorator) {
-			if(args) {
-				wire(args).then(function(resolvedArgs) {
-					applyDecorator(target, Decorator, resolvedArgs);
-					d.resolve();
-				});
-
-			} else {
-				applyDecorator(target, Decorator);
-				d.resolve();
-
-			}
-		}
-
-		wire.resolveRef(decorator).then(apply);
-
-		return d;		
+            return args
+                ? when(wire(args), function (resolvedArgs) {
+                    applyDecorator(target, Decorator, resolvedArgs);
+                })
+                : applyDecorator(target, Decorator);
+        }
+        
+        return when(wire.resolveRef(decorator), apply);
 	}
 
 	function decorateFacet(promise, facet, wire) {
@@ -65,15 +55,7 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 			promises.push(doDecorate(target, d, options[d], wire));
 		}
 
-		whenAll(promises).then(
-			function() {
-				promise.resolve();
-			},
-			function() {
-				promise.reject();
-			}
-		);
-
+		whenAll(promises, promise.resolve, promise.reject);
 	}
 
 	//
@@ -92,14 +74,9 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 	}
 
 	function doIntroduction(target, introduction, wire) {
-		var d = deferred();
-
-		wire.resolveRef(introduction).then(function(resolved) {
-			introduce(target, resolved);
-			d.resolve();
-		});
-
-		return d;
+        return when(wire.resolveRef(introduction), function(resolved) {
+            return introduce(target, resolved);
+        });
 	}
 
 	function introduceFacet(promise, facet, wire) {
@@ -109,22 +86,14 @@ define(['require', 'aop', 'when'], function(require, aop, when) {
 		intros = facet.options;
 		
 		if(!isArray(intros)) intros = [intros];
-		i = intros.length;
 
 		promises = [];
 
-		while((intro = intros[--i])) {
-			promises.push(doIntroduction(target, intro, wire));
+		for(i = 0; (intro = intros[i]); ++i) {
+			promises.push(doIntroduction(target, intros, wire));
 		}
 
-		whenAll(promises).then(
-			function() {
-				promise.resolve();
-			},
-			function() {
-				promise.reject();
-			}
-		);
+		whenAll(promises, promise.resolve, promise.reject);
 	}
 
 	//
