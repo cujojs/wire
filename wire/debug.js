@@ -72,8 +72,7 @@
  */
 (function(global) {
 define(['aop'], function(aop) {
-    var timer, defaultTimeout, console, logStack,
-        defaultTraceStep, defaultTracePointcut, traceDepth, tracePadding;
+    var timer, defaultTimeout, console, logStack, createTracer;
 
     function noop() {}
 
@@ -90,9 +89,6 @@ define(['aop'], function(aop) {
 
     timer = createTimer();
     defaultTimeout = 5000; // 5 second wiring failure timeout
-
-    defaultTraceStep = 'initialize';
-    defaultTracePointcut = /^[^_]/;
 
     /**
      * Builds a string with timing info and a message for debug output
@@ -168,103 +164,135 @@ define(['aop'], function(aop) {
 
     }
 
-    // Setup tracing
-
     /**
-     * Current trace depth
+     * Function that applies tracing AOP to components being wired
+     * @function
+     * @param options {Object} tracing options
+     * @param plugin {Object} debug plugin instance to which to add tracing functionality
      */
-    traceDepth = 0;
+    createTracer = (function() {
+        var depth, padding, defaultStep, defaultPointcut;
 
-    /**
-     * Padding character for indenting traces
-     */
-    tracePadding =  '.';
+        /** Current trace depth */
+        depth = 0;
 
-    // 2^8 padding = 128
-    for(var i=0; i<8; i++) {
-        tracePadding += tracePadding;
-    }
+        /** Padding character for indenting traces */
+        padding =  '.';
 
-    /**
-     * Creates an aspect to be applied to components that are being traced
-     * @param path {String} component path
-     */
-    function createTraceAspect(path) {
-        return {
-            around:function (joinpoint) {
-                var val, tag, context, start, indent;
+        /** 2^8 padding = 128 */
+        for(var i=0; i<8; i++) {
+            padding += padding;
+        }
 
-                tag = ' RETURN (';
+        /** Default lifecycle step at which to begin tracing */
+        defaultStep = 'initialize';
 
-                // Setup current indent level
-                indent = tracePadding.substr(0, traceDepth);
-                // Form full path to invoked method
-                context = indent + 'DEBUG: ' + path + '.' + joinpoint.method;
+        /** Default pointcut query to match methods that will be traced */
+        defaultPointcut = /^[^_]/;
 
-                // Increase the depth before proceeding so that nested traces will be indented
-                ++traceDepth;
+        /**
+         * Creates an aspect to be applied to components that are being traced
+         * @param path {String} component path
+         */
+        function createTraceAspect(path) {
+            return {
+                around:function (joinpoint) {
+                    var val, tag, context, start, indent;
 
-                console.log(context, joinpoint.args);
+                    tag = ' RETURN (';
 
-                try {
-                    start = new Date();
-                    val = joinpoint.proceed();
+                    // Setup current indent level
+                    indent = padding.substr(0, depth);
+                    // Form full path to invoked method
+                    context = indent + 'DEBUG: ' + path + '.' + joinpoint.method;
 
-                    // return result
-                    return val;
+                    // Increase the depth before proceeding so that nested traces will be indented
+                    ++depth;
 
-                } catch (e) {
+                    console.log(context, joinpoint.args);
 
-                    // rethrow
-                    val = e;
-                    tag = ' THROW (';
-                    throw e;
+                    try {
+                        start = new Date();
+                        val = joinpoint.proceed();
 
-                } finally {
-                    console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms) ', val);
+                        // return result
+                        return val;
 
-                    // And now decrease the depth after
-                    --traceDepth;
+                    } catch (e) {
+
+                        // rethrow
+                        val = e;
+                        tag = ' THROW (';
+                        throw e;
+
+                    } finally {
+                        console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms) ', val);
+
+                        // And now decrease the depth after
+                        --depth;
+                    }
                 }
+            };
+        }
+
+        /**
+         * Implementation of createTracer
+         */
+        return function(options, plugin) {
+            var trace, untrace, traceStep, traceFilter, tracePointcut, traceAspects;
+
+            traceFilter = createPathFilter(options.trace.filter);
+            tracePointcut = options.trace.pointcut || defaultPointcut;
+            traceStep = options.trace.step || defaultStep;
+
+            /**
+             * Trace pointcut query function that filters out wire plugins
+             * @param target {Object} target object to query for methods to advise
+             */
+            function pointcut(target) {
+                var matches = [];
+
+                for (var p in target) {
+                    // Only match functions, exclude wire plugins, and then apply
+                    // the supplied tracePointcut regexp
+                    if (typeof target[p] === 'function' && p !== 'wire$plugin' && tracePointcut.test(p)) {
+                        matches.push(p);
+                    }
+                }
+
+                return matches;
             }
-        };
-    }
 
-    function createTracer(options, plugin) {
-        var trace, untrace, traceStep, traceFilter, tracePointcut, traceAspects;
+            traceAspects = [];
+            trace = function (path, target) {
+                if (traceFilter(path)) {
+                    // Create the aspect, if the path matched
+                    traceAspects.push(aop.add(target, pointcut, createTraceAspect(path)));
+                }
+                // trace intentionally does not resolve the promise
+                // trace relies on the existing plugin method to resolve it
+            };
 
-        traceFilter = createPathFilter(options.trace.filter);
-        tracePointcut = options.trace.pointcut || defaultTracePointcut;
-        traceStep = options.trace.step || defaultTraceStep;
+            untrace = function () {
+                for (var i = traceAspects.length; i >= 0; --i) {
+                    traceAspects[i].remove();
+                }
+            };
 
-        traceAspects = [];
-        trace = function (path, target) {
-            if (traceFilter(path)) {
-                // Create the aspect, if the path matched
-                traceAspects.push(aop.add(target, tracePointcut, createTraceAspect(path)));
-            }
-            // trace intentionally does not resolve the promise
-            // trace relies on the existing plugin method to resolve it
-        };
+            // Defend against changes to the plugin in future revs
+            var orig = plugin[traceStep] || function (promise) { promise.resolve(); };
 
-        untrace = function () {
-            for (var i = traceAspects.length; i >= 0; --i) {
-                traceAspects[i].remove();
-            }
-        };
+            // Replace the plugin listener method with one that will call trace()
+            // and add traceAspect
+            plugin[traceStep] = function (promise, proxy, wire) {
+                trace(proxy.path, proxy.target);
+                orig(promise, proxy, wire);
+            };
 
-        // Defend against changes to the plugin in future revs
-        var orig = plugin[traceStep] || function (promise) { promise.resolve(); };
+            return { trace: trace, untrace: untrace };
+        }
 
-        // Replace the plugin listener method with one that will call trace()
-        // and add traceAspect
-        plugin[traceStep] = function (promise, proxy, wire) {
-            trace(proxy.path, proxy.target);
-            orig(promise, proxy, wire);
-        };
-
-        return { trace: trace, untrace: untrace };
-    }
+    })();
 
     return {
         wire$plugin:function debugPlugin(ready, destroyed, options) {
