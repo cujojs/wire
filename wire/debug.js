@@ -274,7 +274,7 @@ define(['aop'], function(aop) {
             };
 
             untrace = function () {
-                for (var i = traceAspects.length; i >= 0; --i) {
+                for (var i = traceAspects.length-1; i >= 0; --i) {
                     traceAspects[i].remove();
                 }
             };
@@ -326,11 +326,11 @@ define(['aop'], function(aop) {
 
             destroyed.then(
                 function onContextDestroyed() {
-                    untrace();
+                    tracer.untrace();
                     console.log(contextTime("Context destroyed"));
                 },
                 function onContextDestroyError(err) {
-                    untrace();
+                    tracer.untrace();
                     console.error(contextTime("Context destroy ERROR"), err);
                     logStack(err);
                 }
@@ -398,10 +398,10 @@ define(['aop'], function(aop) {
                     }
                     logCreated(promise, proxy);
                 },
-                configure:makeListener('configured', verbose),
-                initialize:makeListener('initialized', verbose),
-                ready:makeListener('ready', true),
-                destroy:makeListener('destroyed', true)
+                configure:  makeListener('configured', verbose),
+                initialize: makeListener('initialized', verbose),
+                ready:      makeListener('ready', true),
+                destroy:    makeListener('destroyed', true)
             };
 
             if (options.trace) {
