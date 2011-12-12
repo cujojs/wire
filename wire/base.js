@@ -4,14 +4,14 @@
  * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
  */
 
-/*
-	File: base.js
-	Base wire plugin that provides properties, init, and destroy facets, and a
-	proxy for plain JS objects.
-*/
+/**
+ * Base wire plugin that provides properties, init, and destroy facets, and
+ * a proxy for plain JS objects.
+ */
 (function(define) {
 define(['when'], function(when) {
-	var tos, createObject, whenAll, chain;
+	var tos, createObject, whenAll, chain, undef;
+    
 	tos = Object.prototype.toString;
 
     whenAll = when.all;
@@ -42,14 +42,14 @@ define(['when'], function(when) {
             : f;
     }
 
-    function invokeAll(resolver, facet, wire) {
+    function invokeAll(facet, wire) {
 		var target, options;
 
 		target  = facet.target;
 		options = facet.options;
 
 		if(typeof options == 'string') {
-			chain(invoke(options, target, [], wire), resolver);
+			return invoke(options, target, [], wire);
 
 		} else {
 			var promises, func;
@@ -59,7 +59,7 @@ define(['when'], function(when) {
 				promises.push(invoke(func, target, options[func], wire));
 			}
 
-			whenAll(promises, resolver.resolve, resolver.reject);
+			return whenAll(promises);
 		}
 	}
 
@@ -127,9 +127,8 @@ define(['when'], function(when) {
         );
 	}
 
-
 	function initFacet(resolver, facet, wire) {
-		invokeAll(resolver, facet, wire);
+		chain(invokeAll(facet, wire), resolver);
 	}
 
 	function pojoProxy(object /*, spec */) {
@@ -151,6 +150,10 @@ define(['when'], function(when) {
 			destroy: function() {}
 		};
 	}
+    
+    function destroyReducer(unused, destroyFunc) {
+        return destroyFunc();
+    }
 
 	return {
 		wire$plugin: function(ready, destroyed /*, options */) {
@@ -159,15 +162,10 @@ define(['when'], function(when) {
 			var destroyFuncs = [];
 
 			when(destroyed, function() {
-				for(var i = 0, destroy; (destroy = destroyFuncs[i++]);) {
-					destroy();
-				}
-				destroyFuncs = [];
+                when.reduce(destroyFuncs, destroyReducer, {});
 			});
 
-			function destroyFacet(promise, facet, wire) {
-				promise.resolve();
-
+			function destroyFacet(resolver, facet, wire) {
 				var target, options, w;
 
 				target = facet.target;
@@ -175,8 +173,12 @@ define(['when'], function(when) {
 				w = wire;
 
 				destroyFuncs.push(function destroyObject() {
-					invokeAll(when.defer(), { options: options, target: target }, w);
+					return invokeAll({ options: options, target: target }, w);
 				});
+
+                // This resolver is just related to *collecting* the functions to
+                // invoke when the component is destroyed.
+				resolver.resolve();
 			}
 
 			return {
