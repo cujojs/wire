@@ -11,9 +11,12 @@
 */
 (function(define) {
 define(['when'], function(when) {
-	var tos, createObject;
+	var tos, createObject, whenAll, chain;
 	tos = Object.prototype.toString;
 
+    whenAll = when.all;
+    chain = when.chain;
+    
 	// In case Object.create isn't available
 	function T() {}
 
@@ -24,65 +27,39 @@ define(['when'], function(when) {
 
 	createObject = Object.create || objectCreate;
 
-	function reject(resolver) {
-		return function(err) {
-			resolver.reject(err);
-		};
-	}
+    function invoke(func, target, args, wire) {
+        var f;
 
-	function resolve(resolver) {
-		return function(result) {
-			resolver.resolve(result);
-		};
-	}
+        f = target[func];
 
-	function invoke(promise, func, target, args, wire) {
-		var f, rejecter;
+        return typeof f == 'function'
+            ? when(wire(args),
+                function (resolvedArgs) {
+                    return f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
+                        ? resolvedArgs
+                        : [resolvedArgs]);
+                })
+            : f;
+    }
 
-		f = target[func];
-
-		rejecter = reject(promise);
-
-		if(typeof f == 'function') {
-			if(args) {
-				wire(args).then(
-					function(resolvedArgs) {
-						try {
-							var result = f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
-								? resolvedArgs
-								: [resolvedArgs]);
-
-							promise.resolve(result);
-						} catch(e) {
-							rejecter(e);
-						}
-					},
-					rejecter
-				);
-			}
-		}
-	}
-
-	function invokeAll(promise, facet, wire) {
+    function invokeAll(resolver, facet, wire) {
 		var target, options;
 
 		target  = facet.target;
 		options = facet.options;
 
 		if(typeof options == 'string') {
-			invoke(promise, options, target, [], wire);
+			chain(invoke(options, target, [], wire), resolver);
 
 		} else {
-			var promises, p, func;
+			var promises, func;
 			promises = [];
 
 			for(func in options) {
-				p = when.defer();
-				promises.push(p);
-				invoke(p, func, target, options[func], wire);
+				promises.push(invoke(func, target, options[func], wire));
 			}
 
-			when.all(promises, resolve(promise), reject(promise));
+			whenAll(promises, resolver.resolve, resolver.reject);
 		}
 	}
 
@@ -108,8 +85,8 @@ define(['when'], function(when) {
      * which will result in myObject.create == "foo" rather than attempting
      * to create an instance of an AMD module whose id is "foo".
      */
-	function literalFactory(promise, spec /*, wire */) {
-		promise.resolve(spec.literal);
+	function literalFactory(resolver, spec /*, wire */) {
+		resolver.resolve(spec.literal);
 	}
 
 	function protoFactory(resolver, spec, wire) {
@@ -126,11 +103,11 @@ define(['when'], function(when) {
 				var child = createObject(parent);
 				resolver.resolve(child);
 			},
-			reject(resolver)
+            resolver.reject
 		);
 	}
 
-	function propertiesFacet(promise, facet, wire) {
+	function propertiesFacet(resolver, facet, wire) {
 		var options, promises, prop;
 		promises = [];
 		options = facet.options;
@@ -139,22 +116,20 @@ define(['when'], function(when) {
 			promises.push(setProperty(facet, prop, options[prop], wire));
 		}
 
-        when.all(promises, resolve(promise), reject(promise));
+        whenAll(promises, resolver.resolve, resolver.reject);
 	}
 
 	function setProperty(proxy, name, val, wire) {
-		var promise = wire(val, name, proxy.path);
-
-		when(promise, function(resolvedValue) {
-			proxy.set(name, resolvedValue);
-		});
-
-		return promise;
+        return when(wire(val, name, proxy.path),
+            function(resolvedValue) {
+			    proxy.set(name, resolvedValue);
+		    }
+        );
 	}
 
 
-	function initFacet(promise, facet, wire) {
-		invokeAll(promise, facet, wire);
+	function initFacet(resolver, facet, wire) {
+		invokeAll(resolver, facet, wire);
 	}
 
 	function pojoProxy(object /*, spec */) {
