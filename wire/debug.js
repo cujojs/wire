@@ -50,7 +50,7 @@
  *     trace: {
  *          // filter (Optional)
  *          // Similar to above, can be string pattern or RegExp
- *          // Default ".*"
+ *          // If not specified, the general debug filter is used (see above)
  *          filter: ".*View",
  *
  *          // pointcut (Optional)
@@ -65,8 +65,11 @@
  *          // At what step in the wiring process should tracing start.  This can be helpful
  *          // if you need to trace a component during wiring.
  *          // Values: 'create', 'configure', 'initialize', 'ready', 'destroy'
- *          // Default: 'initialize'
- *          step: 'initialize'
+ *          // NOTE: This defines when tracing *begins*.  For example, if this is set to
+ *          // 'configure' (the default), anything that happens to components during and
+ *          // after the configure step, until that component is destroyed, will be traced.
+ *          // Default: 'configure'
+ *          step: 'configure'
  *     }
  * }
  */
@@ -185,7 +188,7 @@ define(['aop'], function(aop) {
         }
 
         /** Default lifecycle step at which to begin tracing */
-        defaultStep = 'initialize';
+        defaultStep = 'configure';
 
         /** Default pointcut query to match methods that will be traced */
         defaultPointcut = /^[^_]/;
@@ -238,10 +241,10 @@ define(['aop'], function(aop) {
         /**
          * Implementation of createTracer
          */
-        return function(options, plugin) {
+        return function(options, plugin, filter) {
             var trace, untrace, traceStep, traceFilter, tracePointcut, traceAspects;
 
-            traceFilter = createPathFilter(options.trace.filter);
+            traceFilter = options.trace.filter ? createPathFilter(options.trace.filter) : filter;
             tracePointcut = options.trace.pointcut || defaultPointcut;
             traceStep = options.trace.step || defaultStep;
 
@@ -405,7 +408,7 @@ define(['aop'], function(aop) {
             };
 
             if (options.trace) {
-                tracer = createTracer(options, plugin);
+                tracer = createTracer(options, plugin, filter);
             }
 
             return plugin;
