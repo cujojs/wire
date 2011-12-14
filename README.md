@@ -34,6 +34,14 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
+### 0.7.4
+
+* Fix for all known instances where wire would not notice errors that happen during wiring.
+* `wire/debug` plugin now supports runtime app tracing.  See the new options here.
+* Baby steps toward Node compatibility for the wire.js core.  *We're currently targetting v0.8.0 as the first Node-compatible version*.
+* Update to [when.js](https://github.com/briancavalier/when.js) v0.10.2
+* Update to [aop.js](https://github.com/briancavalier/aop.js) v0.5.0
+
 ### 0.7.3
 
 * Updated `wire/domReady` helper to work with latest [RequireJS](https://github.com/jrburke/requirejs) `domReady!` plugin, while maintaining backward compatibility with older versions of RequireJS that use `require.ready`
