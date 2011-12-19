@@ -7,7 +7,7 @@
 /**
  * dom.js
  */
-define(['js!jquery-1.7.min.js', 'wire/domReady'], function(jquery, domReady) {
+define(['jquery', 'wire/domReady'], function(jquery, domReady) {
 
     function resolveQuery(resolver, name, refObj /*, wire */) {
 

@@ -10,9 +10,9 @@
  */
 (function(define) {
 define(['when'], function(when) {
-	var tos, createObject, whenAll, chain, undef;
-    
-	tos = Object.prototype.toString;
+    var tos, createObject, whenAll, chain;
+
+    tos = Object.prototype.toString;
 
     whenAll = when.all;
     chain = when.chain;
@@ -150,7 +150,13 @@ define(['when'], function(when) {
 			destroy: function() {}
 		};
 	}
-    
+
+    //noinspection JSUnusedLocalSymbols
+    /**
+     * Wrapper for use with when.reduce that calls the supplied destroyFunc
+     * @param [unused]
+     * @param destroyFunc {Function} destroy function to call
+     */
     function destroyReducer(unused, destroyFunc) {
         return destroyFunc();
     }

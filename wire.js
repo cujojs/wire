@@ -1045,16 +1045,13 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
         }
     }
 
-    /*
-     Function: isConstructor
-     Determines with the supplied function should be invoked directly or
-     should be invoked using new in order to create the object to be wired.
-
-     Parameters:
-     func - determine whether this should be called using new or not
-
-     Returns:
-     true iff func should be invoked using new, false otherwise.
+    /**
+     * Determines with the supplied function should be invoked directly or
+     * should be invoked using new in order to create the object to be wired.
+     *
+     * @param func {Function} determine whether this should be called using new or not
+     *
+     * @returns true iff func should be invoked using new, false otherwise.
      */
     function isConstructor(func) {
         var is = false, p;

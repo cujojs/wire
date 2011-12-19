@@ -10,7 +10,6 @@
 	var doc, head, scripts, script, i, baseUrl, baseUrlSuffix,
 		selfName, selfRegex, loaders, loader, loaderName, loaderPath, loaderConfig;
 
-    // TODO: Parameterize loader to allow testing w/curl, requirejs, etc.
     loaderName = 'curl';
 
     // Try to get loader name from location hash
