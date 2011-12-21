@@ -12,7 +12,7 @@
     "repositories": [
         {
             "type": "git",
-            "url": "git://github.com/briancavalier/wire.git"
+            "url": "https://github.com/briancavalier/wire"
         }
     ],
     "bugs": "https://github.com/briancavalier/wire/issues",
@@ -34,12 +34,12 @@
     ],
     "dependencies": {
         "aop": "0.5.0",
-        "when": "0.10.2",
+        "when": "0.10.3",
         "sizzle": "1.5.x"
     },
     "mappings": {
         "aop": "https://github.com/briancavalier/aop.js/zipball/0.5.0",
-        "when": "https://github.com/briancavalier/when.js/zipball/0.10.1",
+        "when": "https://github.com/briancavalier/when.js/zipball/0.10.3",
         "sizzle": "https://github.com/kriszyp/sizzle/zipball/1.5.2"
     },
     "main": "./wire",
