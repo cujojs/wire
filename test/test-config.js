@@ -96,7 +96,9 @@
     addPackage({ name: 'sizzle', path: 'support/sizzle' });
     addPackage({ name: 'aop', path: 'support/aop' });
     addPackage({ name: 'when', path: 'support/when' });
-    addPackage({ name: 'wire', path: '.', lib: './wire' });
+    // TODO: Figure out why this breaks RequireJS or remove it
+    // This also does not seem to help curl
+//    addPackage({ name: 'wire', path: '.', lib: './wire' });
 
 	// Other loaders may not need this
 	loaderConfig.paths[loaderName] = loaderPath;

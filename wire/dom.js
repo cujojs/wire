@@ -12,7 +12,7 @@
  * components that can be used on multiple pages, but still require a reference
  * to one or more nodes on the page.
  */
-define(['wire/domReady'], function(domReady) {
+define(['./domReady'], function(domReady) {
 
     /**
      * Resolves a reference to a dom node on the page by its id

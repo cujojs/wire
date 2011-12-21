@@ -9,12 +9,12 @@
  * Provides AOP for components created via wire, including Decorators,
  * Introductions (mixins), and Pointcut-based Aspect Weaving.
  */
-define(['require', 'aop', 'when'], function(require, aop, when) {
+(typeof define == "function" ? define : function (deps, factory) { module.exports = factory.apply(this, [require].concat(deps.map(require))); })
+(['aop', 'when'], function(require, aop, when) {
 
-	var ap, obj, tos, isArray, whenAll, chain, deferred, undef;
-	
-	ap = Array.prototype;
-	obj = {};
+    var obj, tos, isArray, whenAll, chain, deferred, undef;
+
+    obj = {};
 	tos = Object.prototype.toString;
 
 	isArray = Array.isArray || function(it) {

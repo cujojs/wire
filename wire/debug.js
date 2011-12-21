@@ -73,22 +73,25 @@
  *     }
  * }
  */
-(function(global) {
-define(['aop'], function(aop) {
-    var timer, defaultTimeout, console, logStack, createTracer;
+(typeof define == "function" ? define : function (deps, factory) { module.exports = factory.apply(this, deps.map(require)); })
+(['aop'], function(aop) {
+
+    var timer, defaultTimeout, logger, logStack, createTracer;
 
     function noop() {}
 
-    // Fake console to prevent IE breakage
-    console = global['console'] || { log:noop, error:noop, trace:noop };
+    // Setup console for node, sane browsers, or IE
+    logger = typeof console != 'undefined'
+        ? console
+        : global['console'] || { log:noop, error:noop, trace:noop };
 
     // TODO: Consider using stacktrace.js
     // https://github.com/eriwen/javascript-stacktrace
     // For now, quick and dirty, based on how stacktrace.js chooses the appropriate field
     // If console.trace exists, use it, otherwise use console.error
-    logStack = typeof console.trace == 'function'
-        ? function (e) { console.trace(e); }
-        : function (e) { console.error(e.stack || e.stacktrace || e.message || e); };
+    logStack = typeof logger.trace == 'function'
+        ? function (e) { logger.trace(e); }
+        : function (e) { logger.error(e.stack || e.stacktrace || e.message || e); };
 
     timer = createTimer();
     defaultTimeout = 5000; // 5 second wiring failure timeout
@@ -212,7 +215,7 @@ define(['aop'], function(aop) {
                     // Increase the depth before proceeding so that nested traces will be indented
                     ++depth;
 
-                    console.log(context, joinpoint.args);
+                    logger.log(context, joinpoint.args);
 
                     try {
                         start = new Date();
@@ -229,7 +232,7 @@ define(['aop'], function(aop) {
                         throw e;
 
                     } finally {
-                        console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms) ', val);
+                        logger.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms) ', val);
 
                         // And now decrease the depth after
                         --depth;
@@ -299,6 +302,8 @@ define(['aop'], function(aop) {
 
     return {
         wire$plugin:function debugPlugin(ready, destroyed, options) {
+            logger.log('creating wire/debug');
+
             var contextTimer, timeout, paths, logCreated, checkPathsTimeout,
                 verbose, filter, plugin, tracer;
 
@@ -313,16 +318,16 @@ define(['aop'], function(aop) {
                 return time(msg, contextTimer);
             }
 
-            console.log(contextTime("Context init"));
+            logger.log(contextTime("Context init"));
 
             ready.then(
                 function onContextReady(context) {
                     cancelPathsTimeout();
-                    console.log(contextTime("Context ready"), context);
+                    logger.log(contextTime("Context ready"), context);
                 },
                 function onContextError(err) {
                     cancelPathsTimeout();
-                    console.error(contextTime("Context ERROR: "), err);
+                    logger.error(contextTime("Context ERROR: "), err);
                     logStack(err);
                 }
             );
@@ -330,11 +335,11 @@ define(['aop'], function(aop) {
             destroyed.then(
                 function onContextDestroyed() {
                     tracer.untrace();
-                    console.log(contextTime("Context destroyed"));
+                    logger.log(contextTime("Context destroyed"));
                 },
                 function onContextDestroyError(err) {
                     tracer.untrace();
-                    console.error(contextTime("Context destroy ERROR"), err);
+                    logger.error(contextTime("Context destroy ERROR"), err);
                     logStack(err);
                 }
             );
@@ -356,9 +361,9 @@ define(['aop'], function(aop) {
                     if (verbose && filter(path)) {
                         var message = time(step + ' ' + (path || proxy.id || ''), contextTimer);
                         if (proxy.target) {
-                            console.log(message, proxy.target, proxy.spec);
+                            logger.log(message, proxy.target, proxy.spec);
                         } else {
-                            console.log(message, proxy);
+                            logger.log(message, proxy);
                         }
                     }
 
@@ -383,7 +388,7 @@ define(['aop'], function(aop) {
                 for (p in paths) {
                     path = paths[p];
                     if (path.status !== 'ready') {
-                        console.error("WIRING FAILED at " + path.status, p, path.spec);
+                        logger.error("WIRING FAILED at " + path.status, p, path.spec);
                     }
                 }
             }
@@ -416,4 +421,3 @@ define(['aop'], function(aop) {
     };
 
 });
-})(this);
