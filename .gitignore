@@ -6,3 +6,5 @@ dojo/
 dijit/
 dojo.js
 bin/
+node_modules/
+jquery.js
