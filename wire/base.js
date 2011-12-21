@@ -216,9 +216,13 @@ define(['when'], function(when) {
 		}
 	};
 });
-})(typeof define != 'undefined'
+})(typeof define == 'function'
 	// use define for AMD if available
 	? define
-	// If no define or module, attach to current context.
-	: function(deps, factory) { this.wire_base = factory(); }
+    : typeof module != 'undefined'
+        ? function(deps, factory) {
+            module.exports = factory.apply(this, deps.map(require));
+        }
+	    // If no define or module, attach to current context.
+	    : function(deps, factory) { this.wire_base = factory(this.when); }
 );

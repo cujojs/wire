@@ -9,7 +9,7 @@
  * wire.js IOC Container
  */
 (function(global, define){
-define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
+define(['require', 'when', './wire/base'], function(require, when, basePlugin) {
 
     "use strict";
 
@@ -98,14 +98,16 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
      * @param moduleId {String} moduleId to load
      * @returns {Promise} a promise that resolves to the loaded module
      */
-    function loadModule(moduleId) {
-        // TODO: Choose loadModule implementation based on platform
-        var deferred = defer();
+    var loadModule = define.amd
+        ? function(moduleId) {
+            // TODO: Choose loadModule implementation based on platform
+            var deferred = defer();
 
-        require([moduleId], deferred.resolve);
+            require([moduleId], deferred.resolve);
 
-        return deferred.promise;
-    }
+            return deferred.promise;
+        }
+        : require;
 
     //
     // AMD Module API
@@ -1073,13 +1075,17 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     ? define
     // Browser
     // If no define or module, attach to current context.
-    : function(deps, factory) {
-        this.wire = factory(
-            // Fake require()
-            function(modules, callback) { callback(modules); },
-            // dependencies
-            this.when, this.wire_base
-        );
+    : typeof module != 'undefined'
+        ? function(deps, factory) {
+            module.exports = factory.apply(this, [require].concat(deps.slice(1).map(require)));
+        }
+        : function(deps, factory) {
+            this.wire = factory(
+                // Fake require()
+                function(modules, callback) { callback(modules); },
+                // dependencies
+                this.when, this.wire_base
+            );
     }
     // NOTE: Node not supported yet, coming soon
 );
