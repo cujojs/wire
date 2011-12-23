@@ -220,5 +220,5 @@ define(['when'], function(when) {
 	// use define for AMD if available
 	? define
 	// If no define or module, attach to current context.
-	: function(deps, factory) { this.wire_base = factory(); }
+	: function(deps, factory) { this.wire_base = factory(this.when); }
 );
