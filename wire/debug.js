@@ -73,10 +73,9 @@
  *     }
  * }
  */
-(typeof define == "function" ? define : function (deps, factory) { module.exports = factory.apply(this, deps.map(require)); })
-(['aop'], function(aop) {
-
-    var timer, defaultTimeout, logger, logStack, createTracer;
+(function(global, define) {
+define(['aop'], function(aop) {
+    var timer, defaultTimeout, console, createTracer;
 
     function noop() {}
 
@@ -88,10 +87,8 @@
     // TODO: Consider using stacktrace.js
     // https://github.com/eriwen/javascript-stacktrace
     // For now, quick and dirty, based on how stacktrace.js chooses the appropriate field
-    // If console.trace exists, use it, otherwise use console.error
-    logStack = typeof logger.trace == 'function'
-        ? function (e) { logger.trace(e); }
-        : function (e) { logger.error(e.stack || e.stacktrace || e.message || e); };
+    // and log using console.error
+    function logStack(e) { console.error(e.stack || e.stacktrace || e.message || e); }
 
     timer = createTimer();
     defaultTimeout = 5000; // 5 second wiring failure timeout
@@ -195,6 +192,10 @@
 
         /** Default pointcut query to match methods that will be traced */
         defaultPointcut = /^[^_]/;
+        
+        function logAfter(context, tag, start, val) {
+            console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms) ', val);            
+        }
 
         /**
          * Creates an aspect to be applied to components that are being traced
@@ -204,8 +205,6 @@
             return {
                 around:function (joinpoint) {
                     var val, tag, context, start, indent;
-
-                    tag = ' RETURN (';
 
                     // Setup current indent level
                     indent = padding.substr(0, depth);
@@ -221,19 +220,19 @@
                         start = new Date();
                         val = joinpoint.proceed();
 
+                        logAfter(context, ' RETURN (', start, val);
+
                         // return result
                         return val;
 
                     } catch (e) {
 
                         // rethrow
-                        val = e;
-                        tag = ' THROW (';
+                        logAfter(context, ' THROW (', start, e ? e.toString() : e);
+
                         throw e;
 
                     } finally {
-                        logger.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms) ', val);
-
                         // And now decrease the depth after
                         --depth;
                     }
@@ -327,7 +326,7 @@
                 },
                 function onContextError(err) {
                     cancelPathsTimeout();
-                    logger.error(contextTime("Context ERROR: "), err);
+                    console.error(contextTime("Context ERROR: "), err.toString(), err);
                     logStack(err);
                 }
             );
@@ -421,3 +420,13 @@
     };
 
 });
+})(this, typeof define == 'function'
+	// use define for AMD if available
+	? define
+    : typeof module != 'undefined'
+        ? function(deps, factory) {
+            module.exports = factory.apply(this, deps.map(require));
+        }
+	    // If no define or module, attach to current context.
+	    : function(deps, factory) { this.wire_debug = factory(this.aop); }
+);
