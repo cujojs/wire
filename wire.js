@@ -16,7 +16,7 @@ define(['require', 'when', './wire/base'], function(require, when, basePlugin) {
     var VERSION, tos, arrayProto, apIndexOf, apSlice, rootSpec, rootContext, delegate, emptyObject,
         defer, chain, whenAll, isArray, indexOf, lifecycleSteps, undef;
 
-    wire.version = VERSION = "0.7.4";
+    wire.version = VERSION = "0.7.5";
 
     rootSpec = global['wire'] || {};
     lifecycleSteps = ['create', 'configure', 'initialize', 'ready'];

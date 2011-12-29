@@ -34,6 +34,12 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
+### 0.7.5
+
+* Minor fix for using wire in a non-AMD browser environment
+* Update to [when.js](https://github.com/briancavalier/when.js) v0.10.4
+* Update to [aop.js](https://github.com/briancavalier/aop.js) v0.5.2
+
 ### 0.7.4
 
 * `wire/debug` plugin now supports runtime app tracing.  Check out the [new options](https://github.com/briancavalier/wire/wiki/wire-debug).
