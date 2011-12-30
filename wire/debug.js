@@ -86,7 +86,20 @@ define(['aop'], function(aop) {
     // https://github.com/eriwen/javascript-stacktrace
     // For now, quick and dirty, based on how stacktrace.js chooses the appropriate field
     // and log using console.error
-    function logStack(e) { console.error(e.stack || e.stacktrace || e.message || e); }
+    function logStack(e) {
+        var stack = e.stack || e.stacktrace;
+        if(!stack) {
+            // If e.sourceURL and e.line are available, this is probably Safari, so
+            // we can build a clickable source:line
+            // Fallback to message if available
+            // If all else fails, just use e itself
+            stack = e.sourceURL && e.line
+                ? e.sourceURL + ':' + e.line
+                : e.message || e;
+        }
+
+        console.error(stack);
+    }
 
     timer = createTimer();
     defaultTimeout = 5000; // 5 second wiring failure timeout
@@ -192,7 +205,7 @@ define(['aop'], function(aop) {
         defaultPointcut = /^[^_]/;
         
         function logAfter(context, tag, start, val) {
-            console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms) ', val);            
+            console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms): ', val);
         }
 
         /**
@@ -202,8 +215,8 @@ define(['aop'], function(aop) {
         function createTraceAspect(path) {
             return {
                 around:function (joinpoint) {
-                    var val, tag, context, start, indent;
-
+                    var val, context, start, indent;
+                    
                     // Setup current indent level
                     indent = padding.substr(0, depth);
                     // Form full path to invoked method
@@ -322,7 +335,7 @@ define(['aop'], function(aop) {
                 },
                 function onContextError(err) {
                     cancelPathsTimeout();
-                    console.error(contextTime("Context ERROR: "), err.toString(), err);
+                    console.error(contextTime("Context ERROR: ") + err, err);
                     logStack(err);
                 }
             );
