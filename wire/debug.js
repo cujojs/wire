@@ -80,7 +80,7 @@ define(['aop'], function(aop) {
     function noop() {}
 
     // Fake console to prevent IE breakage
-    console = global['console'] || { log:noop, error:noop, trace:noop };
+    console = global['console'] || { log:noop, error:noop };
 
     // TODO: Consider using stacktrace.js
     // https://github.com/eriwen/javascript-stacktrace
