@@ -171,7 +171,7 @@
          * @param ready {Promise} promise that will be resolved when the context has been wired,
          *  rejected if there is an error during the wiring process, and will receive progress
          *  events for object creation, property setting, and initialization.
-         * @param destroy {Promise} promise that will be resolved when the context has been destroyed,
+         * @param destroyed {Promise} promise that will be resolved when the context has been destroyed,
          *  rejected if there is an error while destroying the context, and will receive progress
          *  events for objects being destroyed.
          * @param options {Object}
@@ -196,7 +196,7 @@
              * @param aspect
              */
             function add(target, pointcut, aspect) {
-                woven.push(aop.add(target, pointcut, aspect))
+                woven.push(aop.add(target, pointcut, aspect));
             }
 
 			function makeFacet(step, callback) {
