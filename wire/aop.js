@@ -9,97 +9,97 @@
  * Provides AOP for components created via wire, including Decorators,
  * Introductions (mixins), and Pointcut-based Aspect Weaving.
  */
-(typeof define == "function" ? define : function (deps, factory) { module.exports = factory.apply(this, [require].concat(deps.map(require))); })
-(['aop', 'when'], function(require, aop, when) {
+(function(define) {
+define(['aop', 'when'], function(aop, when) {
 
     var obj, tos, isArray, whenAll, chain, deferred, undef;
 
     obj = {};
-	tos = Object.prototype.toString;
+    tos = Object.prototype.toString;
 
-	isArray = Array.isArray || function(it) {
-		return tos.call(it) == '[object Array]';
-	};
+    isArray = Array.isArray || function(it) {
+        return tos.call(it) == '[object Array]';
+    };
 
     whenAll  = when.all;
     chain    = when.chain;
     deferred = when.defer;
 
     //
-	// Decoration
-	//
+    // Decoration
+    //
 
-	function applyDecorator(target, Decorator, args) {
-		args = args ? [target].concat(args) : [target];
+    function applyDecorator(target, Decorator, args) {
+        args = args ? [target].concat(args) : [target];
 
-		Decorator.apply(null, args);
-	}
-	
-	function doDecorate(target, decorator, args, wire) {
-		function apply(Decorator) {
+        Decorator.apply(null, args);
+    }
+
+    function doDecorate(target, decorator, args, wire) {
+        function apply(Decorator) {
             return args
                 ? when(wire(args), function (resolvedArgs) {
                     applyDecorator(target, Decorator, resolvedArgs);
                 })
                 : applyDecorator(target, Decorator);
         }
-        
+
         return when(wire.resolveRef(decorator), apply);
-	}
+    }
 
-	function decorateFacet(resolver, facet, wire) {
-		var target, options, promises;
+    function decorateFacet(resolver, facet, wire) {
+        var target, options, promises;
 
-		target = facet.target;
-		options = facet.options;
-		promises = [];
+        target = facet.target;
+        options = facet.options;
+        promises = [];
 
-		for(var d in options) {
-			promises.push(doDecorate(target, d, options[d], wire));
-		}
+        for(var d in options) {
+            promises.push(doDecorate(target, d, options[d], wire));
+        }
 
-		chain(whenAll(promises), resolver);
-	}
+        chain(whenAll(promises), resolver);
+    }
 
-	//
-	// Introductions
-	//
-	
-	function introduce(target, src) {
-		var name, s;
+    //
+    // Introductions
+    //
 
-		for(name in src) {
-			s = src[name];
-			if(!(name in target) || (target[name] !== s && (!(name in obj) || obj[name] !== s))) {
-				target[name] = s;
-			}
-		}
+    function introduce(target, src) {
+        var name, s;
+
+        for(name in src) {
+            s = src[name];
+            if(!(name in target) || (target[name] !== s && (!(name in obj) || obj[name] !== s))) {
+                target[name] = s;
+            }
+        }
 
         return target;
-	}
+    }
 
-	function doIntroduction(target, introduction, wire) {
+    function doIntroduction(target, introduction, wire) {
         return when(wire.resolveRef(introduction), function(resolved) {
             return introduce(target, resolved);
         });
-	}
+    }
 
-	function introduceFacet(resolver, facet, wire) {
-		var target, intros;
-		
-		target = facet.target;
-		intros = facet.options;
-		
-		if(!isArray(intros)) intros = [intros];
-        
+    function introduceFacet(resolver, facet, wire) {
+        var target, intros;
+
+        target = facet.target;
+        intros = facet.options;
+
+        if(!isArray(intros)) intros = [intros];
+
         chain(when.reduce(intros, function(target, intro) {
             return doIntroduction(target, intro, wire);
         }, target), resolver);
-	}
+    }
 
-	//
-	// Aspect Weaving
-	//
+    //
+    // Aspect Weaving
+    //
 
     function applyAspectCombined(target, aspect, wire, add) {
         return when(wire.resolveRef(aspect), function (aspect) {
@@ -108,7 +108,7 @@
             if (pointcut) {
                 add(target, pointcut, aspect);
             }
-            
+
             return target;
         });
     }
@@ -164,8 +164,8 @@
         }, target), resolver);
     }
 
-	return {
-		/**
+    return {
+        /**
          * Creates wire/aop plugin instances.
          *
          * @param ready {Promise} promise that will be resolved when the context has been wired,
@@ -176,7 +176,7 @@
          *  events for objects being destroyed.
          * @param options {Object}
          */
-		wire$plugin: function(ready, destroyed, options) {
+        wire$plugin: function(ready, destroyed, options) {
 
             // Track aspects so they can be removed when the context is destroyed
             var woven = [];
@@ -185,7 +185,7 @@
             when(destroyed, function() {
                 for(var i = woven.length; i >= 0; --i) {
                     woven[i].remove();
-                } 
+                }
             });
 
             /**
@@ -199,26 +199,33 @@
                 woven.push(aop.add(target, pointcut, aspect));
             }
 
-			function makeFacet(step, callback) {
-				var facet = {};
-				
-				facet[step] = function(resolver, proxy, wire) {
-					callback(resolver, proxy, wire);
-				};
+            function makeFacet(step, callback) {
+                var facet = {};
 
-				return facet;
-			}
+                facet[step] = function(resolver, proxy, wire) {
+                    callback(resolver, proxy, wire);
+                };
 
-			// Plugin
-			return {
-				facets: {
-					decorate:  makeFacet('configure', decorateFacet),
-					introduce: makeFacet('configure', introduceFacet)
-				},
-				create: function(resolver, proxy, wire) {
-					weave(resolver, proxy, wire, options, add);
-				}
-			};
-		}
-	};
+                return facet;
+            }
+
+            // Plugin
+            return {
+                facets: {
+                    decorate:  makeFacet('configure', decorateFacet),
+                    introduce: makeFacet('configure', introduceFacet)
+                },
+                create: function(resolver, proxy, wire) {
+                    weave(resolver, proxy, wire, options, add);
+                }
+            };
+        }
+    };
 });
+})(typeof define == 'function'
+	// use define for AMD if available
+	? define
+    : function(deps, factory) {
+        module.exports = factory.apply(this, deps.map(require));
+    }
+);

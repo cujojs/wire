@@ -351,11 +351,7 @@ define(['aop'], function(aop) {
                 },
                 function onContextDestroyError(err) {
                     tracer.untrace();
-<<<<<<< HEAD
-                    logger.error(contextTime("Context destroy ERROR"), err);
-=======
-                    console.error(contextTime("Context destroy ERROR") + err, err);
->>>>>>> dev
+                    logger.error(contextTime("Context destroy ERROR") + err, err);
                     logStack(err);
                 }
             );
