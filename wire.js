@@ -66,14 +66,6 @@ define(['require', 'when', './wire/base'], function(require, when, basePlugin) {
     whenAll = when.all;
 
     /**
-     * Helper to always return a promise
-     * @param it anything
-     */
-    function promise(it) {
-        return when.isPromise(it) ? it : when(it);
-    }
-
-    /**
      * Helper to reject a deferred when another is rejected
      * @param resolver {Object} resolver to reject
      */
@@ -355,7 +347,8 @@ define(['require', 'when', './wire/base'], function(require, when, basePlugin) {
                 // FIXME: Why does returning when(item) here cause
                 // the resulting, returned promise never to resolve
                 // in wire-factory1.html?
-                return promise(createItem(spec, createPath(name, path)));
+                return createItem(spec, createPath(name, path));
+//                return promise(createItem(spec, createPath(name, path)));
             };
 
             pluginApi.resolveRef = apiResolveRef;

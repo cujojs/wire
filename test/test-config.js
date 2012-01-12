@@ -26,7 +26,6 @@
     loaders = {
         curl: {
             script: 'test/curl/src/curl',
-            packagePathOption: 'path',
             mixin: {
                 apiName: 'require',
                 pluginPath: 'curl/plugin'
@@ -34,10 +33,8 @@
         },
         requirejs: {
             script: 'test/requirejs/require',
-            packagePathOption: 'location',
             mixin: {
                 paths: {
-                    wire: 'wire',
                     domReady: 'test/requirejs/domReady'
                 }
             }
@@ -45,19 +42,13 @@
     };
     
     function addPackage(pkgInfo) {
-        var cfg, pkg;
+        var cfg;
         
         if(!loaderConfig.packages) loaderConfig.packages = [];
         
         cfg = loaderConfig.packages;
-        pkg = {
-            name: pkgInfo.name,
-            lib: pkgInfo.lib || '.',
-            main: pkgInfo.main || pkgInfo.name
-        };
-        pkg[loader.packagePathOption] = pkgInfo.path;
-
-        cfg.push(pkg);
+        pkgInfo.main = pkgInfo.main || pkgInfo.name;
+        cfg.push(pkgInfo);
     }
 
     loader = loaders[loaderName];
@@ -91,14 +82,16 @@
         loaderConfig[m] = loader.mixin[m];
     }
 
-    addPackage({ name: 'dojo', path: 'dojo', main: './lib/main-browser' });
-    addPackage({ name: 'dijit', path: 'dijit', main: './lib/main' });
-    addPackage({ name: 'sizzle', path: 'support/sizzle' });
-    addPackage({ name: 'aop', path: 'support/aop' });
-    addPackage({ name: 'when', path: 'support/when' });
+    addPackage({ name: 'dojo', location: 'dojo', main: './lib/main-browser' });
+    addPackage({ name: 'dijit', location: 'dijit', main: './lib/main' });
+    addPackage({ name: 'sizzle', location: 'support/sizzle' });
+    addPackage({ name: 'aop', location: 'support/aop' });
+    addPackage({ name: 'when', location: 'support/when' });
     // TODO: Figure out why this breaks RequireJS or remove it
     // This also does not seem to help curl
 //    addPackage({ name: 'wire', path: '.', lib: './wire' });
+
+//    console.log(JSON.stringify(loaderConfig));
 
 	// Other loaders may not need this
 	loaderConfig.paths[loaderName] = loaderPath;
