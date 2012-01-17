@@ -1,3 +1,5 @@
+node_modules/
+.npmignore
 tools/
 curl/
 dojo/
@@ -6,5 +8,4 @@ dojo/
 dijit/
 dojo.js
 bin/
-node_modules/
 jquery.js
