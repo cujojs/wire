@@ -1,16 +1,18 @@
-/**
- * @license Copyright (c) 2010-2011 Brian Cavalier
- * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
- * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
- */
+/** @license MIT License (c) copyright B Cavalier & J Hann */
 
 /**
- * store.js
+ * wire/dojo/store plugin
  * wire plugin that provides a REST resource reference resolver.  Referencing
  * any REST resource using the format: resource!url/goes/here will create a
  * dojo.store.JsonRest pointing to url/goes/here.  Using the id or query
  * options, you can alternatively resolve references to actual data.
+ *
+ * wire is part of the cujo.js family of libraries (http://cujojs.com/)
+ *
+ * Licensed under the MIT License at:
+ * http://www.opensource.org/licenses/mit-license.php
  */
+
 define([], function() {
 
     /**

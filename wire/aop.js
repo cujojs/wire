@@ -1,14 +1,16 @@
-/**
- * @license Copyright (c) 2010-2011 Brian Cavalier
- * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
- * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
- */
+/** @license MIT License (c) copyright B Cavalier & J Hann */
 
 /**
  * wire/aop plugin
  * Provides AOP for components created via wire, including Decorators,
  * Introductions (mixins), and Pointcut-based Aspect Weaving.
+ *
+ * wire is part of the cujo.js family of libraries (http://cujojs.com/)
+ *
+ * Licensed under the MIT License at:
+ * http://www.opensource.org/licenses/mit-license.php
  */
+
 define(['require', 'aop', 'when'], function(require, aop, when) {
 
 	var ap, obj, tos, isArray, whenAll, chain, deferred, undef;

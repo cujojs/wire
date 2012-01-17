@@ -1,17 +1,19 @@
-/**
- * @license Copyright (c) 2010-2011 Brian Cavalier
- * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
- * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
- */
+/** @license MIT License (c) copyright B Cavalier & J Hann */
 
 /**
- * sizzle.js
+ * wire/sizzle plugin
  * Adds querySelectorAll functionality to wire using John Resig's Sizzle library.
  * Sizzle must be wrapped in an AMD define().  Kris Zyp has a version of this at
  * http://github.com/kriszyp/sizzle
  *
+ * wire is part of the cujo.js family of libraries (http://cujojs.com/)
+ *
+ * Licensed under the MIT License at:
+ * http://www.opensource.org/licenses/mit-license.php
+ *
  * @author John Hann (@unscriptable)
  */
+
 define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
 
     function resolveQuery(resolver, name, refObj /*, wire */) {
