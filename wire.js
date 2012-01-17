@@ -1,13 +1,17 @@
+/** @license MIT License (c) copyright B Cavalier & J Hann */
+
 /**
- * @license Copyright (c) 2010-2011 Brian Cavalier
- * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
- * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
+ * wire
+ * Javascript IOC Container
+ *
+ * wire is part of the cujo.js family of libraries (http://cujojs.com/)
+ *
+ * Licensed under the MIT License at:
+ * http://www.opensource.org/licenses/mit-license.php
+ *
+ * @version 0.7.5
  */
 
-//noinspection ThisExpressionReferencesGlobalObjectJS
-/**
- * wire.js IOC Container
- */
 (function(global, define){
 define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
