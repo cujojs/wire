@@ -1,17 +1,19 @@
-/**
- * @license Copyright (c) 2010-2011 Brian Cavalier
- * LICENSE: see the LICENSE.txt file. If file is missing, this file is subject
- * to the MIT License at: http://www.opensource.org/licenses/mit-license.php.
- */
+/** @license MIT License (c) copyright B Cavalier & J Hann */
 
 /**
- * diji.js
+ * wire/dojo/dijit plugin
  * wire plugin that provides a reference resolver for dijits declared using
  * dojoType/data-dojo-type, a setter that can set dojo 1.6+ set(name, value)
  * style properties, a wire$init() function that invokes the dojo parser,
  * and an object lifecycle handler that will cleanup (e.g. destroyRecursive,
  * or destroy) dijits instantiated "programmatically" in a wiring context.
+ *
+ * wire is part of the cujo.js family of libraries (http://cujojs.com/)
+ *
+ * Licensed under the MIT License at:
+ * http://www.opensource.org/licenses/mit-license.php
  */
+
 define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser, dijit, Widget) {
     var parsed, tos, isArray, loadTheme, placeAtFacet;
 

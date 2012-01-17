@@ -1,3 +1,19 @@
+Please Note: this project has moved from briancavalier/wire to cujojs/wire.
+Any existing forks have been automatically moved to cujojs/wire. However,
+you'll need to update your clone and submodule remotes manually.
+
+Update the url in your .git/config, and also .gitmodules for submodules:
+
+```
+git://github.com/cujojs/wire.git
+https://cujojs@github.com/cujojs/wire.git
+```
+
+Helpful link for updating submodules:
+[Git Submodules: Adding, Using, Removing, Updating](http://chrisjean.com/2009/04/20/git-submodules-adding-using-removing-and-updating/)
+
+----
+
 # wire.js
 
 Wire.js is an [Inversion of Control Container](http://martinfowler.com/articles/injection.html "Inversion of Control Containers and the Dependency Injection pattern") for Javascript apps.
