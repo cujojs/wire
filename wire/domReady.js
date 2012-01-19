@@ -29,10 +29,8 @@ define(['require'], function(req) {
 	// Try require.ready first
 	return (global.require && global.require.ready) || function (cb) {
 		// If it's not available, assume a domReady! plugin is available
-		req(['domReady!'], function () {
-            // Using domReady! as a plugin will automatically wait for domReady
-            // so we can just call the callback.
-            cb();
+		req(['domReady'], function (ready) {
+		  ready(cb);
 		});
 	};
 
