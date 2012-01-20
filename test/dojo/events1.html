@@ -1,4 +1,4 @@
-<!DOCTYPE HTML>
+    <!DOCTYPE HTML>
 <html lang="en-US">
 <head>
 	<meta charset="UTF-8">
@@ -19,7 +19,7 @@
 			};
 		});
 		
-		require(['curl/dojo16Compat']).next(['wire'], function(wire) {
+		require(['curl/shim/dojo16']).next(['wire'], function(wire) {
 			wire({
 				plugins: [
 					{ module: 'wire/debug' },

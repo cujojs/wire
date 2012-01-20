@@ -26,7 +26,7 @@
 			};
 		});
 		
-		require(['curl/dojo16Compat']).next(['wire'], function(wire) {
+		require(['curl/shim/dojo16']).next(['wire'], function(wire) {
 			wire({
 				plugins: [
 					{ module: 'wire/debug' },
@@ -38,12 +38,6 @@
 					// since the module doesn't return a function (constructor or otherwise)
 					// that can be invoked--it returns an object.
 					create: "handler1",
-					properties: {
-						// wire provides a way to wire in the enclosing context
-						// itself.  This can be useful in certain situations, although
-						// in general, you shouldn't need to.
-						"context": { $ref: "wire!context" }
-					},
 					// Use the wire/dojo/events plugin to declare that when the
 					// #test button is clicked, handler's handleEvent method will
 					// be called.
@@ -68,12 +62,6 @@
 							// since the module doesn't return a function (constructor or otherwise)
 							// that can be invoked--it returns an object.
 							create: "handler2",
-							properties: {
-								// wire provides a way to wire in the enclosing context
-								// itself.  This can be useful in certain situations, although
-								// in general, you shouldn't need to.
-								"context": { $ref: "wire!context" }
-							},
 							// Use the wire/dojo/events plugin to declare that when the
 							// #test button is clicked, handler's handleEvent method will
 							// be called.
@@ -85,7 +73,7 @@
 						}
 					}).then(
 						function(child) {
-                            child.handler.context = context;
+                            child.handler.context = child;
 
 							console.log("Child done", child);
 						}
