@@ -13,7 +13,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['dojo', 'dojo/_base/event'], function(events) {
+define(['when', 'dojo', 'dojo/_base/event'], function(when, events) {
 
 	return {
 		wire$plugin: function eventsPlugin(ready, destroyed, options) {
@@ -21,7 +21,10 @@ define(['dojo', 'dojo/_base/event'], function(events) {
 			var connectHandles = [];
 
 			function connect(target, ref, options, wire) {
-				var eventName;
+				var eventName, promise, promises;
+
+                promises = [];
+
 				// If ref is a method on target, connect it to another object's method, i.e. calling a method on target
 				// causes a method on the other object to be called.
 				// If ref is a reference to another object, connect that object's method to a method on target, i.e.
@@ -29,18 +32,24 @@ define(['dojo', 'dojo/_base/event'], function(events) {
 				if(typeof target[ref] == 'function') {
 					eventName = ref;
 					for(ref in options) {
-						wire.resolveRef(ref).then(function(resolved) {
+						promise = wire.resolveRef(ref).then(function(resolved) {
 							connectHandles.push(events.connect(target, eventName, resolved, options[ref]));
 						});
+
+                        promises.push(promise);
 					}
+
+                    promise = when.all(promises);
+
 				} else {
-					wire.resolveRef(ref).then(function(resolved) {
+					promise = wire.resolveRef(ref).then(function(resolved) {
 						for(eventName in options) {
 							connectHandles.push(events.connect(resolved, eventName, target, options[eventName]));
 						}
 					});							
 				}
 
+                return promise;
 			}
 			
 			/*
@@ -71,9 +80,13 @@ define(['dojo', 'dojo/_base/event'], function(events) {
 					connects - specification of events to connect, see examples above.
 			*/
 			function connectFacet(wire, target, connects) {
+                var promises = [];
+
 				for(var ref in connects) {
-					connect(target, ref, connects[ref], wire);
+					promises.push(connect(target, ref, connects[ref], wire));
 				}
+
+                return when.all(promises);
 			}
 			
 			destroyed.then(function onContextDestroy() {
@@ -85,9 +98,10 @@ define(['dojo', 'dojo/_base/event'], function(events) {
 			return {
 				facets: {
 					connect: {
-						ready: function(promise, facet, wire) {
-							connectFacet(wire, facet.target, facet.options);
-							promise.resolve();
+						ready: function(resolver, facet, wire) {
+                            when(connectFacet(wire, facet.target, facet.options),
+                                resolver.resolve,
+                                resolver.reject);
 						}
 					}
 				}
