@@ -55,16 +55,16 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 ### 0.7.5
 
 * Minor fix for using wire in a non-AMD browser environment
-* Update to [when.js](https://github.com/cujojs/when.js) v0.10.4
-* Update to [aop.js](https://github.com/cujojs/aop.js) v0.5.2
+* Update to [when.js](https://github.com/cujojs/when) v0.10.4
+* Update to [aop.js](https://github.com/cujojs/aop) v0.5.2
 
 ### 0.7.4
 
 * `wire/debug` plugin now supports runtime app tracing.  Check out the [new options](https://github.com/cujojs/wire/wiki/wire-debug).
 * Fix for all known instances where wire would not notice errors that happen during wiring.
 * Baby steps toward Node compatibility for the wire.js core.  *We're currently targetting v0.8.0 as the first Node-compatible version*.
-* Update to [when.js](https://github.com/cujojs/when.js) v0.10.3
-* Update to [aop.js](https://github.com/cujojs/aop.js) v0.5.0
+* Update to [when.js](https://github.com/cujojs/when) v0.10.3
+* Update to [aop.js](https://github.com/cujojs/aop) v0.5.0
 
 ### 0.7.3
 
@@ -80,7 +80,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 * Improved logging in `wire/debug`, now with stack traces, and guards against missing `console` in IE.
 * Guard against null when scanning plugins
-* Update to [when.js](https://github.com/cujojs/when.js) v0.9.4
+* Update to [when.js](https://github.com/cujojs/when) v0.9.4
 
 ### 0.7.0
 
@@ -90,7 +90,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
     * supports easy dijit theming via its `theme` option
 * New [wire/dojo/data](https://github.com/cujojs/wire/wiki/wire-dojo-data) plugin that supports legacy `dojo/data` datastores
 * [wire/dom](https://github.com/cujojs/wire/wiki/wire-dom) plugin now supports options for adding/removing classes to `<html>` during wiring.
-* Now using [when.js](https://github.com/cujojs/when.js) v0.9.3 for promises and async handling.  See also the Deprecated Functionality below.
+* Now using [when.js](https://github.com/cujojs/when) v0.9.3 for promises and async handling.  See also the Deprecated Functionality below.
 * The wire.js core is now **only 2.5k** with Google Closure + gzip!
 * **Limited support** for using wire in a non-AMD setup.  This is intended to aid in transitioning to AMD and CommonJS modules, and *it's unlikely that wire's full functionality will ever be extended to cover non-AMD/CommonJS environments.*
 	* wire.js can now create components using raw constructors in addition to AMD module ids.  This allows wire.js to create components instances from libraries that haven't yet fully committed to AMD or CommonJS.
@@ -99,11 +99,11 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
     	* The components in the current context will always be in an incomplete state, and relying on this is potentially dangerous.
     	* I may consider allowing injecting a *promise* for the current context, which would resolve after the current context has finished wiring.
     	* If you were using the `wire()` method of a context injected via `{ $ref: 'wire!context' }`, you can use `{ $ref: 'wire!' }` instead, which provides a direct reference to the `wire()` method itself--i.e. it injects a *function* that works just like `context.wire()`.
-	* Many plugin methods received a `wire` parameter that had several promise helper methods, such as `wire.when`, `wire.whenAll`, etc.  These are deprecated in favor of simply using [when.js](https://github.com/cujojs/when.js) instead, which is provided as a submodule in the support dir.
+	* Many plugin methods received a `wire` parameter that had several promise helper methods, such as `wire.when`, `wire.whenAll`, etc.  These are deprecated in favor of simply using [when.js](https://github.com/cujojs/when) instead, which is provided as a submodule in the support dir.
 
 ### 0.6.0
 
-* [wire/aop](https://github.com/cujojs/wire/wiki/wire-aop) plugin: AOP weaving with pointcuts, and before, after, afterReturning, afterThrowing, after (aka "afterFinally") advice using [aop.js](https://github.com/cujojs/aop.js)
+* [wire/aop](https://github.com/cujojs/wire/wiki/wire-aop) plugin: AOP weaving with pointcuts, and before, after, afterReturning, afterThrowing, after (aka "afterFinally") advice using [aop.js](https://github.com/cujojs/aop)
 * Experimental optimizer/build tool support for [cram](https://github.com/unscriptable/cram). Point cram at your wire spec and let it optimize your entire app! *Docs coming soon*
 * [wire/debug](https://github.com/cujojs/wire/wiki/wire-debug) plugin: tracks components and tells you which ones couldn't be wired and why
 * Improved memory management, especially when destroying contexts.
