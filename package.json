@@ -42,7 +42,6 @@
     },
     "main": "./wire",
     "directories": {
-        "lib": "./wire",
         "test": "test"
     }
 }
