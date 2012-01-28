@@ -28,7 +28,10 @@
             script: 'test/curl/src/curl',
             mixin: {
                 apiName: 'require',
-                pluginPath: 'curl/plugin'
+                pluginPath: 'curl/plugin',
+                preload: [
+                    'curl/shim/dojo16'
+                ]
             }
         },
         requirejs: {
@@ -82,14 +85,13 @@
         loaderConfig[m] = loader.mixin[m];
     }
 
-    addPackage({ name: 'dojo', location: 'dojo', main: './lib/main-browser' });
-    addPackage({ name: 'dijit', location: 'dijit', main: './lib/main' });
+    addPackage({ name: 'dojo', location: 'test/lib/dojo', main: './lib/main-browser' });
+    addPackage({ name: 'dijit', location: 'test/lib/dijit', main: './lib/main' });
     addPackage({ name: 'sizzle', location: 'support/sizzle' });
     addPackage({ name: 'aop', location: 'support/aop' });
     addPackage({ name: 'when', location: 'support/when' });
-    // TODO: Figure out why this breaks RequireJS or remove it
-    // This also does not seem to help curl
-//    addPackage({ name: 'wire', path: '.', lib: './wire' });
+    // This is needed because we're running unit tests from *within* the wire dir
+    addPackage({ name: 'wire', location: '.' });
 
 //    console.log(JSON.stringify(loaderConfig));
 

@@ -34,13 +34,11 @@
     ],
     "dependencies": {
         "aop": "0.5.2",
-        "when": "0.10.4",
-        "sizzle": "1.5.x"
+        "when": "0.11.x"
     },
     "mappings": {
         "aop": "https://github.com/briancavalier/aop.js/zipball/0.5.2",
-        "when": "https://github.com/briancavalier/when.js/zipball/0.11.0",
-        "sizzle": "https://github.com/kriszyp/sizzle/zipball/1.5.2"
+        "when": "https://github.com/briancavalier/when.js/zipball/0.11.x"
     },
     "main": "./wire",
     "directories": {

@@ -13,7 +13,7 @@
  */
 
 (function(global, define){
-define(['require', 'when', './wire/base'], function(require, when, basePlugin) {
+define(['require', 'when', './base'], function(require, when, basePlugin) {
 
     "use strict";
 

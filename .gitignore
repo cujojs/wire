@@ -1,5 +1,7 @@
 node_modules/
 .npmignore
+*~
+.idea/
 tools/
 curl/
 dojo/
