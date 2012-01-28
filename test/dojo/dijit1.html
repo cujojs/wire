@@ -25,18 +25,21 @@
 	</script>
 
 	<script type="text/javascript">
-		require(['wire!test/dojo/dijit1'], function(context) {
-			// Properties/objects from the parent context are available via the prototype!
-			console.log("initialValue", context.initialValue);
-			
-			// When the button is clicked, cleanup everything by
-			// destroying the context.  Note that this will destroy the programmatically
-			// created widget1 dijit, but not the dijit that is created via dojoType.
-			var d = context.destroyButton;
-			d.onclick = function() {
-				context.destroy();
-				d.onclick = null;
-			};
+		require(['wire'], function(wire) {
+			wire('test/dojo/dijit1').then(function(context) {
+				// Properties/objects from the parent context are available via the prototype!
+				console.log("initialValue", context.initialValue);
+
+				// When the button is clicked, cleanup everything by
+				// destroying the context.  Note that this will destroy the programmatically
+				// created widget1 dijit, but not the dijit that is created via dojoType.
+				var d = context.destroyButton;
+				d.onclick = function() {
+					context.destroy();
+					d.onclick = null;
+				};
+
+			});
 
 		});
 	</script>

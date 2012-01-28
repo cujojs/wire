@@ -24,8 +24,8 @@
  *     // failed components.  There may be failures caused by 3rd party
  *     // wire plugins and components that wire.js cannot detect.  This
  *     // provides a last ditch way to try to report those failures.
- *     // Default is 3000ms (3 seconds)
- *     timeout: 3000,
+ *     // Default is 5000ms (5 seconds)
+ *     timeout: 5000,
  *
  *     // filter (Optional)
  *     // String or RegExp to match against a component's name.  Only
@@ -105,7 +105,11 @@ define(['aop'], function(aop) {
     }
 
     timer = createTimer();
-    defaultTimeout = 3000; // 3 second wiring failure timeout
+
+    // If we don't see any wiring progress in this amount of time
+    // since the last time we saw something happen, then we'll log
+    // an error.
+    defaultTimeout = 5000;
 
     /**
      * Builds a string with timing info and a message for debug output
@@ -315,13 +319,15 @@ define(['aop'], function(aop) {
 
     return {
         wire$plugin:function debugPlugin(ready, destroyed, options) {
-            logger.log('creating wire/debug');
 
-            var contextTimer, timeout, paths, logCreated, checkPathsTimeout,
+            var contextTimer, timeout, paths, count, tag, logCreated, logDestroyed, checkPathsTimeout,
                 verbose, filter, plugin, tracer;
 
             verbose = options.verbose;
             contextTimer = createTimer();
+
+            count = 0;
+            tag = "WIRING";
 
             tracer = { trace: noop, untrace: noop };
 
@@ -359,16 +365,12 @@ define(['aop'], function(aop) {
 
             function makeListener(step, verbose) {
                 return function (promise, proxy /*, wire */) {
+                    cancelPathsTimeout();
+
                     var path = proxy.path;
 
-                    if (step === 'destroyed') {
-                        // stop tracking destroyed components, since we don't
-                        // care anymore
-                        delete paths[path];
-
-                    } else if (path) {
+                    if (paths[path]) {
                         paths[path].status = step;
-
                     }
 
                     if (verbose && filter(path)) {
@@ -380,8 +382,9 @@ define(['aop'], function(aop) {
                         }
                     }
 
-                    cancelPathsTimeout();
-                    checkPathsTimeout = setTimeout(checkPaths, timeout);
+                    if(count) {
+                        checkPathsTimeout = setTimeout(checkPaths, timeout);
+                    }
 
                     promise.resolve();
                 }
@@ -390,6 +393,7 @@ define(['aop'], function(aop) {
             paths = {};
             timeout = options.timeout || defaultTimeout;
             logCreated = makeListener('created', verbose);
+            logDestroyed = makeListener('destroyed', true);
 
             function cancelPathsTimeout() {
                 clearTimeout(checkPathsTimeout);
@@ -401,13 +405,15 @@ define(['aop'], function(aop) {
 
                 var p, path;
 
-                logger.error("WIRING hasn't made progress in " + timeout + 'ms, status:');
+                if(count) {
+                    logger.error(tag + ': No progress in ' + timeout + 'ms, status:');
 
-                for (p in paths) {
-                    path = paths[p];
-//                    if (path.status !== 'ready') {
+                    for (p in paths) {
+                        path = paths[p];
                         logger.info(p + ': ' + path.status, path.spec);
-//                    }
+                    }
+                } else {
+                    logger.error(tag + ': No components created after ' + timeout + 'ms');
                 }
             }
 
@@ -415,22 +421,32 @@ define(['aop'], function(aop) {
                 create:function (promise, proxy) {
                     var path = proxy.path;
 
-                    if (path) {
-                        paths[path] = {
-                            spec:proxy.spec
-                        };
-                    }
+                    count++;
+                    paths[path || ('(unnamed-' + count + ')')] = {
+                        spec:proxy.spec
+                    };
+
                     logCreated(promise, proxy);
                 },
                 configure:  makeListener('configured', verbose),
                 initialize: makeListener('initialized', verbose),
                 ready:      makeListener('ready', true),
-                destroy:    makeListener('destroyed', true)
+                destroy:    function(promise, proxy) {
+                    // stop tracking destroyed components, since we don't
+                    // care anymore
+                    delete paths[proxy.path];
+                    count--;
+                    tag = "DESTROY";
+
+                    logDestroyed(promise, proxy);
+                }
             };
 
             if (options.trace) {
                 tracer = createTracer(options, plugin, filter);
             }
+
+            checkPathsTimeout = setTimeout(checkPaths, timeout);
 
             return plugin;
         }
