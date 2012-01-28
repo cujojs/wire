@@ -24,8 +24,8 @@
  *     // failed components.  There may be failures caused by 3rd party
  *     // wire plugins and components that wire.js cannot detect.  This
  *     // provides a last ditch way to try to report those failures.
- *     // Default is 5000ms (5 seconds)
- *     timeout: 5000,
+ *     // Default is 3000ms (3 seconds)
+ *     timeout: 3000,
  *
  *     // filter (Optional)
  *     // String or RegExp to match against a component's name.  Only
@@ -105,7 +105,7 @@ define(['aop'], function(aop) {
     }
 
     timer = createTimer();
-    defaultTimeout = 5000; // 5 second wiring failure timeout
+    defaultTimeout = 3000; // 3 second wiring failure timeout
 
     /**
      * Builds a string with timing info and a message for debug output
@@ -380,6 +380,9 @@ define(['aop'], function(aop) {
                         }
                     }
 
+                    cancelPathsTimeout();
+                    checkPathsTimeout = setTimeout(checkPaths, timeout);
+
                     promise.resolve();
                 }
             }
@@ -398,15 +401,15 @@ define(['aop'], function(aop) {
 
                 var p, path;
 
+                logger.error("WIRING hasn't made progress in " + timeout + 'ms, status:');
+
                 for (p in paths) {
                     path = paths[p];
-                    if (path.status !== 'ready') {
-                        logger.error("WIRING FAILED at " + path.status, p, path.spec);
-                    }
+//                    if (path.status !== 'ready') {
+                        logger.info(p + ': ' + path.status, path.spec);
+//                    }
                 }
             }
-
-            checkPathsTimeout = setTimeout(checkPaths, timeout);
 
             plugin = {
                 create:function (promise, proxy) {
