@@ -839,8 +839,8 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
          * @param resolver {Resolver} resolver to resolve with the created component
          * @param spec {Object} portion of the spec for the component to be created
          */
-        function wireFactory(resolver, spec/*, wire, name*/) {
-            var options, module, defer;
+        function wireFactory(resolver, spec/*, wire */) {
+            var options, module, get, defer, context;
 
             options = spec.wire;
 
@@ -849,21 +849,38 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
                 module = options;
             } else {
                 module = options.spec;
-                defer = options.defer;
+                defer  = options.defer;
+                get    = options.get;
+            }
+
+            // Trying to use both get and defer is an error
+            if(defer && get) {
+                resolver.reject("you can't use defer and get at the same time");
+                return;
             }
 
             function createChild(/** {Object|String}? */ mixin) {
-                var toWire = mixin ? [].concat(module, mixin) : module;
-                return wireChild(toWire);
+                var spec = mixin ? [].concat(module, mixin) : module;
+                return wireChild(spec);
             }
 
             if (defer) {
                 // Resolve with the createChild *function* itself
                 // which can be used later to wire the spec
                 resolver.resolve(createChild);
+
+            } else if (get) {
+                // Wire a new scope, and get a named component from it to use
+                // as the component currently being wired.
+                when(loadModule(module), function(spec) {
+                    return when(createScope(spec, scope), function(scope) {
+                        return scope.resolveRef(get);
+                    });
+                }).then(resolver.resolve, resolver.reject);
+
             } else {
                 // Start wiring the child
-                var context = createChild();
+                context = createChild();
 
                 // Resolve immediately with the child promise
                 resolver.resolve(context);
@@ -877,21 +894,19 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
         function resolveRef(ref, name) {
             var refName = ref.$ref;
 
-            return doResolveRef(refName, ref, name == refName);
+            return doResolveRef(refName, ref, name == refName ? parent.objects : objects);
         }
 
-        function doResolveRef(refName, refObj, excludeSelf) {
-            var promise, registry;
+        function doResolveRef(refName, refObj, scope) {
+            var promise, deferred, split;
 
-            registry = excludeSelf ? parent.objects : objects;
+            scope = scope || objects;
 
-            if (refName in registry) {
-                promise = registry[refName];
+            if (refName in scope) {
+                promise = scope[refName];
 
             } else {
-                var split;
-
-                promise = defer();
+                deferred = defer();
                 split = refName.indexOf('!');
 
                 if (split > 0) {
@@ -903,18 +918,19 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
                         var resolver = resolvers[resolverName];
                         if (resolver) {
-                            resolver(promise, refName, refObj, pluginApi);
+                            resolver(deferred.resolver, refName, refObj, pluginApi);
 
                         } else {
-                            promise.reject("No resolver found for ref: " + refName);
+                            deferred.reject("No resolver found for ref: " + refName);
 
                         }
                     });
 
                 } else {
-                    promise.reject("Cannot resolve ref: " + refName);
+                    deferred.reject("Cannot resolve ref: " + refName);
                 }
 
+                promise = deferred.promise;
             }
 
             return promise;

@@ -91,7 +91,49 @@
                     );
 
                     return dohd;
-                }
+                },
+				function wireGet(doh) {
+
+					var dohd = new doh.Deferred();
+
+					wire({
+						success: {
+							wire: {
+								spec: 'child',
+								get: 'success'
+							}
+						}
+					}).then(
+						function(context) {
+							dohd.callback(context.success === true);
+						},
+						fail(dohd)
+					);
+
+					return dohd;
+				},
+				function wireGetShouldFailForNonExistentComponent(doh) {
+
+					var dohd = new doh.Deferred();
+
+					wire({
+						success: {
+							wire: {
+								spec: 'child',
+								get: 'foo'
+							}
+						}
+					}).then(
+							fail(dohd),
+							function(context) {
+								dohd.callback(true);
+							}
+					);
+
+					return dohd;
+				}
+
+
             ]);
 
             doh.run();
