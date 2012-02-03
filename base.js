@@ -130,7 +130,7 @@ define(['when'], function(when) {
         );
 	}
 
-	function initFacet(resolver, facet, wire) {
+	function invokerFacet(resolver, facet, wire) {
 		chain(invokeAll(facet, wire), resolver);
 	}
 
@@ -201,10 +201,15 @@ define(['when'], function(when) {
 					properties: {
 						configure: propertiesFacet
 					},
-					// init facet.  Invokes methods on components after
-					// they have been configured
+					// init facet.  Invokes methods on components during
+					// the "init" stage.
 					init: {
-						initialize: initFacet
+						initialize: invokerFacet
+					},
+					// ready facet.  Invokes methods on components during
+					// the "ready" stage.
+					ready: {
+						ready: invokerFacet
 					},
 					// destroy facet.  Registers methods to be invoked
 					// on components when the enclosing context is destroyed
