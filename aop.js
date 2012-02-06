@@ -13,7 +13,7 @@
 (function(define) {
 define(['aop', 'when'], function(aop, when) {
 
-    var obj, tos, isArray, whenAll, chain, deferred, undef;
+    var obj, tos, isArray, adviceTypes, whenAll, chain, deferred, undef;
 
     obj = {};
     tos = Object.prototype.toString;
@@ -25,6 +25,8 @@ define(['aop', 'when'], function(aop, when) {
     whenAll  = when.all;
     chain    = when.chain;
     deferred = when.defer;
+
+	adviceTypes = ['before', 'around', 'after', 'afterReturning', 'afterThrowing'];
 
     //
     // Decoration
@@ -97,6 +99,125 @@ define(['aop', 'when'], function(aop, when) {
             return doIntroduction(target, intro, wire);
         }, target), resolver);
     }
+
+	//
+	// Simple advice
+	//
+
+	function addSingleAdvice(addAdviceFunc, advices, target, advice, options, wire) {
+		var source, eventName, methodName, promise, promises;
+
+		// First, determine the direction of the connection(s)
+		// If ref is a method on target, connect it to another object's method, i.e. calling a method on target
+		// causes a method on the other object to be called.
+		// If ref is a reference to another object, connect that object's method to a method on target, i.e.
+		// calling a method on the other object causes a method on target to be called.
+		if(typeof target[advice] == 'function') {
+			// Connecting from an event on the current component to a method on
+			// another component.  Set source = wiring target
+			source = target;
+			eventName = advice;
+
+			if(typeof options == 'string') {
+				target = options.split('.');
+				// eventName: 'componentName.methodName'
+
+				methodName = target[1];
+				target = target[0];
+
+				promise = when(wire.resolveRef(target), function(target) {
+					advices.push(addAdviceFunc(source, eventName, target, methodName));
+				});
+			} else {
+				// eventName: {
+				//   componentName: 'methodName'
+				// }
+
+				promises = [];
+				for(advice in options) {
+
+					methodName = options[advice];
+					promise = when(wire.resolveRef(advice), function(target) {
+						advices.push(addAdviceFunc(source, eventName, target, methodName));
+					});
+
+					promises.push(promise);
+				}
+
+				promise = when.all(promises);
+
+			}
+
+		} else {
+			if(typeof options == 'string') {
+				// 'component.eventName': 'methodName'
+
+				source = advice.split('.');
+				eventName = source[1];
+				source = source[0];
+				methodName = options;
+
+				promise = when(wire.resolveRef(source), function(source) {
+					advices.push(addAdviceFunc(source, eventName, target, methodName))
+				});
+			} else {
+				// componentName: {
+				//   eventName: 'methodName'
+				// }
+
+				source = advice;
+				promise = when(wire.resolveRef(advice), function(source) {
+					for(eventName in options) {
+						advices.push(addAdviceFunc(source, eventName, target, options[eventName]));
+					}
+				});
+
+			}
+		}
+
+		return promise;
+	}
+
+	function makeSingleAdviceAdd(adviceType) {
+		return function (source, event, target, method) {
+			return aop[adviceType](source, event, function() {
+				target[method].apply(target, arguments);
+			});
+		};
+	}
+
+	function addAfterResolvingAdvice(source, event, target, method) {
+		return aop.afterReturning(source, event, function(returnValue) {
+			when(returnValue, function(resolved) {
+				target[method].call(target, resolved);
+			});
+		});
+	}
+
+	function addAfterRejectingAdvice(source, event, target, method) {
+		return aop.afterReturning(source, event, function(returnValue) {
+			when(returnValue, null, function(resolved) {
+				target[method].call(target, resolved);
+			});
+		});
+	}
+
+	function makeAdviceFacet(addAdviceFunc, advices) {
+		return function(resolver, facet, wire) {
+			var advice, target, advicesToAdd, promises;
+
+			target = facet.target;
+			advicesToAdd = facet.options;
+			promises = [];
+
+			for(advice in advicesToAdd) {
+				promises.push(addSingleAdvice(addAdviceFunc, advices,
+					target, advice, advicesToAdd[advice], wire));
+			}
+
+			when.chain(when.all(promises), resolver);
+		}
+	}
 
     //
     // Aspect Weaving
@@ -180,7 +301,9 @@ define(['aop', 'when'], function(aop, when) {
         wire$plugin: function(ready, destroyed, options) {
 
             // Track aspects so they can be removed when the context is destroyed
-            var woven = [];
+            var woven, plugin, i, len, adviceType;
+
+			woven = [];
 
             // Remove all aspects that we added in this context
             when(destroyed, function() {
@@ -211,15 +334,31 @@ define(['aop', 'when'], function(aop, when) {
             }
 
             // Plugin
-            return {
+            plugin = {
                 facets: {
                     decorate:  makeFacet('configure', decorateFacet),
-                    introduce: makeFacet('configure', introduceFacet)
+                    introduce: makeFacet('configure', introduceFacet),
+					afterResolving: {
+						create: makeAdviceFacet(addAfterResolvingAdvice, woven)
+					},
+					afterRejecting: {
+						create: makeAdviceFacet(addAfterRejectingAdvice, woven)
+					}
                 },
                 create: function(resolver, proxy, wire) {
                     weave(resolver, proxy, wire, options, add);
                 }
             };
+
+			// Add all regular single advice facets
+			for(i = 0, len = adviceTypes.length; i<len; i++) {
+				adviceType = adviceTypes[i];
+				plugin.facets[adviceType] = {
+					create: makeAdviceFacet(adviceType, woven)
+				};
+			}
+
+			return plugin;
         }
     };
 });
