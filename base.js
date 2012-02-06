@@ -30,36 +30,28 @@ define(['when'], function(when) {
 
 	createObject = Object.create || objectCreate;
 
-    function invoke(func, target, args, wire) {
-        var f;
-
-        f = target[func];
-
-        return typeof f == 'function'
-            ? when(wire(args),
-                function (resolvedArgs) {
-                    return f.apply(target, (tos.call(resolvedArgs) == '[object Array]')
-                        ? resolvedArgs
-                        : [resolvedArgs]);
-                })
-            : f;
+    function invoke(func, facet, args, wire) {
+        return when(wire(args),
+			function (resolvedArgs) {
+				return facet.invoke(func, (tos.call(resolvedArgs) == '[object Array]')
+					? resolvedArgs
+					: [resolvedArgs]);
+			}
+		);
     }
 
     function invokeAll(facet, wire) {
-		var target, options;
-
-		target  = facet.target;
-		options = facet.options;
+		var options = facet.options;
 
 		if(typeof options == 'string') {
-			return invoke(options, target, [], wire);
+			return invoke(options, facet, [], wire);
 
 		} else {
 			var promises, func;
 			promises = [];
 
 			for(func in options) {
-				promises.push(invoke(func, target, options[func], wire));
+				promises.push(invoke(func, facet, options[func], wire));
 			}
 
 			return whenAll(promises);
@@ -175,14 +167,8 @@ define(['when'], function(when) {
 			});
 
 			function destroyFacet(resolver, facet, wire) {
-				var target, options, w;
-
-				target = facet.target;
-				options = facet.options;
-				w = wire;
-
 				destroyFuncs.push(function destroyObject() {
-					return invokeAll({ options: options, target: target }, w);
+					return invokeAll(facet, wire);
 				});
 
                 // This resolver is just related to *collecting* the functions to
