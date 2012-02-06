@@ -86,6 +86,32 @@
 					);
 
 					return dohd;
+				},
+				function testAfterPromise() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						aop: { module: 'wire/aop' },
+						target: {
+							create: 'Target',
+							afterPromise: {
+								resolve: 'handler.test',
+								reject: 'handler.test'
+							}
+						},
+						handler: { create: 'Handler'}
+					}).then(
+						function(context) {
+							context.target.resolve(1);
+							dohd.callback(1 === context.handler.val);
+
+							context.target.reject(2);
+							dohd.callback(2 === context.handler.val);
+						},
+						dohd.errback
+					);
+
+					return dohd;
 				}
 			]);
 

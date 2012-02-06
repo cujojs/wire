@@ -187,18 +187,28 @@ define(['aop', 'when'], function(aop, when) {
 	}
 
 	function addAfterResolvingAdvice(source, event, target, method) {
-		return aop.afterReturning(source, event, function(returnValue) {
-			when(returnValue, function(resolved) {
+		return aop.afterReturning(source, event, function(promise) {
+			when(promise, function(resolved) {
 				target[method].call(target, resolved);
 			});
 		});
 	}
 
 	function addAfterRejectingAdvice(source, event, target, method) {
-		return aop.afterReturning(source, event, function(returnValue) {
-			when(returnValue, null, function(resolved) {
+		return aop.afterReturning(source, event, function(promise) {
+			when(promise, null, function(resolved) {
 				target[method].call(target, resolved);
 			});
+		});
+	}
+
+	function addAfterPromiseAdvice(source, event, target, method) {
+		function handlePromise(value) {
+			target[method].call(target, value);
+		}
+
+		return aop.afterReturning(source, event, function(promise) {
+			when(promise, handlePromise, handlePromise);
 		});
 	}
 
@@ -343,6 +353,9 @@ define(['aop', 'when'], function(aop, when) {
 					},
 					afterRejecting: {
 						create: makeAdviceFacet(addAfterRejectingAdvice, woven)
+					},
+					afterPromise: {
+						create: makeAdviceFacet(addAfterPromiseAdvice, woven)
 					}
                 },
                 create: function(resolver, proxy, wire) {
