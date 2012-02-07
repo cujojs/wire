@@ -152,12 +152,13 @@ define(['aop', 'when'], function(aop, when) {
 			if(typeof options == 'string') {
 				// 'component.eventName': 'methodName'
 
-				source = options.split('.');
+				source = advice.split('.');
 				sourceMethod = source[1];
 				source = source[0];
-				targetMethod = advice;
+				targetMethod = options;
 
 				promise = when(wire.resolveRef(source), function(source) {
+					console.log(source, sourceMethod, target, targetMethod);
 					advices.push(addAdviceFunc(source, sourceMethod, target, targetMethod))
 				});
 			} else {
