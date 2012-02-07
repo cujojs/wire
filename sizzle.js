@@ -14,21 +14,34 @@
  * @author John Hann (@unscriptable)
  */
 
-define(['sizzle', 'wire/domReady'], function(sizzle, domReady) {
+define(['sizzle', 'when', './domReady'], function(sizzle, when, domReady) {
 
-    function resolveQuery(resolver, name, refObj /*, wire */) {
+    function resolveQuery(resolver, name, refObj , wire ) {
 
         domReady(function() {
-            var result = sizzle(name);
-            if (typeof refObj.i == 'number') {
-                if (refObj.i < result.length) {
-                    resolver.resolve(result[refObj.i]);
-                } else {
-                    resolver.reject(new Error("Query '" + name + "' returned " + result.length + " items while expecting at least " + (refObj.i + 1)));
-                }
-            } else {
-                resolver.resolve(result)
-            }
+
+			var at;
+
+			// get string ref or object ref
+			at = typeof refObj.at == 'object' ? refObj.at.$ref : refObj.at;
+
+			// sizzle will default to document if refObj.at is unspecified
+			when(at && wire.resolveRef(at), function (root) {
+				var result;
+
+				result = sizzle(name, root);
+
+				if (typeof refObj.i == 'number') {
+					if (refObj.i < result.length) {
+						resolver.resolve(result[refObj.i]);
+					} else {
+						resolver.reject(new Error("Query '" + name + "' returned " + result.length + " items while expecting at least " + (refObj.i + 1)));
+					}
+				} else {
+					resolver.resolve(result)
+				}
+			});
+
         });
 
     }

@@ -16,7 +16,9 @@
 				],
 				node1: { $ref: 'dom.query!#node1' },
 				divs: { $ref: 'dom.query!.test' },
-				div: { $ref: 'dom.query!.test', i: 0 }
+				div: { $ref: 'dom.query!.test', i: 0 },
+				first: { $ref: 'dom.query!div:first', i: 0 },
+				deep: { $ref: 'dom.query!p', at: { $ref: 'first' }, i: 0 }
 			}).then(
 				function(context) {
 					doh.register('sizzle', [
@@ -33,7 +35,15 @@
                             // Using the plugin's i option to extract a single
                             // node
                             doh.assertEqual('test one', context.div.className);
-                        }
+                        },
+						function(doh) {
+							// Checking for :first advanced selector.
+							doh.assertEqual('DIV', context.first && context.first.tagName);
+                        },
+						function(doh) {
+							// Checking "at" option (root/context).
+							doh.assertEqual('node1', context.deep && context.deep.id);
+						}
 					]);
 
 					doh.run();
