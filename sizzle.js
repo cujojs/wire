@@ -20,13 +20,15 @@ define(['sizzle', 'when', './domReady'], function(sizzle, when, domReady) {
 
         domReady(function() {
 
-			var at;
+			var futureRoot;
 
 			// get string ref or object ref
-			at = typeof refObj.at == 'object' ? refObj.at.$ref : refObj.at;
+			if (refObj.at) {
+				futureRoot = typeof refObj.at == 'string' ? wire.resolveRef(refObj.at) : wire(refObj.at);
+			}
 
 			// sizzle will default to document if refObj.at is unspecified
-			when(at && wire.resolveRef(at), function (root) {
+			when(futureRoot, function (root) {
 				var result;
 
 				result = sizzle(name, root);
