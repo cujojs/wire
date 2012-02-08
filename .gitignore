@@ -4,7 +4,7 @@ node_modules/
 .idea/
 tools/
 curl/
-dojo/
+test/lib
 !test/dojo
 !wire/dojo
 dijit/

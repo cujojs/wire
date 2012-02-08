@@ -29,9 +29,10 @@
             mixin: {
                 apiName: 'require',
                 pluginPath: 'curl/plugin',
-//                paths: {
+                paths: {
+					'jquery': 'test/lib/jquery'
 //                    'wire/domReady': 'test/curl/src/curl/domReady'
-//                },
+                },
                 preload: [
                     'curl/shim/dojo16'
                 ]

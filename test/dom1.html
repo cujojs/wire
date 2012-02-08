@@ -30,12 +30,14 @@
                     wire({
                         plugins: [
 //                            { module: 'wire/debug' },
-                            { module: 'wire/dom' }
+							{ module: 'wire/dom', classes: { init: 'init' } }
                         ],
                         node: { $ref: 'dom!node1' }
                     }).then(
                         function(context) {
-                            dohd.callback('node1' === context.node.id);
+							var html;
+							html = document.getElementsByTagName('html')[0];
+							dohd.callback(html.className === 'init' && ('node1' === context.node.id));
                         },
                         function(e) {
                             dohd.errback(e);

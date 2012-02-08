@@ -10,42 +10,16 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['jquery', 'wire/domReady'], function(jquery, domReady) {
+define(['../plugin-base/dom', 'jquery'], function(createDomPlugin, jquery) {
 
-    function resolveQuery(resolver, name, refObj /*, wire */) {
-
-        domReady(function() {
-            var result, i;
-
-            result = jQuery(name);
-            i = refObj.i;
-
-            if (typeof i == 'number') {
-                if (i < result.length) {
-                    resolver.resolve(result[i]);
-                } else {
-                    resolver.reject(new Error("Query '" + name + "' returned " + result.length + " items while expecting at least " + (refObj.i + 1)));
-                }
-            } else {
-                resolver.resolve(jQuery.makeArray(result));
-            }
-        });
-
-    }
-
-    /**
-     * The plugin instance.  Can be the same for all wiring runs
-     */
-    var plugin = {
-        resolvers: {
-            'dom.query': resolveQuery
-        }
-    };
-
-    return {
-        wire$plugin: function(/*ready, destroyed, options*/) {
-            return plugin;
-        }
-    };
+	return createDomPlugin({
+		query: jquery,
+		addClass: function(node, cls) {
+			jquery(node).addClass(cls);
+		},
+		removeClass: function(node, cls) {
+			jquery(node).removeClass(cls);
+		}
+	});
 
 });

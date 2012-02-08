@@ -918,7 +918,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
                         var resolver = resolvers[resolverName];
                         if (resolver) {
-                            resolver(deferred.resolver, refName, refObj, pluginApi);
+                            resolver(deferred.resolver, refName, refObj||{}, pluginApi);
 
                         } else {
                             deferred.reject("No resolver found for ref: " + refName);

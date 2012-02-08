@@ -14,7 +14,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['./domReady'], function(domReady) {
+define(['./plugin-base/dom', './domReady'], function(createDomPlugin, domReady) {
 
     /**
      * Resolves a reference to a dom node on the page by its id
@@ -22,16 +22,16 @@ define(['./domReady'], function(domReady) {
      * @param resolver
      * @param name
      */
-	function byId(resolver, name /*, refObj, wire*/) {
-		domReady(function() {
-			var node = document.getElementById(name);
-			if(node) {
-                resolver.resolve(node);
-            } else {
-                resolver.reject(new Error("No DOM node with id: " + name));
-            }
-		});
-	}
+//	function byId(resolver, name /*, refObj, wire*/) {
+//		domReady(function() {
+//			var node = document.getElementById(name);
+//			if(node) {
+//                resolver.resolve(node);
+//            } else {
+//                resolver.reject(new Error("No DOM node with id: " + name));
+//            }
+//		});
+//	}
 
     /**
      * The usual addClass function
@@ -73,48 +73,9 @@ define(['./domReady'], function(domReady) {
 		node.className = className.replace(/(^\s+|\s+$)/g, '');
 	}
 
-	function handleClasses(node, add, remove) {
-		if(add) addClass(node, add);
-		if(remove) removeClass(node, remove);
-	}
-
-    /**
-     * Wire plugin. Since this plugin has no context-specific needs or
-     * functionality, can always return the same object.
-     */
-	var wirePlugin = {
-		resolvers: {
-			dom: byId
-		}		
-	};
-
-	return {
-		wire$plugin: function domPlugin(ready, destroyed, options) {
-
-			var node, classes;
-
-			classes = options.classes;
-
-			// Add/remove lifecycle classes if specified
-			if(classes) {
-
-				node = document.getElementsByTagName('html')[0];
-				
-				// Add classes for wiring start
-				handleClasses(node, classes.init);
-
-				// Add/remove classes for context ready
-				ready.then(function() { handleClasses(node, classes.ready, classes.init); });
-
-				if(classes.ready) {
-					// Remove classes for context destroyed
-					destroyed.then(function() { handleClasses(node, null, classes.ready); });
-				}
-			}
-
-			// return the same instance every time, see above.
-			return wirePlugin;
-		}
-	};
+	return createDomPlugin({
+		addClass: addClass,
+		removeClass: removeClass
+	});
 
 });

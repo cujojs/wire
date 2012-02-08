@@ -14,53 +14,10 @@
  * @author John Hann (@unscriptable)
  */
 
-define(['sizzle', 'when', './domReady'], function(sizzle, when, domReady) {
+define(['./plugin-base/dom', 'sizzle'], function(createDomPlugin, sizzle) {
 
-    function resolveQuery(resolver, name, refObj , wire ) {
-
-        domReady(function() {
-
-			var futureRoot;
-
-			// get string ref or object ref
-			if (refObj.at) {
-				futureRoot = typeof refObj.at == 'string' ? wire.resolveRef(refObj.at) : wire(refObj.at);
-			}
-
-			// sizzle will default to document if refObj.at is unspecified
-			when(futureRoot, function (root) {
-				var result;
-
-				result = sizzle(name, root);
-
-				if (typeof refObj.i == 'number') {
-					if (refObj.i < result.length) {
-						resolver.resolve(result[refObj.i]);
-					} else {
-						resolver.reject(new Error("Query '" + name + "' returned " + result.length + " items while expecting at least " + (refObj.i + 1)));
-					}
-				} else {
-					resolver.resolve(result)
-				}
-			});
-
-        });
-
-    }
-
-    /**
-     * The plugin instance.  Can be the same for all wiring runs
-     */
-    var plugin = {
-        resolvers: {
-            'dom.query': resolveQuery
-        }
-    };
-
-    return {
-        wire$plugin: function(/*ready, destroyed, options*/) {
-            return plugin;
-        }
-    };
+	return createDomPlugin({
+		query: sizzle
+	});
 
 });
