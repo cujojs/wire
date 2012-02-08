@@ -10,9 +10,10 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['../plugin-base/dom', 'dojo/query'], function(createDomPlugin, dojo) {
+define(['../plugin-base/dom', 'dojo'], function(createDomPlugin, dojo) {
 
 	return createDomPlugin({
+		byId: dojo.byId,
 		query: dojo.query,
 		addClass: dojo.addClass,
 		removeClass: dojo.removeClass
