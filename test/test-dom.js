@@ -1,15 +1,3 @@
-define('test', function() {
-	function Test() {}
-
-	Test.prototype = {
-		getNode: function() {
-			return this.node;
-		}
-	};
-
-	return Test;
-});
-
 require(['wire'], function(wire) {
 
 	wire({
@@ -138,20 +126,20 @@ require(['wire'], function(wire) {
 
 					return dohd;
 				},
-				function(doh) {
+				function testAddRemoveClass(doh) {
 					var dohd = new doh.Deferred();
 
 					wire({
 						plugins: [
 //                            { module: 'wire/debug' },
-							{ module: pluginName, classes: { init: 'init' } }
+							{ module: pluginName, classes: { init: 'init', ready: 'ready' } }
 						],
 						node: { $ref: 'dom!node1' }
 					}).then(
 						function(context) {
 							var html;
 							html = document.getElementsByTagName('html')[0];
-							dohd.callback(html.className === 'init' && ('node1' === context.node.id));
+							dohd.callback(html.className === 'ready' && ('node1' === context.node.id));
 						},
 						function(e) {
 							dohd.errback(e);
@@ -169,31 +157,6 @@ require(['wire'], function(wire) {
 							{ module: pluginName }
 						],
 						node: { $ref: 'dom!node3' }
-					}).then(
-						function(context) {
-							dohd.errback('node3 should not have been resolvable');
-						},
-						function(e) {
-							dohd.callback(true);
-						}
-					);
-
-					return dohd;
-				},
-				function(doh) {
-					var dohd = new doh.Deferred();
-
-					wire({
-						plugins: [
-//                            { module: 'wire/debug' },
-							{ module: pluginName }
-						],
-						test: {
-							create: 'test',
-							properties: {
-								node: { $ref: 'dom!node3' }
-							}
-						}
 					}).then(
 						function(context) {
 							dohd.errback('node3 should not have been resolvable');

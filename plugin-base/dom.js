@@ -21,7 +21,7 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 	return function(options) {
 
-		var domReady, getById, query, init, addClass, removeClass;
+		var getById, query, init, addClass, removeClass;
 
 		getById = options.byId || defaultById;
 		query = options.query || defaultQueryAll;
