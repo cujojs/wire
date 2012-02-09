@@ -1,0 +1,192 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>dom/render plugin test</title>
+
+    <script src="util/doh/runner.js"></script>
+    <script src="test-config.js"></script>
+
+    <script type="text/javascript">
+
+		var simpleText = 'this is a simple template';
+
+		define('template-simple', '<div>' + simpleText + '</div>');
+		define('template-with-root-attributes', '<div class="foo bar" role="menuitem" aria-haspopup="true">this element has attributes</div>');
+		define('template-with-children', '<div>top-level element <code>child element</code></div>');
+		define('template-with-strict-parent', '<li>this is a list item</li>')
+		define('template-with-complexity', '<div class="foo bar" role="menuitem" aria-haspopup="true">top-level element<span>child element</span></div>');
+
+        require(['wire'], function(wire) {
+
+			var wired, dfds = [], undef;
+
+			wired = wire({
+				plugins: [
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				],
+				node1: {
+					create: {
+						module: 'wire/dom/render',
+						args: [
+							{ module: 'template-simple' },
+							{},
+							{ $ref: 'dom!node1' }
+						]
+					}
+				},
+				node2: {
+					create: {
+						module: 'wire/dom/render',
+						args: [
+							{ module: 'template-with-root-attributes' },
+							{},
+							{ $ref: 'dom!node2' }
+						]
+					}
+				},
+				node3: {
+					create: {
+						module: 'wire/dom/render',
+						args: [
+							{ module: 'template-with-children' },
+							{},
+							{ $ref: 'dom!node3' }
+						]
+					}
+				},
+				node5: {
+					create: {
+						module: 'wire/dom/render',
+						args: [
+							{ module: 'template-with-strict-parent' },
+							{},
+							{ $ref: 'dom!node5' }
+						]
+					}
+				}
+			});
+
+            doh.register('template-simple', [
+                function hasTextContent(doh) {
+                    var dohd = new doh.Deferred();
+					dfds.push(dohd);
+                    wired.then(
+                        function(context) {
+							dohd.callback(simpleText == context.node1.innerHTML);
+                        },
+                        function(e) {
+                            dohd.errback(e);
+                        }
+                    );
+                    return dohd;
+				}
+			]);
+
+            doh.register('template-with-strict-parent', [
+                function allowsStrictParent(doh) {
+                    var dohd = new doh.Deferred();
+					dfds.push(dohd);
+                    wired.then(
+                        function(context) {
+							// test doesn't need to do much. either we get here or we don't!
+							dohd.callback('ol' == context.node5.tagName);
+                        },
+                        function(e) {
+                            dohd.errback(e);
+                        }
+                    );
+                    return dohd;
+				}
+			]);
+
+            doh.register('template-with-root-attributes', [
+                function hasAttributeFromTemplate(doh) {
+                    var dohd = new doh.Deferred();
+					dfds.push(dohd);
+                    wired.then(
+                        function(context) {
+							dohd.callback('true' == context.node2.getAttribute('aria-haspopup'));
+                        },
+                        function(e) {
+                            dohd.errback(e);
+                        }
+                    );
+                    return dohd;
+				},
+                function hasAttributeFromRefNode(doh) {
+                    var dohd = new doh.Deferred();
+					dfds.push(dohd);
+                    wired.then(
+                        function(context) {
+							dohd.callback('node2' == context.node2.id);
+                        },
+                        function(e) {
+                            dohd.errback(e);
+                        }
+                    );
+                    return dohd;
+				},
+				function hasCombinedClasses(doh) {
+					var dohd = new doh.Deferred();
+					dfds.push(dohd);
+					wired.then(
+						function(context) {
+							dohd.callback(hasSameItems(['for bar orig2'], context.node2.className.split(' ')));
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
+
+					function hasSameItems(arr1, arr2) {
+						var i, sorted
+						if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
+						sorted = [arr1.sort(), arr2.sort()];
+						for (i = 0; i < sorted[0].length; i++) {
+							if (sorted[0] != sorted[1]) return false;
+						}
+						return true;
+					}
+				}
+            ]);
+
+			doh.register('template-with-children', [
+				function hasChildren(doh) {
+					var dohd = new doh.Deferred();
+					dfds.push(dohd);
+					wired.then(
+						function(context) {
+							dohd.callback(hasChildWithTagName(context.node3, 'code'));
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
+
+					function hasChildWithTagName(node, tagName) {
+						for (var i = 0; i < node.childNodes; i++) {
+							if (node.childNodes[i].tagName == tagName) return true;
+						}
+						return false;
+					}
+				}
+
+			]);
+
+            doh.run();
+        });
+    </script>
+</head>
+<body>
+<div>
+    <p id="node1" class="orig1"></p>
+    <p id="node2" class="orig2"></p>
+    <p id="node3" class="orig3"></p>
+    <ol id="node5" class="orig5"></ol>
+</div>
+</body>
+</html>
