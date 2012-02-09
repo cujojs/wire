@@ -31,6 +31,6 @@ define({
 		},
 		subscribe: {
 			"thing/did-something": "doSomething"
-		},
+		}
 	}
 });
