@@ -17,23 +17,6 @@
 define(['./plugin-base/dom', './domReady'], function(createDomPlugin, domReady) {
 
     /**
-     * Resolves a reference to a dom node on the page by its id
-     *
-     * @param resolver
-     * @param name
-     */
-//	function byId(resolver, name /*, refObj, wire*/) {
-//		domReady(function() {
-//			var node = document.getElementById(name);
-//			if(node) {
-//                resolver.resolve(node);
-//            } else {
-//                resolver.reject(new Error("No DOM node with id: " + name));
-//            }
-//		});
-//	}
-
-    /**
      * The usual addClass function
      * 
      * @param node

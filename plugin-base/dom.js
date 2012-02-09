@@ -15,12 +15,16 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 		return document.getElementById(id);
 	}
 
+	function defaultQueryAll(selector, root) {
+		return (root||document).querySelectorAll(selector);
+	}
+
 	return function(options) {
 
-		var getById, query, init, addClass, removeClass;
+		var domReady, getById, query, init, addClass, removeClass;
 
 		getById = options.byId || defaultById;
-		query = options.query || document.querySelectorAll;
+		query = options.query || defaultQueryAll;
 		init = options.init;
 
 		addClass = options.addClass;

@@ -8,28 +8,18 @@
     <script src="../test-config.js"></script>
 
 	<script type="text/javascript">
-		define('test', {});
-
-        // TODO: Test rejection when i out of bounds
-
-		require(['curl/dojo16Compat']).next(['wire'], function(wire) {
+		require(['wire'], function(wire) {
 			wire({
 				plugins: [
-//					{ module: 'wire/debug' },
+					{ module: 'wire/debug' },
 					{ module: 'wire/dojo/dom' }
 				],
-				a: 'a',
-				b: 2,
 				test: {
 					module: 'test',
 					properties: {
 						nodes: { $ref: 'dom.query!.test' },
 						node:  { $ref: 'dom.query!.test', i: 1 }
 					}
-					// unload: 'onUnload'
-//					unload: {
-//						onUnload: [{ $ref: 'a' }, { $ref: 'b' }, 'c']
-//					}
 				}
 			}).then(
 				function(context) {
