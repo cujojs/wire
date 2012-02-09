@@ -629,8 +629,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
                                 // Return *only* the objects, and none of the
                                 // other scope stuff (like plugins, promises etc)
                                 return created.local;
-                            },
-                            rejected
+                            }
                         );
                     }
             );
@@ -691,7 +690,8 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
                             function (object, step) {
                                 return processFacets(step, proxy);
                             }, proxy);
-                }, rejected);
+                }
+			);
         }
 
         function createProxy(object, spec) {
