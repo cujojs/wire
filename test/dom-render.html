@@ -9,13 +9,18 @@
 
     <script type="text/javascript">
 
-		var simpleText = 'this is a simple template';
+		var simpleText = 'this is a simple template',
+			mixin = {
+				foo: 'foo',
+				bar: 'bar'
+			};
 
 		define('template-simple', '<div>' + simpleText + '</div>');
 		define('template-with-root-attributes', '<div class="foo bar" role="menuitem" aria-haspopup="true">this element has attributes</div>');
 		define('template-with-children', '<div>top-level element <code>child element</code></div>');
-		define('template-with-strict-parent', '<li>this is a list item</li>')
+		define('template-with-strict-parent', '<li>this is a list item</li>');
 		define('template-with-complexity', '<div class="foo bar" role="menuitem" aria-haspopup="true">top-level element<span>child element</span></div>');
+		define('template-from-plugin', '<div>top-level element from plugin<code>child element</code> with mixin foo=${foo}</div>');
 
         require(['wire'], function(wire) {
 
@@ -23,6 +28,7 @@
 
 			wired = wire({
 				plugins: [
+					{ module: 'wire/debug' },
 					{ module: 'wire/dom' },
 					{ module: 'wire/dom/render' }
 				],
@@ -56,14 +62,21 @@
 						]
 					}
 				},
-				node5: {
+				node4: {
 					create: {
 						module: 'wire/dom/render',
 						args: [
 							{ module: 'template-with-strict-parent' },
 							{},
-							{ $ref: 'dom!node5' }
+							{ $ref: 'dom!node4' }
 						]
+					}
+				},
+				node5: {
+					render: {
+						template: { module: 'template-from-plugin' },
+						mixin: mixin,
+						at: { $ref: 'dom!node5' }
 					}
 				}
 			});
@@ -91,7 +104,7 @@
                     wired.then(
                         function(context) {
 							// test doesn't need to do much. either we get here or we don't!
-							dohd.callback('ol' == context.node5.tagName);
+							dohd.callback('ol' == context.node4.tagName);
                         },
                         function(e) {
                             dohd.errback(e);
@@ -140,16 +153,6 @@
 						}
 					);
 					return dohd;
-
-					function hasSameItems(arr1, arr2) {
-						var i, sorted
-						if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
-						sorted = [arr1.sort(), arr2.sort()];
-						for (i = 0; i < sorted[0].length; i++) {
-							if (sorted[0] != sorted[1]) return false;
-						}
-						return true;
-					}
 				}
             ]);
 
@@ -166,19 +169,59 @@
 						}
 					);
 					return dohd;
-
-					function hasChildWithTagName(node, tagName) {
-						for (var i = 0; i < node.childNodes; i++) {
-							if (node.childNodes[i].tagName == tagName) return true;
-						}
-						return false;
-					}
 				}
 
 			]);
 
+			doh.register('template-from-plugin', [
+				function hasContent(doh) {
+					var dohd = new doh.Deferred();
+					dfds.push(dohd);
+					wired.then(
+						function(context) {
+							dohd.callback(hasChildWithTagName(context.node5.innerHTML, 'code'));
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
+				},
+				function replacedToken(doh) {
+					var dohd = new doh.Deferred();
+					dfds.push(dohd);
+					wired.then(
+						function(context) {
+							dohd.callback(/foo=foo/.test(context.node5.innerHTML));
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
+				}
+			]);
+
             doh.run();
         });
+
+		function hasSameItems(arr1, arr2) {
+			var i, sorted
+			if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
+			sorted = [arr1.sort(), arr2.sort()];
+			for (i = 0; i < sorted[0].length; i++) {
+				if (sorted[0] != sorted[1]) return false;
+			}
+			return true;
+		}
+
+		function hasChildWithTagName(node, tagName) {
+			for (var i = 0; i < node.childNodes; i++) {
+				if (node.childNodes[i].tagName == tagName) return true;
+			}
+			return false;
+		}
+
     </script>
 </head>
 <body>
@@ -186,7 +229,8 @@
     <p id="node1" class="orig1"></p>
     <p id="node2" class="orig2"></p>
     <p id="node3" class="orig3"></p>
-    <ol id="node5" class="orig5"></ol>
+    <ol id="node4" class="orig4"></ol>
+	<p id="node5" class="orig5"></p>
 </div>
 </body>
 </html>

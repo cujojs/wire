@@ -11,9 +11,9 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['../domReady'], function(domReady) {
+define(['when', '../domReady'], function(when, domReady) {
 
-	var parentTypes, parseTemplateRx, getFirstTagNameRx;
+	var parentTypes, parseTemplateRx, getFirstTagNameRx, undef;
 
 	parentTypes = {
 		'td': 'tr',
@@ -53,13 +53,47 @@ define(['../domReady'], function(domReady) {
 		return node;
 	}
 
-	render.wire$plugin = {
-		factories: {
-			render: render
-		}
+	render.wire$plugin = function (ready, destroyed, options) {
+		return {
+			factories: {
+				render: domRenderFactory
+			}
+		};
 	};
 
 	return render;
+
+
+	/**
+	 * Creates rendered dom trees for the "render" factory.
+	 * @param resolver
+	 * @param spec
+	 * @param wire
+	 */
+	function domRenderFactory(resolver, spec, wire) {
+		var parentRef, options;
+
+		options = spec.render;
+
+		domReady(function() {
+
+			var futureTemplate, futureMixin, futureRoot;
+
+			// get args from spec
+			futureTemplate = options.template ? wire(options.template) : '';
+			if (options.mixin) {
+				futureMixin = wire(options.mixin);
+			}
+			if (options.at) {
+				futureRoot = wire(options.at);
+			}
+
+			when.all([futureTemplate, futureMixin, futureRoot], function (args) {
+				return render.apply(undef, args);
+			}).then(resolver.resolve, resolver.reject);
+
+		});
+	}
 
 	/**
 	 * Finds the first html element in a string, extracts its tag name,
