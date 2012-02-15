@@ -16,9 +16,21 @@
 define(['dojo', 'aop', 'dojo/_base/connect'], function(pubsub, aop) {
 
 	return {
-		wire$plugin: function pubsubPlugin(ready, destroyed, options) {
+		wire$plugin: function pubsubPlugin(ready, destroyed /*, options */) {
 
 			var destroyHandlers = [];
+
+			/**
+			 * Add after advice to publish the result of target[method]
+			 * @param target {Object} target object
+			 * @param method {String} method name to which to apply advice
+			 * @param topic {String} dojo.publish topic on which to publish the result
+			 */
+			function addPublishAdvice(target, method, topic) {
+				return aop.after(target, method, function(result) {
+					pubsub.publish(topic, [result]);
+				});
+			}
 
 			/**
 			 * Proxies methods on target so that they publish topics after
@@ -29,15 +41,11 @@ define(['dojo', 'aop', 'dojo/_base/connect'], function(pubsub, aop) {
 			 */
 			function proxyPublish(target, publish) {
 				var remove;
-				for(var f in publish) {
-					if(typeof target[f] == 'function') {
-						(function(f) {
-							// Add after advice and save remove function to remove
-							// advice when this context is destroyed
-							remove = aop.after(target, f, function (result) {
-								pubsub.publish(publish[f], [result]);
-							});
-						})(f);
+				for(var method in publish) {
+					if(typeof target[method] == 'function') {
+						// Add after advice and save remove function to remove
+						// advice when this context is destroyed
+						remove = addPublishAdvice(target, method, publish[method]);
 						destroyHandlers.push(remove);
 					}
 				}
@@ -46,9 +54,9 @@ define(['dojo', 'aop', 'dojo/_base/connect'], function(pubsub, aop) {
 			function subscribeTarget(target, subscriptions) {
 				var subscribeHandles = [];
 				for(var topic in subscriptions) {
-					var f = subscriptions[topic];
-					if(typeof target[f] == 'function') {
-						subscribeHandles.push(pubsub.subscribe(topic, target, f));
+					var method = subscriptions[topic];
+					if(typeof target[method] == 'function') {
+						subscribeHandles.push(pubsub.subscribe(topic, target, method));
 					}
 				}
 

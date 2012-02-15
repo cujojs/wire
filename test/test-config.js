@@ -33,7 +33,7 @@
 					'jquery': 'test/lib/jquery'
 //                    'wire/domReady': 'test/curl/src/curl/domReady'
                 },
-                preload: [
+                preloads: [
                     'curl/shim/dojo16'
                 ]
             }
