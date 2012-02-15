@@ -1,0 +1,159 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>wire/cola bind test</title>
+
+	<script src="../util/doh/runner.js"></script>
+	<script src="../test-config.js"></script>
+
+	<script type="text/javascript">
+		define('test', function () {
+			function Test() {
+			}
+
+			Test.prototype = {
+				init: function () {}
+			};
+
+			return Test;
+		});
+
+		define('child', {
+			cola: { module: 'wire/cola' },
+			test: {
+				create: 'test',
+				bindings: {}
+			}
+		});
+
+		define('child-no-bindings', {
+			cola: { module: 'wire/cola' },
+			test: {
+				create: 'test'
+			}
+		});
+
+		require(['wire'], function (wire) {
+
+			doh.register('wire/cola bind', [
+				function shouldFinishWiringWhenOptionsAreValid() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola' },
+						test: {
+							create: 'test',
+							bindings: {},
+							bind: {}
+						}
+					}).then(
+							function (context) {
+								dohd.callback(!!context.test);
+							},
+							function (e) {
+								dohd.errback("Valid options should have been wired: " + e);
+							}
+					);
+
+					return dohd;
+				},
+				function shouldFailWiringWhenOptionsAreInvalid() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola' },
+						test: {
+							create: 'test',
+							bindings: {},
+							bind: {
+								fail: { $ref: 'fail' }
+							}
+						}
+					}).then(
+							function (context) {
+								dohd.errback("Unwireable bindings options should have failed");
+							},
+							function (e) {
+								dohd.callback(true);
+							}
+					);
+
+					return dohd;
+				},
+				function shouldFailWiringWhenBindingsNotProvided() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola' },
+						test: {
+							create: 'test',
+							bind: {}
+						}
+					}).then(
+							function (context) {
+								dohd.errback("Missing bindings should have caused bind to fail");
+							},
+							function (e) {
+								dohd.callback(true);
+							}
+					);
+
+					return dohd;
+				},
+				function shouldSeeChildBindingsInParentContext() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola' },
+						test: {
+							wire: {
+								spec: 'child',
+								get: 'test'
+							},
+							bind: {}
+						}
+					}).then(
+							function (context) {
+								dohd.callback(!!context.test);
+							},
+							function (e) {
+								dohd.errback("Parent bind should have seen child bindings: " + e);
+							}
+					);
+
+					return dohd;
+				},
+				function shouldFailWiringWhenChildHasNoBindings() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola' },
+						test: {
+							wire: {
+								spec: 'child-no-bindings',
+								get: 'test'
+							},
+							bind: {}
+						}
+					}).then(
+							function (context) {
+								dohd.errback("Missing child bindings should have caused bind to fail");
+							},
+							function (e) {
+								dohd.callback(true);
+							}
+					);
+
+					return dohd;
+				},
+			]);
+
+			doh.run();
+
+		});
+	</script>
+</head>
+<body>
+</body>
+</html>
