@@ -3,11 +3,9 @@ define({
 		{ module: 'wire/debug' },
 		{ module: 'wire/dojo/pubsub' }
 	],
-	// Create a logger object, in this case an AlertLogger
+	// Create a logger object, in this case a ConsoleLogger
 	logger: {
-		create: 'test/test1/AlertLogger'
-		// if you want a less noisy test, wire in a ConsoleLogger instead!
-		// create: 'test/test1/ConsoleLogger'
+		create: 'test/test1/ConsoleLogger'
 	},
 	// Create a publisher Thing that will publish a topic when its doSomething
 	// method is called
@@ -18,7 +16,8 @@ define({
 			logger: { $ref: 'logger' }
 		},
 		publish: {
-			"doSomething": "thing/did-something"
+			"doSomething": "thing/did-something",
+			"doSomethingElse": "thing/did-something-else"
 		}
 	},
 	// Create a subscriber Thing whose doSomething method will be called
@@ -30,7 +29,8 @@ define({
 			logger: { $ref: 'logger' }
 		},
 		subscribe: {
-			"thing/did-something": "doSomething"
+			"thing/did-something": "respondToSomething",
+			"thing/did-something-else": "respondToSomethingElse"
 		}
 	}
 });

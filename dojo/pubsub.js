@@ -20,27 +20,26 @@ define(['dojo', 'aop', 'dojo/_base/connect'], function(pubsub, aop) {
 
 			var destroyHandlers = [];
 
-            /**
-             * Proxies methods on target so that they publish topics after
-             * being invoked.  The payload of a topic will be the return
-             * value of the method that triggered it.
-             * @param target {Object} object whose methods should be proxied
-             * @param publish {Object} hash of method names to topics each should publish
-             */
+			/**
+			 * Proxies methods on target so that they publish topics after
+			 * being invoked.  The payload of a topic will be the return
+			 * value of the method that triggered it.
+			 * @param target {Object} object whose methods should be proxied
+			 * @param publish {Object} hash of method names to topics each should publish
+			 */
 			function proxyPublish(target, publish) {
 				var remove;
-
 				for(var f in publish) {
 					if(typeof target[f] == 'function') {
-
-                        // Add after advice and save remove function to remove
-                        // advice when this context is destroyed
-                        remove = aop.after(target, f, function (result) {
-                            pubsub.publish(publish[f], [result]);
-                        });
-
-                        destroyHandlers.push(remove);
-                    }
+						(function(f) {
+							// Add after advice and save remove function to remove
+							// advice when this context is destroyed
+							remove = aop.after(target, f, function (result) {
+								pubsub.publish(publish[f], [result]);
+							});
+						})(f);
+						destroyHandlers.push(remove);
+					}
 				}
 			}
 
@@ -60,14 +59,14 @@ define(['dojo', 'aop', 'dojo/_base/connect'], function(pubsub, aop) {
 				}
 			}
 
-		    function unsubscribeTarget(handles) {
-		        for (var i = handles.length - 1; i >= 0; --i){
+			function unsubscribeTarget(handles) {
+				for (var i = handles.length - 1; i >= 0; --i){
 					pubsub.unsubscribe(handles[i]);
 				}
 			}
 
-            // When the context is destroyed, remove all publish and
-            // subscribe hooks created in this context
+			// When the context is destroyed, remove all publish and
+			// subscribe hooks created in this context
 			destroyed.then(function onContextDestroy() {
 				for (var i = destroyHandlers.length - 1; i >= 0; --i){
 					destroyHandlers[i]();
