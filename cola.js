@@ -95,11 +95,11 @@ define(['when'], function(when) {
 				// setup cola data binding.
 				findCachedBindings(proxy.target,
 					function(cachedBindings, i, bindingDef) {
+						// Remove cached bindings
+						cachedBindings.splice(i, 1);
+
 						// Wire options, then bind to the datasource
 						when(wire(proxy.options), function(datasource) {
-
-							// Remove cached bindings
-							cachedBindings.splice(i, 1);
 
 							// Use cached bindings to setup cola data binding for
 							// the current target component
