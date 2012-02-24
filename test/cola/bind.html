@@ -28,121 +28,162 @@
 		});
 
 		define('child-no-bindings', {
-			cola: { module: 'wire/cola' },
 			test: {
 				create: 'test'
 			}
 		});
 
+		define('parent-bind-to-node-list', {
+//			debug: { module: 'wire/debug' },
+			cola: { module: 'wire/cola', id: 'parent' },
+			data: [
+				{ id: 1, name: 'a' },
+				{ id: 2, name: 'b' }
+			],
+			test: {
+				wire: {
+					spec: 'child-with-node-list', get: 'list'
+				},
+				bind: { $ref: 'data' },
+				bindings: {
+					name: { node: '.name' },
+					id: { prop: 'id' }
+				}
+			}
+		});
+		
+		define('child-with-node-list', {
+//			debug: { module: 'wire/debug' },
+			cola: { module: 'wire/cola', id: 'child' },
+			dom: { module: 'wire/dom' },
+			list: { $ref: 'dom!list-template' }
+		});
+
 		require(['wire'], function (wire) {
 
 			doh.register('wire/cola bind', [
-				function shouldFinishWiringWhenOptionsAreValid() {
+//				function shouldFinishWiringWhenOptionsAreValid() {
+//					var dohd = new doh.Deferred();
+//
+//					wire({
+//						cola: { module: 'wire/cola' },
+//						test: {
+//							create: 'test',
+//							bindings: {},
+//							bind: {}
+//						}
+//					}).then(
+//							function (context) {
+//								dohd.callback(!!context.test);
+//							},
+//							function (e) {
+//								dohd.errback("Valid options should have been wired: " + e);
+//							}
+//					);
+//
+//					return dohd;
+//				},
+//				function shouldFailWiringWhenOptionsAreInvalid() {
+//					var dohd = new doh.Deferred();
+//
+//					wire({
+//						cola: { module: 'wire/cola' },
+//						test: {
+//							create: 'test',
+//							bindings: {},
+//							bind: {
+//								fail: { $ref: 'fail' }
+//							}
+//						}
+//					}).then(
+//							function (context) {
+//								dohd.errback("Unwireable bindings options should have failed");
+//							},
+//							function (e) {
+//								dohd.callback(true);
+//							}
+//					);
+//
+//					return dohd;
+//				},
+//				function shouldFailWiringWhenBindingsNotProvided() {
+//					var dohd = new doh.Deferred();
+//
+//					wire({
+//						cola: { module: 'wire/cola' },
+//						test: {
+//							create: 'test',
+//							bind: {}
+//						}
+//					}).then(
+//							function (context) {
+//								dohd.errback("Missing bindings should have caused bind to fail");
+//							},
+//							function (e) {
+//								dohd.callback(true);
+//							}
+//					);
+//
+//					return dohd;
+//				},
+//				function shouldSeeChildBindingsInParentContext() {
+//					var dohd = new doh.Deferred();
+//
+//					wire({
+//						cola: { module: 'wire/cola' },
+//						test: {
+//							wire: {
+//								spec: 'child',
+//								get: 'test'
+//							},
+//							bind: {}
+//						}
+//					}).then(
+//							function (context) {
+//								dohd.callback(!!context.test);
+//							},
+//							function (e) {
+//								dohd.errback("Parent bind should have seen child bindings: " + e);
+//							}
+//					);
+//
+//					return dohd;
+//				},
+//				function shouldFailWiringWhenChildHasNoBindings() {
+//					var dohd = new doh.Deferred();
+//
+//					wire({
+//						cola: { module: 'wire/cola' },
+//						test: {
+//							wire: {
+//								spec: 'child-no-bindings',
+//								get: 'test'
+//							},
+//							bind: {}
+//						}
+//					}).then(
+//							function (context) {
+//								dohd.errback("Missing child bindings should have caused bind to fail");
+//							},
+//							function (e) {
+//								dohd.callback(true);
+//							}
+//					);
+//
+//					return dohd;
+//				},
+				function shouldBindToNodeList() {
 					var dohd = new doh.Deferred();
 
-					wire({
-						cola: { module: 'wire/cola' },
-						test: {
-							create: 'test',
-							bindings: {},
-							bind: {}
+					wire('parent-bind-to-node-list').then(
+						function(context) {
+							console.log(context);
+							dohd.callback(context);
+						},
+						function(e) {
+							console.error(e);
+							dohd.errback(e);
 						}
-					}).then(
-							function (context) {
-								dohd.callback(!!context.test);
-							},
-							function (e) {
-								dohd.errback("Valid options should have been wired: " + e);
-							}
-					);
-
-					return dohd;
-				},
-				function shouldFailWiringWhenOptionsAreInvalid() {
-					var dohd = new doh.Deferred();
-
-					wire({
-						cola: { module: 'wire/cola' },
-						test: {
-							create: 'test',
-							bindings: {},
-							bind: {
-								fail: { $ref: 'fail' }
-							}
-						}
-					}).then(
-							function (context) {
-								dohd.errback("Unwireable bindings options should have failed");
-							},
-							function (e) {
-								dohd.callback(true);
-							}
-					);
-
-					return dohd;
-				},
-				function shouldFailWiringWhenBindingsNotProvided() {
-					var dohd = new doh.Deferred();
-
-					wire({
-						cola: { module: 'wire/cola' },
-						test: {
-							create: 'test',
-							bind: {}
-						}
-					}).then(
-							function (context) {
-								dohd.errback("Missing bindings should have caused bind to fail");
-							},
-							function (e) {
-								dohd.callback(true);
-							}
-					);
-
-					return dohd;
-				},
-				function shouldSeeChildBindingsInParentContext() {
-					var dohd = new doh.Deferred();
-
-					wire({
-						cola: { module: 'wire/cola' },
-						test: {
-							wire: {
-								spec: 'child',
-								get: 'test'
-							},
-							bind: {}
-						}
-					}).then(
-							function (context) {
-								dohd.callback(!!context.test);
-							},
-							function (e) {
-								dohd.errback("Parent bind should have seen child bindings: " + e);
-							}
-					);
-
-					return dohd;
-				},
-				function shouldFailWiringWhenChildHasNoBindings() {
-					var dohd = new doh.Deferred();
-
-					wire({
-						cola: { module: 'wire/cola' },
-						test: {
-							wire: {
-								spec: 'child-no-bindings',
-								get: 'test'
-							},
-							bind: {}
-						}
-					}).then(
-							function (context) {
-								dohd.errback("Missing child bindings should have caused bind to fail");
-							},
-							function (e) {
-								dohd.callback(true);
-							}
 					);
 
 					return dohd;
@@ -155,5 +196,10 @@
 	</script>
 </head>
 <body>
+	<div>
+		<ul>
+			<li id="list-template"><span class="name"></span></li>
+		</ul>
+	</div>
 </body>
 </html>

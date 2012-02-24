@@ -28,6 +28,14 @@
 
         define('parent', parentSpec);
         define('child', { success: true });
+		define('child-component', {
+			thing: {
+				create: 'Thing',
+				properties: {
+					success: false
+				}
+			}
+		});
 
 		require(['wire'], function(wire) {
             
@@ -108,6 +116,29 @@
 							dohd.callback(context.success === true);
 						},
 						fail(dohd)
+					);
+
+					return dohd;
+				},
+				function wireGetShouldAllowFurtherProcessingOfComponent(doh) {
+
+					var dohd = new doh.Deferred();
+
+					wire({
+						thing: {
+							wire: {
+								spec: 'child-component',
+								get: 'thing'
+							},
+							properties: {
+								success: true
+							}
+						}
+					}).then(
+							function(context) {
+								dohd.callback(context.thing.success === true);
+							},
+							fail(dohd)
 					);
 
 					return dohd;

@@ -95,6 +95,7 @@
     addPackage({ name: 'sizzle', location: 'support/sizzle' });
     addPackage({ name: 'aop', location: 'support/aop' });
     addPackage({ name: 'when', location: 'support/when' });
+    addPackage({ name: 'cola', location: 'support/cola' });
     // This is needed because we're running unit tests from *within* the wire dir
     addPackage({ name: 'wire', location: '.' });
 

@@ -12,9 +12,25 @@
  */
 
 (function(define) {
-define(['when'], function(when) {
+define(['when', 'cola/AdapterResolver',
+	'cola/ArrayAdapter', 'cola/dom/NodeListAdapter', 'cola/mediator/syncCollections',
+	'cola/ObjectAdapter', 'cola/dom/NodeAdapter', 'cola/mediator/syncProperties'],
+function(when, adapterResolver,
+		 ArrayAdapter, NodeListAdapter, syncCollections,
+		 ObjectAdapter, NodeAdapter, syncProperties) {
 
 	var cachedBindings;
+
+	adapterResolver.register(ArrayAdapter, 'collection');
+	adapterResolver.register(NodeListAdapter, 'collection');
+	adapterResolver.register(NodeAdapter, 'object');
+	adapterResolver.register(ObjectAdapter, 'object');
+
+	function idComparator (a, b) { return a.id - b.id; }
+
+	function querySelector (selector, node) {
+		return node.querySelector(selector);
+	}
 
 	/**
 	 * "globally" cached bindings.  Cache bindings here so that a bind can find,
@@ -37,16 +53,43 @@ define(['when'], function(when) {
 		return notFound(cachedBindings);
 	}
 
+	function createAdapter(obj, options) {
+		// FIXME: This is just for initial testing
+		var Adapter = adapterResolver(obj, 'collection');
+
+		return Adapter && new Adapter(obj, options);
+	}
+
 	function doBind(target, bindings, datasource) {
-		// TODO: Use cola.js to bind to datasource
-		return true;
+		var options, adapter1, adapter2;
+
+		options = {
+			bindings: bindings,
+			comparator: idComparator,
+			querySelector: querySelector
+		};
+
+		adapter1 = createAdapter(datasource, options);
+		adapter2 = createAdapter(target, options);
+
+		// FIXME: throw if we can't create an adapter?
+		if(!(adapter1 && adapter2)) return;
+
+		return syncCollections(adapter1, adapter2, adapterResolver);
+	}
+
+	function mixin(dst, src) {
+		for(var p in src) {
+			dst[p] = src[p];
+		}
 	}
 
 	function mergeBindings(bindingDef, bindings) {
-		// TODO: How to merge these depends on the format
+		mixin(bindingDef.bindings, bindings);
 	}
 
 	function cacheBindings(resolver, proxy, wire) {
+		console.log('bindings', proxy);
 		// wire the bindings immediately, in the same context as they
 		// are declared.  Since bindings/bind may be in different
 		// contexts, deferring the wiring until bind could cause
@@ -88,22 +131,32 @@ define(['when'], function(when) {
 	}
 
 	return {
-		wire$plugin: function(/* ready, destroyed, options */) {
+		wire$plugin: function(ready, destroyed, options) {
+			console.log('wire$cola', options);
+
+			var unmediators = [];
 
 			function bindFacet(resolver, proxy, wire) {
+				console.log('bind', proxy);
 				// Find any cached bindings for this component, and if found
 				// setup cola data binding.
 				findCachedBindings(proxy.target,
 					function(cachedBindings, i, bindingDef) {
+						console.log('bind', bindingDef);
 						// Remove cached bindings
 						cachedBindings.splice(i, 1);
 
 						// Wire options, then bind to the datasource
 						when(wire(proxy.options), function(datasource) {
 
+							console.log('bind', datasource);
 							// Use cached bindings to setup cola data binding for
 							// the current target component
-							return doBind(bindingDef.target, bindingDef.bindings, datasource);
+							var unmediate = doBind(bindingDef.target, bindingDef.bindings, datasource);
+
+							unmediators.push(unmediate);
+
+							return unmediate;
 
 							// TODO: Store cola info in wire$plugin so we can tear the bindings down
 							// the component is destroyed?
@@ -118,6 +171,14 @@ define(['when'], function(when) {
 					}
 				);
 			}
+
+			function destroyMediators() {
+				var unmediate, i;
+				i = unmediators.length;
+				while(unmediate = unmediators[--i]) unmediate();
+			}
+
+			destroyed.then(destroyMediators);
 
 			return {
 				facets: {
