@@ -357,7 +357,8 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                 // FIXME: Why does returning when(item) here cause
                 // the resulting, returned promise never to resolve
                 // in wire-factory1.html?
-                return promise(createItem(spec, createPath(name, path)));
+                return createItem(spec, createPath(name, path));
+//                return promise(createItem(spec, createPath(name, path)));
             };
 
             pluginApi.resolveRef = apiResolveRef;
@@ -867,11 +868,22 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                 // which can be used later to wire the spec
                 resolver.resolve(createChild);
             } else {
-                // Start wiring the child
-                var context = createChild();
+				var d = when.defer();
 
-                // Resolve immediately with the child promise
-                resolver.resolve(context);
+				var p = when(contextPromise, function() {
+					return createChild();
+				});
+
+				var c = { then: p.then };
+
+				p = when(p, function(child) {
+					return mixinSpec(c, child);
+				});
+
+				d.resolve(c);
+
+				// Resolve immediately with the child promise
+				resolver.resolve(d.promise);
             }
         }
 
