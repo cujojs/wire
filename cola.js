@@ -13,18 +13,20 @@
 
 (function(define) {
 define(['when', 'cola/AdapterResolver',
-	'cola/ArrayAdapter', 'cola/dom/NodeListAdapter', 'cola/mediator/syncCollections',
-	'cola/ObjectAdapter', 'cola/dom/NodeAdapter', 'cola/mediator/syncProperties'],
+	'cola/ArrayAdapter', 'cola/dom/NodeListAdapter', 'cola/ResultSetAdapter','cola/mediator/syncCollections',
+	'cola/ObjectAdapter', 'cola/dom/NodeAdapter', 'cola/ResultAdapter', 'cola/mediator/syncProperties'],
 function(when, adapterResolver,
-		 ArrayAdapter, NodeListAdapter, syncCollections,
-		 ObjectAdapter, NodeAdapter, syncProperties) {
+		 ArrayAdapter, NodeListAdapter, ResultSetAdapter, syncCollections,
+		 ObjectAdapter, NodeAdapter, ResultAdapter, syncProperties) {
 
 	var cachedBindings;
 
 	adapterResolver.register(ArrayAdapter, 'collection');
 	adapterResolver.register(NodeListAdapter, 'collection');
+	adapterResolver.register(ResultSetAdapter, 'collection');
 	adapterResolver.register(NodeAdapter, 'object');
 	adapterResolver.register(ObjectAdapter, 'object');
+	adapterResolver.register(ResultAdapter, 'object');
 
 	function idComparator (a, b) { return a.id - b.id; }
 
@@ -132,7 +134,7 @@ function(when, adapterResolver,
 
 	return {
 		wire$plugin: function(ready, destroyed, options) {
-			console.log('wire$cola', options);
+//			console.log('wire$cola', options);
 
 			var unmediators = [];
 
