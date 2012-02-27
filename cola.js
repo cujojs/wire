@@ -89,7 +89,7 @@ function(when, adapterResolver,
 	}
 
 	function cacheBindings(resolver, proxy, wire) {
-		console.log('bindings', proxy);
+//		console.log('bindings', proxy);
 		// wire the bindings immediately, in the same context as they
 		// are declared.  Since bindings/bind may be in different
 		// contexts, deferring the wiring until bind could cause
@@ -137,19 +137,19 @@ function(when, adapterResolver,
 			var unmediators = [];
 
 			function bindFacet(resolver, proxy, wire) {
-				console.log('bind', proxy);
+//				console.log('bind1', options.id, proxy);
 				// Find any cached bindings for this component, and if found
 				// setup cola data binding.
 				findCachedBindings(proxy.target,
 					function(cachedBindings, i, bindingDef) {
-						console.log('bind', bindingDef);
+//						console.log('bind2', options.id, bindingDef);
 						// Remove cached bindings
 						cachedBindings.splice(i, 1);
 
 						// Wire options, then bind to the datasource
 						when(wire(proxy.options), function(datasource) {
 
-							console.log('bind', datasource);
+//							console.log('bind3', options.id, datasource);
 							// Use cached bindings to setup cola data binding for
 							// the current target component
 							var unmediate = doBind(bindingDef.target, bindingDef.bindings, datasource);
