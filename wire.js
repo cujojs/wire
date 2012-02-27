@@ -846,7 +846,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
          * @param spec {Object} portion of the spec for the component to be created
          */
         function wireFactory(resolver, spec/*, wire, name*/) {
-            var options, module, defer;
+            var options, module, defer, after;
 
             options = spec.wire;
 
@@ -856,6 +856,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             } else {
                 module = options.spec;
                 defer = options.defer;
+				after = options.after;
             }
 
             function createChild(/** {Object|String}? */ mixin) {
@@ -867,23 +868,19 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                 // Resolve with the createChild *function* itself
                 // which can be used later to wire the spec
                 resolver.resolve(createChild);
-            } else {
-				var d = when.defer();
+            } else if(after) {
 
-				var p = when(contextPromise, function() {
-					return createChild();
+				var c = {};
+				resolver.resolve(c);
+				when(contextPromise, function() {
+					when(createChild(), function(child) {
+						return mixinSpec(c, child);
+					});
 				});
 
-				var c = { then: p.then };
+			} else {
+				resolver.resolve(createChild());
 
-				p = when(p, function(child) {
-					return mixinSpec(c, child);
-				});
-
-				d.resolve(c);
-
-				// Resolve immediately with the child promise
-				resolver.resolve(d.promise);
             }
         }
 

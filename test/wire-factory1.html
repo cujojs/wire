@@ -18,7 +18,7 @@
         });
 
         var parentSpec = {
-//			debug: { module: 'wire/debug' },
+//			debug: { module: 'wire/debug', verbose: true, filter: 'child' },
             parent: {
                 create: 'Thing',
                 properties: {
@@ -28,12 +28,15 @@
         };
 
         define('parent', parentSpec);
+		define('parent-with-direct-child', {
+			child: { wire: { spec: 'child' } }
+		});
         define('child', {
-			debug: { module: 'wire/debug' },
+//			debug: { module: 'wire/debug' },
 			success: true
 		});
 		define('child-component', {
-			debug: { module: 'wire/debug' },
+//			debug: { module: 'wire/debug' },
 			thing: {
 				create: 'Thing',
 				properties: {
@@ -51,38 +54,87 @@
             }
 
             doh.register('wire-factory works', [
-				{
-					name: 'should wire child after parent completes',
-					timeout: 5000,
-					runTest: function(doh) {
+				function wireChildImmediate(doh) {
 
-						var dohd = new doh.Deferred();
+					var dohd = new doh.Deferred();
 
-						wire('parent').then(
-								function(context) {
-									console.log(context.parent.child);
+					wire({
+						child: { wire: { spec: 'child' } }
+					}).then(
+							function(context) {
 
-									var success = typeof context.parent.child.then == 'function';
+								var success = typeof context.child.then == 'function';
 
-									context.parent.child.then(function(childContext) {
-										console.log(childContext);
-										success = success && !!childContext.success;
+								context.child.then(function(childContext) {
+									success = success && !!childContext.success;
 
-										childContext.destroy().then(
-												function() {
-													dohd.callback(success);
-												},
-												fail(dohd)
-										);
-									});
+									childContext.destroy().then(
+											function() {
+												dohd.callback(success);
+											},
+											fail(dohd)
+									);
+								});
 
-								},
-								fail(dohd)
-						);
+							},
+							fail(dohd)
+					);
 
-						return dohd;
+					return dohd;
 
-					}
+				},
+				function wireChildImmediateNested(doh) {
+
+					var dohd = new doh.Deferred();
+
+					wire('parent').then(
+							function(context) {
+
+								var success = typeof context.parent.child.then == 'function';
+
+								context.parent.child.then(function(childContext) {
+									success = success && !!childContext.success;
+
+									childContext.destroy().then(
+											function() {
+												dohd.callback(success);
+											},
+											fail(dohd)
+									);
+								});
+
+							},
+							fail(dohd)
+					);
+
+					return dohd;
+
+				},
+				function wireChildAfter(doh) {
+
+					var dohd = new doh.Deferred();
+
+					wire({
+						child: { wire: { spec: 'child', after: true } }
+					}).then(
+							function(context) {
+
+								var success = typeof !!context.child;
+								var childContext = context.child;
+								success = success && !!childContext.success;
+
+								context.destroy().then(
+										function() {
+											dohd.callback(success);
+										},
+										fail(dohd)
+								);
+							},
+							fail(dohd)
+					);
+
+					return dohd;
+
 				},
                 function wireChildDeferred(doh) {
 
