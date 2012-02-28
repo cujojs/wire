@@ -43,7 +43,7 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 			}
 			_insertBefore(refNode, node, refNode.childNodes[location]);
 		}
-		else if(location == 'last') {
+		else if(location == 'last' || !location) {
 			_appendChild(refNode, node);
 		}
 		else if(location == 'first') {
