@@ -13,20 +13,23 @@
 
 (function(define) {
 define(['when', 'cola/AdapterResolver',
-	'cola/ArrayAdapter', 'cola/dom/NodeListAdapter', 'cola/ResultSetAdapter','cola/mediator/syncCollections',
-	'cola/ObjectAdapter', 'cola/dom/NodeAdapter', 'cola/ResultAdapter', 'cola/mediator/syncProperties'],
+	'cola/ArrayAdapter', 'cola/dom/NodeListAdapter',
+	'cola/ResultSetAdapter', 'cola/QueryAdapter', 'cola/mediator/syncCollections',
+	'cola/ObjectAdapter', 'cola/dom/NodeAdapter',
+	'cola/ResultAdapter', 'cola/mediator/syncProperties'],
 function(when, adapterResolver,
-		 ArrayAdapter, NodeListAdapter, ResultSetAdapter, syncCollections,
+		 ArrayAdapter, NodeListAdapter, ResultSetAdapter, QueryAdapter, syncCollections,
 		 ObjectAdapter, NodeAdapter, ResultAdapter, syncProperties) {
 
 	var cachedBindings;
 
 	adapterResolver.register(ArrayAdapter, 'collection');
 	adapterResolver.register(NodeListAdapter, 'collection');
-	adapterResolver.register(ResultSetAdapter, 'collection');
+//	adapterResolver.register(ResultSetAdapter, 'collection');
+	adapterResolver.register(QueryAdapter, 'collection');
 	adapterResolver.register(NodeAdapter, 'object');
 	adapterResolver.register(ObjectAdapter, 'object');
-	adapterResolver.register(ResultAdapter, 'object');
+//	adapterResolver.register(ResultAdapter, 'object');
 
 	function idComparator (a, b) { return a.id - b.id; }
 
@@ -59,7 +62,7 @@ function(when, adapterResolver,
 		// FIXME: This is just for initial testing
 		var Adapter = adapterResolver(obj, 'collection');
 
-		return Adapter && new Adapter(obj, options);
+		return Adapter ? new Adapter(obj, options) : obj;
 	}
 
 	function doBind(target, bindings, datasource) {
