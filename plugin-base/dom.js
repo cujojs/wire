@@ -19,9 +19,66 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 		return (root||document).querySelectorAll(selector);
 	}
 
+	/**
+	 * Places a node into the DOM at the location specified around
+	 * a reference node.
+	 * Note: replace is problematic if the dev expects to use the node
+	 * as a wire component.  The component reference will still point
+	 * at the node that was replaced.
+	 * @private
+	 * @param node {HTMLElement}
+	 * @param refNode {HTMLElement}
+	 * @param location {String} or {Number} "before", "after", "first", "last",
+	 *   or the position within the children of refNode
+	 */
+	function defaultPlaceAt(node, refNode, location) {
+		var parent;
+
+		parent = refNode.parentNode;
+
+		// `if else` is more compressible than switch
+		if (!isNaN(location)) {
+			if (location < 0) {
+				location = 0;
+			}
+			_insertBefore(refNode, node, refNode.childNodes[location]);
+		}
+		else if(location == 'last') {
+			_appendChild(refNode, node);
+		}
+		else if(location == 'first') {
+			_insertBefore(refNode, node, refNode.firstChild);
+		}
+		else if(location == 'before') {
+			// TODO: throw if parent missing?
+			_insertBefore(parent, node, refNode);
+		}
+		else if(location == 'after') {
+			// TODO: throw if parent missing?
+			if (refNode == parent.lastChild) {
+				_appendChild(parent, node);
+			}
+			else {
+				_insertBefore(parent, node, refNode.nextSibling);
+			}
+		}
+
+		return node;
+	}
+
+	// these are for better compressibility since compressors won't
+	// compress native DOM methods.
+	function _insertBefore(parent, node, refNode) {
+		parent.insertBefore(node, refNode);
+	}
+
+	function _appendChild(parent, node) {
+		parent.appendChild(node);
+	}
+
 	return function(options) {
 
-		var getById, query, init, addClass, removeClass;
+		var getById, query, init, addClass, removeClass, placeAt;
 
 		getById = options.byId || defaultById;
 		query = options.query || defaultQueryAll;
@@ -29,6 +86,8 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 		addClass = options.addClass;
 		removeClass = options.removeClass;
+
+		placeAt = options.placeAt || defaultPlaceAt;
 
 		function doById(resolver, name /*, refObj, wire*/) {
 			domReady(function() {
@@ -40,7 +99,6 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 				}
 			});
 		}
-
 
 		function doQuery(name, refObj, root) {
 			var result, i;
@@ -57,6 +115,21 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 			} else {
 				return result;
 			}
+		}
+
+		function doPlaceAt(resolver, facet, wire) {
+			domReady(function() {
+				var futureRefNode, node, options;
+
+				options = facet.options;
+				node = facet.target;
+
+				futureRefNode = wire(makeQueryRef(options.at));
+
+				when(futureRefNode, function (refNode) {
+					return placeAt(node, refNode, options.where);
+				}).then(resolver.resolve, resolver.reject);
+			});
 		}
 
 		function resolveQuery(resolver, name, refObj, wire) {
@@ -127,38 +200,47 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 		return {
 			wire$plugin: function(ready, destroyed, options) {
+				var classes, resolvers, facets;
 
 				options.at = makeQueryRoot(options.at);
 
-				if(init) init(ready, destroyed, options);
-
-				var classes;
+				if (init) init(ready, destroyed, options);
 
 				classes = options.classes;
 
 				// Add/remove lifecycle classes if specified
-				if(classes) {
-					domReady(function() {
+				if (classes) {
+					domReady(function () {
 						var node = document.getElementsByTagName('html')[0];
 
 						// Add classes for wiring start
 						handleClasses(node, classes.init);
 
 						// Add/remove classes for context ready
-						ready.then(function() { handleClasses(node, classes.ready, classes.init); });
+						ready.then(function () {
+							handleClasses(node, classes.ready, classes.init);
+						});
 
-						if(classes.ready) {
+						if (classes.ready) {
 							// Remove classes for context destroyed
-							destroyed.then(function() { handleClasses(node, null, classes.ready); });
+							destroyed.then(function () {
+								handleClasses(node, null, classes.ready);
+							});
 						}
 					});
 				}
 
-				var resolvers = {
+				resolvers = {
 					'dom': doById
 				};
 
-				if(query) {
+				facets = {
+					'insert': {
+						initialize: doPlaceAt
+					}
+				};
+
+				if (query) {
 					resolvers['dom.first'] = createResolver(resolveFirst, options);
 
 					// dom.all and dom.query are synonyms
@@ -167,7 +249,8 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 				}
 
 				return {
-					resolvers: resolvers
+					resolvers: resolvers,
+					facets: facets
 				};
 
 			}

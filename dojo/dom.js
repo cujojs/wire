@@ -16,7 +16,8 @@ define(['../plugin-base/dom', 'dojo'], function(createDomPlugin, dojo) {
 		byId: dojo.byId,
 		query: dojo.query,
 		addClass: dojo.addClass,
-		removeClass: dojo.removeClass
+		removeClass: dojo.removeClass,
+		placeAt: dojo.place
 	});
 
 });

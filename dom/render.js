@@ -29,13 +29,15 @@ define(['when', '../domReady'], function(when, domReady) {
 	/**
 	 * Constructs a DOM node and child nodes from a template string.
 	 * Information contained in a hashmap is merged into the template
-	 * via tokens (${name}) before rendering into DO nodes.
+	 * via tokens (${name}) before rendering into DOM nodes.
+	 * Nothing is done with the css parameter at this time.
 	 * @param template {String}
 	 * @param hashmap {Object}
 	 * @param optRefNode {DOMNode}
+	 * @param optCss {Object}
 	 * @returns {DOMNode}
 	 */
-	function render (template, hashmap, optRefNode) {
+	function render (template, hashmap, optRefNode, optCss) {
 		var node, parentType;
 
 		// replace tokens (before attempting to find top tag name)
@@ -77,7 +79,7 @@ define(['when', '../domReady'], function(when, domReady) {
 
 		domReady(function() {
 
-			var futureTemplate, futureMixin, futureRoot;
+			var futureTemplate, futureMixin, futureRoot, futureCss;
 
 			// get args from spec
 			futureTemplate = options.template ? wire(options.template) : '';
@@ -87,8 +89,11 @@ define(['when', '../domReady'], function(when, domReady) {
 			if (options.at) {
 				futureRoot = wire(options.at);
 			}
+			if (options.css) {
+				futureCss = wire(options.css);
+			}
 
-			when.all([futureTemplate, futureMixin, futureRoot], function (args) {
+			when.all([futureTemplate, futureMixin, futureRoot, futureCss], function (args) {
 				return render.apply(undef, args);
 			}).then(resolver.resolve, resolver.reject);
 
