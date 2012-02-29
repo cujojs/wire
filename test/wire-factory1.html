@@ -54,89 +54,89 @@
             }
 
             doh.register('wire-factory works', [
-//				function wireChildImmediate(doh) {
-//
-//					var dohd = new doh.Deferred();
-//
-//					wire({
-//						child: { wire: { spec: 'child' } }
-//					}).then(
-//							function(context) {
-//
-//								var success = typeof context.child.then == 'function';
-//
-//								context.child.then(function(childContext) {
-//									success = success && !!childContext.success;
-//
-//									childContext.destroy().then(
-//											function() {
-//												dohd.callback(success);
-//											},
-//											fail(dohd)
-//									);
-//								});
-//
-//							},
-//							fail(dohd)
-//					);
-//
-//					return dohd;
-//
-//				},
-//				function wireChildImmediateNested(doh) {
-//
-//					var dohd = new doh.Deferred();
-//
-//					wire('parent').then(
-//							function(context) {
-//
-//								var success = typeof context.parent.child.then == 'function';
-//
-//								context.parent.child.then(function(childContext) {
-//									success = success && !!childContext.success;
-//
-//									childContext.destroy().then(
-//											function() {
-//												dohd.callback(success);
-//											},
-//											fail(dohd)
-//									);
-//								});
-//
-//							},
-//							fail(dohd)
-//					);
-//
-//					return dohd;
-//
-//				},
-//				function wireChildAfter(doh) {
-//
-//					var dohd = new doh.Deferred();
-//
-//					wire({
-//						child: { wire: { spec: 'child', after: true } }
-//					}).then(
-//							function(context) {
-//
-//								var success = typeof context.child.then == 'function';
-//								context.child.then(function(childContext) {
-//									success = success && !!childContext.success;
-//
-//									childContext.destroy().then(
-//											function() {
-//												dohd.callback(success);
-//											},
-//											fail(dohd)
-//									);
-//								});
-//							},
-//							fail(dohd)
-//					);
-//
-//					return dohd;
-//
-//				},
+				function wireChildImmediate(doh) {
+
+					var dohd = new doh.Deferred();
+
+					wire({
+						child: { wire: { spec: 'child' } }
+					}).then(
+							function(context) {
+
+								var success = typeof context.child.then == 'function';
+
+								context.child.then(function(childContext) {
+									success = success && !!childContext.success;
+
+									childContext.destroy().then(
+											function() {
+												dohd.callback(success);
+											},
+											fail(dohd)
+									);
+								});
+
+							},
+							fail(dohd)
+					);
+
+					return dohd;
+
+				},
+				function wireChildImmediateNested(doh) {
+
+					var dohd = new doh.Deferred();
+
+					wire('parent').then(
+							function(context) {
+
+								var success = typeof context.parent.child.then == 'function';
+
+								context.parent.child.then(function(childContext) {
+									success = success && !!childContext.success;
+
+									childContext.destroy().then(
+											function() {
+												dohd.callback(success);
+											},
+											fail(dohd)
+									);
+								});
+
+							},
+							fail(dohd)
+					);
+
+					return dohd;
+
+				},
+				function wireChildAfter(doh) {
+
+					var dohd = new doh.Deferred();
+
+					wire({
+						child: { wire: { spec: 'child', waitParent: true } }
+					}).then(
+							function(context) {
+
+								var success = typeof context.child.then == 'function';
+								context.child.then(function(childContext) {
+									success = success && !!childContext.success;
+
+									childContext.destroy().then(
+											function() {
+												dohd.callback(success);
+											},
+											fail(dohd)
+									);
+								});
+							},
+							fail(dohd)
+					);
+
+					return dohd;
+
+				},
 				function wireChildAfterPluginApi(doh) {
 
 					var dohd = new doh.Deferred();
@@ -146,7 +146,7 @@
 						parent: {
 							create: 'Thing',
 							properties: {
-								child: { wire: { spec: 'child', after: true } }
+								child: { wire: { spec: 'child', waitParent: true } }
 							}
 						}
 					}).then(
@@ -171,34 +171,34 @@
 					return dohd;
 
 				},
-//                function wireChildDeferred(doh) {
-//
-//                    var dohd = new doh.Deferred();
-//
-//                    // Defer the child wiring
-//                    // Child will be a function
-//                    parentSpec.parent.properties.child.wire.defer = true;
-//
-//                    wire('parent').then(
-//                        function(context) {
-//
-//                            context.parent.child({ mixin: true }).then(function(childContext) {
-//                                var success = childContext.success && childContext.mixin;
-//
-//                                childContext.destroy().then(
-//                                    function() {
-//                                        dohd.callback(success);
-//                                    },
-//                                    fail(dohd)
-//                                );
-//                            });
-//
-//                        },
-//                        fail(dohd)
-//                    );
-//
-//                    return dohd;
-//                }
+                function wireChildDeferred(doh) {
+
+                    var dohd = new doh.Deferred();
+
+                    // Defer the child wiring
+                    // Child will be a function
+                    parentSpec.parent.properties.child.wire.defer = true;
+
+                    wire('parent').then(
+                        function(context) {
+
+                            context.parent.child({ mixin: true }).then(function(childContext) {
+                                var success = childContext.success && childContext.mixin;
+
+                                childContext.destroy().then(
+                                    function() {
+                                        dohd.callback(success);
+                                    },
+                                    fail(dohd)
+                                );
+                            });
+
+                        },
+                        fail(dohd)
+                    );
+
+                    return dohd;
+                }
             ]);
 
             doh.run();
