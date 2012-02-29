@@ -50,8 +50,6 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
-### 0.8.0
-
 ### 0.7.5
 
 * Minor fix for using wire in a non-AMD browser environment
