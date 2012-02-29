@@ -36,10 +36,6 @@
         "aop": "git://github.com/cujojs/aop#0.5.2",
         "when": "git://github.com/cujojs/when#1.0.2"
     },
-    "mappings": {
-        "aop": "https://github.com/briancavalier/aop.js/zipball/0.5.2",
-        "when": "https://github.com/briancavalier/when.js/zipball/1.0.0"
-    },
     "main": "./wire",
     "directories": {
         "test": "test"
