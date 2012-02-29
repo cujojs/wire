@@ -185,6 +185,17 @@ define(['aop'], function(aop) {
 
     }
 
+	/**
+	 * Returns true if it is a Node
+	 * Adapted from: http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object
+	 * @param it anything
+	 * @return true iff it is a Node
+	 */
+	function isNode(it) {
+		return typeof Node === "object" ? it instanceof Node :
+				it && typeof it === "object" && typeof it.nodeType === "number" && typeof it.nodeName==="string";
+	}
+
     /**
      * Function that applies tracing AOP to components being wired
      * @function
@@ -268,6 +279,12 @@ define(['aop'], function(aop) {
             tracePointcut = options.trace.pointcut || defaultPointcut;
             traceStep = options.trace.step || defaultStep;
 
+			function isTraceable(target, prop) {
+				return typeof target[prop] === 'function'
+					&& prop !== 'wire$plugin'
+					&& tracePointcut.test(prop);
+			}
+
             /**
              * Trace pointcut query function that filters out wire plugins
              * @param target {Object} target object to query for methods to advise
@@ -275,10 +292,12 @@ define(['aop'], function(aop) {
             function pointcut(target) {
                 var matches = [];
 
+				if(isNode(target)) return matches;
+
                 for (var p in target) {
                     // Only match functions, exclude wire plugins, and then apply
                     // the supplied tracePointcut regexp
-                    if (typeof target[p] === 'function' && p !== 'wire$plugin' && tracePointcut.test(p)) {
+                    if (isTraceable(target, p)) {
                         matches.push(p);
                     }
                 }
