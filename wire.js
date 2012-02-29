@@ -9,7 +9,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @version 0.7.5
+ * @version 0.7.6
  */
 
 (function(global, define){
@@ -20,7 +20,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     var VERSION, tos, arrayProto, apIndexOf, apSlice, rootSpec, rootContext, delegate, emptyObject,
         defer, chain, whenAll, isArray, indexOf, lifecycleSteps, undef;
 
-    wire.version = VERSION = "0.7.5";
+    wire.version = VERSION = "0.7.6";
 
     rootSpec = global['wire'] || {};
     lifecycleSteps = ['create', 'configure', 'initialize', 'ready'];
