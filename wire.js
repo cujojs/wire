@@ -9,7 +9,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @version 0.7.5
+ * @version 0.7.6
  */
 
 (function(global, define){
@@ -20,7 +20,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     var VERSION, tos, arrayProto, apIndexOf, apSlice, rootSpec, rootContext, delegate, emptyObject,
         defer, chain, whenAll, isArray, indexOf, lifecycleSteps, undef;
 
-    wire.version = VERSION = "0.7.5";
+    wire.version = VERSION = "0.7.6";
 
     rootSpec = global['wire'] || {};
     lifecycleSteps = ['create', 'configure', 'initialize', 'ready'];
@@ -68,14 +68,6 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     defer = when.defer;
     chain = when.chain;
     whenAll = when.all;
-
-    /**
-     * Helper to always return a promise
-     * @param it anything
-     */
-    function promise(it) {
-        return when.isPromise(it) ? it : when(it);
-    }
 
     /**
      * Helper to reject a deferred when another is rejected
@@ -354,10 +346,16 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             // Plugin API
             // wire() API that is passed to plugins.
             pluginApi = function (spec, name, path) {
-                // FIXME: Why does returning when(item) here cause
-                // the resulting, returned promise never to resolve
-                // in wire-factory1.html?
-                return promise(createItem(spec, createPath(name, path)));
+				// Why the promise trickery here?
+				// Some factory deep in the promise chain (see wireFactory, for example)
+				// may need to actually return a promise *as the result of wiring*, and not
+				// have it be resolved in the chain.  So, it may return
+				var d = defer();
+				when(createItem(spec, createPath(name, path)), function(val) {
+					d.resolve(getResolvedValue(val));
+				}, d.reject);
+				return d;
+//                return promise(createItem(spec, createPath(name, path)));
             };
 
             pluginApi.resolveRef = apiResolveRef;
@@ -504,6 +502,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             var p = createItem(val, name);
 
             return when(p, function (resolved) {
+				resolved = getResolvedValue(resolved);
                 objects[name] = local[name] = resolved;
                 itemPromise.resolve(resolved);
             }, chainReject(itemPromise));
@@ -845,7 +844,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
          * @param spec {Object} portion of the spec for the component to be created
          */
         function wireFactory(resolver, spec/*, wire, name*/) {
-            var options, module, defer;
+            var options, module, defer, waitParent;
 
             options = spec.wire;
 
@@ -855,6 +854,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
             } else {
                 module = options.spec;
                 defer = options.defer;
+				waitParent = options.waitParent;
             }
 
             function createChild(/** {Object|String}? */ mixin) {
@@ -866,12 +866,17 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
                 // Resolve with the createChild *function* itself
                 // which can be used later to wire the spec
                 resolver.resolve(createChild);
-            } else {
-                // Start wiring the child
-                var context = createChild();
+            } else if(waitParent) {
 
-                // Resolve immediately with the child promise
-                resolver.resolve(context);
+				var childPromise = when(contextPromise, function() {
+					return createChild();
+				});
+
+				resolver.resolve(new PromiseKeeper(childPromise));
+
+			} else {
+				resolver.resolve(createChild());
+
             }
         }
 
@@ -1050,7 +1055,7 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
     }
 
     /**
-     * Determines with the supplied function should be invoked directly or
+     * Determines whether the supplied function should be invoked directly or
      * should be invoked using new in order to create the object to be wired.
      *
      * @param func {Function} determine whether this should be called using new or not
@@ -1068,6 +1073,24 @@ define(['require', 'when', 'wire/base'], function(require, when, basePlugin) {
 
         return is;
     }
+
+	/**
+	 * Special object to hold a Promise that should not be resolved, but
+	 * rather should be passed through a promise chain *as the resolution value*
+	 * @param val
+	 */
+	function PromiseKeeper(val) {
+		this.value = val;
+	}
+
+	/**
+	 * If it is a PromiseKeeper, return it.value, otherwise return it.  See
+	 * PromiseKeeper above for an explanation.
+	 * @param it anything
+	 */
+	function getResolvedValue(it) {
+		return it instanceof PromiseKeeper ? it.value : it;
+	}
 
     return wire;
 });

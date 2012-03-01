@@ -22,46 +22,46 @@
         require(['wire'], function(wire) {
             
             doh.register('dom-resolver', [
-                function(doh) {
-                    var dohd = new doh.Deferred();
-
-                    wire({
-                        plugins: [
-//                            { module: 'wire/debug' },
-                            { module: 'wire/dom' }
-                        ],
-                        node: { $ref: 'dom!node1' }
-                    }).then(
-                        function(context) {
-                            dohd.callback('node1' === context.node.id);
-                        },
-                        function(e) {
-                            dohd.errback(e);
-                        }
-                    );
-                    
-                    return dohd;
-                },
-                function(doh) {
-                    var dohd = new doh.Deferred();
-
-                    wire({
-                        plugins: [
-//                            { module: 'wire/debug' },
-                            { module: 'wire/dom' }
-                        ],
-                        node: { $ref: 'dom!node2' }
-                    }).then(
-                        function(context) {
-                            dohd.errback('node2 should not have been resolvable');
-                        },
-                        function(e) {
-                            dohd.callback(true);
-                        }
-                    );
-                    
-                    return dohd;
-                },
+//                function(doh) {
+//                    var dohd = new doh.Deferred();
+//
+//                    wire({
+//                        plugins: [
+////                            { module: 'wire/debug' },
+//                            { module: 'wire/dom' }
+//                        ],
+//                        node: { $ref: 'dom!node1' }
+//                    }).then(
+//                        function(context) {
+//                            dohd.callback('node1' === context.node.id);
+//                        },
+//                        function(e) {
+//                            dohd.errback(e);
+//                        }
+//                    );
+//
+//                    return dohd;
+//                },
+//                function(doh) {
+//                    var dohd = new doh.Deferred();
+//
+//                    wire({
+//                        plugins: [
+////                            { module: 'wire/debug' },
+//                            { module: 'wire/dom' }
+//                        ],
+//                        node: { $ref: 'dom!node2' }
+//                    }).then(
+//                        function(context) {
+//                            dohd.errback('node2 should not have been resolvable');
+//                        },
+//                        function(e) {
+//                            dohd.callback(true);
+//                        }
+//                    );
+//
+//                    return dohd;
+//                },
                 function(doh) {
                     var dohd = new doh.Deferred();
 
