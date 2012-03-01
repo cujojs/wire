@@ -53,6 +53,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 ### 0.7.6
 
 * New `waitParent` option for the [wire factory](https://github.com/cujojs/wire/wiki/Factories).  When set to `true`, it guarantees a child context will not even start wiring until the encompassing parent has completed.
+* Update to [when.js](https://github.com/cujojs/when) v1.0.2
 
 ### 0.7.5
 
