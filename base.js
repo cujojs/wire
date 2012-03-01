@@ -115,11 +115,14 @@ define(['when'], function(when) {
 	}
 
 	function setProperty(proxy, name, val, wire) {
-        return when(wire(val, name, proxy.path),
+		var wired = wire(val, name, proxy.path);
+		when(wired,
             function(resolvedValue) {
 			    proxy.set(name, resolvedValue);
 		    }
         );
+
+		return wired;
 	}
 
 	function invokerFacet(resolver, facet, wire) {
