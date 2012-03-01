@@ -108,6 +108,10 @@ define([], function() {
 
 	}
 
+	function isStrictlyObject(it) {
+		return (it && Object.prototype.toString.call(it) == '[object Object]');
+	}
+
 	return {
 		analyze: cramAnalyze
 	};
