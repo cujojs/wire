@@ -1,9 +1,7 @@
 /** @license MIT License (c) copyright B Cavalier & J Hann */
 
 /**
- * wire/base plugin
- * Base wire plugin that provides properties, init, and destroy facets, and
- * a proxy for plain JS objects.
+ * wire/cola plugin
  *
  * wire is part of the cujo.js family of libraries (http://cujojs.com/)
  *
@@ -16,13 +14,19 @@ define(['when', 'cola/AdapterResolver',
 	'cola/ArrayAdapter', 'cola/dom/NodeListAdapter',
 	'cola/ResultSetAdapter', 'cola/QueryAdapter', 'cola/mediator/syncCollections',
 	'cola/ObjectAdapter', 'cola/dom/NodeAdapter',
-	'cola/ResultAdapter', 'cola/mediator/syncProperties'],
+	'cola/ResultAdapter', 'cola/mediator/syncProperties',
+	'cola/transform/enum', 'cola/addPropertyTransforms'],
 function(when, adapterResolver,
-		 ArrayAdapter, NodeListAdapter, ResultSetAdapter, QueryAdapter, syncCollections,
-		 ObjectAdapter, NodeAdapter, ResultAdapter, syncProperties) {
+	ArrayAdapter, NodeListAdapter, ResultSetAdapter, QueryAdapter, syncCollections,
+	ObjectAdapter, NodeAdapter,
+	ResultAdapter, syncProperties,
+	createEnumTransform, addPropertyTransforms
+) {
 
 	var cachedBindings;
 
+	// TODO: move most of this stuff, including adapter registration to cola.js
+	// TODO: implement wire$build that auto-adds these deps to build
 	adapterResolver.register(ArrayAdapter, 'collection');
 	adapterResolver.register(NodeListAdapter, 'collection');
 //	adapterResolver.register(ResultSetAdapter, 'collection');
@@ -40,10 +44,12 @@ function(when, adapterResolver,
 	/**
 	 * "globally" cached bindings.  Cache bindings here so that a bind can find,
 	 * process, and remove them later
+	 * @private
  	 */
 	cachedBindings = [];
 
 	/**
+	 * @private
 	 * @param target anything - target component for which to find cached bindings
 	 * @param found {Function} function to call with existing cached bindings
 	 * @param [notFound] {Function} function to call if no cached bindings found
@@ -58,14 +64,65 @@ function(when, adapterResolver,
 		return notFound(cachedBindings);
 	}
 
-	function createAdapter(obj, options) {
+	function createAdapter(obj, type, options) {
 		// FIXME: This is just for initial testing
-		var Adapter = adapterResolver(obj, 'collection');
+		var Adapter, adapter, propertyTransforms;
+		Adapter = adapterResolver(obj, type);
+		// if (!Adapter) throw new Error('wire/cola: could not find Adapter constructor for ' + type);
+		adapter = Adapter ? new Adapter(obj, options) : obj;
+		if (options.bindings && type == 'object') {
+			propertyTransforms = createTransformers(options.bindings);
+			if (propertyTransforms) {
+				adapter = addPropertyTransforms(adapter, propertyTransforms);
+			}
+		}
+		return adapter;
+	}
 
-		return Adapter ? new Adapter(obj, options) : obj;
+	/**
+	 * try to figure out which transform to use by inspecting properties
+	 * @private
+	 * @param options
+	 */
+	function createTransformer (options) {
+		// TODO: allow transform option objects to be $refs
+		// TODO: allow multiple transforms per binding somehow
+		// FIXME: make this more like adapter resolution
+		var name, transformer, reverse;
+		reverse = options.reverse;
+		if (options.enumSet) {
+			transformer = createEnumTransform(options);
+		}
+		if (transformer && reverse) {
+			return {
+				transform: transformer.reverse,
+				reverse: transformer.transform
+			};
+		}
+		else {
+			return transformer;
+		}
+	}
+
+	function createTransformers (bindings) {
+		// for now, i just assumed that transforms would be on bindings,
+		// but it may be better if they were a separate object? or maybe
+		// just allow transform: { $ref: 'dateTransform' } on each binding?
+		var transforms, name, xformOpts;
+		transforms = {};
+		for (name in bindings) {
+			xformOpts = bindings[name].transform;
+			if (xformOpts) {
+				transforms[name] = createTransformer(xformOpts)
+			}
+		}
+		return transforms;
 	}
 
 	function doBind(target, bindings, datasource) {
+		// TODO: create comparator from options (e.g. sortBy: ['prop1', 'prop2'])
+		// TODO: create symbolizer from options (e.g. key: ['name', 'version'])
+		// TODO: stop relying on idComparator even if no sortBy is specified
 		var options, adapter1, adapter2;
 
 		options = {
@@ -74,13 +131,14 @@ function(when, adapterResolver,
 			querySelector: querySelector
 		};
 
-		adapter1 = createAdapter(datasource, options);
-		adapter2 = createAdapter(target, options);
+		// TODO: ensure these are in the right order so transforms are always in the right order
+		adapter1 = createAdapter(datasource, 'collection', options);
+		adapter2 = createAdapter(target, 'collection', options);
 
 		// FIXME: throw if we can't create an adapter?
 		if(!(adapter1 && adapter2)) return;
 
-		return syncCollections(adapter1, adapter2, adapterResolver);
+		return syncCollections(adapter1, adapter2, createAdapter);
 	}
 
 	function mixin(dst, src) {
