@@ -43,7 +43,11 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 			}
 			_insertBefore(refNode, node, refNode.childNodes[location]);
 		}
-		else if(location == 'last' || !location) {
+		else if(location == 'at') {
+			refNode.innerHTML = '';
+			_appendChild(refNode, node);
+		}
+		else if(location == 'last') {
 			_appendChild(refNode, node);
 		}
 		else if(location == 'first') {
@@ -61,6 +65,9 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 			else {
 				_insertBefore(parent, node, refNode.nextSibling);
 			}
+		}
+		else {
+			throw new Error('Unknown dom insertion command: ' + location);
 		}
 
 		return node;
@@ -119,15 +126,23 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 		function doPlaceAt(resolver, facet, wire) {
 			domReady(function() {
-				var futureRefNode, node, options;
+				var futureRefNode, node, options, operation;
 
 				options = facet.options;
 				node = facet.target;
 
-				futureRefNode = wire(makeQueryRef(options.at));
+				// get first property and use it as the operation
+				for (var p in options) {
+					if (options.hasOwnProperty(p)) {
+						operation = p;
+						break;
+					}
+				}
+
+				futureRefNode = wire(makeQueryRef(options[operation]));
 
 				when(futureRefNode, function (refNode) {
-					return placeAt(node, refNode, options.where);
+					return placeAt(node, refNode, operation);
 				}).then(resolver.resolve, resolver.reject);
 			});
 		}
