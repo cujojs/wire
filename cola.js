@@ -119,17 +119,17 @@ function(when, adapterResolver,
 		return transforms;
 	}
 
-	function doBind(target, bindings, datasource) {
+	function doBind(target, datasource, bindings, options) {
 		// TODO: create comparator from options (e.g. sortBy: ['prop1', 'prop2'])
 		// TODO: create symbolizer from options (e.g. key: ['name', 'version'])
 		// TODO: stop relying on idComparator even if no sortBy is specified
-		var options, adapter1, adapter2;
+		var adapter1, adapter2;
 
-		options = {
+		options = mixin({
 			bindings: bindings,
 			comparator: idComparator,
 			querySelector: querySelector
-		};
+		}, options || {});
 
 		// TODO: ensure these are in the right order so transforms are always in the right order
 		adapter1 = createAdapter(datasource, 'collection', options);
@@ -145,13 +145,14 @@ function(when, adapterResolver,
 		for(var p in src) {
 			dst[p] = src[p];
 		}
+		return dst;
 	}
 
 	function mergeBindings(bindingDef, bindings) {
 		mixin(bindingDef.bindings, bindings);
 	}
 
-	function cacheBindings(resolver, proxy, wire) {
+	function cacheBindings(resolver, proxy, wire, pluginOptions) {
 //		console.log('bindings', proxy);
 		// wire the bindings immediately, in the same context as they
 		// are declared.  Since bindings/bind may be in different
@@ -171,7 +172,8 @@ function(when, adapterResolver,
 						// the current target
 						var newBindings = {
 							target: proxy.target,
-							bindings: bindings
+							bindings: bindings,
+							pluginOptions: pluginOptions
 						};
 						cachedBindings.push(newBindings);
 					}
@@ -194,28 +196,33 @@ function(when, adapterResolver,
 	}
 
 	return {
-		wire$plugin: function(ready, destroyed, options) {
-//			console.log('wire$cola', options);
+		wire$plugin: function(ready, destroyed, pluginOptions) {
+//			console.log('wire$cola', pluginOptions);
 
 			var unmediators = [];
 
+			// TODO: allow querySelector to be specified in pluginOptions?
+
+
 			function bindFacet(resolver, proxy, wire) {
-//				console.log('bind1', options.id, proxy);
+//				console.log('bind1', pluginOptions.id, proxy);
 				// Find any cached bindings for this component, and if found
 				// setup cola data binding.
 				findCachedBindings(proxy.target,
 					function(cachedBindings, i, bindingDef) {
-//						console.log('bind2', options.id, bindingDef);
+//						console.log('bind2', pluginOptions.id, bindingDef);
 						// Remove cached bindings
 						cachedBindings.splice(i, 1);
 
-						// Wire options, then bind to the datasource
+						// Wire pluginOptions, then bind to the datasource
 						when(wire(proxy.options), function(datasource) {
 
-//							console.log('bind3', options.id, datasource);
+							// TODO: mixin proxy.options onto pluginOptions?
+
+//							console.log('bind3', pluginOptions.id, datasource);
 							// Use cached bindings to setup cola data binding for
 							// the current target component
-							var unmediate = doBind(bindingDef.target, bindingDef.bindings, datasource);
+							var unmediate = doBind(bindingDef.target, datasource, bindingDef.bindings, bindingDef.pluginOptions);
 
 							unmediators.push(unmediate);
 
@@ -241,12 +248,16 @@ function(when, adapterResolver,
 				while(unmediate = unmediators[--i]) unmediate();
 			}
 
+			function cacheBindingsAndOptions (resolver, proxy, wire) {
+				return cacheBindings(resolver, proxy, wire, pluginOptions);
+			}
+
 			destroyed.then(destroyMediators);
 
 			return {
 				facets: {
 					bindings: {
-						configure: cacheBindings,
+						configure: cacheBindingsAndOptions,
 						destroy: removeCachedBindings
 					},
 					bind: {
