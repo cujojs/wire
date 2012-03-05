@@ -880,9 +880,9 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
                 // Wire a new scope, and get a named component from it to use
                 // as the component currently being wired.
                 when(loadModule(module), function(spec) {
-                    return when(createScope(spec, scope), function(scope) {
-                        return scope.resolveRef(get);
-                    });
+					return when(createItem(spec, get), function(scope) {
+						return doResolveRef(get, {}, scope);
+					});
                 }).then(resolver.resolve, resolver.reject);
 
             } else if(waitParent) {
