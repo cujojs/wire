@@ -15,12 +15,12 @@ define(['when', 'cola/AdapterResolver',
 	'cola/ResultSetAdapter', 'cola/QueryAdapter', 'cola/mediator/syncCollections',
 	'cola/ObjectAdapter', 'cola/dom/NodeAdapter',
 	'cola/ResultAdapter', 'cola/mediator/syncProperties',
-	'cola/transform/enum', 'cola/addPropertyTransforms'],
+	'cola/transform/enum', 'cola/transform/expression', 'cola/addPropertyTransforms'],
 function(when, adapterResolver,
 	ArrayAdapter, NodeListAdapter, ResultSetAdapter, QueryAdapter, syncCollections,
 	ObjectAdapter, NodeAdapter,
 	ResultAdapter, syncProperties,
-	createEnumTransform, addPropertyTransforms
+	createEnumTransformer, createExpressionTransformer, addPropertyTransforms
 ) {
 
 	var cachedBindings;
@@ -91,13 +91,13 @@ function(when, adapterResolver,
 		var name, transformer, reverse;
 		reverse = options.reverse;
 		if (options.enumSet) {
-			transformer = createEnumTransform(options);
+			transformer = createEnumTransformer(options);
+		}
+		else if (options.expression) {
+			transformer = createExpressionTransformer(options);
 		}
 		if (transformer && reverse) {
-			return {
-				transform: transformer.reverse,
-				reverse: transformer.transform
-			};
+			return transformer.inverse
 		}
 		else {
 			return transformer;
