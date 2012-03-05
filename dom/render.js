@@ -76,9 +76,7 @@ define(['when', '../domReady'], function(when, domReady) {
 	 * @param wire
 	 */
 	function domRenderFactory(resolver, spec, wire) {
-		var parentRef, options;
-
-		options = spec.render;
+		var options = spec.render;
 
 		domReady(function() {
 
