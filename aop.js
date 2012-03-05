@@ -318,7 +318,7 @@ define(['aop', 'when'], function(aop, when) {
 
             // Remove all aspects that we added in this context
             when(destroyed, function() {
-                for(var i = woven.length; i >= 0; --i) {
+                for(var i = woven.length - 1; i >= 0; --i) {
                     woven[i].remove();
                 }
             });
