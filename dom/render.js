@@ -59,7 +59,10 @@ define(['when', '../domReady'], function(when, domReady) {
 		return {
 			factories: {
 				render: domRenderFactory
-			}
+			},
+			proxies: [
+				nodeProxy
+			]
 		};
 	};
 
@@ -172,6 +175,20 @@ define(['when', '../domReady'], function(when, domReady) {
 		return template.replace(parseTemplateRx, function (m, token) {
 			return transform(hashmap && hashmap[token]);
 		});
+	}
+
+	function nodeProxy(node) {
+		if(!node.tagName || !node.setAttribute || !node.getAttribute) return;
+
+		return {
+			get: function() { /** TODO */ },
+			set: function() { /** TODO */ },
+			invoke: function() { /** TODO */ },
+			destroy: function() {
+				var parent = node.parentNode;
+				if(parent) parent.removeChild(node);
+			}
+		};
 	}
 
 	function blankIfMissing (val) { return val || ''; }
