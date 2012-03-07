@@ -218,7 +218,9 @@ define(['when'], function(when) {
 	? define
     : typeof module != 'undefined'
         ? function(deps, factory) {
-            module.exports = factory.apply(this, deps.map(require));
+            module.exports = factory.apply(this, deps.map(function(x) {
+				return require(x);
+			}));
         }
 	    // If no define or module, attach to current context.
 	    : function(deps, factory) { this.wire_base = factory(this.when); }

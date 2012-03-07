@@ -477,7 +477,9 @@ define(['aop'], function(aop) {
 	? define
     : typeof module != 'undefined'
         ? function(deps, factory) {
-            module.exports = factory.apply(this, deps.map(require));
+			module.exports = factory.apply(this, deps.map(function(x) {
+				return require(x);
+			}));
         }
 	    // If no define or module, attach to current context.
 	    : function(deps, factory) { this.wire_debug = factory(this.aop); }

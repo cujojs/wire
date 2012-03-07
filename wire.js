@@ -1120,7 +1120,10 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
     // If no define or module, attach to current context.
     : typeof module != 'undefined'
         ? function(deps, factory) {
-            module.exports = factory.apply(this, [require].concat(deps.slice(1).map(require)));
+			console.log(deps);
+            module.exports = factory.apply(this, [require].concat(deps.slice(1).map(function(x) {
+				return require(x);
+			})));
         }
         : function(deps, factory) {
             this.wire = factory(
