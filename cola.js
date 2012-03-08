@@ -15,12 +15,14 @@ define(['when', 'cola/AdapterResolver',
 	'cola/ResultSetAdapter', 'cola/QueryAdapter', 'cola/mediator/syncCollections',
 	'cola/ObjectAdapter', 'cola/dom/NodeAdapter',
 	'cola/ResultAdapter', 'cola/mediator/syncProperties',
-	'cola/transform/enum', 'cola/transform/expression', 'cola/addPropertyTransforms'],
+	'cola/transform/enum', 'cola/transform/expression', 'cola/addPropertyTransforms',
+	'cola/transformCollection', 'cola/transform/compose'],
 function(when, adapterResolver,
 	ArrayAdapter, NodeListAdapter, ResultSetAdapter, QueryAdapter, syncCollections,
 	ObjectAdapter, NodeAdapter,
 	ResultAdapter, syncProperties,
-	createEnumTransformer, createExpressionTransformer, addPropertyTransforms
+	createEnumTransformer, createExpressionTransformer, addPropertyTransforms,
+	transformCollection, compose
 ) {
 
 	var cachedBindings;
@@ -34,8 +36,6 @@ function(when, adapterResolver,
 	adapterResolver.register(NodeAdapter, 'object');
 	adapterResolver.register(ObjectAdapter, 'object');
 //	adapterResolver.register(ResultAdapter, 'object');
-
-	function idComparator (a, b) { return a.id - b.id; }
 
 	function querySelector (selector, node) {
 		return node.querySelector(selector);
@@ -69,7 +69,9 @@ function(when, adapterResolver,
 		var Adapter, adapter, propertyTransforms;
 		Adapter = adapterResolver(obj, type);
 		// if (!Adapter) throw new Error('wire/cola: could not find Adapter constructor for ' + type);
+
 		adapter = Adapter ? new Adapter(obj, options) : obj;
+
 		if (options.bindings && type == 'object') {
 			propertyTransforms = createTransformers(options.bindings);
 			if (propertyTransforms) {
@@ -88,7 +90,7 @@ function(when, adapterResolver,
 		// TODO: allow transform option objects to be $refs
 		// TODO: allow multiple transforms per binding somehow
 		// FIXME: make this more like adapter resolution
-		var name, transformer, reverse;
+		var transformer, reverse;
 		reverse = options.reverse;
 		if (options.enumSet) {
 			transformer = createEnumTransformer(options);
@@ -120,23 +122,31 @@ function(when, adapterResolver,
 	}
 
 	function doBind(target, datasource, bindings, options) {
+		console.log('OPTIONS', options);
 		// TODO: create comparator from options (e.g. sortBy: ['prop1', 'prop2'])
 		// TODO: create symbolizer from options (e.g. key: ['name', 'version'])
-		// TODO: stop relying on idComparator even if no sortBy is specified
-		var adapter1, adapter2;
+		var adapter1, adapter2, collectionTransform;
 
 		options = mixin({
 			bindings: bindings,
-			comparator: idComparator,
 			querySelector: querySelector
 		}, options || {});
 
 		// TODO: ensure these are in the right order so transforms are always in the right order
 		adapter1 = createAdapter(datasource, 'collection', options);
+
+		collectionTransform = options.transform;
+		if (collectionTransform) {
+			if (typeof collectionTransform != 'function') {
+				collectionTransform = compose(collectionTransform);
+			}
+			adapter1 = transformCollection(adapter1, collectionTransform);
+		}
+
 		adapter2 = createAdapter(target, 'collection', options);
 
 		// FIXME: throw if we can't create an adapter?
-		if(!(adapter1 && adapter2)) return;
+		if (!(adapter1 && adapter2)) return;
 
 		return syncCollections(adapter1, adapter2, createAdapter);
 	}
@@ -215,14 +225,23 @@ function(when, adapterResolver,
 						cachedBindings.splice(i, 1);
 
 						// Wire pluginOptions, then bind to the datasource
-						when(wire(proxy.options), function(datasource) {
+						when(wire(proxy.options), function(options) {
+							var datasource;
+
+							if(options.to) {
+								datasource = options.to;
+							} else {
+								datasource = options;
+								options = {};
+							}
 
 							// TODO: mixin proxy.options onto pluginOptions?
+							options = mixin(options, bindingDef.pluginOptions);
 
 //							console.log('bind3', pluginOptions.id, datasource);
 							// Use cached bindings to setup cola data binding for
 							// the current target component
-							var unmediate = doBind(bindingDef.target, datasource, bindingDef.bindings, bindingDef.pluginOptions);
+							var unmediate = doBind(bindingDef.target, datasource, bindingDef.bindings, options);
 
 							unmediators.push(unmediate);
 
@@ -272,12 +291,9 @@ function(when, adapterResolver,
 })(typeof define == 'function'
 	// use define for AMD if available
 	? define
-	: typeof module != 'undefined'
-		? function(deps, factory) {
-			module.exports = factory.apply(this, deps.map(function(x) {
-				return require(x);
-			}));
-		}
-		// If no define or module, attach to current context.
-		: function(deps, factory) { this.wire_cola = factory(); }
+	: function(deps, factory) {
+		module.exports = factory.apply(this, deps.map(function(x) {
+			return require(x);
+		}));
+	}
 );
