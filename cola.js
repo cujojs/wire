@@ -25,7 +25,7 @@ function(when, adapterResolver,
 	transformCollection, compose
 ) {
 
-	var cachedBindings;
+	var cachedBindings, isArray;
 
 	// TODO: move most of this stuff, including adapter registration to cola.js
 	// TODO: implement wire$build that auto-adds these deps to build
@@ -40,6 +40,10 @@ function(when, adapterResolver,
 	function querySelector (selector, node) {
 		return node.querySelector(selector);
 	}
+
+	isArray = Array.isArray || function(it) {
+		return Object.prototype.toString.call(it) == '[object Array]';
+	};
 
 	/**
 	 * "globally" cached bindings.  Cache bindings here so that a bind can find,
@@ -64,71 +68,153 @@ function(when, adapterResolver,
 		return notFound(cachedBindings);
 	}
 
+	function mixin(dst, src) {
+		for(var p in src) {
+			dst[p] = src[p];
+		}
+		return dst;
+	}
+
+	function mergeBindings(bindingDef, bindings) {
+		mixin(bindingDef.bindings, bindings);
+	}
+
+	function createPropertyTransform(transforms, wire) {
+
+		if(!isArray(transforms)) {
+			transforms = [transforms];
+		}
+
+		return when.reduce(transforms,
+			function(txList, txSpec) {
+				var name;
+
+				for(name in txSpec) {
+					if(name != 'inverse') break;
+				}
+
+				return when(wire.resolveRef(name),
+					function(createTransform) {
+						var transform = createTransform(txSpec[name]);
+						txList.push(txSpec.inverse ? transform.inverse : transform);
+						return txList;
+					}
+				);
+			}, []).then(
+			function(txList) {
+				return txList.length > 1 ? compose(txList) : txList[0];
+			}
+		);
+	}
+
+	function setupBinding(bindingSpecs, name, wire) {
+		var bindingSpec, binding;
+
+		bindingSpec = mixin({}, bindingSpecs[name]);
+		binding = {
+			name: name,
+			spec: bindingSpec
+		};
+
+		return bindingSpec.transform
+			? when(createPropertyTransform(bindingSpec.transform, wire),
+				function(propertyTransform) {
+					binding.spec.transform = propertyTransform;
+					return binding;
+				})
+			: binding;
+	}
+
+	function setupBindings(bindingSpecs, wire) {
+		var promises = [];
+
+		for(var name in bindingSpecs) {
+			promises.push(setupBinding(bindingSpecs, name, wire));
+		}
+
+		return when.reduce(promises, function(bindings, bindingSpec) {
+			bindings[bindingSpec.name] = bindingSpec.spec;
+			return bindings;
+		}, {});
+	}
+
+	function cacheBindings(resolver, proxy, wire, pluginOptions) {
+		// wire the bindings immediately, in the same context as they
+		// are declared.  Since bindings/bind may be in different
+		// contexts, deferring the wiring until bind could cause
+		// lots of confusion, since they'd be wired in that context,
+		// not in the one where they are declared.
+		when(wire(proxy.options),
+			function(bindings) {
+
+				return when(setupBindings(bindings, wire),
+					function(bindings) {
+						findCachedBindings(proxy.target,
+							function(cachedBindings, i, bindingDef) {
+								// Merge any existing bindings
+								mergeBindings(bindingDef, bindings);
+							},
+							function(cachedBindings) {
+								// Cache new bindings if none exist for
+								// the current target
+								var newBindings = {
+									target: proxy.target,
+									bindings: bindings,
+									pluginOptions: pluginOptions
+								};
+								cachedBindings.push(newBindings);
+							}
+						);
+					}
+				);
+			}
+		).then(resolver.resolve, resolver.reject);
+	}
+
+	function removeCachedBindings(resolver, proxy /*, wire */) {
+		// If there were any bindings that were never used (via "bind"), we
+		// can remove them now since the component is being destroyed.
+		findCachedBindings(proxy.target, function(cachedBindings, i) {
+			cachedBindings.splice(i, 1);
+		});
+
+		resolver.resolve();
+	}
+
+	function collectPropertyTransforms(bindings) {
+		var name, propertyTransforms, transform;
+
+		propertyTransforms = {};
+		for(name in bindings) {
+			transform = bindings[name].transform;
+			if(transform) {
+				propertyTransforms[name] = transform;
+			}
+		}
+
+		return propertyTransforms;
+	}
+
 	function createAdapter(obj, type, options) {
 		// FIXME: This is just for initial testing
-		var Adapter, adapter, propertyTransforms;
+		var Adapter, adapter;
 		Adapter = adapterResolver(obj, type);
 		// if (!Adapter) throw new Error('wire/cola: could not find Adapter constructor for ' + type);
-
 		adapter = Adapter ? new Adapter(obj, options) : obj;
 
 		if (options.bindings && type == 'object') {
-			propertyTransforms = createTransformers(options.bindings);
-			if (propertyTransforms) {
-				adapter = addPropertyTransforms(adapter, propertyTransforms);
-			}
+			adapter = addPropertyTransforms(adapter, collectPropertyTransforms(options.bindings));
 		}
+
 		return adapter;
 	}
 
-	/**
-	 * try to figure out which transform to use by inspecting properties
-	 * @private
-	 * @param options
-	 */
-	function createTransformer (options) {
-		// TODO: allow transform option objects to be $refs
-		// TODO: allow multiple transforms per binding somehow
-		// FIXME: make this more like adapter resolution
-		var transformer, reverse;
-		reverse = options.reverse;
-		if (options.enumSet) {
-			transformer = createEnumTransformer(options);
-		}
-		else if (options.expression) {
-			transformer = createExpressionTransformer(options);
-		}
-		if (transformer && reverse) {
-			return transformer.inverse
-		}
-		else {
-			return transformer;
-		}
-	}
-
-	function createTransformers (bindings) {
-		// for now, i just assumed that transforms would be on bindings,
-		// but it may be better if they were a separate object? or maybe
-		// just allow transform: { $ref: 'dateTransform' } on each binding?
-		var transforms, name, xformOpts;
-		transforms = {};
-		for (name in bindings) {
-			xformOpts = bindings[name].transform;
-			if (xformOpts) {
-				transforms[name] = createTransformer(xformOpts)
-			}
-		}
-		return transforms;
-	}
-
-	function doBind(target, datasource, bindings, options) {
-		console.log('OPTIONS', options);
+	function doBind(target, datasource, bindings, options, wire) {
 		// TODO: create comparator from options (e.g. sortBy: ['prop1', 'prop2'])
 		// TODO: create symbolizer from options (e.g. key: ['name', 'version'])
 		var adapter1, adapter2, collectionTransform;
 
 		options = mixin({
-			bindings: bindings,
 			querySelector: querySelector
 		}, options || {});
 
@@ -143,6 +229,7 @@ function(when, adapterResolver,
 			adapter1 = transformCollection(adapter1, collectionTransform);
 		}
 
+		options = mixin({ bindings: bindings }, options);
 		adapter2 = createAdapter(target, 'collection', options);
 
 		// FIXME: throw if we can't create an adapter?
@@ -151,63 +238,8 @@ function(when, adapterResolver,
 		return syncCollections(adapter1, adapter2, createAdapter);
 	}
 
-	function mixin(dst, src) {
-		for(var p in src) {
-			dst[p] = src[p];
-		}
-		return dst;
-	}
-
-	function mergeBindings(bindingDef, bindings) {
-		mixin(bindingDef.bindings, bindings);
-	}
-
-	function cacheBindings(resolver, proxy, wire, pluginOptions) {
-//		console.log('bindings', proxy);
-		// wire the bindings immediately, in the same context as they
-		// are declared.  Since bindings/bind may be in different
-		// contexts, deferring the wiring until bind could cause
-		// lots of confusion, since they'd be wired in that context,
-		// not in the one where they are declared.
-		when(wire(proxy.options),
-			function(bindings) {
-
-				findCachedBindings(proxy.target,
-					function(cachedBindings, i, bindingDef) {
-						// Merge any existing bindings
-						mergeBindings(bindingDef, bindings);
-					},
-					function(cachedBindings) {
-						// Cache new bindings if none exist for
-						// the current target
-						var newBindings = {
-							target: proxy.target,
-							bindings: bindings,
-							pluginOptions: pluginOptions
-						};
-						cachedBindings.push(newBindings);
-					}
-				);
-
-				resolver.resolve();
-			},
-			resolver.reject
-		);
-	}
-
-	function removeCachedBindings(resolver, proxy /*, wire */) {
-		// If there were any bindings that were never used (via "bind"), we
-		// can remove them now since the component is being destroyed.
-		findCachedBindings(proxy.target, function(cachedBindings, i) {
-			cachedBindings.splice(i, 1);
-		});
-
-		resolver.resolve();
-	}
-
 	return {
 		wire$plugin: function(ready, destroyed, pluginOptions) {
-//			console.log('wire$cola', pluginOptions);
 
 			var unmediators = [];
 
@@ -215,12 +247,10 @@ function(when, adapterResolver,
 
 
 			function bindFacet(resolver, proxy, wire) {
-//				console.log('bind1', pluginOptions.id, proxy);
 				// Find any cached bindings for this component, and if found
 				// setup cola data binding.
 				findCachedBindings(proxy.target,
 					function(cachedBindings, i, bindingDef) {
-//						console.log('bind2', pluginOptions.id, bindingDef);
 						// Remove cached bindings
 						cachedBindings.splice(i, 1);
 
@@ -238,14 +268,11 @@ function(when, adapterResolver,
 							// TODO: mixin proxy.options onto pluginOptions?
 							options = mixin(options, bindingDef.pluginOptions);
 
-//							console.log('bind3', pluginOptions.id, datasource);
 							// Use cached bindings to setup cola data binding for
 							// the current target component
 							var unmediate = doBind(bindingDef.target, datasource, bindingDef.bindings, options);
 
 							unmediators.push(unmediate);
-
-							return unmediate;
 
 							// TODO: Store cola info in wire$plugin so we can tear the bindings down
 							// the component is destroyed?
