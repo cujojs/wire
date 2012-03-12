@@ -81,14 +81,9 @@ function(when, adapterResolver,
 
 	function createPropertyTransform(transforms, wire) {
 
-		if(typeof transforms == 'function') {
-			// If it's a function, just use it
-			return transforms;
-		} else if(typeof transforms == 'string') {
-			// If it's a string, assume it's the name of a component
-			// that is a transform function, and resolve it.
-			return wire.resolveRef(transforms);
-		}
+		// Could optimize the single function/string case here
+		// by avoiding the when.reduce.  If wire spec parsing perf
+		// ever becomes a problem, we can optimize a bit here.
 
 		if(!isArray(transforms)) {
 			transforms = [transforms];
@@ -97,6 +92,10 @@ function(when, adapterResolver,
 		return when.reduce(transforms,
 			function(txList, txSpec) {
 				var name;
+
+				if(typeof txSpec == 'function') {
+					return txSpec;
+				}
 
 				// Determine the name of the transform and try
 				// to resolve it as a component in the current
