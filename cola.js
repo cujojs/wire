@@ -15,17 +15,15 @@ define(['when', 'cola/AdapterResolver',
 	'cola/ResultSetAdapter', 'cola/QueryAdapter', 'cola/mediator/syncCollections',
 	'cola/ObjectAdapter', 'cola/dom/NodeAdapter',
 	'cola/ResultAdapter', 'cola/mediator/syncProperties',
-	'cola/transform/enum', 'cola/transform/expression', 'cola/addPropertyTransforms',
-	'cola/transformCollection', 'cola/transform/compose'],
+	'cola/addPropertyTransforms', 'cola/transformCollection', 'cola/transform/compose'],
 function(when, adapterResolver,
 	ArrayAdapter, NodeListAdapter, ResultSetAdapter, QueryAdapter, syncCollections,
 	ObjectAdapter, NodeAdapter,
 	ResultAdapter, syncProperties,
-	createEnumTransformer, createExpressionTransformer, addPropertyTransforms,
-	transformCollection, compose
+	addPropertyTransforms, transformCollection, compose
 ) {
 
-	var cachedBindings, isArray;
+	var cachedBindings, isArray, undef, slice;
 
 	// TODO: move most of this stuff, including adapter registration to cola.js
 	// TODO: implement wire$build that auto-adds these deps to build
@@ -44,6 +42,8 @@ function(when, adapterResolver,
 	isArray = Array.isArray || function(it) {
 		return Object.prototype.toString.call(it) == '[object Array]';
 	};
+
+	slice = Array.prototype.slice;
 
 	/**
 	 * "globally" cached bindings.  Cache bindings here so that a bind can find,
@@ -81,6 +81,15 @@ function(when, adapterResolver,
 
 	function createPropertyTransform(transforms, wire) {
 
+		if(typeof transforms == 'function') {
+			// If it's a function, just use it
+			return transforms;
+		} else if(typeof transforms == 'string') {
+			// If it's a string, assume it's the name of a component
+			// that is a transform function, and resolve it.
+			return wire.resolveRef(transforms);
+		}
+
 		if(!isArray(transforms)) {
 			transforms = [transforms];
 		}
@@ -89,18 +98,28 @@ function(when, adapterResolver,
 			function(txList, txSpec) {
 				var name;
 
-				for(name in txSpec) {
-					if(name != 'inverse') break;
+				// Determine the name of the transform and try
+				// to resolve it as a component in the current
+				// wire spec
+				if(typeof txSpec == 'string') {
+					name = txSpec;
+				} else {
+					for(name in txSpec) {
+						if(name != 'inverse') break;
+					}
 				}
 
 				return when(wire.resolveRef(name),
-					function(createTransform) {
-						var transform = createTransform(txSpec[name]);
-						txList.push(txSpec.inverse ? transform.inverse : transform);
+					function(transform) {
+						txList.push(function() {
+							var args = slice.call(arguments);
+							return transform.apply(undef, args.concat(txSpec[name]));
+						});
 						return txList;
 					}
 				);
-			}, []).then(
+			}, [])
+		.then(
 			function(txList) {
 				return txList.length > 1 ? compose(txList) : txList[0];
 			}
