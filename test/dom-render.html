@@ -21,6 +21,7 @@
 		define('template-with-strict-parent', '<li>this is a list item</li>');
 		define('template-with-complexity', '<div class="foo bar" role="menuitem" aria-haspopup="true">top-level element<span>child element</span></div>');
 		define('template-from-plugin', '<div>top-level element from plugin<code>child element</code> with mixin foo=${foo}</div>');
+		define('template-with-multi-level-mixin', '<div class="${data.class}">${data.content}</div>');
 
         require(['wire'], function(wire) {
 
@@ -78,6 +79,18 @@
 						mixin: mixin,
 						at: { $ref: 'dom!node5' }
 					}
+				},
+				node6: {
+					render: {
+						template: { module: 'template-with-multi-level-mixin' },
+						mixin: {
+							data: {
+								'class': 'class1 class2',
+								content: 'some content'
+							}
+						},
+						at: { $ref: 'dom!node6' }
+					}
 				}
 			});
 
@@ -104,7 +117,7 @@
                     wired.then(
                         function(context) {
 							// test doesn't need to do much. either we get here or we don't!
-							dohd.callback('ol' == context.node4.tagName);
+							dohd.callback('LI' == context.node4.tagName);
                         },
                         function(e) {
                             dohd.errback(e);
@@ -146,7 +159,7 @@
 					dfds.push(dohd);
 					wired.then(
 						function(context) {
-							dohd.callback(hasSameItems(['for bar orig2'], context.node2.className.split(' ')));
+							dohd.callback(hasSameItems(['foo', 'bar', 'orig2'], context.node2.className.split(' ')));
 						},
 						function(e) {
 							dohd.errback(e);
@@ -162,7 +175,27 @@
 					dfds.push(dohd);
 					wired.then(
 						function(context) {
-							dohd.callback(hasChildWithTagName(context.node3, 'code'));
+							dohd.callback(hasChildWithTagName(context.node3, 'CODE'));
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
+				}
+
+			]);
+
+			doh.register('template-with-multi-level-mixin', [
+				function multiLevel(doh) {
+					var dohd = new doh.Deferred();
+					dfds.push(dohd);
+					wired.then(
+						function(context) {
+							var classNames, innerHTML;
+							classNames = context.node6.className.split(' ');
+							innerHTML = context.node6.innerHTML;
+							dohd.callback(hasSameItems(['class1', 'class2', 'orig6'], classNames) && innerHTML == 'some content');
 						},
 						function(e) {
 							dohd.errback(e);
@@ -179,7 +212,7 @@
 					dfds.push(dohd);
 					wired.then(
 						function(context) {
-							dohd.callback(hasChildWithTagName(context.node5.innerHTML, 'code'));
+							dohd.callback(hasChildWithTagName(context.node5, 'CODE'));
 						},
 						function(e) {
 							dohd.errback(e);
@@ -210,13 +243,13 @@
 			if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
 			sorted = [arr1.sort(), arr2.sort()];
 			for (i = 0; i < sorted[0].length; i++) {
-				if (sorted[0] != sorted[1]) return false;
+				if (sorted[0][i] != sorted[1][i]) return false;
 			}
 			return true;
 		}
 
 		function hasChildWithTagName(node, tagName) {
-			for (var i = 0; i < node.childNodes; i++) {
+			for (var i = 0; i < node.childNodes.length; i++) {
 				if (node.childNodes[i].tagName == tagName) return true;
 			}
 			return false;
@@ -231,6 +264,7 @@
     <p id="node3" class="orig3"></p>
     <ol id="node4" class="orig4"></ol>
 	<p id="node5" class="orig5"></p>
+	<p id="node6" class="orig6"></p>
 </div>
 </body>
 </html>
