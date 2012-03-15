@@ -15,15 +15,15 @@
 
 define([], function() {
 
-    /**
-     * If wait === true, waits for dataPromise to complete and resolves
-     * the reference to the resulting concrete data.  If wait !== true,
-     * resolves the reference to dataPromise.
-     * 
-     * @param dataPromise
-     * @param resolver
-     * @param wait
-     */
+	/**
+	 * If wait === true, waits for dataPromise to complete and resolves
+	 * the reference to the resulting concrete data.  If wait !== true,
+	 * resolves the reference to dataPromise.
+	 *
+	 * @param dataPromise
+	 * @param resolver
+	 * @param wait
+	 */
 	function resolveData(dataPromise, resolver, wait) {
 		if(wait === true) {
 			dataPromise.then(
@@ -39,17 +39,21 @@ define([], function() {
 		}
 	}
 
-    /**
-     * Resolves a dojo.store.JsonRest for the REST resource at the url
-     * specified in the reference, e.g. resource!url/to/resource
-     *      
-     * @param resolver
-     * @param name
-     * @param refObj
-     * @param wire
-     */
+	/**
+	 * Resolves a dojo.store.JsonRest for the REST resource at the url
+	 * specified in the reference, e.g. resource!url/to/resource
+	 *
+	 * @param resolver
+	 * @param name
+	 * @param refObj
+	 * @param wire
+	 */
 	function resolveResource(resolver, name, refObj, wire) {
-		wire({ create: { module: 'dojo/store/JsonRest', args: { target: name } } })
+		var args = { target: name };
+
+		if(refObj.idProperty) args.idProperty = refObj.idProperty;
+
+		wire({ create: { module: 'dojo/store/JsonRest', args: args } })
 			.then(function(store) {
 				if(refObj.get) {
 					// If get was specified, get it, and resolve with the resulting item.
@@ -63,22 +67,22 @@ define([], function() {
 					// Neither get nor query was specified, so resolve with
 					// the store itself.
 					resolver.resolve(store);
-				}						
+				}
 			});
 	}
 
-    /**
-     * The plugin instance.  Can be the same for all wiring runs
-     */
-    var plugin = {
-        resolvers: {
-            resource: resolveResource
-        }
-    };
+	/**
+	 * The plugin instance.  Can be the same for all wiring runs
+	 */
+	var plugin = {
+		resolvers: {
+			resource: resolveResource
+		}
+	};
 
 	return {
 		wire$plugin: function restPlugin(/* ready, destroyed, options */) {
-            return plugin;
+			return plugin;
 		}
 	};
 });
