@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['when', '../domReady'], function(when, domReady) {
+define(['when'], function (when) {
 
 	var parentTypes, parseTemplateRx, getFirstTagNameRx, undef;
 
@@ -66,39 +66,18 @@ define(['when', '../domReady'], function(when, domReady) {
 		};
 	};
 
-	return render;
-
-
 	/**
 	 * Creates rendered dom trees for the "render" factory.
 	 * @param resolver
 	 * @param spec
 	 * @param wire
 	 */
-	function domRenderFactory(resolver, spec, wire) {
-		var options = spec.render;
-
-		domReady(function() {
-
-			var futureTemplate, futureMixin, futureRoot, futureCss;
-
-			// get args from spec
-			futureTemplate = options.template ? wire(options.template) : '';
-			if (options.mixin) {
-				futureMixin = wire(options.mixin);
-			}
-			if (options.at) {
-				futureRoot = wire(options.at);
-			}
-			if (options.css) {
-				futureCss = wire(options.css);
-			}
-
-			when.all([futureTemplate, futureMixin, futureRoot, futureCss], function (args) {
-				return render.apply(undef, args);
-			}).then(resolver.resolve, resolver.reject);
-
-		});
+	function domRenderFactory (resolver, spec, wire) {
+		when(wire(spec.render), function (options) {
+			var template;
+			template = options.template || '';
+			return render(template, options.mixin, options.at, options.css);
+		}).then(resolver.resolve, resolver.reject);
 	}
 
 	/**
@@ -142,8 +121,9 @@ define(['when', '../domReady'], function(when, domReady) {
 			attr = oldNode.attributes[i];
 			if ('class' == attr.name) {
 				// merge css classes
-				newClassesRx = new RegExp(newNode.className.replace(' ', '|'));
-				newNode.className = oldNode.className.replace(newClassesRx, '') + ' ' + newNode.className;
+				// TODO: if we want to be smart about not duplicating classes, implement spliceClassNames from cola/dom/render
+				newNode.className = (oldNode.className ? oldNode.className + ' ' : '')
+					+ newNode.className;
 			}
 			else if (!newNode.hasAttribute(attr.name)) {
 				newNode.setAttribute(attr.name, oldNode.getAttribute(attr.name));
@@ -165,30 +145,41 @@ define(['when', '../domReady'], function(when, domReady) {
 	 * @param template
 	 * @param hashmap {Object} the names of the properties of this object
 	 * are used as keys. The values replace the token in the string.
-	 * @param transform {Function} callback that can
+	 * @param missing {Function} callback that deals with missing properties
 	 * @returns {String}
 	 */
-	function replaceTokens (template, hashmap, transform) {
-		if (!transform) transform = blankIfMissing;
+	function replaceTokens (template, hashmap, missing) {
+		if (!missing) missing = blankIfMissing;
 		return template.replace(parseTemplateRx, function (m, token) {
-			return transform(hashmap && hashmap[token]);
+			return missing(findProperty(hashmap, token));
 		});
 	}
 
-	function nodeProxy(node) {
-		if(!node.tagName || !node.setAttribute || !node.getAttribute) return;
+	function findProperty (obj, propPath) {
+		var props, prop;
+		props = propPath.split('.');
+		while (obj && (prop = props.shift())) {
+			obj = obj[prop];
+		}
+		return obj;
+	}
+
+	function nodeProxy (node) {
+		if (!node.tagName || !node.setAttribute || !node.getAttribute) return;
 
 		return {
-			get: function() { /** TODO */ },
-			set: function() { /** TODO */ },
-			invoke: function() { /** TODO */ },
-			destroy: function() {
+			get: function () { /** TODO */ },
+			set: function () { /** TODO */ },
+			invoke: function () { /** TODO */ },
+			destroy: function () {
 				var parent = node.parentNode;
-				if(parent) parent.removeChild(node);
+				if (parent) parent.removeChild(node);
 			}
 		};
 	}
 
-	function blankIfMissing (val) { return val || ''; }
+	function blankIfMissing (val) { return val == undef ? '' : val; }
+
+	return render;
 
 });
