@@ -18,8 +18,6 @@
 					doh.register('wire-resolver ref has correct API', [
 						function(doh) {
 							doh.assertTrue(typeof context._wire == 'function');
-							doh.assertTrue(typeof context._wire.destroy == 'function');
-							doh.assertTrue(typeof context._wire.resolve == 'function');
 						},
                         function(doh) {
                             var dohd = new doh.Deferred();

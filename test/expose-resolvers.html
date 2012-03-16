@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>exposed resolver test</title>
+
+	<script src="util/doh/runner.js"></script>
+	<script src="test-config.js"></script>
+
+	<script type="text/javascript">
+		define('plugin', {
+			wire$plugin: function() {
+				return {
+					resolvers: {
+						test: function(resolver, name, refObj, wire) {
+							resolver.resolve({ value: name, options: refObj });
+						}
+					}
+				};
+			}
+		});
+
+		require(['wire'], function(wire) {
+
+			doh.register('exposed-resolvers', [
+				function(doh) {
+					dohd = new doh.Deferred();
+
+					wire({
+						plugin: { module: 'plugin' },
+						test: { $ref: 'test!' }
+					}).then(
+						function(context) {
+							var success, options;
+
+							success = typeof context.test == 'function';
+							options = { a: 'b' };
+
+							context.test(1, options).then(function(resolved) {
+								success = success
+									&& resolved.value === 1
+									&& resolved.options === options;
+
+								dohd.callback(success);
+							});
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+
+					return dohd;
+				}
+			]);
+
+			doh.run();
+
+		});
+	</script>
+</head>
+<body>
+
+</body>
+</html>
