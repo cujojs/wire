@@ -19,6 +19,10 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 		return (root||document).querySelectorAll(selector);
 	}
 
+	function defaultQuery(selector, root) {
+		return (root||document).querySelector(selector);
+	}
+
 	/**
 	 * Places a node into the DOM at the location specified around
 	 * a reference node.
@@ -85,10 +89,11 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 	return function(options) {
 
-		var getById, query, init, addClass, removeClass, placeAt;
+		var getById, query, first, init, addClass, removeClass, placeAt;
 
 		getById = options.byId || defaultById;
 		query = options.query || defaultQueryAll;
+		first = options.first || defaultQuery;
 		init = options.init;
 
 		addClass = options.addClass;
@@ -107,18 +112,21 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 			});
 		}
 
-		function doQuery(name, refObj, root) {
+		function doQuery(name, refObj, root, queryFunc) {
 			var result, i;
 
-			result = query(name, root);
-			i = refObj.i;
+			result = queryFunc(name, root);
 
-			if (typeof i == 'number') {
-				if (i < result.length) {
+			// if dev supplied i, try to use it
+			if (typeof refObj.i != 'undefined') {
+				i = refObj.i;
+				if (i in result) {
 					return result[i];
 				} else {
-					throw new Error("Query '" + name + "' returned " + result.length + " items while expecting at least " + (i + 1));
+					throw new Error("Query '" + name + "' did not find an item at position " + i);
 				}
+			} else if (queryFunc == first && !result) {
+				throw new Error("Query '" + name + "' did not find anything");
 			} else {
 				return result;
 			}
@@ -147,11 +155,13 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 			});
 		}
 
-		function resolveQuery(resolver, name, refObj, wire) {
+		function resolveQuery(resolver, name, refObj, wire, queryFunc) {
 
 			domReady(function() {
 
 				var futureRoot;
+
+				if (!queryFunc) queryFunc = query;
 
 				// get string ref or object ref
 				if (refObj.at && !refObj.isRoot) {
@@ -160,7 +170,7 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 				// sizzle will default to document if refObj.at is unspecified
 				when(futureRoot, function (root) {
-					return doQuery(name, refObj, root);
+					return doQuery(name, refObj, root, queryFunc);
 				}).then(resolver.resolve, resolver.reject);
 
 			});
@@ -177,8 +187,7 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 		 * @param wire {Function} wire()
 		 */
 		function resolveFirst(resolver, name, refObj, wire) {
-			refObj.i = 0;
-			resolveQuery(resolver, name, refObj, wire);
+			resolveQuery(resolver, name, refObj, wire, first);
 		}
 
 		function makeQueryRoot(ref) {
