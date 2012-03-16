@@ -1,49 +1,35 @@
 <!DOCTYPE HTML>
 <html lang="en-US">
 <head>
-	<meta charset="UTF-8">
-	<title>Dojo dom query test</title>
+    <meta charset="UTF-8">
+    <title>dom test</title>
 
     <script src="../util/doh/runner.js"></script>
     <script src="../test-config.js"></script>
 
-	<script type="text/javascript">
-		require(['wire'], function(wire) {
-			wire({
-				plugins: [
-					{ module: 'wire/debug' },
-					{ module: 'wire/dojo/dom' }
-				],
-				test: {
-					module: 'test',
-					properties: {
-						nodes: { $ref: 'dom.query!.test' },
-						node:  { $ref: 'dom.query!.test', i: 1 }
-					}
-				}
-			}).then(
-				function(context) {
-                    doh.register('wire/dojo/dom', [
-                        function testDomQuery(doh) {
-                            doh.assertTrue(context.test.nodes.length === 3);
-                        },
-                        function testDomQueryWithIndex(doh) {
-                            doh.assertTrue(context.test.node.nodeType === 1);
-                        }
-                    ]);
-                    
-                    doh.run();
-				},
-				function(err) {
-					console.error("wire/dojo/dom: FAILED " + err);
-				}
-			);			
-		});
+    <script type="text/javascript">
+		var pluginName = 'wire/dojo/dom';
 	</script>
+
+	<script src="../test-dom.js"></script>
 </head>
 <body>
+<div>
+	<div>
+		<p id="node1"></p>
+		<p id="node2"></p>
+	</div>
 	<div class="test one"></div>
 	<div class="test two"></div>
 	<div class="test three"></div>
+	<div id="at-tests">
+		<div class="root">
+			<p class="at-test ok"></p>
+		</div>
+		<div class="fake">
+			<p class="at-test fail"></p>
+		</div>
+	</div>
+</div>
 </body>
 </html>

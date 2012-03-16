@@ -93,6 +93,60 @@ require(['wire'], function(wire) {
 					return dohd;
 				},
 				function(doh) {
+					// should fail wiring when query fails
+					var dohd = new doh.Deferred();
+
+					wire({
+						dom: { module: pluginName },
+						node: { $ref: 'dom.all!.test', i: -1 }
+					}).then(
+						function(e) {
+							dohd.errback(e);
+						},
+						function() {
+							dohd.callback(true);
+						}
+					);
+
+					return dohd;
+				},
+				function domAllWithNonNumericIndex(doh) {
+					// should fail wiring when query fails
+					var dohd = new doh.Deferred();
+
+					wire({
+						dom: { module: pluginName },
+						node: { $ref: 'dom.all!.test', i: 'foo' }
+					}).then(
+						function(e) {
+							dohd.errback(e);
+						},
+						function() {
+							dohd.callback(true);
+						}
+					);
+
+					return dohd;
+				},
+				function domFirstWithIndex(doh) {
+					// should fail wiring when query fails
+					var dohd = new doh.Deferred();
+
+					wire({
+						dom: { module: pluginName },
+						node: { $ref: 'dom.first!.test', i: 0 }
+					}).then(
+						function(e) {
+							dohd.errback(e);
+						},
+						function() {
+							dohd.callback(true);
+						}
+					);
+
+					return dohd;
+				},
+				function(doh) {
 					// ensure the at option works at the plugin level
 					var dohd = new doh.Deferred();
 

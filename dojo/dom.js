@@ -15,6 +15,9 @@ define(['../plugin-base/dom', 'dojo'], function(createDomPlugin, dojo) {
 	return createDomPlugin({
 		byId: dojo.byId,
 		query: dojo.query,
+		first: function () {
+			return dojo.query.apply(dojo, arguments)[0];
+		},
 		addClass: dojo.addClass,
 		removeClass: dojo.removeClass,
 		placeAt: dojo.place
