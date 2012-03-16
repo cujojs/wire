@@ -1056,8 +1056,13 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	 * @param prototype
 	 */
 	function createObject(prototype) {
+		var created;
+
 		T.prototype = prototype;
-		return new T();
+		created = new T();
+		T.prototype = undef;
+
+		return created;
 	}
 
 	/**
@@ -1082,13 +1087,21 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	 */
 	function instantiate(ctor, args, forceConstructor) {
 
+		var begotten;
+
 		if (forceConstructor || isConstructor(ctor)) {
 			Begetter.prototype = ctor.prototype;
 			Begetter.prototype.constructor = ctor;
-			return new Begetter(ctor, args);
+			begotten = new Begetter(ctor, args);
+
+			Begetter.prototype = undef;
+
 		} else {
-			return ctor.apply(null, args);
+			begotten = ctor.apply(null, args);
+
 		}
+
+		return begotten;
 	}
 
 	/**
