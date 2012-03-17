@@ -13,9 +13,11 @@
 define(['../plugin-base/dom', 'jquery'], function(createDomPlugin, jquery) {
 
 	return createDomPlugin({
-		query: jquery,
+		query: function (selector, root) {
+			return jquery(selector, root).toArray();
+		},
 		first: function (selector, root) {
-			return jquery(selector, root).first();
+			return jquery(selector, root)[0];
 		},
 		addClass: function(node, cls) {
 			jquery(node).addClass(cls);
