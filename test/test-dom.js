@@ -8,43 +8,43 @@ require(['wire'], function(wire) {
 		node1: { $ref: 'dom.all!#node1' },
 		divs: { $ref: 'dom.all!.test' },
 		div: { $ref: 'dom.all!.test', i: 0 },
-		first: { $ref: 'dom.all!div', i: 0 },
-		deep: { $ref: 'dom.all!p', at: { $ref: 'first' }, i: 0 },
-		deep2: { $ref: 'dom.all!p', at: 'first', i: 0 },
+		atNode: { $ref: 'dom.all!div', i: 0 },
+		deep: { $ref: 'dom.all!p', at: { $ref: 'atNode' }, i: 0 },
+		deep2: { $ref: 'dom.all!p', at: 'atNode', i: 0 },
 		domFirst: { $ref: 'dom.first!.test' },
 //				domFirstFirst: { $ref: 'dom.first!.test:first' },
 //				domFirstDeep: { $ref: 'dom.first!div:first p' },
-		domFirstAt: { $ref: 'dom.first!p', at: { $ref: 'first' } }
+		domFirstAt: { $ref: 'dom.first!p', at: { $ref: 'atNode' } }
 	}).then(
 		function(context) {
 			doh.register(pluginName, [
-				function(doh) {
+				function domAllReturnsAtLeastOne(doh) {
 					// dom.all/query always returns an array, so test
 					// against the first
 					doh.assertEqual(1, context.node1.length);
 					doh.assertEqual('node1', context.node1[0].id);
 				},
-				function(doh) {
+				function domAllLength(doh) {
 					doh.assertEqual(3, context.divs.length);
 				},
-				function(doh) {
+				function domAllIndexZeroReturnsFirst(doh) {
 					// Using the plugin's i option to extract a single
 					// node
 					doh.assertEqual('test one', context.div.className);
 				},
-				function(doh) {
-					// Checking for :first advanced selector.
-					doh.assertEqual('DIV', context.first && context.first.tagName);
-				},
-				function(doh) {
+//				function(doh) {
+//					// Checking for :first advanced selector.
+//					doh.assertEqual('DIV', context.first && context.first.tagName);
+//				},
+				function domAllAtWithRef(doh) {
 					// Checking "at" option (root/context).
 					doh.assertEqual('node1', context.deep && context.deep.id);
 				},
-				function(doh) {
+				function domAllAtWithString(doh) {
 					// Checking "at" option without $ref
 					doh.assertEqual('node1', context.deep2 && context.deep2.id);
 				},
-				function(doh) {
+				function domFirst(doh) {
 					// basic dom.first!
 					doh.assertEqual('test one', context.domFirst.className);
 				},
@@ -56,7 +56,7 @@ require(['wire'], function(wire) {
 //							// ensure dom.first! works with "at"
 //							doh.assertEqual('node1', context.domFirstDeep.id);
 //						},
-				function(doh) {
+				function domFirstNoMatch(doh) {
 					// should fail wiring when query fails
 					var dohd = new doh.Deferred();
 
@@ -74,7 +74,7 @@ require(['wire'], function(wire) {
 
 					return dohd;
 				},
-				function(doh) {
+				function domAllOutOfBoundsHigh(doh) {
 					// should fail wiring when query fails
 					var dohd = new doh.Deferred();
 
@@ -92,7 +92,7 @@ require(['wire'], function(wire) {
 
 					return dohd;
 				},
-				function(doh) {
+				function domAllOutOfBoundsLow(doh) {
 					// should fail wiring when query fails
 					var dohd = new doh.Deferred();
 
@@ -146,7 +146,7 @@ require(['wire'], function(wire) {
 
 					return dohd;
 				},
-				function(doh) {
+				function pluginAt(doh) {
 					// ensure the at option works at the plugin level
 					var dohd = new doh.Deferred();
 
@@ -162,7 +162,7 @@ require(['wire'], function(wire) {
 
 					return dohd;
 				},
-				function(doh) {
+				function optionAtOverridespluginAt(doh) {
 					// ensure the at option is overridable
 					var dohd = new doh.Deferred();
 
@@ -202,7 +202,7 @@ require(['wire'], function(wire) {
 
 					return dohd;
 				},
-				function(doh) {
+				function unresolveableSelectorIsUnresolvable(doh) {
 					var dohd = new doh.Deferred();
 
 					wire({
