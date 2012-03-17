@@ -26,35 +26,35 @@ define(['../plugin-base/dom', 'jquery'], function(createDomPlugin, jquery) {
 			jquery(node).removeClass(cls);
 		},
 		placeAt: function (node, refNode, location) {
-			var $node = jquery(node);
+			var $refNode, $children;
+			$refNode = jquery(refNode);
 			// `if else` is more compressible than switch
 			if (!isNaN(location)) {
-				var $children;
-				$children = $node.siblings();
+				$children = $(refNode).children();
 				if (location <= 0) {
-					$node.prependTo(refNode);
+					$refNode.prepend(node);
 				}
-				else if (location >= children.length) {
-					$node.appendTo(refNode);
+				else if (location >= $children.length) {
+					$refNode.append(node);
 				}
 				else {
 					$children.eq(location).before(node);
 				}
 			}
-			else if(location == 'at') {
-				jquery(refNode).empty().append(node);
+			else if (location == 'at') {
+				$refNode.empty().append(node);
 			}
-			else if(location == 'last') {
-				$node.appendTo(refNode);
+			else if (location == 'last') {
+				$refNode.append(node);
 			}
-			else if(location == 'first') {
-				$node.prependTo(refNode);
+			else if (location == 'first') {
+				$refNode.prepend(node);
 			}
-			else if(location == 'before') {
-				$node.insertBefore(refNode);
+			else if (location == 'before') {
+				$refNode.before(node);
 			}
-			else if(location == 'after') {
-				$node.insertAfter(refNode);
+			else if (location == 'after') {
+				$refNode.after(node);
 			}
 			else {
 				throw new Error('Unknown dom insertion command: ' + location);
