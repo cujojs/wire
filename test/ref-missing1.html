@@ -4,80 +4,80 @@
 	<meta charset="UTF-8">
 	<title>Missing reference test</title>
 
-    <script src="util/doh/runner.js"></script>
-    <script src="test-config.js"></script>
+	<script src="util/doh/runner.js"></script>
+	<script src="test-config.js"></script>
 
 	<script type="text/javascript">
-        define('test', function() {
-            function Test() {}
-            
-            Test.prototype = {
-                test: function() {}
-            };
-            
-            return Test;
-        });
+		define('test', function() {
+			function Test() {}
+
+			Test.prototype = {
+				test: function() {}
+			};
+
+			return Test;
+		});
 
 		// Simple example of wiring in objects by reference using JSON ref syntax
 		require(['wire'], function(wire) {
-            doh.register('ref-missin1', [
-                function(doh) {
-                    var dohd = new doh.Deferred();
-                    
-                    wire({
-                        thingRef: { $ref: 'thing' }
-                    }).then(
-                        function(context) { dohd.errback("Missing ref did not cause failure"); },
-                        function(e) { dohd.callback(true); }
-                    );
+			doh.register('ref-missin1', [
+				function(doh) {
+					var dohd = new doh.Deferred();
 
-                    return dohd;
-                },
-                function(doh) {
-                    var dohd = new doh.Deferred();
+					wire({
+						thingRef: { $ref: 'thing' }
+					}).then(
+						function(context) { dohd.errback("Missing ref did not cause failure"); },
+						function(e) { dohd.callback(true); }
+					);
 
-                    wire({
-                        propTest: {
-                            create: 'test',
-                            properties: {
-                                thingProp: { $ref: 'thing' }
-                            }
-                        }
-                    }).then(
-                        function(context) { dohd.errback("Missing ref did not cause failure: " + context.propTest.thingProp); },
-                        function(e) { dohd.callback(true); }
-                    );
+					return dohd;
+				},
+				function(doh) {
+					var dohd = new doh.Deferred();
 
-                    return dohd;
-                },
-                function(doh) {
-                    var dohd = new doh.Deferred();
+					wire({
+						propTest: {
+							create: 'test',
+							properties: {
+								thingProp: { $ref: 'thing' }
+							}
+						}
+					}).then(
+						function(context) { dohd.errback("Missing ref did not cause failure: " + context.propTest.thingProp); },
+						function(e) { dohd.callback(true); }
+					);
 
-                    wire({}).then(
-                        function(parent) {
-                            parent.wire({
-                                propTest: {
-                                    create: 'test',
-                                    properties: {
-                                        thingProp: { $ref: 'thing' }
-                                    }
-                                }
-                            }).then(
-                                function(context) { dohd.errback("Missing ref did not cause failure: " + context.propTest.thingProp); },
-                                function(e) { dohd.callback(true); }
-                            );
-                        },
-                        function(e) {
-                            dohd.errback(e);
-                        }
-                    );
+					return dohd;
+				},
+				function(doh) {
+					var dohd = new doh.Deferred();
 
-                    return dohd;
-                }
+					wire({}).then(
+						function(parent) {
+							parent.wire({
+								propTest: {
+									create: 'test',
+									properties: {
+										thingProp: { $ref: 'thing' }
+									}
+								}
+							}).then(
+								function(context) { dohd.errback("Missing ref did not cause failure: " + context.propTest.thingProp); },
+								function(e) { dohd.callback(true); }
+							);
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
 
-            ]);
+					return dohd;
+				}
 
-            doh.run();
+			]);
+
+			doh.run();
 
 		});
 	</script>

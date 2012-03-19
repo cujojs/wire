@@ -378,13 +378,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			// is resolved.
 			// When this scope is ready, resolve the contextPromise
 			// with the objects that were created
-			return whenAll(promises,
-				function () {
-					scopeReady.resolve(scope);
-					return objects;
-				},
-				chainReject(scopeReady)
-			);
+			return chain(whenAll(promises), scopeReady, objects);
 		}
 
 		//
@@ -511,6 +505,12 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				objects[name] = local[name] = resolved;
 				itemPromise.resolve(resolved);
 			}, chainReject(itemPromise));
+//			}, function(e) {
+//				console.log("ERRRRRRRRRRRR", e);
+//				itemPromise.reject(e);
+//				return rejected(e);
+////				chainReject(itemPromise)
+//			});
 		}
 
 		function createItem(val, name) {
