@@ -232,7 +232,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	 */
 	function createScope(scopeDef, parent, scopeName) {
 		var scope, scopeParent, local, proxied, objects,
-				pluginApi, resolvers, exposedResolvers, factories, facets, listeners, proxies,
+				pluginApi, resolvers, factories, facets, listeners, proxies,
 				modulesToLoad, moduleLoadPromises,
 				wireApi, modulesReady, scopeReady, scopeDestroyed,
 				contextPromise, doDestroy;
@@ -281,7 +281,6 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			// use them directly via the prototype chain
 			objects = delegate(parent.objects || {});
 			resolvers = delegate(parent.resolvers || {});
-			exposedResolvers = delegate(parent.exposedResolvers || {});
 			factories = delegate(parent.factories || {});
 			facets = delegate(parent.facets || {});
 
@@ -439,7 +438,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
 				// Free Objects
 				local = objects = scope = proxied = proxies = parent
-						= resolvers = exposedResolvers = factories = facets
+						= resolvers = factories = facets
 						= wireApi = undef;
 
 				// Free Arrays
@@ -931,29 +930,12 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 					// resolved by a resolver plugin
 					when(modulesReady, function () {
 
-						var resolver, exposed;
+						var resolver = resolvers[resolverName];
 
-						resolver = resolvers[resolverName];
 						if (resolver) {
-							if(refName) {
-								resolver(deferred.resolver, refName, refObj||{}, pluginApi);
-
-							} else {
-								if(!exposedResolvers[resolverName]) {
-									exposed = exposedResolvers[resolverName] = function(name, options) {
-										var d = defer();
-										resolver(d.resolver, name, options||{}, pluginApi);
-
-										return d.promise;
-									};
-								}
-
-								deferred.resolve(exposed);
-							}
-
+							resolver(deferred.resolver, refName, refObj||{}, pluginApi);
 						} else {
 							deferred.reject("No resolver found for ref: " + refName);
-
 						}
 					});
 
@@ -973,8 +955,8 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		 *
 		 * @param resolver {Resolver} resolver to resolve
 		 */
-		function wireResolver(resolver, name /*, refObj, wire*/) {
-			chain(wireApi(name), resolver);
+		function wireResolver(resolver /*, name, refObj, wire*/) {
+			resolver.resolve(wireApi);
 		}
 
 		//
