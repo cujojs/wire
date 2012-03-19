@@ -87,7 +87,7 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 		parent.appendChild(node);
 	}
 
-	return function(options) {
+	return function createDomPlugin(options) {
 
 		var getById, query, first, init, addClass, removeClass, placeAt;
 

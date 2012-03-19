@@ -12,9 +12,10 @@ require(['wire'], function(wire) {
 		deep: { $ref: 'dom.all!p', at: { $ref: 'atNode' }, i: 0 },
 		deep2: { $ref: 'dom.all!p', at: 'atNode', i: 0 },
 		domFirst: { $ref: 'dom.first!.test' },
-//				domFirstFirst: { $ref: 'dom.first!.test:first' },
-//				domFirstDeep: { $ref: 'dom.first!div:first p' },
-		domFirstAt: { $ref: 'dom.first!p', at: { $ref: 'atNode' } }
+		domFirstAt: { $ref: 'dom.first!p', at: { $ref: 'atNode' } },
+		byIdResolver: { $ref:'dom!' },
+		firstResolver: { $ref:'dom.first!' },
+		allResolver: { $ref:'dom.all!' }
 	}).then(
 		function(context) {
 			doh.register(pluginName, [
@@ -32,10 +33,6 @@ require(['wire'], function(wire) {
 					// node
 					doh.assertEqual('test one', context.div.className);
 				},
-//				function(doh) {
-//					// Checking for :first advanced selector.
-//					doh.assertEqual('DIV', context.first && context.first.tagName);
-//				},
 				function domAllAtWithRef(doh) {
 					// Checking "at" option (root/context).
 					doh.assertEqual('node1', context.deep && context.deep.id);
@@ -48,14 +45,21 @@ require(['wire'], function(wire) {
 					// basic dom.first!
 					doh.assertEqual('test one', context.domFirst.className);
 				},
-//						function(doh) {
-//							// ensure dom.first! works even when :first is already present
-//							doh.assertEqual('test one', context.domFirstFirst.className);
-//						},
-//						function(doh) {
-//							// ensure dom.first! works with "at"
-//							doh.assertEqual('node1', context.domFirstDeep.id);
-//						},
+				function byIdResolver(doh) {
+					// should return a byId resolver
+					var node = context.byIdResolver('node1');
+					doh.assertEqual(node, context.node1[0]);
+				},
+				function firstResolver(doh) {
+					// should return a byId resolver
+					var node = context.firstResolver('.test');
+					doh.assertEqual(node, context.domFirst);
+				},
+				function allResolver(doh) {
+					// should return a byId resolver
+					var node = context.allResolver('div')[0];
+					doh.assertEqual(node, context.atNode);
+				},
 				function domFirstNoMatch(doh) {
 					// should fail wiring when query fails
 					var dohd = new doh.Deferred();
