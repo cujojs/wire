@@ -102,9 +102,13 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 		placeAt = options.placeAt || defaultPlaceAt;
 
 		function doById(resolver, name /*, refObj, wire*/) {
+
 			domReady(function() {
-				var node = getById(name);
-				if(node) {
+				var node;
+				// if dev omitted name, they're looking for the resolver itself
+				if (!name) resolver.resolve(getById);
+				node = getById(name);
+				if (node) {
 					resolver.resolve(node);
 				} else {
 					resolver.reject(new Error("No DOM node with id: " + name));
@@ -155,13 +159,24 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 			});
 		}
 
+		/**
+		 *
+		 * @param resolver {Resolver} resolver to notify when the ref has been resolved
+		 * @param name {String} the dom query
+		 * @param refObj {Object} the full reference object, including options
+		 * @param wire {Function} wire()
+		 * @param [queryFunc] {Function} the function to use to query the dom
+		 */
 		function resolveQuery(resolver, name, refObj, wire, queryFunc) {
+
+			if (!queryFunc) queryFunc = query;
 
 			domReady(function() {
 
 				var futureRoot;
 
-				if (!queryFunc) queryFunc = query;
+				// if dev omitted name, they're looking for the resolver itself
+				if (!name) return resolver.resolve(queryFunc);
 
 				// get string ref or object ref
 				if (refObj.at && !refObj.isRoot) {
@@ -178,8 +193,7 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 		}
 
 		/**
-		 * dom.first! resolver.  Since sizzle supports :first, we can optimize dom.first
-		 * by adding :first if it's not already there.
+		 * dom.first! resolver.
 		 *
 		 * @param resolver {Resolver} resolver to notify when the ref has been resolved
 		 * @param name {String} the dom query
