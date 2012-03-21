@@ -37,7 +37,7 @@
 	doh.registerUrl('literal-factory', '../../literal.html' + hash);
 
 	// wire/dom
-	doh.registerUrl('dom-resolver', '../../dom1.html' + hash);
+	doh.registerUrl('dom-resolver', '../../dom.html' + hash);
 
 	// wire/aop
 	doh.registerUrl('decorate1', '../../wire/aop/decorate1.html' + hash);
