@@ -336,6 +336,10 @@ define(['aop'], function(aop) {
 
     })();
 
+	function logSeparator() {
+		logger.log('---------------------------------------------------');
+	}
+
     return {
         wire$plugin:function debugPlugin(ready, destroyed, options) {
 
@@ -422,36 +426,44 @@ define(['aop'], function(aop) {
             function checkPaths() {
                 if (!checkPathsTimeout) return;
 
-                var p, path, msg, msgs;
+                var p, component, msg, ready, notReady;
 
-                if(count) {
-					msgs = [];
+				logSeparator();
+				if(count) {
+					ready = [];
+					notReady = [];
 					logger.error(tag + ': No progress in ' + timeout + 'ms, status:');
 
                     for (p in paths) {
-                        path = paths[p];
-						msg = p + ': ' + path.status;
-						msgs.push({ msg: msg, status: path.status, spec: path.spec });
+                        component = paths[p];
+						msg = p + ': ' + component.status;
+
+						(component.status == 'ready' ? ready : notReady).push(
+							{ msg: msg, spec: component.spec }
+						);
                     }
 
-					msgs.sort(function(a, b) {
-						return a.status == b.status ? 0
-							: a.status == 'ready' ? -1 : 1
-					});
-
-					for(p = msgs.length-1; p >= 0; --p) {
-						msg = msgs[p];
-						if(msg.status == 'ready') {
-							logger.info(msg.msg, msg.spec);
-						} else {
-							logger.error(msg.msg, msg.spec);
+					if(notReady.length > 0) {
+						logSeparator();
+						logger.log('Components that DID NOT finish wiring');
+						for(p = notReady.length-1; p >= 0; --p) {
+							component = notReady[p];
+							logger.error(component.msg, component.spec);
 						}
+					}
 
+					for(p = ready.length-1; p >= 0; --p) {
+						logSeparator();
+						logger.log('Components that finished wiring');
+						component = ready[p];
+						logger.log(component.msg, component.spec);
 					}
                 } else {
                     logger.error(tag + ': No components created after ' + timeout + 'ms');
                 }
-            }
+
+				logSeparator();
+			}
 
             plugin = {
                 create:function (promise, proxy) {
