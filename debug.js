@@ -336,6 +336,10 @@ define(['aop'], function(aop) {
 
     })();
 
+	function logSeparator() {
+		logger.log('---------------------------------------------------');
+	}
+
     return {
         wire$plugin:function debugPlugin(ready, destroyed, options) {
 
@@ -422,19 +426,44 @@ define(['aop'], function(aop) {
             function checkPaths() {
                 if (!checkPathsTimeout) return;
 
-                var p, path;
+                var p, component, msg, ready, notReady;
 
-                if(count) {
-                    logger.error(tag + ': No progress in ' + timeout + 'ms, status:');
+				logSeparator();
+				if(count) {
+					ready = [];
+					notReady = [];
+					logger.error(tag + ': No progress in ' + timeout + 'ms, status:');
 
                     for (p in paths) {
-                        path = paths[p];
-                        logger.info(p + ': ' + path.status, path.spec);
+                        component = paths[p];
+						msg = p + ': ' + component.status;
+
+						(component.status == 'ready' ? ready : notReady).push(
+							{ msg: msg, spec: component.spec }
+						);
                     }
+
+					if(notReady.length > 0) {
+						logSeparator();
+						logger.log('Components that DID NOT finish wiring');
+						for(p = notReady.length-1; p >= 0; --p) {
+							component = notReady[p];
+							logger.error(component.msg, component.spec);
+						}
+					}
+
+					for(p = ready.length-1; p >= 0; --p) {
+						logSeparator();
+						logger.log('Components that finished wiring');
+						component = ready[p];
+						logger.log(component.msg, component.spec);
+					}
                 } else {
                     logger.error(tag + ': No components created after ' + timeout + 'ms');
                 }
-            }
+
+				logSeparator();
+			}
 
             plugin = {
                 create:function (promise, proxy) {
