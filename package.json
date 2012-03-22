@@ -34,10 +34,13 @@
     ],
     "dependencies": {
         "aop": "git://github.com/cujojs/aop#0.5.3",
-        "when": "git://github.com/cujojs/when#1.0.2"
+        "when": "git://github.com/cujojs/when#1.0.4"
     },
     "main": "./wire",
     "directories": {
         "test": "test"
-    }
+    },
+	"scripts": {
+		"test": "buster test -e node"
+	}
 }
