@@ -70,7 +70,9 @@ function(when, adapterResolver,
 
 	function mixin(dst, src) {
 		for(var p in src) {
-			dst[p] = src[p];
+			if(src.hasOwnProperty(p)) {
+				dst[p] = src[p];
+			}
 		}
 		return dst;
 	}
@@ -147,7 +149,9 @@ function(when, adapterResolver,
 		var promises = [];
 
 		for(var name in bindingSpecs) {
-			promises.push(setupBinding(bindingSpecs, name, wire));
+			if(bindingSpecs.hasOwnProperty(name)) {
+				promises.push(setupBinding(bindingSpecs, name, wire));
+			}
 		}
 
 		return when.reduce(promises, function(bindings, bindingSpec) {
@@ -276,7 +280,7 @@ function(when, adapterResolver,
 						when(wire(proxy.options), function(options) {
 							var datasource;
 
-							if(options.to) {
+							if(proxy.options.to) {
 								datasource = options.to;
 							} else {
 								datasource = options;

@@ -248,8 +248,6 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
 		contextPromise = initContextPromise(scopeDef, scopeReady);
 
-		initWireApi(objects);
-
 		createComponents(local, scopeDef);
 
 		// Once all modules are loaded, all the components can finish
@@ -279,10 +277,11 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
 			// Descend scope and plugins from parent so that this scope can
 			// use them directly via the prototype chain
-			objects = delegate(parent.objects || {});
+			objects = initWireApi(delegate(parent.objects || {}));
 			resolvers = delegate(parent.resolvers || {});
 			factories = delegate(parent.factories || {});
 			facets = delegate(parent.facets || {});
+
 
 			// Set/override integral resolvers and factories
 			resolvers.wire   = wireResolver;
@@ -342,6 +341,8 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			// Any reference you could resolve using this should simply be
 			// injected instead.
 			wireApi.resolve = objects.resolve = apiResolveRef;
+
+			return delegate(objects);
 		}
 
 		function initPluginApi() {
@@ -504,12 +505,6 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				objects[name] = local[name] = resolved;
 				itemPromise.resolve(resolved);
 			}, chainReject(itemPromise));
-//			}, function(e) {
-//				console.log("ERRRRRRRRRRRR", e);
-//				itemPromise.reject(e);
-//				return rejected(e);
-////				chainReject(itemPromise)
-//			});
 		}
 
 		function createItem(val, name) {
@@ -912,7 +907,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		}
 
 		function doResolveRef(refName, refObj, scope) {
-			var promise, deferred, split;
+			var promise, deferred, split, resolverName;
 
 			scope = scope || objects;
 
@@ -924,7 +919,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				split = refName.indexOf('!');
 
 				if (split > 0) {
-					var resolverName = refName.substring(0, split);
+					resolverName = refName.substring(0, split);
 					refName = refName.substring(split + 1);
 					// Wait for modules, since the reference may need to be
 					// resolved by a resolver plugin
