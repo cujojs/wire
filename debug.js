@@ -422,15 +422,32 @@ define(['aop'], function(aop) {
             function checkPaths() {
                 if (!checkPathsTimeout) return;
 
-                var p, path;
+                var p, path, msg, msgs;
 
                 if(count) {
-                    logger.error(tag + ': No progress in ' + timeout + 'ms, status:');
+					msgs = [];
+					logger.error(tag + ': No progress in ' + timeout + 'ms, status:');
 
                     for (p in paths) {
                         path = paths[p];
-                        logger.info(p + ': ' + path.status, path.spec);
+						msg = p + ': ' + path.status;
+						msgs.push({ msg: msg, status: path.status, spec: path.spec });
                     }
+
+					msgs.sort(function(a, b) {
+						return a.status == b.status ? 0
+							: a.status == 'ready' ? -1 : 1
+					});
+
+					for(p = msgs.length-1; p >= 0; --p) {
+						msg = msgs[p];
+						if(msg.status == 'ready') {
+							logger.info(msg.msg, msg.spec);
+						} else {
+							logger.error(msg.msg, msg.spec);
+						}
+
+					}
                 } else {
                     logger.error(tag + ': No components created after ' + timeout + 'ms');
                 }
