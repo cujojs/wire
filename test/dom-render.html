@@ -10,7 +10,7 @@
     <script type="text/javascript">
 
 		var simpleText = 'this is a simple template',
-			mixin = {
+			replace = {
 				foo: 'foo',
 				bar: 'bar'
 			};
@@ -20,8 +20,8 @@
 		define('template-with-children', '<div>top-level element <code>child element</code></div>');
 		define('template-with-strict-parent', '<li>this is a list item</li>');
 		define('template-with-complexity', '<div class="foo bar" role="menuitem" aria-haspopup="true">top-level element<span>child element</span></div>');
-		define('template-from-plugin', '<div>top-level element from plugin<code>child element</code> with mixin foo=${foo}</div>');
-		define('template-with-multi-level-mixin', '<div class="${data.class}">${data.content}</div>');
+		define('template-from-plugin', '<div>top-level element from plugin<code>child element</code> with replace foo=${foo}</div>');
+		define('template-with-multi-level-replace', '<div class="${data.class}">${data.content}</div>');
 
         require(['wire'], function(wire) {
 
@@ -76,14 +76,14 @@
 				node5: {
 					render: {
 						template: { module: 'template-from-plugin' },
-						mixin: mixin,
+						replace: replace,
 						at: { $ref: 'dom!node5' }
 					}
 				},
 				node6: {
 					render: {
-						template: { module: 'template-with-multi-level-mixin' },
-						mixin: {
+						template: { module: 'template-with-multi-level-replace' },
+						replace: {
 							data: {
 								'class': 'class1 class2',
 								content: 'some content'
@@ -186,7 +186,7 @@
 
 			]);
 
-			doh.register('template-with-multi-level-mixin', [
+			doh.register('template-with-multi-level-replace', [
 				function multiLevel(doh) {
 					var dohd = new doh.Deferred();
 					dfds.push(dohd);

@@ -76,7 +76,7 @@ define(['when'], function (when) {
 		when(wire(spec.render), function (options) {
 			var template;
 			template = options.template || '';
-			return render(template, options.mixin, options.at, options.css);
+			return render(template, options.replace, options.at, options.css);
 		}).then(resolver.resolve, resolver.reject);
 	}
 
