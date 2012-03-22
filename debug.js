@@ -454,8 +454,8 @@ define(['aop'], function(aop) {
 
 					if(ready.length > 0) {
 						logSeparator();
+						logger.log('Components that finished wiring');
 						for(p = ready.length-1; p >= 0; --p) {
-							logger.log('Components that finished wiring');
 							component = ready[p];
 							logger.log(component.msg, component.spec);
 						}
