@@ -379,8 +379,8 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			// When this scope is ready, resolve the contextPromise
 			// with the objects that were created
 			return chain(whenAll(promises), scopeReady,
-				'wire$exports' in objects
-					? objects.wire$exports
+				'$exports' in objects
+					? objects.$exports
 					: objects);
 		}
 
