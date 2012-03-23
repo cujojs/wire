@@ -101,7 +101,7 @@ define(['aop'], function(aop) {
                 : e.message || e;
         }
 
-        console.error(stack);
+        logger.error(stack);
     }
 
     timer = createTimer();
