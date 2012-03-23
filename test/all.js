@@ -48,7 +48,7 @@
 	doh.registerUrl('sizzle', '../../sizzle.html' + hash);
 
 	// wire/dojo/
-	doh.registerUrl('wire/dojo/pubsub', '../../dojo/pubsub1.html' + hash);
+	// doh.registerUrl('wire/dojo/pubsub', '../../dojo/pubsub1.html' + hash);
 
 	// Go
 	doh.run();
