@@ -15,12 +15,15 @@ define(['when'], function (when) {
 
 	var parentTypes, parseTemplateRx, getFirstTagNameRx, undef;
 
+	// elements that could be used as root nodes and their natural parent type
 	parentTypes = {
+		'li': 'ul',
 		'td': 'tr',
 		'tr': 'tbody',
 		'tbody': 'table',
-		'li': 'ul'
-		// TODO: finish this list
+		'thead': 'table',
+		'tfoot': 'table'
+		// TODO: col, colgroup, caption? any others?
 	};
 
 	parseTemplateRx = /\$\{([^}]*)\}/g;
