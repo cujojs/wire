@@ -84,13 +84,13 @@ define(['dojo', 'aop', 'dojo/_base/connect'], function(pubsub, aop) {
 			return {
 				facets: {
 					publish: {
-						ready: function(promise, facet, wire) {
+						connect: function(promise, facet, wire) {
 							proxyPublish(facet.target, facet.options);
 							promise.resolve();
 						}
 					},
 					subscribe: {
-						ready: function(promise, facet, wire) {
+						connect: function(promise, facet, wire) {
 							subscribeTarget(facet.target, facet.options);
 							promise.resolve();
 						}

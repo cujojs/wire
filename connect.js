@@ -141,7 +141,7 @@ define(['when', 'aop'], function(when, aop) {
             return {
                 facets: {
                     connect: {
-                        ready: function(resolver, facet, wire) {
+                        connect: function(resolver, facet, wire) {
                             when.chain(connectFacet(wire, facet.target, facet.options), resolver);
                         }
                     }

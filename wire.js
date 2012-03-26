@@ -23,7 +23,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	wire.version = VERSION = "0.8.0-rc1";
 
 	rootSpec = global['wire'] || {};
-	lifecycleSteps = ['create', 'configure', 'initialize', 'ready'];
+	lifecycleSteps = ['create', 'configure', 'initialize', 'connect', 'ready'];
 
 	emptyObject = {};
 

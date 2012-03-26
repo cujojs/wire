@@ -98,7 +98,7 @@ define(['when', 'dojo', 'dojo/_base/event'], function(when, events) {
 			return {
 				facets: {
 					connect: {
-						ready: function(resolver, facet, wire) {
+						connect: function(resolver, facet, wire) {
                             when.chain(connectFacet(wire, facet.target, facet.options), resolver);
 						}
 					}
