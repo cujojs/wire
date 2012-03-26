@@ -39,6 +39,9 @@
 	// wire/dom
 	doh.registerUrl('dom-resolver', '../../dom.html' + hash);
 
+	// wire/dom/render
+	doh.registerUrl('dom-render', '../../dom-render.html' + hash);
+
 	// wire/aop
 	doh.registerUrl('decorate1', '../../wire/aop/decorate1.html' + hash);
 	doh.registerUrl('introduce1', '../../wire/aop/introduce1.html' + hash);
