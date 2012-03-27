@@ -22,8 +22,10 @@ define(['when'], function (when) {
 		'tr': 'tbody',
 		'tbody': 'table',
 		'thead': 'table',
-		'tfoot': 'table'
-		// TODO: col, colgroup, caption? any others?
+		'tfoot': 'table',
+		'caption': 'table',
+		'col': 'table',
+		'colgroup': 'table'
 	};
 
 	parseTemplateRx = /\$\{([^}]*)\}/g;
