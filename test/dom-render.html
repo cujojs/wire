@@ -16,6 +16,7 @@
 			};
 
 		define('template-simple', '<div>' + simpleText + '</div>');
+		define('template-whitespace', '\n<div>' + simpleText + '</div>\n');
 		define('template-with-root-attributes', '<div class="foo bar" role="menuitem" aria-haspopup="true">this element has attributes</div>');
 		define('template-with-children', '<div>top-level element <code>child element</code></div>');
 		define('template-with-strict-parent', '<li>this is a list item</li>');
@@ -90,6 +91,11 @@
 							}
 						},
 						at: { $ref: 'dom!node6' }
+					}
+				},
+				whitespace: {
+					render: {
+						template: { module: 'template-whitespace' }
 					}
 				}
 			});
@@ -226,6 +232,22 @@
 					wired.then(
 						function(context) {
 							dohd.callback(/foo=foo/.test(context.node5.innerHTML));
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
+				}
+			]);
+
+			doh.register('template-whitespace', [
+				function ignoreLeadingWhitespace(doh) {
+					var dohd = new doh.Deferred();
+					dfds.push(dohd);
+					wired.then(
+						function(context) {
+							dohd.callback(context.whitespace.nodeType == 1);
 						},
 						function(e) {
 							dohd.errback(e);

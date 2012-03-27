@@ -106,10 +106,15 @@ define(['when'], function (when) {
 	 * @returns {DOMNode} the root node created from the template
 	 */
 	function createTemplatedNode (template, parentTagName) {
-		var parent = document.createElement(parentTagName);
+		var parent, child;
+		parent = document.createElement(parentTagName);
 		parent.innerHTML = template;
 		// just return first node (templates that use nodelists are tricky)
-		return parent.childNodes[0];
+		child = parent.childNodes[0];
+		while (child && child.nodeType != 1) {
+			child = child.nextSibling;
+		}
+		return child;
 	}
 
 	/**
