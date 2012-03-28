@@ -90,7 +90,7 @@
         loaderConfig[m] = loader.mixin[m];
     }
 
-    addPackage({ name: 'dojo', location: 'test/lib/dojo', main: 'lib/main-browser' });
+    addPackage({ name: 'dojo', location: 'test/lib/dojo17/dojo' });
     addPackage({ name: 'dijit', location: 'test/lib/dijit', main: 'lib/main' });
     addPackage({ name: 'sizzle', location: 'support/sizzle' });
     addPackage({ name: 'aop', location: 'support/aop' });

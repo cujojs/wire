@@ -46,7 +46,7 @@ define(['when', 'dojo', 'dojo/_base/event'], function(when, events) {
 						for(eventName in options) {
 							connectHandles.push(events.connect(resolved, eventName, target, options[eventName]));
 						}
-					});							
+					});
 				}
 
                 return promise;
