@@ -15,7 +15,24 @@ require(['wire'], function(wire) {
 		domFirstAt: { $ref: 'dom.first!p', at: { $ref: 'atNode' } },
 		byIdResolver: { $ref:'dom!' },
 		firstResolver: { $ref:'dom.first!' },
-		allResolver: { $ref:'dom.all!' }
+		allResolver: { $ref:'dom.all!' },
+
+		// test getElement and facets
+		get1: {
+			getElement: { $ref: 'dom!get1' },
+			properties: {
+				'class': 'foo',
+				target: 'top',
+				href: '#'
+			},
+			insert: {
+				at: { $ref: 'dom!get1-inserts-here' }
+			},
+			ready: {
+				focus: [],
+				appendChild: { $ref: 'dom!get1-appends-this' }
+			}
+		}
 	}).then(
 		function(context) {
 			doh.register(pluginName, [
@@ -225,6 +242,23 @@ require(['wire'], function(wire) {
 					);
 
 					return dohd;
+				},
+
+				// getElement tests
+
+				function getElementGetsAnElement(doh) {
+					doh.assertEqual(context.get1, document.getElementById('get1'));
+				},
+				function getElementAllowsProperties(doh) {
+					doh.assertEqual(context.get1.className, 'foo');
+					doh.assertEqual(context.get1.target, 'top');
+				},
+				function getElementAllowsInsert(doh) {
+					doh.assertEqual(context.get1.parentNode, document.getElementById('get1-inserts-here'));
+				},
+				function getElementAllowsInvoke(doh) {
+					doh.assertEqual(context.get1.firstChild, document.getElementById('get1-appends-this'));
+					doh.assertEqual(context.get1, document.activeElement);
 				}
 			]);
 

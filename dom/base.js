@@ -12,26 +12,11 @@
 
 define(function () {
 
-	var classRx, trimLeadingRx, getFirstTagNameRx, splitClassNamesRx,
-		parentTypes, undef;
+	var classRx, trimLeadingRx, splitClassNamesRx, nodeProxyInvoke;
 
 	classRx = '(\\s+|^)classNames(\\b(?![\\-_])|$)';
 	trimLeadingRx = /^\s+/;
-	getFirstTagNameRx = /<\s*(\w+)/;
 	splitClassNamesRx = /(\b\s+\b)|\s+/;
-
-	// elements that could be used as root elements and their natural parent type
-	parentTypes = {
-		'li': 'ul',
-		'td': 'tr',
-		'tr': 'tbody',
-		'tbody': 'table',
-		'thead': 'table',
-		'tfoot': 'table',
-		'caption': 'table',
-		'col': 'table',
-		'colgroup': 'table'
-	};
 
 	/**
 	 * Adds one or more css classes to a dom element.
@@ -106,53 +91,72 @@ define(function () {
 		return tokens.replace(rx, '').replace(trimLeadingRx, '');
 	}
 
-	/**
-	 * Finds the first html element in a string, extracts its tag name,
-	 * and looks up the natural parent element tag name for this element.
-	 * @private
-	 * @param template {String}
-	 * @returns {String} the parent tag name, or 'div' if none was found.
-	 */
-	function getParentTagName (template) {
-		var matches;
+	if (document && document.appendChild.apply) {
+		// normal browsers
+		nodeProxyInvoke = function jsInvoke (node, method, args) {
+			return node[method].apply(node, args);
+		};
+	}
+	else {
+		// IE 6-8 ("native" methods don't have .apply()) so we have
+		// to use eval())
+		nodeProxyInvoke = function evalInvoke (node, method, args) {
+			var argsList;
 
-		// TODO: throw if no element was ever found?
-		matches = template.match(getFirstTagNameRx);
+			// iirc, no node methods have more than 4 parameters
+			// (addEventListener), so 5 should be safe. Note: IE needs
+			// the exact number of arguments or it will throw!
+			argsList = ['a', 'b', 'c', 'd', 'e'].slice(0, args.length).join(',');
 
-		return parentTypes[matches && matches[1]] || 'div';
+			// function to execute eval (no need for global eval here
+			// since the code snippet doesn't reference out-of-scope vars).
+			function invoke (a, b, c, d, e) {
+				return eval('node.' + method + '(' + argsList + ');');
+			}
+
+			// execute and return result
+			return invoke.apply(this, args);
+		};
 	}
 
-	/**
-	 * Creates an element from a text template.
-	 * @private
-	 * @param template {String}
-	 * @param parentTagName {String}
-	 * @returns {HTMLElement} the root element created from the template
-	 */
-	function createElementFromTemplate (template, parentTagName) {
-		var parent, child;
+	function nodeProxy (node) {
 
-		parent = document.createElement(parentTagName);
-		parent.innerHTML = template;
+		if (!node.nodeType || !node.setAttribute || !node.getAttribute) return;
 
-		// just return first element (nodelists are tricky)
-		child = parent.firstElementChild || parent.firstChild;
+		return {
 
-		while (child && child.nodeType != 1) {
-			child = child.nextSibling;
-		}
+			get: function (name) {
+				if (name in node) {
+					return node[name];
+				}
+				else {
+					return node.getAttribute(name);
+				}
+			},
 
-		return child;
-	}
+			set: function (name, value) {
+				if (name in node) {
+					return node[name] = value;
+				}
+				else {
+					return node.setAttribute(name, value);
+				}
+			},
 
-	/**
-	 * Creates a DocumentFragment from an HTML template string and
-	 * returns the first HTML element it finds in that string.
-	 * @param template {String}
-	 * @returns {HTMLElement}
-	 */
-	function elementFromTemplate (template) {
-		return createElementFromTemplate(template, getParentTagName(template));
+			invoke: function (method, args) {
+				return nodeProxyInvoke(node, method, args);
+			},
+
+			destroy: function () {
+				// if we added a destroy method on the node, call it.
+				// TODO: find a better way to release events instead of using this mechanism
+				if (node.destroy) node.destroy();
+				// removal from document will destroy node as soon as all
+				// references to it go out of scope.
+				var parent = node.parentNode;
+				if (parent) parent.removeChild(node);
+			}
+		};
 	}
 
 	return {
@@ -160,7 +164,7 @@ define(function () {
 		addClass: addClass,
 		removeClass: removeClass,
 		toggleClass: toggleClass,
-		elementFromTemplate: elementFromTemplate
+		nodeProxy: nodeProxy
 
 	};
 

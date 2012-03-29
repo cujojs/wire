@@ -13,7 +13,8 @@
 
 define(['./base', 'when'], function (base, when) {
 
-	var parentTypes, parseTemplateRx, getFirstTagNameRx, undef;
+	var parentTypes, parseTemplateRx, getFirstTagNameRx, isPlainTagNameRx,
+		undef;
 
 	// elements that could be used as root nodes and their natural parent type
 	parentTypes = {
@@ -30,6 +31,7 @@ define(['./base', 'when'], function (base, when) {
 
 	parseTemplateRx = /\$\{([^}]*)\}/g;
 	getFirstTagNameRx = /<\s*(\w+)/;
+	isPlainTagNameRx = /^[A-Za-z]\w*$/;
 
 	/**
 	 * Constructs a DOM node and child nodes from a template string.
@@ -38,18 +40,24 @@ define(['./base', 'when'], function (base, when) {
 	 * Nothing is done with the css parameter at this time.
 	 * @param template {String}
 	 * @param hashmap {Object}
-	 * @param optRefNode {DOMNode}
+	 * @param optRefNode {HTMLElement}
 	 * @param optCss {Object}
-	 * @returns {DOMNode}
+	 * @returns {HTMLElement}
 	 */
 	function render (template, hashmap, optRefNode, optCss) {
 		var node;
 
 		// replace tokens (before attempting to find top tag name)
-		template = replaceTokens(template, hashmap);
+		template = replaceTokens('' + template, hashmap);
 
-		// create node from template
-		node = base.elementFromTemplate(template);
+		if (isPlainTagNameRx.test(template)) {
+			// just 'div' or 'a' or 'tr', for example
+			node = document.createElement(template);
+		}
+		else {
+			// create node from template
+			node = createElementFromTemplate(template);
+		}
 
 		if (optRefNode) {
 			node = safeReplaceElement(node, optRefNode);
@@ -64,10 +72,67 @@ define(['./base', 'when'], function (base, when) {
 				render: domRenderFactory
 			},
 			proxies: [
-				nodeProxy
+				base.nodeProxy
 			]
 		};
 	};
+
+	/**
+	 * Finds the first html element in a string, extracts its tag name,
+	 * and looks up the natural parent element tag name for this element.
+	 * @private
+	 * @param template {String}
+	 * @returns {String} the parent tag name, or 'div' if none was found.
+	 */
+	function getParentTagName (template) {
+		var matches;
+
+		// TODO: throw if no element was ever found?
+		matches = template.match(getFirstTagNameRx);
+
+		return parentTypes[matches && matches[1]] || 'div';
+	}
+
+	/**
+	 * Creates an element from a text template.  This function does not
+	 * support multiple elements in a template.  Leading and trailing
+	 * text and/or comments are also ignored.
+	 * @private
+	 * @param template {String}
+	 * @returns {HTMLElement} the element created from the template
+	 */
+	function createElementFromTemplate (template) {
+		var parentTagName, parent, first, child;
+
+		parentTagName = getParentTagName(template);
+		parent = document.createElement(parentTagName);
+		parent.innerHTML = template;
+
+		// we just want to return first element (nodelists and fragments
+		// are tricky), so we loop through all top-level children to ensure
+		// we only have one.
+
+		// try html5-ish API
+		first = parent.firstElementChild;
+		child = parent.lastElementChild;
+
+		// old dom API
+		if (!first) {
+			child = parent.firstChild;
+			while (child) {
+				if (child.nodeType == 1) {
+					if (!first) first = child;
+				}
+				child = child.nextSibling;
+			}
+		}
+
+		if (first != child) {
+			throw new Error('render: only one element per template is supported.');
+		}
+
+		return first;
+	}
 
 	/**
 	 * Creates rendered dom trees for the "render" factory.
@@ -78,7 +143,7 @@ define(['./base', 'when'], function (base, when) {
 	function domRenderFactory (resolver, spec, wire) {
 		when(wire(spec.render), function (options) {
 			var template;
-			template = options.template || '';
+			template = options.template || options;
 			return render(template, options.replace, options.at, options.css);
 		}).then(resolver.resolve, resolver.reject);
 	}
@@ -125,6 +190,7 @@ define(['./base', 'when'], function (base, when) {
 	 * @returns {String}
 	 */
 	function replaceTokens (template, hashmap, missing) {
+		if (!hashmap) return template;
 		if (!missing) missing = blankIfMissing;
 		return template.replace(parseTemplateRx, function (m, token) {
 			return missing(findProperty(hashmap, token));
@@ -138,20 +204,6 @@ define(['./base', 'when'], function (base, when) {
 			obj = obj[prop];
 		}
 		return obj;
-	}
-
-	function nodeProxy (node) {
-		if (!node.tagName || !node.setAttribute || !node.getAttribute) return;
-
-		return {
-			get: function () { /** TODO */ },
-			set: function () { /** TODO */ },
-			invoke: function () { /** TODO */ },
-			destroy: function () {
-				var parent = node.parentNode;
-				if (parent) parent.removeChild(node);
-			}
-		};
 	}
 
 	function blankIfMissing (val) { return val == undef ? '' : val; }

@@ -30,7 +30,7 @@
 
 			wired = wire({
 				plugins: [
-					{ module: 'wire/debug' },
+//					{ module: 'wire/debug' },
 					{ module: 'wire/dom' },
 					{ module: 'wire/dom/render' }
 				],
@@ -97,6 +97,18 @@
 					render: {
 						template: { module: 'template-whitespace' }
 					}
+				},
+				justATag: {
+					render: 'td'
+				},
+				tree: {
+					render: '<table><tr><td>foo</td><td>bar</td></tr></table>'
+				},
+				leadingGarbage: {
+					render: '123<table><tr><td>foo</td><td>bar</td></tr></table>'
+				},
+				trailingGarbage: {
+					render: '<table><tr><td>foo</td><td>bar</td></tr></table>123'
 				}
 			});
 
@@ -257,7 +269,26 @@
 				}
 			]);
 
-            doh.run();
+			wired.then(function (context) {
+
+				doh.register('inline templates', [
+					function nakedTagNameRendersSingleElement(doh) {
+						doh.assertEqual(context.justATag.tagName, 'TD');
+					},
+					function inlineTemplateRendersDomTree(doh) {
+						doh.assertEqual(context.tree.tagName, 'TABLE');
+					},
+					function renderIgnoresLeadingGarbage(doh) {
+						doh.assertEqual(context.leadingGarbage.tagName, 'TABLE');
+					},
+					function renderIgnoresTrailingGarbage(doh) {
+						doh.assertEqual(context.trailingGarbage.tagName, 'TABLE');
+					}
+				]);
+
+				doh.run();
+			});
+
         });
 
 		function hasSameItems(arr1, arr2) {

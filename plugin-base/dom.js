@@ -8,8 +8,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
-
-define(['wire/domReady', 'when'], function(domReady, when) {
+define(['wire/domReady', 'when', '../dom/base'], function(domReady, when, base) {
 
 	function defaultById(id) {
 		return document.getElementById(id);
@@ -87,6 +86,17 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 		parent.appendChild(node);
 	}
 
+	function getElementFactory (resolver, spec, wire) {
+		when(wire(spec.getElement), function (element) {
+
+			if (!element || !element.nodeType || !element.tagName) {
+				throw new Error('dom: non-element reference provided to getElement');
+			}
+
+			return element;
+		}).then(resolver.resolve, resolver.reject);
+	}
+
 	return function createDomPlugin(options) {
 
 		var getById, query, first, init, addClass, removeClass, placeAt;
@@ -95,11 +105,9 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 		query = options.query || defaultQueryAll;
 		first = options.first || defaultQuery;
 		init = options.init;
-
 		addClass = options.addClass;
-		removeClass = options.removeClass;
-
 		placeAt = options.placeAt || defaultPlaceAt;
+		removeClass = options.removeClass;
 
 		function doById(resolver, name /*, refObj, wire*/) {
 
@@ -238,7 +246,7 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 		return {
 			wire$plugin: function(ready, destroyed, options) {
-				var classes, resolvers, facets;
+				var classes, resolvers, facets, factories;
 
 				options.at = makeQueryRoot(options.at);
 
@@ -278,6 +286,10 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 					}
 				};
 
+				factories = {
+					'getElement': getElementFactory
+				};
+
 				if (query) {
 					resolvers['dom.first'] = createResolver(resolveFirst, options);
 
@@ -288,7 +300,11 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 				return {
 					resolvers: resolvers,
-					facets: facets
+					facets: facets,
+					factories: factories,
+					proxies: [
+						base.nodeProxy
+					]
 				};
 
 			}
