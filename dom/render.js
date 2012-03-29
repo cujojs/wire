@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['when'], function (when) {
+define(['./base', 'when'], function (base, when) {
 
 	var parentTypes, parseTemplateRx, getFirstTagNameRx, undef;
 
@@ -43,18 +43,16 @@ define(['when'], function (when) {
 	 * @returns {DOMNode}
 	 */
 	function render (template, hashmap, optRefNode, optCss) {
-		var node, parentType;
+		var node;
 
 		// replace tokens (before attempting to find top tag name)
 		template = replaceTokens(template, hashmap);
 
-		// get parent tag type
-		parentType = getParentTagName(template);
-
-		node = createTemplatedNode(template, parentType);
+		// create node from template
+		node = base.elementFromTemplate(template);
 
 		if (optRefNode) {
-			node = safeReplaceNode(node, optRefNode);
+			node = safeReplaceElement(node, optRefNode);
 		}
 
 		return node;
@@ -86,46 +84,14 @@ define(['when'], function (when) {
 	}
 
 	/**
-	 * Finds the first html element in a string, extracts its tag name,
-	 * and looks up the natural parent element tag name for this element.
-	 * @param template {String}
-	 * @returns {String} the parent tag name, or 'div' if none was found.
-	 */
-	function getParentTagName (template) {
-		var matches;
-		// TODO: throw if no element was ever found
-		matches = template.match(getFirstTagNameRx);
-		return parentTypes[matches && matches[1]] || 'div';
-	}
-
-	/**
-	 * Creates a node from a text template.
-	 * @private
-	 * @param template
-	 * @param parentTagName
-	 * @returns {DOMNode} the root node created from the template
-	 */
-	function createTemplatedNode (template, parentTagName) {
-		var parent, child;
-		parent = document.createElement(parentTagName);
-		parent.innerHTML = template;
-		// just return first node (templates that use nodelists are tricky)
-		child = parent.childNodes[0];
-		while (child && child.nodeType != 1) {
-			child = child.nextSibling;
-		}
-		return child;
-	}
-
-	/**
 	 * Replaces a dom node, while preserving important attributes
 	 * of the original.
 	 * @private
-	 * @param oldNode {DOMNode}
-	 * @param newNode {DOMNode}
-	 * @returns {DOMNode} newNode
+	 * @param oldNode {HTMLElement}
+	 * @param newNode {HTMLElement}
+	 * @returns {HTMLElement} newNode
 	 */
-	function safeReplaceNode (newNode, oldNode) {
+	function safeReplaceElement (newNode, oldNode) {
 		var i, attr, newClassesRx, parent;
 		for (i = 0; i < oldNode.attributes.length; i++) {
 			attr = oldNode.attributes[i];
