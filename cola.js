@@ -329,7 +329,7 @@ function(when, adapterResolver,
 						destroy: removeCachedBindings
 					},
 					bind: {
-						connect: bindFacet
+						ready: bindFacet
 					}
 				}
 			};
