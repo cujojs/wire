@@ -32,6 +32,23 @@ require(['wire'], function(wire) {
 				focus: [],
 				appendChild: { $ref: 'dom!get1-appends-this' }
 			}
+		},
+
+		// test cloneElement and facets
+		clone1: {
+			cloneElement: { $ref: 'dom!clone1' },
+			properties: {
+				'class': 'foo',
+				target: 'top',
+				href: '#',
+				id: 'anotherId'
+			},
+			insert: {
+				at: { $ref: 'dom!clone1-inserts-here' }
+			},
+			ready: {
+				appendChild: { $ref: 'dom!clone1-appends-this' }
+			}
 		}
 	}).then(
 		function(context) {
@@ -259,6 +276,25 @@ require(['wire'], function(wire) {
 				function getElementAllowsInvoke(doh) {
 					doh.assertEqual(context.get1.firstChild, document.getElementById('get1-appends-this'));
 					doh.assertEqual(context.get1, document.activeElement);
+				},
+
+				// cloneElement tests
+
+				function cloneElementLeavesElementInDom(doh) {
+					doh.assertNotEqual(context.clone1, document.getElementById('clone1'));
+				},
+				function cloneElementIsAnElement(doh) {
+					doh.assertEqual(context.clone1.nodeType, 1);
+				},
+				function cloneElementAllowsProperties(doh) {
+					doh.assertEqual(context.clone1.className, 'foo');
+					doh.assertEqual(context.clone1.target, 'top');
+				},
+				function cloneElementAllowsInsert(doh) {
+					doh.assertEqual(context.clone1.parentNode, document.getElementById('clone1-inserts-here'));
+				},
+				function cloneElementAllowsInvoke(doh) {
+					doh.assertEqual(context.clone1.firstChild, document.getElementById('clone1-appends-this'));
 				}
 			]);
 

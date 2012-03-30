@@ -97,6 +97,17 @@ define(['wire/domReady', 'when', '../dom/base'], function(domReady, when, base) 
 		}).then(resolver.resolve, resolver.reject);
 	}
 
+	function cloneElementFactory (resolver, spec, wire) {
+		when(wire(spec.cloneElement), function (element) {
+
+			if (!element || !element.nodeType || !element.tagName) {
+				throw new Error('dom: non-element reference provided to cloneElement');
+			}
+
+			return element.cloneNode(true);
+		}).then(resolver.resolve, resolver.reject);
+	}
+
 	return function createDomPlugin(options) {
 
 		var getById, query, first, init, addClass, removeClass, placeAt;
@@ -287,7 +298,8 @@ define(['wire/domReady', 'when', '../dom/base'], function(domReady, when, base) 
 				};
 
 				factories = {
-					'getElement': getElementFactory
+					'getElement': getElementFactory,
+					'cloneElement': cloneElementFactory
 				};
 
 				if (query) {
