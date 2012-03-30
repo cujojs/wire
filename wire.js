@@ -992,7 +992,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	}
 
 	function isRef(it) {
-		return it && it.$ref;
+		return it && it.hasOwnProperty('$ref');
 	}
 
 	function isString(it) {

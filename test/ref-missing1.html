@@ -21,7 +21,19 @@
 		// Simple example of wiring in objects by reference using JSON ref syntax
 		require(['wire'], function(wire) {
 			doh.register('ref-missing1', [
-				function(doh) {
+				function emptyRefShouldFail(doh) {
+					var dohd = new doh.Deferred();
+
+					wire({
+						test: { $ref: '' }
+					}).then(
+						function(context) { dohd.errback('Empty ref did not cause failure'); },
+						function(e) { dohd.callback(true); }
+					);
+
+					return dohd;
+				},
+				function missingRefTargetShouldFail(doh) {
 					var dohd = new doh.Deferred();
 
 					wire({
@@ -33,7 +45,7 @@
 
 					return dohd;
 				},
-				function(doh) {
+				function missingRefTargetShouldFailFromPluginApi(doh) {
 					var dohd = new doh.Deferred();
 
 					wire({
@@ -46,30 +58,6 @@
 					}).then(
 						function(context) { dohd.errback("Missing ref did not cause failure: " + context.propTest.thingProp); },
 						function(e) { dohd.callback(true); }
-					);
-
-					return dohd;
-				},
-				function(doh) {
-					var dohd = new doh.Deferred();
-
-					wire({}).then(
-						function(parent) {
-							parent.wire({
-								propTest: {
-									create: 'test',
-									properties: {
-										thingProp: { $ref: 'thing' }
-									}
-								}
-							}).then(
-								function(context) { dohd.errback("Missing ref did not cause failure: " + context.propTest.thingProp); },
-								function(e) { dohd.callback(true); }
-							);
-						},
-						function(e) {
-							dohd.errback(e);
-						}
 					);
 
 					return dohd;
