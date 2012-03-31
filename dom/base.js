@@ -9,7 +9,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
-
+(function (define) {
 define(function () {
 
 	var classRx, trimLeadingRx, splitClassNamesRx, nodeProxyInvoke;
@@ -169,3 +169,8 @@ define(function () {
 	};
 
 });
+}(
+	typeof define == 'function' && define.amd
+		? define
+		: function (factory) { module.exports = factory(); }
+));
