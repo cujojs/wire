@@ -121,7 +121,7 @@ define(function () {
 
 	function nodeProxy (node) {
 
-		if (!node.nodeType || !node.setAttribute || !node.getAttribute) return;
+		if (!node || !node.nodeType || !node.setAttribute || !node.getAttribute) return;
 
 		return {
 
