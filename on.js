@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, dojoOn) {
+define(['./plugin-base/on', './dom/base'], function (createOnPlugin, base) {
 
 	/**
 	 *
@@ -27,10 +27,14 @@ define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, 
 		selector = arguments[3];
 
 		if (selector) {
-			event = dojoOn.selector(selector, event);
+			handler = filteringHandler(node, selector, handler);
 		}
 
-		return dojoOn(node, event, handler).remove;
+		node.addEventListener(event, handler, false);
+
+		return function remove () {
+			node.removeEventListener(node, handler, false);
+		};
 	}
 
 	on.wire$plugin = createOnPlugin({
@@ -38,6 +42,29 @@ define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, 
 	}).wire$plugin;
 
 	return on;
+
+	/**
+	 * This is a brute-force method of checking if an event target
+	 * matches a query selector.
+	 * @private
+	 * @param node {Node}
+	 * @param selector {String}
+	 * @param handler {Function} function (e) {}
+	 * @returns {Function} function (e) {}
+	 */
+	function filteringHandler (node, selector, handler) {
+		return function (e) {
+			var target, matches, i, len;
+			// if e.target matches the selector, call the handler
+			target = e.target;
+			matches = base.querySelectorAll(selector, node);
+			for (i = 0, len = matches.length; i < len; i++) {
+				if (target == matches[i]) {
+					return handler(e);
+				}
+			}
+		};
+	}
 
 });
 }(

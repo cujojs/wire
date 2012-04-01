@@ -11,13 +11,12 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, dojoOn) {
+define(['../plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
 
 	/**
 	 *
 	 * @param node {HTMLElement} should this be a Node?
 	 * @param event {String} event name ('click', mouseenter')
-	 *   TODO: support multiple events and selectors
 	 * @param handler {Function} function (e) {}
 	 * @param [selector] {String} optional css query string to use to
 	 */
@@ -27,10 +26,17 @@ define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, 
 		selector = arguments[3];
 
 		if (selector) {
-			event = dojoOn.selector(selector, event);
+			jquery(node).on(event, selector, handler);
+			return function () {
+				jquery(node).off(event, selector, handler);
+			}
 		}
-
-		return dojoOn(node, event, handler).remove;
+		else {
+			jquery(node).on(event, handler);
+			return function () {
+				jquery(node).off(event, handler);
+			}
+		}
 	}
 
 	on.wire$plugin = createOnPlugin({

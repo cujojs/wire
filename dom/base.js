@@ -119,6 +119,81 @@ define(function () {
 		};
 	}
 
+	function byId(id) {
+		return document.getElementById(id);
+	}
+
+	function queryAll(selector, root) {
+		return (root||document).querySelectorAll(selector);
+	}
+
+	function query(selector, root) {
+		return (root||document).querySelector(selector);
+	}
+
+	/**
+	 * Places a node into the DOM at the location specified around
+	 * a reference node.
+	 * Note: replace is problematic if the dev expects to use the node
+	 * as a wire component.  The component reference will still point
+	 * at the node that was replaced.
+	 * @param node {HTMLElement}
+	 * @param refNode {HTMLElement}
+	 * @param location {String} or {Number} "before", "after", "first", "last",
+	 *   or the position within the children of refNode
+	 */
+	function placeAt(node, refNode, location) {
+		var parent;
+
+		parent = refNode.parentNode;
+
+		// `if else` is more compressible than switch
+		if (!isNaN(location)) {
+			if (location < 0) {
+				location = 0;
+			}
+			_insertBefore(refNode, node, refNode.childNodes[location]);
+		}
+		else if(location == 'at') {
+			refNode.innerHTML = '';
+			_appendChild(refNode, node);
+		}
+		else if(location == 'last') {
+			_appendChild(refNode, node);
+		}
+		else if(location == 'first') {
+			_insertBefore(refNode, node, refNode.firstChild);
+		}
+		else if(location == 'before') {
+			// TODO: throw if parent missing?
+			_insertBefore(parent, node, refNode);
+		}
+		else if(location == 'after') {
+			// TODO: throw if parent missing?
+			if (refNode == parent.lastChild) {
+				_appendChild(parent, node);
+			}
+			else {
+				_insertBefore(parent, node, refNode.nextSibling);
+			}
+		}
+		else {
+			throw new Error('Unknown dom insertion command: ' + location);
+		}
+
+		return node;
+	}
+
+	// these are for better compressibility since compressors won't
+	// compress native DOM methods.
+	function _insertBefore(parent, node, refNode) {
+		parent.insertBefore(node, refNode);
+	}
+
+	function _appendChild(parent, node) {
+		parent.appendChild(node);
+	}
+
 	function nodeProxy (node) {
 
 		if (!node || !node.nodeType || !node.setAttribute || !node.getAttribute) return;
@@ -161,6 +236,10 @@ define(function () {
 
 	return {
 
+		byId: byId,
+		querySelector: query,
+		querySelectorAll: queryAll,
+		placeAt: placeAt,
 		addClass: addClass,
 		removeClass: removeClass,
 		toggleClass: toggleClass,
