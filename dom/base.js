@@ -143,7 +143,14 @@ define(function () {
 	 *   or the position within the children of refNode
 	 */
 	function placeAt(node, refNode, location) {
-		var parent;
+		var parent, i;
+
+		if ('length' in refNode) {
+			for (i = 0; i < refNode.length; i++) {
+				defaultPlaceAt(i == 0 ? node : node.cloneNode(true), refNode[i], location);
+			}
+			return node;
+		}
 
 		parent = refNode.parentNode;
 

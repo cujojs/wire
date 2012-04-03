@@ -20,7 +20,18 @@ define(['../plugin-base/dom', 'dojo'], function(createDomPlugin, dojo) {
 		},
 		addClass: dojo.addClass,
 		removeClass: dojo.removeClass,
-		placeAt: dojo.place
+		placeAt: function (node, refNode, location) {
+			var i;
+			if ('length' in refNode) {
+				for (i = 0; i < refNode.length; i++) {
+					dojo.place(i == 0 ? node : node.cloneNode(true), refNode[i], location);
+				}
+			}
+			else {
+				dojo.place(node, refNode, location);
+			}
+			return node;
+		}
 	});
 
 });

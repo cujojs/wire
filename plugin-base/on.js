@@ -181,7 +181,9 @@ define(['when'], function(when) {
 	 */
 	function splitEventSelectorString (string, defaultSelector) {
 		var pairs, selector, remainder;
-		// TODO: single-pass regexp to find commas and colons and intelligently figure out dev's intent
+		/* TODO: new syntax:
+			event1,event2:selector1, selector2
+		 */
 		// ".mylist:first-child:click, .mylist:last-child:click"
 		// ".mylist:first-child, .mylist:last-child:click"
 		// ".watzit:empty, .watzit:disabled:click"
