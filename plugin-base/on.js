@@ -175,38 +175,30 @@ define(['when'], function (when) {
 	 *     event: 'click'
 	 *   }
 	 * @private
-	 * @param string
+	 * @param string {String}
+	 * @param defaultSelector {String}
 	 * @returns {Array} selector/event pairs ({Object})
 	 */
 	function splitEventSelectorString (string, defaultSelector) {
-		var pairs, selector, remainder;
-		/* TODO: new syntax:
-			event1,event2:selector1, selector2
-		 */
-		// ".mylist:first-child:click, .mylist:last-child:click"
-		// ".mylist:first-child, .mylist:last-child:click"
-		// ".watzit:empty, .watzit:disabled:click"
-		// ".test-element:click"
-		// "click"
+		var split, events, selectors, pairs;
+
+		// split on first colon to get events and selectors
+		split = string.split(':', 2);
+		events = split[0];
+		selectors = split[1];
+
+		// split events
+		events = events.split(',');
+
+		// create pairs
 		pairs = [];
-		selector = '';
-		remainder = string.replace(eventSelectorRx, function (m, pattern, event, comma) {
-			// keep going until we find an event
-			//if (!pattern) throw new Error('on: couldn\'t parse event/selector string: ' + string);
-			if (event && isEventType(event)) {
-				// got an event, save it and the selector
-				pairs.push({ selector: (selector + pattern) || defaultSelector, event: event });
-				selector = '';
-			}
-			else {
-				// isn't an event. it is a pseudo-element
-				selector += pattern + ':' + event + (comma || '');
-			}
-			return '';
-		});
-		if (remainder) {
-			pairs.push({ event: remainder, selector: defaultSelector });
+		while (events.length) {
+			pairs.push({
+				event: events.shift(),
+				selector: selectors || defaultSelector
+			});
 		}
+
 		return pairs;
 	}
 

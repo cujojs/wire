@@ -57,7 +57,7 @@ require(['wire'], function(wire) {
 					create: 'fixture',
 					on: {
 						container: {
-							'.test:click': 'handle'
+							'click:.test': 'handle'
 						}
 					}
 				},
@@ -147,7 +147,7 @@ require(['wire'], function(wire) {
 					},
 					insert: { last: 'dom!container' },
 					on: {
-						'.test:click': { a: 'handle' }
+						'click:.test': { a: 'handle' }
 					}
 				},
 				plugins: [
@@ -207,7 +207,7 @@ require(['wire'], function(wire) {
 					},
 					insert: { last: 'dom!container' },
 					on: {
-						'.test:click': 'a.handle'
+						'click:.test': 'a.handle'
 					}
 				},
 				plugins: [
@@ -237,7 +237,7 @@ require(['wire'], function(wire) {
 					},
 					insert: { last: 'dom!container' },
 					on: {
-						'.test:click': 'a.handle'
+						'click:.test': 'a.handle'
 					}
 				},
 				plugins: [
@@ -256,6 +256,66 @@ require(['wire'], function(wire) {
 			return dohd;
 
 		},
+		function shouldAllowMultipleEventTypes(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						template: '<div><button id="button6" class="test"></button></div>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'click,mouseup,keypress:.test': 'a.handle'
+					}
+				},
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						document.getElementById('button6').click();
+						dohd.callback(context.a.selectorTarget.nodeName === 'BUTTON');
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldAllowMultipleSelectors(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						template: '<div><button id="buttonMultiSelector" class="test"></button></div>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'click,mouseup,keypress:.test,button': 'a.handle'
+					}
+				},
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						document.getElementById('buttonMultiSelector').click();
+						dohd.callback(context.a.handled === 1);
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
+		},
 		function shouldNotSetEventSelectorPropertyIfNoSelector(doh) {
 			var dohd = new doh.Deferred();
 
@@ -263,7 +323,7 @@ require(['wire'], function(wire) {
 				a: { create: 'fixture' },
 				buttonContainer: {
 					render: {
-						template: '<div><button id="button5" class="test"></button></div>'
+						template: '<div><button id="button7" class="test"></button></div>'
 					},
 					insert: { last: 'dom!container' },
 					on: {
@@ -277,7 +337,7 @@ require(['wire'], function(wire) {
 				]
 			}).then(
 					function(context) {
-						document.getElementById('button5').click();
+						document.getElementById('button7').click();
 						dohd.callback(context.a.selectorTarget == void 0);
 					},
 					fail(dohd)
