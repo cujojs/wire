@@ -14,16 +14,23 @@
 define(['../plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
 
 	/**
-	 *
-	 * @param node {HTMLElement} should this be a Node?
-	 * @param event {String} event name ('click', mouseenter')
-	 * @param handler {Function} function (e) {}
+	 * Listens for dom events at the given node.  If a selector is provided,
+	 * events are filtered to only nodes matching the selector.  Note, however,
+	 * that children of the matching nodes can also fire events that bubble.
+	 * To determine the matching node, use the event object's selectorTarget
+	 * property instead of it's target property.
+	 * @param node {HTMLElement} element at which to listen
+	 * @param event {String} event name ('click', 'mouseenter')
+	 * @param context {Object} component on which to call method
+	 * @param method {String} name of method on context. Method should
+	 *   have the following signature: function (e) {}
 	 * @param [selector] {String} optional css query string to use to
 	 */
-	function on (node, event, handler /*, selector */) {
-		var selector;
+	function on (node, event, context, method /*, selector */) {
+		var selector, handler;
 
-		selector = arguments[3];
+		selector = arguments[4];
+		handler = makeEventHandler(context, method, selector);
 
 		if (selector) {
 			jquery(node).on(event, selector, handler);
@@ -44,6 +51,13 @@ define(['../plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
 	}).wire$plugin;
 
 	return on;
+
+	function makeEventHandler (context, method, selector) {
+		return function (e) {
+			if (selector) e.selectorTarget = this;
+			context[method](e);
+		}
+	}
 
 });
 }(

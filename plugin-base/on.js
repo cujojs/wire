@@ -11,23 +11,23 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['when'], function(when) {
+define(['when'], function (when) {
 	var testNode, eventSelectorRx, undef;
 
 	eventSelectorRx = /\s*([^:]*)\s*:\s*([^:,]*)\s*(,?)/g;
 
-	return function createOnPlugin(options) {
+	return function createOnPlugin (options) {
 
 		return {
-			wire$plugin: function eventsPlugin(ready, destroyed /*, options */) {
+			wire$plugin: function eventsPlugin (ready, destroyed /*, options */) {
 
 				var removers = [];
 
-				function parseOn(component, refName, connections, wire) {
+				function parseOn (component, refName, connections, wire) {
 					// First, figure out if the left-hand-side is a ref to
 					// another component, or an event/delegation string
 					return when(wire.resolveRef(refName),
-						function(target) {
+						function (target) {
 							// target is the node to which to connect, and
 							// right hand side is a specification of an event
 							// and a handler method on the current component
@@ -45,16 +45,17 @@ define(['when'], function(when) {
 							var event, pairs, selector, method;
 
 							selector = connections.selector;
-							for(event in connections) {
+							for (event in connections) {
 								// The 'selector' property name is reserved, so skip it
-								if(event != 'selector') {
+								if (event != 'selector') {
 									pairs = splitEventSelectorString(event, selector);
 									method = connections[event];
-									removers = removers.concat(registerHandlers(pairs, target, makeHandler(component, method)));
+									checkHandler(component, method);
+									removers = removers.concat(registerHandlers(pairs, target, component, method));
 								}
 							}
 						},
-						function() {
+						function () {
 							// Failed to resolve refName as a reference, assume it
 							// is an event on the current component
 							var pairs, ref, method, promises, promise;
@@ -62,7 +63,7 @@ define(['when'], function(when) {
 							// event/selector pairs
 							pairs = splitEventSelectorString(refName);
 
-							if(typeof connections == 'string') {
+							if (typeof connections == 'string') {
 								/*
 									component: {
 										on: {
@@ -75,7 +76,8 @@ define(['when'], function(when) {
 								ref = ref[0];
 
 								promise = when(wire.resolveRef(ref), function(ref) {
-									removers = removers.concat(registerHandlers(pairs, component, makeHandler(ref, method)));
+									checkHandler(ref, method);
+									removers = removers.concat(registerHandlers(pairs, component, ref, method));
 								});
 							} else {
 								/*
@@ -90,10 +92,11 @@ define(['when'], function(when) {
 								 */
 								promises = [];
 
-								for(ref in connections) {
+								for (ref in connections) {
 									promises.push(when(wire.resolveRef(ref),
-										function(resolved) {
-											removers = removers.concat(registerHandlers(pairs, component, makeHandler(resolved, connections[ref])));
+										function (resolved) {
+											checkHandler(resolved, connections[ref]);
+											removers = removers.concat(registerHandlers(pairs, component, resolved, connections[ref]));
 										}
 									));
 								}
@@ -107,17 +110,17 @@ define(['when'], function(when) {
 
 				}
 
-				function onFacet(wire, target, connections) {
+				function onFacet (wire, target, connections) {
 						var promises = [];
 
-						for(var ref in connections) {
+						for (var ref in connections) {
 							promises.push(parseOn(target, ref, connections[ref], wire));
 						}
 
 						return when.all(promises);
 				}
 
-				destroyed.then(function onContextDestroy() {
+				destroyed.then(function onContextDestroy () {
 					for (var i = removers.length - 1; i >= 0; i--) {
 						removers[i]();
 					}
@@ -126,7 +129,7 @@ define(['when'], function(when) {
 				return {
 					facets: {
 						on: {
-							connect: function(resolver, facet, wire) {
+							connect: function (resolver, facet, wire) {
 								when.chain(onFacet(wire, facet.target, facet.options), resolver);
 							}
 						}
@@ -135,30 +138,26 @@ define(['when'], function(when) {
 			}
 		};
 
-		function registerHandlers (pairs, node, handler) {
+		function registerHandlers (pairs, node, context, method) {
 			var removers;
 			removers = [];
 			for (var i = 0, len = pairs.length; i < len; i++) {
-				removers.push(options.on(node, pairs[i].event, handler, pairs[i].selector));
+				removers.push(options.on(node, pairs[i].event, context, method, pairs[i].selector));
 			}
 			return removers;
 		}
 
 	};
 
-	function makeHandler (obj, method) {
+	function checkHandler (obj, method) {
 
 		// If the thing that's going to handle the event
 		// isn't a method, fail loudly
-		if(!obj) {
+		if (!obj) {
 			throw new Error('on: Can\'t invoke ' + method + ' on : ' + obj);
 		}
-		else if(typeof obj[method] != 'function') {
+		else if (typeof obj[method] != 'function') {
 			throw new Error('on: No such method: ' + method);
-		}
-
-		return function () {
-			return obj[method].apply(obj, arguments);
 		}
 	}
 

@@ -12,19 +12,28 @@
  */
 (function (define) {
 define(['./plugin-base/on', './dom/base'], function (createOnPlugin, base) {
+"use strict";
+
+	var contains;
 
 	/**
-	 *
-	 * @param node {HTMLElement} should this be a Node?
-	 * @param event {String} event name ('click', mouseenter')
-	 *   TODO: support multiple events and selectors
-	 * @param handler {Function} function (e) {}
+	 * Listens for dom events at the given node.  If a selector is provided,
+	 * events are filtered to only nodes matching the selector.  Note, however,
+	 * that children of the matching nodes can also fire events that bubble.
+	 * To determine the matching node, use the event object's selectorTarget
+	 * property instead of it's target property.
+	 * @param node {HTMLElement} element at which to listen
+	 * @param event {String} event name ('click', 'mouseenter')
+	 * @param context {Object} component on which to call method
+	 * @param method {String} name of method on context. Method should
+	 *   have the following signature: function (e) {}
 	 * @param [selector] {String} optional css query string to use to
 	 */
-	function on (node, event, handler /*, selector */) {
-		var selector;
+	function on (node, event, context, method /*, selector */) {
+		var selector, handler;
 
-		selector = arguments[3];
+		selector = arguments[4];
+		handler = makeEventHandler(context, method);
 
 		if (selector) {
 			handler = filteringHandler(node, selector, handler);
@@ -41,6 +50,17 @@ define(['./plugin-base/on', './dom/base'], function (createOnPlugin, base) {
 		on: on
 	}).wire$plugin;
 
+	if (document && document.compareDocumentPosition) {
+		contains = function w3cContains (refNode, testNode) {
+			return refNode.compareDocumentPosition(testNode) == 8;
+		}
+	}
+	else {
+		contains = function oldContains (refNode, testNode) {
+			return refNode.contains(testNode);
+		}
+	}
+
 	return on;
 
 	/**
@@ -54,16 +74,24 @@ define(['./plugin-base/on', './dom/base'], function (createOnPlugin, base) {
 	 */
 	function filteringHandler (node, selector, handler) {
 		return function (e) {
-			var target, matches, i, len;
+			var target, matches, i, len, match;
 			// if e.target matches the selector, call the handler
 			target = e.target;
 			matches = base.querySelectorAll(selector, node);
 			for (i = 0, len = matches.length; i < len; i++) {
-				if (target == matches[i]) {
+				match = matches[i];
+				if (target == match || contains(match, target)) {
+					e.selectorTarget = match;
 					return handler(e);
 				}
 			}
 		};
+	}
+
+	function makeEventHandler (context, method) {
+		return function (e) {
+			context[method](e);
+		}
 	}
 
 });

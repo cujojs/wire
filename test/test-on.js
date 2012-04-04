@@ -4,8 +4,9 @@ define('fixture', function() {
 	}
 
 	Fixture.prototype = {
-		handle: function() {
+		handle: function(e) {
 			this.handled++;
+			this.selectorTarget = e.selectorTarget;
 		},
 
 		emit: function() {}
@@ -218,6 +219,66 @@ require(['wire'], function(wire) {
 					function(context) {
 						document.getElementById('button4').click();
 						dohd.callback(context.a.handled === 1);
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldSetEventSelectorPropertyIfSelector(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						template: '<div><button id="button5" class="test"></button></div>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'.test:click': 'a.handle'
+					}
+				},
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						document.getElementById('button5').click();
+						dohd.callback(context.a.selectorTarget.nodeName === 'BUTTON');
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldNotSetEventSelectorPropertyIfNoSelector(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						template: '<div><button id="button5" class="test"></button></div>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'click': 'a.handle'
+					}
+				},
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						document.getElementById('button5').click();
+						dohd.callback(context.a.selectorTarget == void 0);
 					},
 					fail(dohd)
 			);

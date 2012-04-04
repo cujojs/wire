@@ -14,23 +14,28 @@
 define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, dojoOn) {
 
 	/**
-	 *
-	 * @param node {HTMLElement} should this be a Node?
-	 * @param event {String} event name ('click', mouseenter')
-	 *   TODO: support multiple events and selectors
-	 * @param handler {Function} function (e) {}
+	 * Listens for dom events at the given node.  If a selector is provided,
+	 * events are filtered to only nodes matching the selector.  Note, however,
+	 * that children of the matching nodes can also fire events that bubble.
+	 * To determine the matching node, use the event object's selectorTarget
+	 * property instead of it's target property.
+	 * @param node {HTMLElement} element at which to listen
+	 * @param event {String} event name ('click', 'mouseenter')
+	 * @param context {Object} component on which to call method
+	 * @param method {String} name of method on context. Method should
+	 *   have the following signature: function (e) {}
 	 * @param [selector] {String} optional css query string to use to
 	 */
-	function on (node, event, handler /*, selector */) {
+	function on (node, event, context, method /*, selector */) {
 		var selector;
 
-		selector = arguments[3];
+		selector = arguments[4];
 
 		if (selector) {
 			event = dojoOn.selector(selector, event);
 		}
 
-		return dojoOn(node, event, handler).remove;
+		return dojoOn(node, event, makeEventHandler(context, method, selector)).remove;
 	}
 
 	on.wire$plugin = createOnPlugin({
@@ -38,6 +43,13 @@ define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, 
 	}).wire$plugin;
 
 	return on;
+
+	function makeEventHandler (context, method, selector) {
+		return function (e) {
+			if (selector) e.selectorTarget = this;
+			context[method](e);
+		}
+	}
 
 });
 }(
