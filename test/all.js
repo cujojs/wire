@@ -29,6 +29,7 @@
 
 	// Base
 	doh.registerUrl('init-facet', '../../init.html' + hash);
+	doh.registerUrl('ready-facet', '../../ready.html' + hash);
 	doh.registerUrl('destroy-facet', '../../destroy.html' + hash);
 
 	// Factories
