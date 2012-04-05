@@ -42,9 +42,8 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 		// `if else` is more compressible than switch
 		if (!isNaN(location)) {
-			if (location < 0) {
-				location = 0;
-			}
+			// IE craoks if location is out of bounds
+			location = Math.min(Math.max(location, 0), refNode.childNodes.length);
 			_insertBefore(refNode, node, refNode.childNodes[location]);
 		}
 		else if(location == 'at') {
@@ -80,7 +79,8 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 	// these are for better compressibility since compressors won't
 	// compress native DOM methods.
 	function _insertBefore(parent, node, refNode) {
-		parent.insertBefore(node, refNode);
+		if (!refNode) _appendChild(parent, node); // IE needs this
+		else parent.insertBefore(node, refNode);
 	}
 
 	function _appendChild(parent, node) {
