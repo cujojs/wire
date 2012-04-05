@@ -161,14 +161,12 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	wire.load = amdLoad;
 
 	//
-	// AMD Analyze/Build plugin API
+	// AMD Builder plugin API
 	//
-	// Separate builder plugin as per CommonJS LoaderPlugin spec:
-	// http://wiki.commonjs.org/wiki/Modules/LoaderPlugin
 
-	// plugin-builder: wire/cram/builder
-	// cram v 0.2+ supports plugin-builder property
-	wire['plugin-builder'] = 'wire/cram/builder';
+	// pluginBuilder: ./build/amd/builder
+	// cram > v0.2 will support pluginBuilder property
+	wire['pluginBuilder'] = './build/amd/builder';
 
 	//
 	// Private functions
