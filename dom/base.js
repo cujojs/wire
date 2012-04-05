@@ -147,7 +147,7 @@ define(function () {
 
 		if ('length' in refNode) {
 			for (i = 0; i < refNode.length; i++) {
-				defaultPlaceAt(i == 0 ? node : node.cloneNode(true), refNode[i], location);
+				placeAt(i == 0 ? node : node.cloneNode(true), refNode[i], location);
 			}
 			return node;
 		}
