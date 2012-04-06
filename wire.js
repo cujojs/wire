@@ -164,7 +164,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	// AMD Builder plugin API
 	//
 
-	// pluginBuilder: ./build/amd/builder
+	// pluginBuilder: './build/amd/builder'
 	// cram > v0.2 will support pluginBuilder property
 	wire['pluginBuilder'] = './build/amd/builder';
 
