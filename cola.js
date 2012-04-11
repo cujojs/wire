@@ -10,30 +10,10 @@
  */
 
 (function(define) {
-define(['when', 'cola/AdapterResolver',
-	'cola/ArrayAdapter', 'cola/dom/NodeListAdapter',
-	'cola/ResultSetAdapter', 'cola/QueryAdapter', 'cola/mediator/syncCollections',
-	'cola/ObjectAdapter', 'cola/dom/NodeAdapter',
-	'cola/ResultAdapter', 'cola/mediator/syncProperties',
-	'cola/addPropertyTransforms', 'cola/transformCollection', 'cola/transform/compose'],
-function(when, adapterResolver,
-	ArrayAdapter, NodeListAdapter, ResultSetAdapter, QueryAdapter, syncCollections,
-	ObjectAdapter, NodeAdapter,
-	ResultAdapter, syncProperties,
-	addPropertyTransforms, transformCollection, compose
-) {
+define(['when', 'when/apply'],
+function(when, apply) {
 
-	var cachedBindings, isArray, undef, slice;
-
-	// TODO: move most of this stuff, including adapter registration to cola.js
-	// TODO: implement wire$build that auto-adds these deps to build
-	adapterResolver.register(ArrayAdapter, 'collection');
-	adapterResolver.register(NodeListAdapter, 'collection');
-//	adapterResolver.register(ResultSetAdapter, 'collection');
-	adapterResolver.register(QueryAdapter, 'collection');
-	adapterResolver.register(NodeAdapter, 'object');
-	adapterResolver.register(ObjectAdapter, 'object');
-//	adapterResolver.register(ResultAdapter, 'object');
+	var isArray, undef, slice;
 
 	function querySelector (selector, node) {
 		return node.querySelector(selector);
@@ -44,42 +24,6 @@ function(when, adapterResolver,
 	};
 
 	slice = Array.prototype.slice;
-
-	/**
-	 * "globally" cached bindings.  Cache bindings here so that a bind can find,
-	 * process, and remove them later
-	 * @private
- 	 */
-	cachedBindings = [];
-
-	/**
-	 * @private
-	 * @param target anything - target component for which to find cached bindings
-	 * @param found {Function} function to call with existing cached bindings
-	 * @param [notFound] {Function} function to call if no cached bindings found
-	 */
-	function findCachedBindings(target, found, notFound) {
-		for(var i = 0, len = cachedBindings.length; i < len; i++) {
-			if(cachedBindings[i].target === target) {
-				return found(cachedBindings, i, cachedBindings[i]);
-			}
-		}
-
-		return notFound(cachedBindings);
-	}
-
-	function mixin(dst, src) {
-		for(var p in src) {
-			if(src.hasOwnProperty(p)) {
-				dst[p] = src[p];
-			}
-		}
-		return dst;
-	}
-
-	function mergeBindings(bindingDef, bindings) {
-		mixin(bindingDef.bindings, bindings);
-	}
 
 	function createPropertyTransform(transforms, wire) {
 
@@ -130,7 +74,7 @@ function(when, adapterResolver,
 	function setupBinding(bindingSpecs, name, wire) {
 		var bindingSpec, binding;
 
-		bindingSpec = mixin({}, bindingSpecs[name]);
+		bindingSpec = copyOwnProps(bindingSpecs[name]);
 		binding = {
 			name: name,
 			spec: bindingSpec
@@ -160,174 +104,61 @@ function(when, adapterResolver,
 		}, {});
 	}
 
-	function cacheBindings(resolver, proxy, wire, pluginOptions) {
-		// wire the bindings immediately, in the same context as they
-		// are declared.  Since bindings/bind may be in different
-		// contexts, deferring the wiring until bind could cause
-		// lots of confusion, since they'd be wired in that context,
-		// not in the one where they are declared.
-		when(wire(proxy.options),
-			function(bindings) {
+	function bindFacet(resolver, facet, wire) {
+		var options, target, promise;
 
-				return when(setupBindings(bindings, wire),
-					function(bindings) {
-						findCachedBindings(proxy.target,
-							function(cachedBindings, i, bindingDef) {
-								// Merge any existing bindings
-								mergeBindings(bindingDef, bindings);
-							},
-							function(cachedBindings) {
-								// Cache new bindings if none exist for
-								// the current target
-								var newBindings = {
-									target: proxy.target,
-									bindings: bindings,
-									pluginOptions: pluginOptions
-								};
-								cachedBindings.push(newBindings);
-							}
-						);
-					}
-				);
+		target = facet.target;
+		options = facet.options;
+
+		promise = when(wire(options), function(options) {
+			var p, hubOptions, to, bindings;
+
+			to = options.to;
+			if(!to) {
+				throw new Error('wire/cola: "to" must be specified');
 			}
-		).then(resolver.resolve, resolver.reject);
-	}
 
-	function removeCachedBindings(resolver, proxy /*, wire */) {
-		// If there were any bindings that were never used (via "bind"), we
-		// can remove them now since the component is being destroyed.
-		findCachedBindings(proxy.target, function(cachedBindings, i) {
-			cachedBindings.splice(i, 1);
+			bindings = options.bindings;
+
+			delete options.to;
+			delete options.bindings;
+
+			hubOptions = copyOwnProps(options);
+
+			if(!hubOptions.querySelector) {
+				hubOptions.querySelector = querySelector;
+			}
+
+			return when(setupBindings(bindings, wire),
+				function(bindings) {
+					hubOptions.bindings = copyOwnProps(bindings);
+					to.addSource(target, hubOptions);
+					return target; // doesn't matter what we return here
+				}
+			);
 		});
 
-		resolver.resolve();
+		when.chain(promise, resolver);
 	}
 
-	function collectPropertyTransforms(bindings) {
-		var name, propertyTransforms, transform;
+	function copyOwnProps(src) {
+		var dup, p;
 
-		propertyTransforms = {};
-		for(name in bindings) {
-			transform = bindings[name].transform;
-			if(transform) {
-				propertyTransforms[name] = transform;
+		dup = {};
+		for(p in src) {
+			if(src.hasOwnProperty(p)) {
+				dup[p] = src[p];
 			}
 		}
 
-		return propertyTransforms;
-	}
-
-	function createAdapter(obj, type, options) {
-		// FIXME: This is just for initial testing
-		var Adapter, adapter;
-		Adapter = adapterResolver(obj, type);
-		// if (!Adapter) throw new Error('wire/cola: could not find Adapter constructor for ' + type);
-		adapter = Adapter ? new Adapter(obj, options) : obj;
-
-		if (options.bindings && type == 'object') {
-			adapter = addPropertyTransforms(adapter, collectPropertyTransforms(options.bindings));
-		}
-
-		return adapter;
-	}
-
-	function doBind(target, datasource, bindings, options, wire) {
-		// TODO: create comparator from options (e.g. sortBy: ['prop1', 'prop2'])
-		// TODO: create symbolizer from options (e.g. key: ['name', 'version'])
-		var adapter1, adapter2, collectionTransform;
-
-		options = mixin({
-			querySelector: querySelector
-		}, options || {});
-
-		// TODO: ensure these are in the right order so transforms are always in the right order
-		adapter1 = createAdapter(datasource, 'collection', options);
-
-		collectionTransform = options.transform;
-		if (collectionTransform) {
-			if (typeof collectionTransform != 'function') {
-				collectionTransform = compose(collectionTransform);
-			}
-			adapter1 = transformCollection(adapter1, collectionTransform);
-		}
-
-		options = mixin({ bindings: bindings }, options);
-		adapter2 = createAdapter(target, 'collection', options);
-
-		// FIXME: throw if we can't create an adapter?
-		if (!(adapter1 && adapter2)) return;
-
-		return syncCollections(adapter1, adapter2, createAdapter);
+		return dup;
 	}
 
 	return {
 		wire$plugin: function(ready, destroyed, pluginOptions) {
 
-			var unmediators = [];
-
-			// TODO: allow querySelector to be specified in pluginOptions?
-
-
-			function bindFacet(resolver, proxy, wire) {
-				// Find any cached bindings for this component, and if found
-				// setup cola data binding.
-				findCachedBindings(proxy.target,
-					function(cachedBindings, i, bindingDef) {
-						// Remove cached bindings
-						cachedBindings.splice(i, 1);
-
-						// Wire pluginOptions, then bind to the datasource
-						when(wire(proxy.options), function(options) {
-							var datasource;
-
-							if(proxy.options.to) {
-								datasource = options.to;
-							} else {
-								datasource = options;
-								options = {};
-							}
-
-							// TODO: mixin proxy.options onto pluginOptions?
-							options = mixin(options, bindingDef.pluginOptions);
-
-							// Use cached bindings to setup cola data binding for
-							// the current target component
-							var unmediate = doBind(bindingDef.target, datasource, bindingDef.bindings, options);
-
-							unmediators.push(unmediate);
-
-							// TODO: Store cola info in wire$plugin so we can tear the bindings down
-							// the component is destroyed?
-
-						}).then(resolver.resolve, resolver.reject);
-
-					},
-					function() {
-						// No bindings found: "bind" was used without "bindings"
-						resolver.reject('bind: no bindings declared for component: ' + proxy.id);
-
-					}
-				);
-			}
-
-			function destroyMediators() {
-				var unmediate, i;
-				i = unmediators.length;
-				while(unmediate = unmediators[--i]) unmediate();
-			}
-
-			function cacheBindingsAndOptions (resolver, proxy, wire) {
-				return cacheBindings(resolver, proxy, wire, pluginOptions);
-			}
-
-			destroyed.then(destroyMediators);
-
 			return {
 				facets: {
-					bindings: {
-						configure: cacheBindingsAndOptions,
-						destroy: removeCachedBindings
-					},
 					bind: {
 						ready: bindFacet
 					}
