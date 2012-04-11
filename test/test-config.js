@@ -104,6 +104,17 @@
 	// Other loaders may not need this
 	loaderConfig.paths[loaderName] = loaderPath;
 
+	if(typeof console.log != 'function') {
+		doh.debug = function(){
+			var msg = "";
+			for(var x=0; x<arguments.length; x++){
+				msg += " "+arguments[x];
+			}
+//			sendToLogPane([msg]);
+			console.log("DEBUG:"+msg);
+		};
+	}
+
 	// That's right y'all, document.write FTW
 	doc.write('<script src="' + baseUrl + loaderPath + '.js' + '"></script>');
 
