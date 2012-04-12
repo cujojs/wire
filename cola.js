@@ -10,8 +10,8 @@
  */
 
 (function(define) {
-define(['when', 'when/apply'],
-function(when, apply) {
+define(['when'],
+function(when) {
 
 	var isArray, undef, slice;
 
@@ -111,7 +111,7 @@ function(when, apply) {
 		options = facet.options;
 
 		promise = when(wire(options), function(options) {
-			var p, hubOptions, to, bindings;
+			var hubOptions, to, bindings;
 
 			to = options.to;
 			if(!to) {
