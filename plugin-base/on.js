@@ -12,9 +12,6 @@
  */
 (function (define) {
 define(['when'], function (when) {
-	var testNode, eventSelectorRx, undef;
-
-	eventSelectorRx = /\s*([^:]*)\s*:\s*([^:,]*)\s*(,?)/g;
 
 	return function createOnPlugin (options) {
 
@@ -200,11 +197,6 @@ define(['when'], function (when) {
 		}
 
 		return pairs;
-	}
-
-	function isEventType (type) {
-		if (!testNode) testNode = document.createElement('span');
-		return ('on' + type) in testNode;
 	}
 
 });
