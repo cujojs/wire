@@ -12,13 +12,24 @@
  */
 (function (define) {
 define(['when'], function (when) {
+"use strict";
+
+	var theseAreNotEvents, undef;
+
+	theseAreNotEvents = {
+		selector: 1,
+		preventDefault: 1,
+		stopPropagation: 1
+	};
 
 	return function createOnPlugin (options) {
 
 		return {
-			wire$plugin: function eventsPlugin (ready, destroyed /*, options */) {
+			wire$plugin: function eventsPlugin (ready, destroyed, options) {
 
 				var removers = [];
+
+				if (!options) options = {};
 
 				function parseOn (component, refName, connections, wire) {
 					// First, figure out if the left-hand-side is a ref to
@@ -44,11 +55,16 @@ define(['when'], function (when) {
 							selector = connections.selector;
 							for (event in connections) {
 								// The 'selector' property name is reserved, so skip it
-								if (event != 'selector') {
+								if (!(event in theseAreNotEvents)) {
 									pairs = splitEventSelectorString(event, selector);
 									method = connections[event];
 									checkHandler(component, method);
-									removers = removers.concat(registerHandlers(pairs, target, component, method));
+									removers = removers.concat(
+										registerHandlers(pairs, target, component, method,
+											connections.preventDefault || options.preventDefault,
+											connections.stopPropagation || options.stopPropagation
+										)
+									);
 								}
 							}
 						},
@@ -74,7 +90,12 @@ define(['when'], function (when) {
 
 								promise = when(wire.resolveRef(ref), function(ref) {
 									checkHandler(ref, method);
-									removers = removers.concat(registerHandlers(pairs, component, ref, method));
+									removers = removers.concat(
+										registerHandlers(pairs, component, ref, method,
+											options.preventDefault,
+											options.stopPropagation
+										)
+									);
 								});
 							} else {
 								/*
@@ -93,7 +114,12 @@ define(['when'], function (when) {
 									promises.push(when(wire.resolveRef(ref),
 										function (resolved) {
 											checkHandler(resolved, connections[ref]);
-											removers = removers.concat(registerHandlers(pairs, component, resolved, connections[ref]));
+											removers = removers.concat(
+												registerHandlers(pairs, component, resolved, connections[ref],
+													options.preventDefault,
+													options.stopPropagation
+												)
+											);
 										}
 									));
 								}
@@ -135,11 +161,12 @@ define(['when'], function (when) {
 			}
 		};
 
-		function registerHandlers (pairs, node, context, method) {
-			var removers;
+		function registerHandlers (pairs, node, context, method, prevent, stop) {
+			var removers, handler;
 			removers = [];
 			for (var i = 0, len = pairs.length; i < len; i++) {
-				removers.push(options.on(node, pairs[i].event, context, method, pairs[i].selector));
+				handler = makeEventHandler(context, method, prevent, stop);
+				removers.push(options.on(node, pairs[i].event, undef, handler, pairs[i].selector));
 			}
 			return removers;
 		}
@@ -155,6 +182,39 @@ define(['when'], function (when) {
 		}
 		else if (typeof obj[method] != 'function') {
 			throw new Error('on: No such method: ' + method);
+		}
+	}
+
+	function preventDefaultIfNav (e) {
+		var nodeName, navEvents;
+		nodeName = e.target && e.target.tagName;
+		navEvents = ('a' == nodeName && 'click' == e.type)
+			|| ('form' == nodeName && 'submit' == e.type);
+		if (navEvents) {
+			preventDefaultAlways(e);
+		}
+	}
+
+	function preventDefaultAlways (e) {
+		e.preventDefault();
+	}
+
+	function stopPropagationAlways (e) {
+		e.stopPropagation();
+	}
+
+	function never (e) {}
+
+	function makeEventHandler (context, method, prevent, stop) {
+		var preventer, stopper;
+		preventer = prevent == undef || prevent == 'auto'
+			? preventDefaultIfNav
+			: prevent ? preventDefaultAlways : never;
+		stopper = stop ? stopPropagationAlways : never;
+		return function (e) {
+			preventer(e);
+			stopper(e);
+			return context[method](e);
 		}
 	}
 
