@@ -8,12 +8,13 @@
     <script src="test-config.js"></script>
 
 	<script type="text/javascript">
-		define('no-prototype-constructor', [], function() {
-			function Constructor(name) {
-				this.name = name;
-				this.foo = "bar";
-			}
 
+		function Constructor(name) {
+			this.name = name;
+			this.foo = "bar";
+		}
+
+		define('no-prototype-constructor', [], function() {
 			return Constructor;
 		});
 
@@ -53,6 +54,7 @@
 							doh.assertTrue(context.test1 !== undef);
 							doh.assertEqual(undef, context.test1.name);
 							doh.assertEqual('bar', context.test1.foo);
+							doh.assertTrue(context.test1 instanceof Constructor);
 						},
 						function(doh) {
 							doh.assertTrue(context.test2 !== undef);
