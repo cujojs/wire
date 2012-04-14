@@ -67,7 +67,7 @@ define(['wire/domReady', 'when', '../dom/base'], function(domReady, when, base) 
 			// if dev supplied i, try to use it
 			if (typeof refObj.i != 'undefined') {
 				i = refObj.i;
-				if (i in result) {
+				if (result[i]) { // do not use `i in result` since IE gives a false positive
 					return result[i];
 				} else {
 					throw new Error("Query '" + name + "' did not find an item at position " + i);

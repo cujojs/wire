@@ -8,7 +8,9 @@
 
 	<script type="text/javascript">
         define('Thing', function() {
-            function Thing() {}
+            function Thing(val) {
+				this.val = val;
+			}
 
             Thing.prototype = {
                 go: function() { throw new Error('failed') }
@@ -45,6 +47,34 @@
 			}
 		});
 
+		define('defer2-parent', {
+			debug: { module: 'wire/debug' },
+			thing: {
+				create: 'Thing',
+				properties: {
+					defer: {
+						wire: {
+							spec: 'defer2-child',
+							defer: true
+						}
+					}
+				}
+			}
+		});
+
+		define('defer2-child', {
+			debug: { module: 'wire/debug' },
+			childThing: {
+				create: {
+					module: 'Thing',
+					args: [
+						{ $ref: 'objectFromParent' }
+					]
+				},
+				properties: {}
+			}
+		});
+
 		require(['wire'], function(wire) {
             
             function fail(dohd) {
@@ -54,6 +84,23 @@
             }
 
             doh.register('wire-factory works', [
+				function shouldResolveRefsFromDeferMixin(doh) {
+					var dohd = new doh.Deferred();
+
+					wire('defer2-parent').then(
+						function(context) {
+							context.thing.defer({ objectFromParent: { success: true }}).then(
+								function(child) {
+									dohd.callback(child.childThing.val.success === true);
+								},
+								fail(dohd)
+							);
+						},
+						fail(dohd)
+					);
+
+					return dohd;
+				} ,
 				function wireChildImmediate(doh) {
 
 					var dohd = new doh.Deferred();
@@ -262,8 +309,6 @@
 
 					return dohd;
 				}
-
-
             ]);
 
             doh.run();

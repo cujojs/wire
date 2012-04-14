@@ -9,7 +9,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @version 0.8.0-rc1
+ * @version 0.8.0
  */
 
 (function(global, define){
@@ -17,10 +17,10 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
 	"use strict";
 
-	var VERSION, tos, arrayProto, apIndexOf, apSlice, rootSpec, rootContext, delegate, emptyObject,
+	var tos, arrayProto, apIndexOf, apSlice, rootSpec, rootContext, delegate, emptyObject,
 		defer, chain, whenAll, isArray, indexOf, lifecycleSteps, undef;
 
-	wire.version = VERSION = "0.8.0-rc1";
+	wire.version = "0.8.0";
 
 	rootSpec = global['wire'] || {};
 	lifecycleSteps = ['create', 'configure', 'initialize', 'connect', 'ready'];
@@ -164,7 +164,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	// AMD Builder plugin API
 	//
 
-	// pluginBuilder: ./build/amd/builder
+	// pluginBuilder: './build/amd/builder'
 	// cram > v0.2 will support pluginBuilder property
 	wire['pluginBuilder'] = './build/amd/builder';
 
