@@ -50,9 +50,11 @@ define(['when'], function (when) {
 									}
 								}
 							 */
-							var event, pairs, selector, method;
+							var event, pairs, selector, prevent, stop, method;
 
 							selector = connections.selector;
+							prevent = connections.preventDefault || options.preventDefault;
+							stop = connections.stopPropagation || options.stopPropagation;
 							for (event in connections) {
 								// The 'selector' property name is reserved, so skip it
 								if (!(event in theseAreNotEvents)) {
@@ -60,10 +62,7 @@ define(['when'], function (when) {
 									method = connections[event];
 									checkHandler(component, method);
 									removers = removers.concat(
-										registerHandlers(pairs, target, component, method,
-											connections.preventDefault || options.preventDefault,
-											connections.stopPropagation || options.stopPropagation
-										)
+										registerHandlers(pairs, target, component, method, prevent, stop)
 									);
 								}
 							}
@@ -71,10 +70,13 @@ define(['when'], function (when) {
 						function () {
 							// Failed to resolve refName as a reference, assume it
 							// is an event on the current component
-							var pairs, ref, method, promises, promise;
+							var pairs, prevent, stop, ref, method, promises, promise;
 
 							// event/selector pairs
 							pairs = splitEventSelectorString(refName);
+
+							prevent = options.preventDefault;
+							stop = options.stopPropagation;
 
 							if (typeof connections == 'string') {
 								/*
@@ -91,10 +93,7 @@ define(['when'], function (when) {
 								promise = when(wire.resolveRef(ref), function(ref) {
 									checkHandler(ref, method);
 									removers = removers.concat(
-										registerHandlers(pairs, component, ref, method,
-											options.preventDefault,
-											options.stopPropagation
-										)
+										registerHandlers(pairs, component, ref, method, prevent, stop)
 									);
 								});
 							} else {
@@ -115,10 +114,7 @@ define(['when'], function (when) {
 										function (resolved) {
 											checkHandler(resolved, connections[ref]);
 											removers = removers.concat(
-												registerHandlers(pairs, component, resolved, connections[ref],
-													options.preventDefault,
-													options.stopPropagation
-												)
+												registerHandlers(pairs, component, resolved, connections[ref], prevent, stop)
 											);
 										}
 									));
@@ -186,12 +182,18 @@ define(['when'], function (when) {
 	}
 
 	function preventDefaultIfNav (e) {
-		var nodeName, navEvents;
-		nodeName = e.target && e.target.tagName;
-		navEvents = ('a' == nodeName && 'click' == e.type)
-			|| ('form' == nodeName && 'submit' == e.type);
-		if (navEvents) {
-			preventDefaultAlways(e);
+		var node, nodeName, nodeType, isNavEvent;
+		node = e.target || e.srcElement;
+		if (node) {
+			nodeName = node.tagName;
+			nodeType = node.type.toLowerCase();
+			// catch links and submit buttons/inputs in forms
+			isNavEvent = 'click' == e.type
+				&& 'A' == nodeName
+				|| ('submit' == nodeType && node.form);
+			if (isNavEvent) {
+				preventDefaultAlways(e);
+			}
 		}
 	}
 
