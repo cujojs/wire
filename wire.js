@@ -529,7 +529,18 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		}
 
 		function getModule(moduleId, spec) {
-			var module, loadPromise;
+			var module;
+
+			function scanPluginWhenLoaded(loadModulePromise, moduleReadyResolver) {
+
+				var loadPromise = when(loadModulePromise, function (module) {
+					scanPlugin(module, spec);
+					chain(modulesReady, moduleReadyResolver, module);
+				});
+
+				modulesToLoad.push(loadPromise);
+
+			}
 
 			if (isString(moduleId)) {
 				var m = moduleLoadPromises[moduleId];
@@ -542,19 +553,14 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 					};
 
 					moduleLoadPromises[moduleId] = m;
-					loadPromise = when(loadModule(moduleId), function (module) {
-						scanPlugin(module, spec);
-						chain(modulesReady, m.deferred, module);
-					});
-
-					modulesToLoad.push(loadPromise);
+					scanPluginWhenLoaded(loadModule(moduleId), m.deferred);
 				}
 
 				module = m.deferred;
 
 			} else {
-				module = moduleId;
-				scanPlugin(module);
+				module = defer();
+				scanPluginWhenLoaded(moduleId, module);
 			}
 
 			return module;
