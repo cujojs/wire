@@ -11,6 +11,7 @@
 	doh.registerUrl('basic-types1', '../../basic-types1.html' + hash);
 	doh.registerUrl('nested1', '../../nested1.html' + hash);
 	doh.registerUrl('nested2', '../../nested2.html' + hash);
+	doh.registerUrl('module-factory', '../../module.html' + hash);
 	doh.registerUrl('create-constructor', '../../create-constructor.html' + hash);
 	// create with raw constructors/functions
 	doh.registerUrl('plain-constructors', '../../required-modules.html' + hash);
