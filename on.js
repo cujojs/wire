@@ -88,9 +88,10 @@ define(['./plugin-base/on', './dom/base'], function (createOnPlugin, base) {
 		};
 	}
 
-	function makeEventHandler (context, method) {
+	function makeEventHandler (context, method, selector) {
+		if (typeof method == 'string') method = context[method];
 		return function (e) {
-			context[method](e);
+			method.call(context, e);
 		}
 	}
 

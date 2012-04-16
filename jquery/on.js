@@ -53,9 +53,10 @@ define(['../plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
 	return on;
 
 	function makeEventHandler (context, method, selector) {
+		if (typeof method == 'string') method = context[method];
 		return function (e) {
 			if (selector) e.selectorTarget = this;
-			context[method](e);
+			method.call(context, e);
 		}
 	}
 

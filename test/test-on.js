@@ -7,6 +7,7 @@ define('fixture', function() {
 		handle: function(e) {
 			this.handled++;
 			this.selectorTarget = e.selectorTarget;
+			this.event = e;
 		},
 
 		emit: function() {}
@@ -345,7 +346,171 @@ require(['wire'], function(wire) {
 
 			return dohd;
 
+		},
+		function shouldPreventDefaultForNavEvents(doh) {
+			var dohd = new doh.Deferred(), button;
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						template: '<form><a href="#"></a><button id="buttonInsideForm" type="submit"></button></form>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'click': 'a.handle'
+					}
+				},
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						button = document.getElementById('buttonInsideForm');
+						// try clicking the submit button and the link
+						button.click();
+						// test anchor click in browsers that support it:
+						var anchor = button.form.firstChild;
+						if (anchor.click) anchor.click();
+						dohd.callback(context.a.event.defaultPrevented);
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldPreventDefaultWhenSpecified(doh) {
+			var dohd = new doh.Deferred(), button;
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						template: '<button id="buttonOutsideForm"></button>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'click': 'a.handle'
+					}
+				},
+				plugins: [
+					{ module: pluginName, preventDefault: true },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						button = document.getElementById('buttonOutsideForm');
+						// try clicking the submit button
+						button.click();
+						dohd.callback(context.a.event.defaultPrevented);
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldNotPreventDefaultWhenSpecified(doh) {
+			var dohd = new doh.Deferred(), button;
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						template: '<button id="buttonOutsideForm2"></button>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'click': 'a.handle'
+					}
+				},
+				plugins: [
+					{ module: pluginName, preventDefault: false },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						button = document.getElementById('buttonOutsideForm2');
+						// try clicking the submit button
+						button.click();
+						dohd.callback(!context.a.event.defaultPrevented);
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldStopPropagationWhenSpecified(doh) {
+			var dohd = new doh.Deferred(), button;
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						template: '<div><button id="buttonOutsideForm"></button></div>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'click': 'a.handle'
+					}
+				},
+				plugins: [
+					{ module: pluginName, stopPropagation: true },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						button = document.getElementById('buttonOutsideForm');
+						// try clicking the submit button
+						button.click();
+						dohd.callback(context.a.handled == 0);
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldNotStopPropagationWhenSpecified(doh) {
+			var dohd = new doh.Deferred(), button;
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						template: '<div><button id="buttonOutsideForm"></button></div>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'click': 'a.handle'
+					}
+				},
+				plugins: [
+					{ module: pluginName, stopPropagation: false },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						button = document.getElementById('buttonOutsideForm2');
+						// try clicking the submit button
+						button.click();
+						dohd.callback(!context.a.handled == 1);
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
 		}
+
 	]);
 
 	doh.run();

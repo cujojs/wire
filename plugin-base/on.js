@@ -12,16 +12,24 @@
  */
 (function (define) {
 define(['when'], function (when) {
-	var testNode, eventSelectorRx, undef;
+"use strict";
 
-	eventSelectorRx = /\s*([^:]*)\s*:\s*([^:,]*)\s*(,?)/g;
+	var theseAreNotEvents, undef;
+
+	theseAreNotEvents = {
+		selector: 1,
+		preventDefault: 1,
+		stopPropagation: 1
+	};
 
 	return function createOnPlugin (options) {
 
 		return {
-			wire$plugin: function eventsPlugin (ready, destroyed /*, options */) {
+			wire$plugin: function eventsPlugin (ready, destroyed, options) {
 
 				var removers = [];
+
+				if (!options) options = {};
 
 				function parseOn (component, refName, connections, wire) {
 					// First, figure out if the left-hand-side is a ref to
@@ -42,26 +50,33 @@ define(['when'], function (when) {
 									}
 								}
 							 */
-							var event, pairs, selector, method;
+							var event, pairs, selector, prevent, stop, method;
 
 							selector = connections.selector;
+							prevent = connections.preventDefault || options.preventDefault;
+							stop = connections.stopPropagation || options.stopPropagation;
 							for (event in connections) {
 								// The 'selector' property name is reserved, so skip it
-								if (event != 'selector') {
+								if (!(event in theseAreNotEvents)) {
 									pairs = splitEventSelectorString(event, selector);
 									method = connections[event];
 									checkHandler(component, method);
-									removers = removers.concat(registerHandlers(pairs, target, component, method));
+									removers = removers.concat(
+										registerHandlers(pairs, target, component, method, prevent, stop)
+									);
 								}
 							}
 						},
 						function () {
 							// Failed to resolve refName as a reference, assume it
 							// is an event on the current component
-							var pairs, ref, method, promises, promise;
+							var pairs, prevent, stop, ref, method, promises, promise;
 
 							// event/selector pairs
 							pairs = splitEventSelectorString(refName);
+
+							prevent = options.preventDefault;
+							stop = options.stopPropagation;
 
 							if (typeof connections == 'string') {
 								/*
@@ -77,7 +92,9 @@ define(['when'], function (when) {
 
 								promise = when(wire.resolveRef(ref), function(ref) {
 									checkHandler(ref, method);
-									removers = removers.concat(registerHandlers(pairs, component, ref, method));
+									removers = removers.concat(
+										registerHandlers(pairs, component, ref, method, prevent, stop)
+									);
 								});
 							} else {
 								/*
@@ -96,7 +113,9 @@ define(['when'], function (when) {
 									promises.push(when(wire.resolveRef(ref),
 										function (resolved) {
 											checkHandler(resolved, connections[ref]);
-											removers = removers.concat(registerHandlers(pairs, component, resolved, connections[ref]));
+											removers = removers.concat(
+												registerHandlers(pairs, component, resolved, connections[ref], prevent, stop)
+											);
 										}
 									));
 								}
@@ -138,11 +157,12 @@ define(['when'], function (when) {
 			}
 		};
 
-		function registerHandlers (pairs, node, context, method) {
-			var removers;
+		function registerHandlers (pairs, node, context, method, prevent, stop) {
+			var removers, handler;
 			removers = [];
 			for (var i = 0, len = pairs.length; i < len; i++) {
-				removers.push(options.on(node, pairs[i].event, context, method, pairs[i].selector));
+				handler = makeEventHandler(context, method, prevent, stop);
+				removers.push(options.on(node, pairs[i].event, undef, handler, pairs[i].selector));
 			}
 			return removers;
 		}
@@ -158,6 +178,45 @@ define(['when'], function (when) {
 		}
 		else if (typeof obj[method] != 'function') {
 			throw new Error('on: No such method: ' + method);
+		}
+	}
+
+	function preventDefaultIfNav (e) {
+		var node, nodeName, nodeType, isNavEvent;
+		node = e.target || e.srcElement;
+		if (node) {
+			nodeName = node.tagName;
+			nodeType = node.type.toLowerCase();
+			// catch links and submit buttons/inputs in forms
+			isNavEvent = 'click' == e.type
+				&& 'A' == nodeName
+				|| ('submit' == nodeType && node.form);
+			if (isNavEvent) {
+				preventDefaultAlways(e);
+			}
+		}
+	}
+
+	function preventDefaultAlways (e) {
+		e.preventDefault();
+	}
+
+	function stopPropagationAlways (e) {
+		e.stopPropagation();
+	}
+
+	function never (e) {}
+
+	function makeEventHandler (context, method, prevent, stop) {
+		var preventer, stopper;
+		preventer = prevent == undef || prevent == 'auto'
+			? preventDefaultIfNav
+			: prevent ? preventDefaultAlways : never;
+		stopper = stop ? stopPropagationAlways : never;
+		return function (e) {
+			preventer(e);
+			stopper(e);
+			return context[method](e);
 		}
 	}
 
@@ -200,11 +259,6 @@ define(['when'], function (when) {
 		}
 
 		return pairs;
-	}
-
-	function isEventType (type) {
-		if (!testNode) testNode = document.createElement('span');
-		return ('on' + type) in testNode;
 	}
 
 });
