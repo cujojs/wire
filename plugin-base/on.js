@@ -183,10 +183,10 @@ define(['when'], function (when) {
 
 	function preventDefaultIfNav (e) {
 		var node, nodeName, nodeType, isNavEvent;
-		node = e.target || e.srcElement;
+		node = e.selectorTarget || e.target || e.srcElement;
 		if (node) {
 			nodeName = node.tagName;
-			nodeType = node.type.toLowerCase();
+			nodeType = node.type && node.type.toLowerCase();
 			// catch links and submit buttons/inputs in forms
 			isNavEvent = 'click' == e.type
 				&& 'A' == nodeName
