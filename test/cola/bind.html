@@ -9,8 +9,7 @@
 
 	<script type="text/javascript">
 		define('test', function () {
-			function Test() {
-			}
+			function Test() {}
 
 			Test.prototype = {
 				init: function () {}
@@ -19,175 +18,151 @@
 			return Test;
 		});
 
-		define('child', {
-			cola: { module: 'wire/cola' },
-			test: {
-				create: 'test',
-				bindings: {}
+		define('hub', function() {
+			function Hub(primary, options) {
+				this.primary = primary;
+				this.options = options;
 			}
-		});
 
-		define('child-no-bindings', {
-			test: {
-				create: 'test'
-			}
-		});
-
-		define('parent-bind-to-node-list', {
-//			debug: { module: 'wire/debug' },
-			cola: { module: 'wire/cola', id: 'parent' },
-			data: [
-				{ id: 1, name: 'a' },
-				{ id: 2, name: 'b' }
-			],
-			test: {
-				wire: {
-					spec: 'child-with-node-list', get: 'list'
-				},
-				bind: { $ref: 'data' },
-				bindings: {
-					name: { node: '.name' },
-					id: { prop: 'data-item-id' }
+			Hub.prototype = {
+				addSource: function(adapter, options) {
+					this.secondary = adapter;
+					this.secondaryOptions = options;
 				}
-			}
+			};
+
+			return Hub;
 		});
-		
-		define('child-with-node-list', {
-//			debug: { module: 'wire/debug' },
-			cola: { module: 'wire/cola', id: 'child' },
-			dom: { module: 'wire/dom' },
-			list: { $ref: 'dom!list-template' }
+
+		define('transform', function() {
+			return function(input) {
+				return input;
+			};
 		});
+
+		function fail(dohd) {
+			return function(e) {
+				dohd.errback(e);
+			};
+		}
 
 		require(['wire'], function (wire) {
 
 			doh.register('wire/cola bind', [
-//				function shouldFinishWiringWhenOptionsAreValid() {
-//					var dohd = new doh.Deferred();
-//
-//					wire({
-//						cola: { module: 'wire/cola' },
-//						test: {
-//							create: 'test',
-//							bindings: {},
-//							bind: {}
-//						}
-//					}).then(
-//							function (context) {
-//								dohd.callback(!!context.test);
-//							},
-//							function (e) {
-//								dohd.errback("Valid options should have been wired: " + e);
-//							}
-//					);
-//
-//					return dohd;
-//				},
-//				function shouldFailWiringWhenOptionsAreInvalid() {
-//					var dohd = new doh.Deferred();
-//
-//					wire({
-//						cola: { module: 'wire/cola' },
-//						test: {
-//							create: 'test',
-//							bindings: {},
-//							bind: {
-//								fail: { $ref: 'fail' }
-//							}
-//						}
-//					}).then(
-//							function (context) {
-//								dohd.errback("Unwireable bindings options should have failed");
-//							},
-//							function (e) {
-//								dohd.callback(true);
-//							}
-//					);
-//
-//					return dohd;
-//				},
-//				function shouldFailWiringWhenBindingsNotProvided() {
-//					var dohd = new doh.Deferred();
-//
-//					wire({
-//						cola: { module: 'wire/cola' },
-//						test: {
-//							create: 'test',
-//							bind: {}
-//						}
-//					}).then(
-//							function (context) {
-//								dohd.errback("Missing bindings should have caused bind to fail");
-//							},
-//							function (e) {
-//								dohd.callback(true);
-//							}
-//					);
-//
-//					return dohd;
-//				},
-//				function shouldSeeChildBindingsInParentContext() {
-//					var dohd = new doh.Deferred();
-//
-//					wire({
-//						cola: { module: 'wire/cola' },
-//						test: {
-//							wire: {
-//								spec: 'child',
-//								get: 'test'
-//							},
-//							bind: {}
-//						}
-//					}).then(
-//							function (context) {
-//								dohd.callback(!!context.test);
-//							},
-//							function (e) {
-//								dohd.errback("Parent bind should have seen child bindings: " + e);
-//							}
-//					);
-//
-//					return dohd;
-//				},
-//				function shouldFailWiringWhenChildHasNoBindings() {
-//					var dohd = new doh.Deferred();
-//
-//					wire({
-//						cola: { module: 'wire/cola' },
-//						test: {
-//							wire: {
-//								spec: 'child-no-bindings',
-//								get: 'test'
-//							},
-//							bind: {}
-//						}
-//					}).then(
-//							function (context) {
-//								dohd.errback("Missing child bindings should have caused bind to fail");
-//							},
-//							function (e) {
-//								dohd.callback(true);
-//							}
-//					);
-//
-//					return dohd;
-//				},
-				function shouldBindToNodeList() {
+				function shouldFailWhenToNotSpecified() {
 					var dohd = new doh.Deferred();
 
-					wire('parent-bind-to-node-list').then(
+					wire({
+						cola: { module: 'wire/cola' },
+						test: {
+							create: 'test',
+							bind: {}
+						}
+					}).then(
 						function(context) {
-							console.log(context);
-							dohd.callback(context);
+							dohd.errback('Should have failed without "to"');
 						},
 						function(e) {
-							console.error(e);
-							dohd.errback(e);
+							dohd.callback(!!e);
 						}
 					);
 
 					return dohd;
+				},
+				function shouldFailWhenToInvalid() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola' },
+						test: {
+							create: 'test',
+							bind: {
+								to: { $ref: 'missing' }
+							}
+						}
+					}).then(
+							function(context) {
+								dohd.errback('Should have failed with invalid "to"');
+							},
+							function(e) {
+								dohd.callback(!!e);
+							}
+					);
+
+					return dohd;
+				},
+				function shouldFinishWiringWhenOptionsAreValid() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola' },
+						hub: { create: 'hub' },
+						test: {
+							create: 'test',
+							bind: {
+								to: { $ref: 'hub' }
+							}
+						}
+					}).then(
+							function(context) {
+								dohd.callback(!!context.hub.secondary);
+							},
+							fail(dohd)
+					);
+
+					return dohd;
+				},
+				function shouldInjectQuerySelectorIntoOptions() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola' },
+						hub: { create: 'hub' },
+						test: {
+							create: 'test',
+							bind: {
+								to: { $ref: 'hub' }
+							}
+						}
+					}).then(
+							function(context) {
+								dohd.callback(!!context.hub.secondaryOptions.querySelector);
+							},
+							fail(dohd)
+					);
+
+					return dohd;
+				},
+				function shouldProcessTransformFunctionsInBindings() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola' },
+						hub: { create: 'hub' },
+						test: {
+							create: 'test',
+							bind: {
+								to: { $ref: 'hub' },
+								bindings: {
+									foo: {
+										node: '',
+										prop: '',
+										transform: { identity: 123 }
+									}
+								}
+							}
+						},
+						identity: { create: 'transform' }
+					}).then(
+							function(context) {
+								dohd.callback(!!context.hub.secondaryOptions.bindings.foo.transform);
+							},
+							fail(dohd)
+					);
+
+					return dohd;
 				}
+
 			]);
 
 			doh.run();
