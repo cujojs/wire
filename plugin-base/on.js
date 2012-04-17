@@ -11,16 +11,39 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['when'], function (when) {
+define(['when', 'when/apply'], function (when, apply) {
 "use strict";
 
-	var theseAreNotEvents, undef;
+	var theseAreNotEvents, slice, undef;
 
 	theseAreNotEvents = {
 		selector: 1,
+		transform: 1,
 		preventDefault: 1,
 		stopPropagation: 1
 	};
+
+	slice = Array.prototype.slice;
+
+	/**
+	 *
+	 * @param context {Object}
+	 * @param funcs {Array}
+	 * @return {Function}
+	 */
+	function compose(context, funcs) {
+		return function composed(x) {
+			var i, len, result;
+
+			result = x;
+
+			for(i = 0, len = funcs.length; i<len; i++) {
+				result = funcs[i].call(context, result);
+			}
+
+			return result;
+		};
+	}
 
 	return function createOnPlugin (options) {
 
@@ -44,15 +67,19 @@ define(['when'], function (when) {
 									on: {
 										otherComponent: {
 											selector: 'a.nav',
+											transform: { $ref: 'myTransformFunc' }, // optional
 											click: 'handlerMethodOnComponent',
 											keypress: 'anotherHandlerOnComponent'
 										}
 									}
 								}
 							 */
-							var event, pairs, selector, prevent, stop, method;
+							var event, pairs, selector, prevent, stop, method, transform, promises, waitFor;
+
+							promises = [];
 
 							selector = connections.selector;
+							transform = connections.transform;
 							prevent = connections.preventDefault || options.preventDefault;
 							stop = connections.stopPropagation || options.stopPropagation;
 							for (event in connections) {
@@ -61,11 +88,23 @@ define(['when'], function (when) {
 									pairs = splitEventSelectorString(event, selector);
 									method = connections[event];
 									checkHandler(component, method);
-									removers = removers.concat(
-										registerHandlers(pairs, target, component, method, prevent, stop)
-									);
+
+									if(transform) {
+										promises.push(when.all([pairs, component[method], wire(transform)],
+											apply(function(pairs, method, transform) {
+												var composed = compose(component, [transform, method]);
+												registerHandlers(pairs, target, component, composed, prevent, stop);
+											})
+										));
+									} else {
+										removers = removers.concat(
+											registerHandlers(pairs, target, component, method, prevent, stop)
+										);
+									}
 								}
 							}
+
+							return when.all(promises);
 						},
 						function () {
 							// Failed to resolve refName as a reference, assume it
@@ -110,6 +149,7 @@ define(['when'], function (when) {
 								promises = [];
 
 								for (ref in connections) {
+
 									promises.push(when(wire.resolveRef(ref),
 										function (resolved) {
 											checkHandler(resolved, connections[ref]);
@@ -213,10 +253,16 @@ define(['when'], function (when) {
 			? preventDefaultIfNav
 			: prevent ? preventDefaultAlways : never;
 		stopper = stop ? stopPropagationAlways : never;
+
+		// Support both:
+		// if method is a string, use context[method]
+		// if method is function, use it directly
+		if(typeof method == 'string') method = context[method];
+
 		return function (e) {
 			preventer(e);
 			stopper(e);
-			return context[method](e);
+			return method.call(context, e);
 		}
 	}
 

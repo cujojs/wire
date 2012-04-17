@@ -16,6 +16,18 @@ define('fixture', function() {
 	return Fixture;
 });
 
+define('transform', function() {
+	return function() {
+		return 1;
+	};
+});
+
+function defaultPrevented(e) {
+	return typeof e.isDefaultPrevented == 'function'
+		? e.isDefaultPrevented()
+		: e.defaultPrevented;
+}
+
 function fail(dohd) {
 	return function(e) {
 		console.error(e);
@@ -50,6 +62,36 @@ require(['wire'], function(wire) {
 
 			return dohd;
 		},
+		function shouldAllowLongFormWithTransform(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: {
+					create: 'fixture',
+					on: {
+						button: {
+							transform: { $ref: 'tx' },
+							click: 'handle'
+						}
+					}
+				},
+				tx: { module: 'transform' },
+				button: { $ref: 'dom!test' },
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' }
+				]
+			}).then(
+				function(context) {
+					document.getElementById('test').click();
+					dohd.callback(context.a.event === 1);
+				},
+				fail(dohd)
+			);
+
+			return dohd;
+		},
+
 		function shouldAllowLongFormWithSelector(doh) {
 			var dohd = new doh.Deferred();
 
@@ -73,6 +115,36 @@ require(['wire'], function(wire) {
 						dohd.callback(context.a.handled === 1);
 					},
 					fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldAllowLongFormWithSelectorAndTransform(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: {
+					create: 'fixture',
+					on: {
+						container: {
+							transform: { $ref: 'tx' },
+							'click:.test': 'handle'
+						}
+					}
+				},
+				tx: { module: 'transform' },
+				container: { $ref: 'dom!container' },
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' }
+				]
+			}).then(
+				function(context) {
+					document.getElementById('test').click();
+					dohd.callback(context.a.event === 1);
+				},
+				fail(dohd)
 			);
 
 			return dohd;
@@ -107,7 +179,37 @@ require(['wire'], function(wire) {
 			return dohd;
 
 		},
-		function shouldAllowReverseConnectionsLongForm(doh) {
+		function shouldAllowLongFormWithExplicitTransform(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: {
+					create: 'fixture',
+					on: {
+						container: {
+							selector: '.test',
+							transform: { $ref: 'tx' },
+							'click': 'handle'
+						}
+					}
+				},
+				tx: { module: 'transform' },
+				container: { $ref: 'dom!container' },
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' }
+				]
+			}).then(
+				function(context) {
+					document.getElementById('test').click();
+					dohd.callback(context.a.event === 1);
+				},
+				fail(dohd)
+			);
+
+			return dohd;
+
+		},		function shouldAllowReverseConnectionsLongForm(doh) {
 			var dohd = new doh.Deferred();
 
 			wire({
@@ -137,7 +239,7 @@ require(['wire'], function(wire) {
 			return dohd;
 
 		},
-		function shouldAllowReverseConnectionsLongForm(doh) {
+		function shouldAllowReverseConnectionsWithSelectorLongForm(doh) {
 			var dohd = new doh.Deferred();
 
 			wire({
@@ -374,7 +476,7 @@ require(['wire'], function(wire) {
 						// test anchor click in browsers that support it:
 						var anchor = button.form.firstChild;
 						if (anchor.click) anchor.click();
-						dohd.callback(context.a.event.defaultPrevented);
+						dohd.callback(defaultPrevented(context.a.event));
 					},
 					fail(dohd)
 			);
@@ -406,7 +508,7 @@ require(['wire'], function(wire) {
 						button = document.getElementById('buttonOutsideForm');
 						// try clicking the submit button
 						button.click();
-						dohd.callback(context.a.event.defaultPrevented);
+						dohd.callback(defaultPrevented(context.a.event));
 					},
 					fail(dohd)
 			);
@@ -438,7 +540,7 @@ require(['wire'], function(wire) {
 						button = document.getElementById('buttonOutsideForm2');
 						// try clicking the submit button
 						button.click();
-						dohd.callback(!context.a.event.defaultPrevented);
+						dohd.callback(!defaultPrevented(context.a.event));
 					},
 					fail(dohd)
 			);
