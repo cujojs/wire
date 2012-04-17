@@ -14,7 +14,7 @@
 define(['when', 'when/apply'], function (when, apply) {
 "use strict";
 
-	var theseAreNotEvents, slice, undef;
+	var theseAreNotEvents, undef;
 
 	theseAreNotEvents = {
 		selector: 1,
@@ -22,8 +22,6 @@ define(['when', 'when/apply'], function (when, apply) {
 		preventDefault: 1,
 		stopPropagation: 1
 	};
-
-	slice = Array.prototype.slice;
 
 	/**
 	 *

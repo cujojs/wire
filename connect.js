@@ -17,15 +17,89 @@
  *     }
  * }
  *
+ * It also supports arbitrary transforms on the data that flows over the
+ * connection.
+ *
+ * transformer: {
+ *     module: 'myTransformFunction'
+ * },
+ * view: {
+ *     create: 'myView',
+ *     ...
+ * },
+ * controller: {
+ *     create: 'myController',
+ *     connect: {
+ *         'view.onClick': 'transformer | _handleViewClick'
+ *     }
+ * }
+ *
  * wire is part of the cujo.js family of libraries (http://cujojs.com/)
  *
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['when', 'aop'], function(when, aop) {
+define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
 
-    return {
+	/**
+	 *
+	 * @param context {Object}
+	 * @param funcs {Array}
+	 * @return {Function}
+	 */
+	function compose(context, funcs) {
+		// TODO: pull this out to a functional helper lib
+		return function composed(x) {
+			var i, len, result;
+
+			result = x;
+
+			for(i = 0, len = funcs.length; i<len; i++) {
+				result = funcs[i].call(context, result);
+			}
+
+			return result;
+		};
+	}
+
+	/**
+	 * Parses the function composition string, resolving references as needed, and
+	 * composes a function from the resolved refs.
+	 * @param context {Object}
+	 * @param composeString {String}
+	 * @param resolveRef {Function}
+	 * @return {Promise} a promise for the composed function
+	 */
+	function parseCompose(context, composeString, resolveRef) {
+		var names, method;
+
+		names = composeString.split(/\s*\|\s*/);
+		method = names[names.length-1];
+		names = names.slice(0, -1);
+
+		if(!names.length) {
+			return context[method];
+		}
+
+		// First, resolve each transform function, stuffing it into an array
+		// The result of this reduce will an array of concrete functions
+		// Then add the final context[method] to the array of funcs and
+		// return the composition.
+		return when.reduce(names, function(funcs, functionRef) {
+			return when(resolveRef(functionRef), function(func) {
+				funcs.push(func);
+				return funcs;
+			});
+		}, []).then(
+			function(funcs) {
+				funcs.push(context[method]);
+				return compose(context, funcs);
+			}
+		);
+	}
+
+	return {
         wire$plugin: function eventsPlugin(ready, destroyed /*, options */) {
 
             var connectHandles = [];
@@ -38,11 +112,13 @@ define(['when', 'aop'], function(when, aop) {
              * @param source source object
              * @param event source method
              * @param target target object
-             * @param method target method
+             * @param func target function to invoke
              */
-            function doConnectOne(source, event, target, method) {
+            function doConnectOne(source, event, target, func) {
+				if (typeof func == 'string') func = target[func];
+
                 return aop.on(source, event, function() {
-                    target[method].apply(target, arguments);
+                    func.apply(target, arguments);
                 });
             }
 
@@ -62,6 +138,7 @@ define(['when', 'aop'], function(when, aop) {
 
                     if(typeof options == 'string') {
                         target = options.split('.');
+						// NOTE: This form does not yet support transforms
                         // eventName: 'componentName.methodName'
 
                         methodName = target[1];
@@ -73,6 +150,7 @@ define(['when', 'aop'], function(when, aop) {
                     } else {
                         // eventName: {
                         //   componentName: 'methodName'
+                        //   componentName: 'transform | methodName'
                         // }
 
                         promises = [];
@@ -80,8 +158,11 @@ define(['when', 'aop'], function(when, aop) {
 
                             methodName = options[connect];
                             promise = when(wire.resolveRef(connect), function(target) {
-                                connectHandles.push(doConnectOne(source, eventName, target, methodName));
-                            });
+								return when(parseCompose(target, methodName, wire.resolveRef),
+									function(func) {
+										connectHandles.push(doConnectOne(source, eventName, target, func));
+									});
+							});
 
                             promises.push(promise);
                         }
@@ -93,6 +174,7 @@ define(['when', 'aop'], function(when, aop) {
                 } else {
                     if(typeof options == 'string') {
                         // 'component.eventName': 'methodName'
+                        // 'component.eventName': 'transform | methodName'
 
                         source = connect.split('.');
                         eventName = source[1];
@@ -100,18 +182,30 @@ define(['when', 'aop'], function(when, aop) {
                         methodName = options;
 
                         promise = when(wire.resolveRef(source), function(source) {
-                            connectHandles.push(doConnectOne(source, eventName, target, methodName))
+							return when(parseCompose(target, methodName, wire.resolveRef),
+								function(func) {
+									connectHandles.push(doConnectOne(source, eventName, target, func));
+								}
+							)
                         });
                     } else {
                         // componentName: {
                         //   eventName: 'methodName'
+                        //   eventName: 'transform | methodName'
                         // }
 
                         source = connect;
                         promise = when(wire.resolveRef(connect), function(source) {
+							var promises = [];
                             for(eventName in options) {
-                                connectHandles.push(doConnectOne(source, eventName, target, options[eventName]));
+								promises.push(when(parseCompose(target, options[eventName], wire.resolveRef),
+									function(func) {
+										connectHandles.push(doConnectOne(source, eventName, target, func));
+									}
+								));
                             }
+
+							return when.all(promises);
                         });
 
                     }

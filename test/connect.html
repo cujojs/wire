@@ -36,6 +36,12 @@
 			return Receiver;
 		});
 
+		define('transform', function() {
+			return function(x) {
+				return x+1;
+			}
+		});
+
 		require(['wire'], function(wire) {
 
 			var expected = 1;
@@ -68,6 +74,34 @@
 
 					return dohd;
 				},
+				function connectFromReceiverToSenderTransformedShort(doh) {
+					var dohd = new doh.Deferred();
+
+					wire({
+						plugins: [ { module: 'wire/connect' } ],
+						tx: { module: 'transform' },
+						sender: { create: 'Sender' },
+						receiver: {
+							create: {
+								module: 'Receiver',
+								args: [{ literal: dohd }, expected+1]
+							},
+							// Test connect
+							connect: {
+								'sender.onEvent': 'tx | handleEvent'
+							}
+						}
+					}).then(
+							function(context) {
+								context.sender.onEvent(expected);
+							},
+							function(e) {
+								dohd.errback(e);
+							}
+					);
+
+					return dohd;
+				},
 				function connectFromReceiverToSenderLong(doh) {
 					var dohd = new doh.Deferred();
 
@@ -83,6 +117,36 @@
 							connect: {
 								sender: {
 									onEvent: 'handleEvent'
+								}
+							}
+						}
+					}).then(
+							function(context) {
+								context.sender.onEvent(expected);
+							},
+							function(e) {
+								dohd.errback(e);
+							}
+					);
+
+					return dohd;
+				},
+				function connectFromReceiverToSenderTransformedLong(doh) {
+					var dohd = new doh.Deferred();
+
+					wire({
+						plugins: [ { module: 'wire/connect' } ],
+						tx: { module: 'transform' },
+						sender: { create: 'Sender' },
+						receiver: {
+							create: {
+								module: 'Receiver',
+								args: [{ literal: dohd }, expected+1]
+							},
+							// Test connect
+							connect: {
+								sender: {
+									onEvent: 'tx | handleEvent'
 								}
 							}
 						}
@@ -144,6 +208,38 @@
 							create: {
 								module: 'Receiver',
 								args: [{ literal: dohd }, expected]
+							}
+						}
+					}).then(
+							function(context) {
+								context.sender.onEvent(expected);
+							},
+							function(e) {
+								dohd.errback(e);
+							}
+					);
+
+					return dohd;
+				},
+				function connectFromSenderToReceiverTransformedLong(doh) {
+					var dohd = new doh.Deferred();
+
+					wire({
+						plugins: [ { module: 'wire/connect' } ],
+						tx: { module: 'transform' },
+						sender: {
+							create: 'Sender',
+							// Test connect
+							connect: {
+								onEvent: {
+									receiver: 'tx | handleEvent'
+								}
+							}
+						},
+						receiver: {
+							create: {
+								module: 'Receiver',
+								args: [{ literal: dohd }, expected+1]
 							}
 						}
 					}).then(
