@@ -239,7 +239,8 @@ define(['wire/domReady', 'when', '../dom/base'], function(domReady, when, base) 
 					facets: facets,
 					factories: factories,
 					proxies: [
-						base.nodeProxy
+						// this allows base.nodeProxy to be overridden
+						function (node) { return base.nodeProxy(node); }
 					]
 				};
 
