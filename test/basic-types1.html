@@ -4,8 +4,7 @@
 	<meta charset="UTF-8">
 	<title>Basic types test</title>
 
-    <script src="util/doh/runner.js"></script>
-    <script src="test-config.js"></script>
+	<script src="test-config.js"></script>
 
 	<script type="text/javascript">
 		// Simple example of wiring in objects by reference using JSON ref syntax
@@ -15,21 +14,21 @@
 				// Order doesn't matter.  Forward refs are ok
 				numberRef: { $ref: 'number' },
 				objectRef: { $ref: 'object' },
-				
+
 				// Plain strings and numbers
 				string: 'this is a string',
-				
+
 				number: 10,
-				
+
 				// Builtins that look like objects are supported directly
 				date: new Date(),
-				
+
 				regex1: /^blah$/,
 				regex2: new RegExp("^foobar$"),
 
 				boolean1: true,
 				boolean2: new Boolean(false),
-				
+
 				// As are plain objects, which also provide scoping
 				object: {
 					string: "I'm a nested a string",
@@ -82,7 +81,7 @@
 							var t = context.array;
 							doh.assertEqual('[object Array]', tos(t));
 							doh.assertEqual(5, t.length);
-							
+
 							doh.assertEqual('bar', t[2].foo);
 
 							doh.assertEqual('[object Array]', tos(t[3]));
@@ -99,7 +98,7 @@
 					console.error(err);
 				}
 			);
-			
+
 		});
 	</script>
 </head>

@@ -105,8 +105,10 @@ define(['wire/domReady', 'when'], function(domReady, when) {
 
 			domReady(function() {
 				var node;
+
 				// if dev omitted name, they're looking for the resolver itself
-				if (!name) resolver.resolve(getById);
+				if (!name) return resolver.resolve(getById);
+
 				node = getById(name);
 				if (node) {
 					resolver.resolve(node);
