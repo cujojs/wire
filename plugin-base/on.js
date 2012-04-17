@@ -90,10 +90,14 @@ define(['when', 'when/apply'], function (when, apply) {
 									checkHandler(component, method);
 
 									if(transform) {
+										// FIXME: This is pretty inefficient.  Should extract to a function
+										// rather than using when.all to pass thru pairs and component[method]
 										promises.push(when.all([pairs, component[method], wire(transform)],
 											apply(function(pairs, method, transform) {
 												var composed = compose(component, [transform, method]);
-												registerHandlers(pairs, target, component, composed, prevent, stop);
+												removers = removers.concat(
+													registerHandlers(pairs, target, component, composed, prevent, stop)
+												);
 											})
 										));
 									} else {
