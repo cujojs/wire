@@ -48,6 +48,7 @@ define(['wire/dom/base', 'when'], function (base, when) {
 			 */
 			setState: function (classes) {
 				var classNames;
+				if (classes == null) classes = '';
 				classes = normalizeStates(classes, lookup);
 				classNames = parseClassNames(classes, master);
 				return element.className = spliceClassNames(element.className, classNames.removes, classNames.adds);
@@ -144,7 +145,7 @@ define(['wire/dom/base', 'when'], function (base, when) {
 	 *	   rights: [ "rights-edit", "rights-view" ]
 	 *	}
 	 *@return {Object} each value is an array of the states that also has
-	 *   an additional string property and a stateMap property
+	 *   an additional string property and a stateGroups property
 	 *	{
 	 *	   disabled: [ "view-disabled", "view-enabled" ],
 	 *	   rights: [ "rights-edit", "rights-view" ]
@@ -227,7 +228,7 @@ define(['wire/dom/base', 'when'], function (base, when) {
 	/***** wire plugin stuff *****/
 
 	function extendNodeProxy (baseNodeProxy) {
-		return function nodeProxyWithclassMap (node) {
+		return function nodeProxyWithClassGroups (node) {
 			var proxy = baseNodeProxy(node);
 
 			if (proxy) {
@@ -249,12 +250,12 @@ define(['wire/dom/base', 'when'], function (base, when) {
 		lookup = createGroupLookup(master);
 
 		proxy.get = function getCssState (name) {
-			if ('classState' == name) {
+			if ('state' == name) {
 				// use the proxy to get className in case some other plugin
-				// has overridden the proxy's method for getting className
+				// has overridden className
 				return normalizeStates(getter('className'), lookup);
 			}
-			else if ('stateMap' == name) {
+			else if ('stateGroups' == name) {
 				// Note: scope has been normalized
 				return scope.getStateGroups();
 			}
@@ -262,15 +263,15 @@ define(['wire/dom/base', 'when'], function (base, when) {
 		};
 
 		proxy.set = function setCssState (name, value) {
-			if ('classState' == name) {
+			if ('state' == name) {
 				// use the proxy to set className in case some other proxy
-				// has overridden the proxy's method for setting className
+				// has overridden className
 				var tokens, classNames;
 				tokens = normalizeStates(value, lookup);
 				classNames = parseClassNames(tokens, master);
 				value = spliceClassNames(getter('className'), classNames.removes, classNames.adds);
 			}
-			else if ('stateMap' == name) {
+			else if ('stateGroups' == name) {
 				scope = scope.setStateGroups(value);
 				return scope;
 			}
@@ -281,23 +282,29 @@ define(['wire/dom/base', 'when'], function (base, when) {
 
 	}
 
+	/*
+	TODO: once "on" and "connect" facets use proxy.invoke, we can enable this plugin, however...
+	Does it really make sense to have proxy.get('state') and proxy.set('state')? What can a dev do with those?
+	*/
+
+	/*
 	oocssProxy.wire$plugin = function (ready, destroyed, options) {
 		base.nodeProxy = extendNodeProxy(base.nodeProxy);
 		return {
 			facets: {
-				// TODO: is this convenient as a facet or should we just let devs use the stateMap pseudo-property?
 				stateGroups: {
-					configure: configureClassMap
+					configure: configureStateGroups
 				}
 			}
 		};
 	};
+	*/
 
-	function configureClassMap (resolver, facet, wire) {
+	function configureStateGroups (resolver, facet, wire) {
 		when(wire(facet.options),
 			function (master) {
 
-				return facet.set('stateMap', master);
+				return facet.set('stateGroups', master);
 
 			}).then(resolver.resolve, resolver.reject);
 	}
