@@ -209,7 +209,8 @@ require(['wire'], function(wire) {
 
 			return dohd;
 
-		},		function shouldAllowReverseConnectionsLongForm(doh) {
+		},
+		function shouldAllowReverseConnectionsLongForm(doh) {
 			var dohd = new doh.Deferred();
 
 			wire({
@@ -234,6 +235,36 @@ require(['wire'], function(wire) {
 						dohd.callback(context.a.handled === 1);
 					},
 					fail(dohd)
+			);
+
+			return dohd;
+		},
+		function shouldAllowReverseConnectionsTransformedLongForm(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: { create: 'fixture' },
+				button: {
+					render: {
+						template: '<button id="button-t1"></button>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						click: { a: 'tx | handle' }
+					}
+				},
+				tx: { module: 'transform' },
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+				function(context) {
+					document.getElementById('button-t1').click();
+					dohd.callback(context.a.event === 1);
+				},
+				fail(dohd)
 			);
 
 			return dohd;

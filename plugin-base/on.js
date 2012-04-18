@@ -43,6 +43,42 @@ define(['when', 'when/apply'], function (when, apply) {
 		};
 	}
 
+	/**
+	 * Parses the function composition string, resolving references as needed, and
+	 * composes a function from the resolved refs.
+	 * @param context {Object}
+	 * @param composeString {String}
+	 * @param resolveRef {Function}
+	 * @return {Promise} a promise for the composed function
+	 */
+	function parseCompose(context, composeString, resolveRef) {
+		var names, method;
+
+		names = composeString.split(/\s*\|\s*/);
+		method = names[names.length-1];
+		names = names.slice(0, -1);
+
+		if(!names.length) {
+			return context[method];
+		}
+
+		// First, resolve each transform function, stuffing it into an array
+		// The result of this reduce will an array of concrete functions
+		// Then add the final context[method] to the array of funcs and
+		// return the composition.
+		return when.reduce(names, function(funcs, functionRef) {
+			return when(resolveRef(functionRef), function(func) {
+				funcs.push(func);
+				return funcs;
+			});
+		}, []).then(
+			function(funcs) {
+				funcs.push(context[method]);
+				return compose(context, funcs);
+			}
+		);
+	}
+
 	return function createOnPlugin (options) {
 
 		return {
@@ -72,7 +108,7 @@ define(['when', 'when/apply'], function (when, apply) {
 									}
 								}
 							 */
-							var event, pairs, selector, prevent, stop, method, transform, promises, waitFor;
+							var event, pairs, selector, prevent, stop, method, transform, promises;
 
 							promises = [];
 
@@ -143,7 +179,7 @@ define(['when', 'when/apply'], function (when, apply) {
 										on: {
 											event: {
 												component1: 'handlerOnComponent1',
-												component2: 'handlerOnComponent2'
+												component2: 'transform | handlerOnComponent2'
 											}
 										}
 									}
@@ -152,13 +188,16 @@ define(['when', 'when/apply'], function (when, apply) {
 
 								for (ref in connections) {
 
-									promises.push(when(wire.resolveRef(ref),
-										function (resolved) {
-											checkHandler(resolved, connections[ref]);
-											removers = removers.concat(
-												registerHandlers(pairs, component, resolved, connections[ref], prevent, stop)
-											);
-										}
+									promises.push(when.all([wire.resolveRef(ref), connections[ref]],
+										apply(function (resolved, methodString) {
+											return when(parseCompose(resolved, methodString, wire.resolveRef),
+												function(composed) {
+													removers = removers.concat(
+														registerHandlers(pairs, component, resolved, composed, prevent, stop)
+													);
+												}
+											)
+										})
 									));
 								}
 
