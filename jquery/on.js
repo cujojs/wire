@@ -21,16 +21,14 @@ define(['../plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
 	 * property instead of it's target property.
 	 * @param node {HTMLElement} element at which to listen
 	 * @param event {String} event name ('click', 'mouseenter')
-	 * @param context {Object} component on which to call method
-	 * @param method {String} name of method on context. Method should
-	 *   have the following signature: function (e) {}
+	 * @param handler {Function} handler function with the following signature: function (e) {}
 	 * @param [selector] {String} optional css query string to use to
 	 */
-	function on (node, event, context, method /*, selector */) {
+	function on (node, event, handler /*, selector */) {
 		var selector, handler;
 
-		selector = arguments[4];
-		handler = makeEventHandler(context, method, selector);
+		selector = arguments[3];
+		handler = makeEventHandler(handler, selector);
 
 		if (selector) {
 			jquery(node).on(event, selector, handler);
@@ -52,11 +50,10 @@ define(['../plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
 
 	return on;
 
-	function makeEventHandler (context, method, selector) {
-		if (typeof method == 'string') method = context[method];
+	function makeEventHandler (handler, selector) {
 		return function (e) {
 			if (selector) e.selectorTarget = this;
-			method.call(context, e);
+			handler(e);
 		}
 	}
 

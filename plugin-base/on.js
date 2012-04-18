@@ -24,12 +24,12 @@ define(['when', 'when/apply'], function (when, apply) {
 	};
 
 	/**
-	 *
-	 * @param context {Object}
-	 * @param funcs {Array}
-	 * @return {Function}
+	 * Compose functions
+	 * @param funcs {Array} array of functions to compose
+	 * @param context {Object} context on which to invoke each function in the composition
+	 * @return {Function} composed function
 	 */
-	function compose(context, funcs) {
+	function compose(funcs, context) {
 		return function composed(x) {
 			var i, len, result;
 
@@ -46,20 +46,27 @@ define(['when', 'when/apply'], function (when, apply) {
 	/**
 	 * Parses the function composition string, resolving references as needed, and
 	 * composes a function from the resolved refs.
-	 * @param context {Object}
-	 * @param composeString {String}
-	 * @param resolveRef {Function}
+	 * @param proxy {Object} wire proxy on which to invoke the final method of the composition
+	 * @param composeString {String} function composition string
+	 *  of the form: 'transform1 | transform2 | ... | methodOnProxyTarget"
+	 * @param resolveRef {Function} function to use is resolving references, returns a promise
 	 * @return {Promise} a promise for the composed function
 	 */
-	function parseCompose(context, composeString, resolveRef) {
+	function parseCompose(proxy, composeString, resolveRef) {
 		var names, method;
 
 		names = composeString.split(/\s*\|\s*/);
 		method = names[names.length-1];
 		names = names.slice(0, -1);
 
+		function last() {
+			return proxy.invoke(method, arguments);
+		}
+
+		// Optimization: If there are no transforms to apply, just return
+		// the final call to the target proxy method
 		if(!names.length) {
-			return context[method];
+			return last;
 		}
 
 		// First, resolve each transform function, stuffing it into an array
@@ -73,8 +80,8 @@ define(['when', 'when/apply'], function (when, apply) {
 			});
 		}, []).then(
 			function(funcs) {
-				funcs.push(context[method]);
-				return compose(context, funcs);
+				funcs.push(last);
+				return compose(funcs, proxy.target);
 			}
 		);
 	}
@@ -88,7 +95,9 @@ define(['when', 'when/apply'], function (when, apply) {
 
 				if (!options) options = {};
 
-				function parseOn (component, refName, connections, wire) {
+				function parseOn (proxy, refName, connections, wire) {
+					var component = proxy.target;
+
 					// First, figure out if the left-hand-side is a ref to
 					// another component, or an event/delegation string
 					return when(wire.resolveRef(refName),
@@ -128,15 +137,15 @@ define(['when', 'when/apply'], function (when, apply) {
 										// rather than using when.all to pass thru pairs and component[method]
 										promises.push(when.all([pairs, component[method], wire(transform)],
 											apply(function(pairs, method, transform) {
-												var composed = compose(component, [transform, method]);
+												var composed = compose([transform, method], component);
 												removers = removers.concat(
-													registerHandlers(pairs, target, component, composed, prevent, stop)
+													registerHandlers(pairs, target, proxy, composed, prevent, stop)
 												);
 											})
 										));
 									} else {
 										removers = removers.concat(
-											registerHandlers(pairs, target, component, method, prevent, stop)
+											registerHandlers(pairs, target, proxy, method, prevent, stop)
 										);
 									}
 								}
@@ -167,10 +176,10 @@ define(['when', 'when/apply'], function (when, apply) {
 								method = ref[1];
 								ref = ref[0];
 
-								promise = when(wire.resolveRef(ref), function(ref) {
-									checkHandler(ref, method);
+								promise = when(wire.getProxy(ref), function(targetProxy) {
+//									checkHandler(targetProxy.target, method);
 									removers = removers.concat(
-										registerHandlers(pairs, component, ref, method, prevent, stop)
+										registerHandlers(pairs, component, targetProxy, method, prevent, stop)
 									);
 								});
 							} else {
@@ -188,12 +197,12 @@ define(['when', 'when/apply'], function (when, apply) {
 
 								for (ref in connections) {
 
-									promises.push(when.all([wire.resolveRef(ref), connections[ref]],
-										apply(function (resolved, methodString) {
-											return when(parseCompose(resolved, methodString, wire.resolveRef),
+									promises.push(when.all([wire.getProxy(ref), connections[ref]],
+										apply(function (targetProxy, methodString) {
+											return when(parseCompose(targetProxy, methodString, wire.resolveRef),
 												function(composed) {
 													removers = removers.concat(
-														registerHandlers(pairs, component, resolved, composed, prevent, stop)
+														registerHandlers(pairs, component, targetProxy, composed, prevent, stop)
 													);
 												}
 											)
@@ -210,14 +219,17 @@ define(['when', 'when/apply'], function (when, apply) {
 
 				}
 
-				function onFacet (wire, target, connections) {
-						var promises = [];
+				function onFacet (wire, facet) {
+					var promises, connections;
 
-						for (var ref in connections) {
-							promises.push(parseOn(target, ref, connections[ref], wire));
-						}
+					connections = facet.options;
+					promises = [];
 
-						return when.all(promises);
+					for (var ref in connections) {
+						promises.push(parseOn(facet, ref, connections[ref], wire));
+					}
+
+					return when.all(promises);
 				}
 
 				destroyed.then(function onContextDestroy () {
@@ -230,7 +242,7 @@ define(['when', 'when/apply'], function (when, apply) {
 					facets: {
 						on: {
 							connect: function (resolver, facet, wire) {
-								when.chain(onFacet(wire, facet.target, facet.options), resolver);
+								when.chain(onFacet(wire, facet), resolver);
 							}
 						}
 					}
@@ -238,12 +250,12 @@ define(['when', 'when/apply'], function (when, apply) {
 			}
 		};
 
-		function registerHandlers (pairs, node, context, method, prevent, stop) {
+		function registerHandlers (pairs, node, targetProxy, method, prevent, stop) {
 			var removers, handler;
 			removers = [];
 			for (var i = 0, len = pairs.length; i < len; i++) {
-				handler = makeEventHandler(context, method, prevent, stop);
-				removers.push(options.on(node, pairs[i].event, undef, handler, pairs[i].selector));
+				handler = makeEventHandler(targetProxy, method, prevent, stop);
+				removers.push(options.on(node, pairs[i].event, handler, pairs[i].selector));
 			}
 			return removers;
 		}
@@ -288,22 +300,19 @@ define(['when', 'when/apply'], function (when, apply) {
 
 	function never (e) {}
 
-	function makeEventHandler (context, method, prevent, stop) {
+	function makeEventHandler (proxy, method, prevent, stop) {
 		var preventer, stopper;
 		preventer = prevent == undef || prevent == 'auto'
 			? preventDefaultIfNav
 			: prevent ? preventDefaultAlways : never;
 		stopper = stop ? stopPropagationAlways : never;
 
-		// Support both:
-		// if method is a string, use context[method]
-		// if method is function, use it directly
-		if(typeof method == 'string') method = context[method];
-
+		// Use proxy.invoke instead of trying to call methods
+		// directly on proxy.target
 		return function (e) {
 			preventer(e);
 			stopper(e);
-			return method.call(context, e);
+			return proxy.invoke(method, [e]);
 		}
 	}
 

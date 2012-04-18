@@ -42,14 +42,14 @@
 
 define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
 
+
 	/**
-	 *
-	 * @param context {Object}
-	 * @param funcs {Array}
-	 * @return {Function}
+	 * Compose functions
+	 * @param funcs {Array} array of functions to compose
+	 * @param context {Object} context on which to invoke each function in the composition
+	 * @return {Function} composed function
 	 */
-	function compose(context, funcs) {
-		// TODO: pull this out to a functional helper lib
+	function compose(funcs, context) {
 		return function composed(x) {
 			var i, len, result;
 
@@ -66,20 +66,27 @@ define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
 	/**
 	 * Parses the function composition string, resolving references as needed, and
 	 * composes a function from the resolved refs.
-	 * @param context {Object}
-	 * @param composeString {String}
-	 * @param resolveRef {Function}
+	 * @param proxy {Object} wire proxy on which to invoke the final method of the composition
+	 * @param composeString {String} function composition string
+	 *  of the form: 'transform1 | transform2 | ... | methodOnProxyTarget"
+	 * @param resolveRef {Function} function to use is resolving references, returns a promise
 	 * @return {Promise} a promise for the composed function
 	 */
-	function parseCompose(context, composeString, resolveRef) {
+	function parseCompose(proxy, composeString, resolveRef) {
 		var names, method;
 
 		names = composeString.split(/\s*\|\s*/);
 		method = names[names.length-1];
 		names = names.slice(0, -1);
 
+		function last() {
+			return proxy.invoke(method, arguments);
+		}
+
+		// Optimization: If there are no transforms to apply, just return
+		// the final call to the target proxy method
 		if(!names.length) {
-			return context[method];
+			return last;
 		}
 
 		// First, resolve each transform function, stuffing it into an array
@@ -93,8 +100,8 @@ define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
 			});
 		}, []).then(
 			function(funcs) {
-				funcs.push(context[method]);
-				return compose(context, funcs);
+				funcs.push(last);
+				return compose(funcs, proxy.target);
 			}
 		);
 	}
@@ -111,116 +118,121 @@ define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
              *
              * @param source source object
              * @param event source method
-             * @param target target object
+             * @param targetProxy {Object} proxied target
              * @param func target function to invoke
              */
-            function doConnectOne(source, event, target, func) {
-				if (typeof func == 'string') func = target[func];
-
+            function doConnectOne(source, event, targetProxy, func) {
                 return aop.on(source, event, function() {
-                    func.apply(target, arguments);
+					targetProxy.invoke(func, arguments);
                 });
             }
 
-            function doConnect(target, connect, options, wire) {
-                var source, eventName, methodName, promise, promises;
+            function doConnect(proxy, connect, options, wire) {
+                var source, eventName;
 
                 // First, determine the direction of the connection(s)
                 // If ref is a method on target, connect it to another object's method, i.e. calling a method on target
                 // causes a method on the other object to be called.
                 // If ref is a reference to another object, connect that object's method to a method on target, i.e.
                 // calling a method on the other object causes a method on target to be called.
-                if(typeof target[connect] == 'function') {
-                    // Connecting from an event on the current component to a method on
-                    // another component.  Set source = wiring target
-                    source = target;
-                    eventName = connect;
 
-                    if(typeof options == 'string') {
-                        target = options.split('.');
-						// NOTE: This form does not yet support transforms
-                        // eventName: 'componentName.methodName'
+				source = connect.split('.');
+				eventName = source[1];
+				source = source[0];
 
-                        methodName = target[1];
-                        target = target[0];
+				return when(wire.resolveRef(source),
+					function(source) {
+						var promise, methodName;
 
-                        promise = when(wire.resolveRef(target), function(target) {
-                            connectHandles.push(doConnectOne(source, eventName, target, methodName));
-                        });
-                    } else {
-                        // eventName: {
-                        //   componentName: 'methodName'
-                        //   componentName: 'transform | methodName'
-                        // }
+						if(eventName) {
+							// 'component.eventName': 'methodName'
+							// 'component.eventName': 'transform | methodName'
 
-                        promises = [];
-                        for(connect in options) {
+							methodName = options;
 
-                            methodName = options[connect];
-                            promise = when(wire.resolveRef(connect), function(target) {
-								return when(parseCompose(target, methodName, wire.resolveRef),
+							promise = when(parseCompose(proxy, methodName, wire.resolveRef),
 									function(func) {
-										connectHandles.push(doConnectOne(source, eventName, target, func));
-									});
+										connectHandles.push(doConnectOne(source, eventName, proxy, func));
+									}
+								);
+
+						} else {
+							// componentName: {
+							//   eventName: 'methodName'
+							//   eventName: 'transform | methodName'
+							// }
+
+							source = connect;
+							promise = when(wire.resolveRef(connect), function(source) {
+								var promises = [];
+								for(eventName in options) {
+									promises.push(when(parseCompose(proxy, options[eventName], wire.resolveRef),
+										function(func) {
+											connectHandles.push(doConnectOne(source, eventName, proxy, func));
+										}
+									));
+								}
+
+								return when.all(promises);
+							});
+						}
+
+						return promise;
+
+					},
+					function() {
+						var promise, promises, target, methodName;
+
+						eventName = connect;
+						source = proxy.target;
+
+						if(typeof options == 'string') {
+							// NOTE: This form does not yet support transforms
+							// eventName: 'componentName.methodName'
+
+							target = options.split('.');
+							methodName = target[1];
+							target = target[0];
+
+							promise = when(wire.getProxy(target), function(targetProxy) {
+								connectHandles.push(doConnectOne(source, eventName, targetProxy, methodName));
 							});
 
-                            promises.push(promise);
-                        }
+						} else {
+							// eventName: {
+							//   componentName: 'methodName'
+							//   componentName: 'transform | methodName'
+							// }
+							promises = [];
+							for(connect in options) {
 
-                        promise = when.all(promises);
+								methodName = options[connect];
+								promise = when(wire.getProxy(connect), function(target) {
+									return when(parseCompose(target, methodName, wire.resolveRef),
+										function(func) {
+											connectHandles.push(doConnectOne(source, eventName, target, func));
+										});
+								});
 
-                    }
+								promises.push(promise);
+							}
 
-                } else {
-                    if(typeof options == 'string') {
-                        // 'component.eventName': 'methodName'
-                        // 'component.eventName': 'transform | methodName'
+							promise = when.all(promises);
 
-                        source = connect.split('.');
-                        eventName = source[1];
-                        source = source[0];
-                        methodName = options;
-
-                        promise = when(wire.resolveRef(source), function(source) {
-							return when(parseCompose(target, methodName, wire.resolveRef),
-								function(func) {
-									connectHandles.push(doConnectOne(source, eventName, target, func));
-								}
-							)
-                        });
-                    } else {
-                        // componentName: {
-                        //   eventName: 'methodName'
-                        //   eventName: 'transform | methodName'
-                        // }
-
-                        source = connect;
-                        promise = when(wire.resolveRef(connect), function(source) {
-							var promises = [];
-                            for(eventName in options) {
-								promises.push(when(parseCompose(target, options[eventName], wire.resolveRef),
-									function(func) {
-										connectHandles.push(doConnectOne(source, eventName, target, func));
-									}
-								));
-                            }
-
-							return when.all(promises);
-                        });
-
-                    }
-                }
-
-                return promise;
+						}
+					}
+				);
             }
 
-            function connectFacet(wire, target, connects) {
-                var connect, promises;
+            function connectFacet(wire, facet) {
+                var connect, promises, connects;
+
+				connects = facet.options;
 
                 promises = [];
 
                 for(connect in connects) {
-                    promises.push(doConnect(target, connect, connects[connect], wire));
+                    promises.push(doConnect(facet, connect, connects[connect], wire));
                 }
 
                 return when.all(promises);
@@ -236,7 +248,7 @@ define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
                 facets: {
                     connect: {
                         connect: function(resolver, facet, wire) {
-                            when.chain(connectFacet(wire, facet.target, facet.options), resolver);
+                            when.chain(connectFacet(wire, facet), resolver);
                         }
                     }
                 }

@@ -292,7 +292,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
 			// Proxies is an array, have to concat
 			proxies = delegateArray(parent.proxies);// ? [].concat(parent.proxies) : [];
-			proxied = [];
+			proxied = {};
 
 			modulesToLoad = [];
 			moduleLoadPromises = {};
@@ -360,6 +360,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			};
 
 			pluginApi.resolveRef = apiResolveRef;
+			pluginApi.getProxy = getProxy;
 		}
 
 		function initContextPromise(scopeDef, scopeReady) {
@@ -413,10 +414,10 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			// TODO: Clear out the context prototypes?
 
 			promises = [];
-			for (i = 0; (p = proxied[i++]);) {
+			for(p in proxied) {
 				pDeferred = defer();
 				promises.push(pDeferred);
-				processListeners(pDeferred, 'destroy', p);
+				processListeners(pDeferred, 'destroy', proxied[p]);
 			}
 
 			// *After* listeners are processed,
@@ -429,10 +430,8 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				deleteAll(objects);
 				deleteAll(scope);
 
-				var p, i;
-
-				for (i = 0; (p = proxied[i++]);) {
-					p.destroy();
+				for(var p in proxied) {
+					proxied[p].destroy();
 				}
 
 				// Free Objects
@@ -689,7 +688,6 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				function (object) {
 
 					var proxy = createProxy(object, spec);
-					proxied.push(proxy);
 
 					// Push the object through the lifecycle steps, processing
 					// facets at each step.
@@ -714,7 +712,23 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			proxy.id = id;
 			proxy.path = createPath(id);
 
+			proxied[id] = proxy;
+
 			return proxy;
+		}
+
+		function getProxy(name) {
+			return proxied[name]
+				? when(proxied[name])
+				: when(doResolveRef(name), function() {
+					return proxied[name];
+				}
+			);
+
+//			return when(doResolveRef(name), function() {
+//					return proxied[name];
+//				}
+//			);
 		}
 
 		function processFacets(step, proxy) {

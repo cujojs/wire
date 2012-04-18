@@ -21,21 +21,19 @@ define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, 
 	 * property instead of it's target property.
 	 * @param node {HTMLElement} element at which to listen
 	 * @param event {String} event name ('click', 'mouseenter')
-	 * @param context {Object} component on which to call method
-	 * @param method {String} name of method on context. Method should
+	 * @param handler {Function} handler function with the following signature: function (e) {}
 	 *   have the following signature: function (e) {}
-	 * @param [selector] {String} optional css query string to use to
 	 */
-	function on (node, event, context, method /*, selector */) {
+	function on (node, event, handler /*, selector */) {
 		var selector;
 
-		selector = arguments[4];
+		selector = arguments[3];
 
 		if (selector) {
 			event = dojoOn.selector(selector, event);
 		}
 
-		return dojoOn(node, event, makeEventHandler(context, method, selector)).remove;
+		return dojoOn(node, event, makeEventHandler(handler, selector)).remove;
 	}
 
 	on.wire$plugin = createOnPlugin({
@@ -44,11 +42,10 @@ define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, 
 
 	return on;
 
-	function makeEventHandler (context, method, selector) {
-		if (typeof method == 'string') method = context[method];
+	function makeEventHandler (handler, selector) {
 		return function (e) {
 			if (selector) e.selectorTarget = this;
-			method.call(context, e);
+			return handler(e);
 		}
 	}
 
