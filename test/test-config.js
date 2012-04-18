@@ -104,7 +104,7 @@
 
 	// That's right y'all, document.write FTW
 	if(typeof console == 'undefined' || typeof console.log != 'function') {
-		doc.write('<script src="' + baseUrl + 'test/firebug-lite/build/firebug-lite.js' + '"></script>');
+		doc.write('<script src="' + baseUrl + 'test/firebug-lite/build/firebug-lite.js#startOpened' + '"></script>');
 	}
 	doc.write('<script src="' + baseUrl + 'test/util/doh/runner.js"></script>');
 	doc.write('<script src="' + baseUrl + loaderPath + '.js' + '"></script>');

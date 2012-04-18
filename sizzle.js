@@ -58,6 +58,9 @@ define(['./plugin-base/dom', 'sizzle'], function(createDomPlugin, sizzle) {
 
 	return createDomPlugin({
 		query: sizzle,
+		first: function (selector, root) {
+			return sizzle(selector, root)[0];
+		},
 		addClass: addClass,
 		removeClass: removeClass
 	});
