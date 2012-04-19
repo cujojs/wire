@@ -5,7 +5,7 @@
 		hash = g.location.hash;
 	} catch(e) {}
 
-	doh.registerUrl('_fake', '../../_fake-doh.html' + hash);
+	doh.registerUrl('_fake', '../../_doh-fake.html' + hash);
 
 	// Core
 	doh.registerUrl('basic-types1', '../../basic-types1.html' + hash);

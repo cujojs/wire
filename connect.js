@@ -40,71 +40,8 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
-
-
-	/**
-	 * Compose functions
-	 * @param funcs {Array} array of functions to compose
-	 * @param context {Object} context on which to invoke each function in the composition
-	 * @return {Function} composed function
-	 */
-	function compose(funcs, context) {
-		return function composed(x) {
-			var i, len, result;
-
-			result = x;
-
-			for(i = 0, len = funcs.length; i<len; i++) {
-				result = funcs[i].call(context, result);
-			}
-
-			return result;
-		};
-	}
-
-	/**
-	 * Parses the function composition string, resolving references as needed, and
-	 * composes a function from the resolved refs.
-	 * @param proxy {Object} wire proxy on which to invoke the final method of the composition
-	 * @param composeString {String} function composition string
-	 *  of the form: 'transform1 | transform2 | ... | methodOnProxyTarget"
-	 * @param resolveRef {Function} function to use is resolving references, returns a promise
-	 * @return {Promise} a promise for the composed function
-	 */
-	function parseCompose(proxy, composeString, resolveRef) {
-		var names, method;
-
-		names = composeString.split(/\s*\|\s*/);
-		method = names[names.length-1];
-		names = names.slice(0, -1);
-
-		function last() {
-			return proxy.invoke(method, arguments);
-		}
-
-		// Optimization: If there are no transforms to apply, just return
-		// the final call to the target proxy method
-		if(!names.length) {
-			return last;
-		}
-
-		// First, resolve each transform function, stuffing it into an array
-		// The result of this reduce will an array of concrete functions
-		// Then add the final context[method] to the array of funcs and
-		// return the composition.
-		return when.reduce(names, function(funcs, functionRef) {
-			return when(resolveRef(functionRef), function(func) {
-				funcs.push(func);
-				return funcs;
-			});
-		}, []).then(
-			function(funcs) {
-				funcs.push(last);
-				return compose(funcs, proxy.target);
-			}
-		);
-	}
+define(['when', 'when/apply', 'aop', './lib/functional'],
+function(when, apply, aop, functional) {
 
 	return {
         wire$plugin: function eventsPlugin(ready, destroyed /*, options */) {
@@ -150,7 +87,7 @@ define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
 
 							methodName = options;
 
-							promise = when(parseCompose(proxy, methodName, wire.resolveRef),
+							promise = when(functional.compose.parse(proxy, methodName, wire.resolveRef, wire.getProxy),
 									function(func) {
 										connectHandles.push(doConnectOne(source, eventName, proxy, func));
 									}
@@ -166,7 +103,7 @@ define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
 							promise = when(wire.resolveRef(connect), function(source) {
 								var promises = [];
 								for(eventName in options) {
-									promises.push(when(parseCompose(proxy, options[eventName], wire.resolveRef),
+									promises.push(when(functional.compose.parse(proxy, options[eventName], wire.resolveRef, wire.getProxy),
 										function(func) {
 											connectHandles.push(doConnectOne(source, eventName, proxy, func));
 										}
@@ -181,22 +118,21 @@ define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
 
 					},
 					function() {
-						var promise, promises, target, methodName;
+						var promise, promises, target, methodSpec;
 
 						eventName = connect;
 						source = proxy.target;
 
 						if(typeof options == 'string') {
 							// NOTE: This form does not yet support transforms
-							// eventName: 'componentName.methodName'
+							// eventName: 'transform | componentName.methodName'
 
-							target = options.split('.');
-							methodName = target[1];
-							target = target[0];
+							methodSpec = options;
 
-							promise = when(wire.getProxy(target), function(targetProxy) {
-								connectHandles.push(doConnectOne(source, eventName, targetProxy, methodName));
-							});
+							promise = when(functional.compose.parse(null, methodSpec, wire.resolveRef, wire.getProxy),
+								function(func) {
+									connectHandles.push(doConnectOne(source, eventName, proxy, func));
+								});
 
 						} else {
 							// eventName: {
@@ -206,11 +142,11 @@ define(['when', 'when/apply', 'aop'], function(when, apply, aop) {
 							promises = [];
 							for(connect in options) {
 
-								methodName = options[connect];
-								promise = when(wire.getProxy(connect), function(target) {
-									return when(parseCompose(target, methodName, wire.resolveRef),
+								methodSpec = options[connect];
+								promise = when(wire.getProxy(connect), function(targetProxy) {
+									return when(functional.compose.parse(targetProxy, methodSpec, wire.resolveRef, wire.getProxy),
 										function(func) {
-											connectHandles.push(doConnectOne(source, eventName, target, func));
+											connectHandles.push(doConnectOne(source, eventName, targetProxy, func));
 										});
 								});
 

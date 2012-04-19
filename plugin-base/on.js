@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['when', 'when/apply'], function (when, apply) {
+define(['when', 'when/apply', '../lib/functional'], function (when, apply, functional) {
 "use strict";
 
 	var theseAreNotEvents, undef;
@@ -137,7 +137,7 @@ define(['when', 'when/apply'], function (when, apply) {
 										// rather than using when.all to pass thru pairs and component[method]
 										promises.push(when.all([pairs, component[method], wire(transform)],
 											apply(function(pairs, method, transform) {
-												var composed = compose([transform, method], component);
+												var composed = functional.compose([transform, method], component);
 												removers = removers.concat(
 													registerHandlers(pairs, target, proxy, composed, prevent, stop)
 												);
@@ -177,7 +177,6 @@ define(['when', 'when/apply'], function (when, apply) {
 								ref = ref[0];
 
 								promise = when(wire.getProxy(ref), function(targetProxy) {
-//									checkHandler(targetProxy.target, method);
 									removers = removers.concat(
 										registerHandlers(pairs, component, targetProxy, method, prevent, stop)
 									);
@@ -199,7 +198,7 @@ define(['when', 'when/apply'], function (when, apply) {
 
 									promises.push(when.all([wire.getProxy(ref), connections[ref]],
 										apply(function (targetProxy, methodString) {
-											return when(parseCompose(targetProxy, methodString, wire.resolveRef),
+											return when(functional.compose.parse(targetProxy, methodString, wire.resolveRef),
 												function(composed) {
 													removers = removers.concat(
 														registerHandlers(pairs, component, targetProxy, composed, prevent, stop)
