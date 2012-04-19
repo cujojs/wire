@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['./plugin-base/on', './dom/base'], function (createOnPlugin, base) {
+define(['./lib/plugin-base/on', './lib/dom/base'], function (createOnPlugin, base) {
 "use strict";
 
 	var contains;

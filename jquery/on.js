@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['../plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
+define(['../lib/plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
 
 	/**
 	 * Listens for dom events at the given node.  If a selector is provided,
@@ -25,7 +25,7 @@ define(['../plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
 	 * @param [selector] {String} optional css query string to use to
 	 */
 	function on (node, event, handler /*, selector */) {
-		var selector, handler;
+		var selector;
 
 		selector = arguments[3];
 		handler = makeEventHandler(handler, selector);

@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['./base', 'when'], function (base, when) {
+define(['./../lib/dom/base', 'when'], function (base, when) {
 
 	var parentTypes, parseTemplateRx, getFirstTagNameRx, isPlainTagNameRx,
 		undef;

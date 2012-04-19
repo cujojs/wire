@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['../plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, dojoOn) {
+define(['../lib/plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlugin, dojoOn) {
 
 	/**
 	 * Listens for dom events at the given node.  If a selector is provided,

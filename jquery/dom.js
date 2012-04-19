@@ -10,7 +10,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['../plugin-base/dom', 'jquery'], function(createDomPlugin, jquery) {
+define(['../lib/plugin-base/dom', 'jquery'], function(createDomPlugin, jquery) {
 
 	return createDomPlugin({
 		query: function (selector, root) {
