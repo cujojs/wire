@@ -40,6 +40,10 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	 */
 	delegate = Object.create || createObject;
 
+	function inherit(parent) {
+		return parent ? delegate(parent) : {};
+	}
+
 	/**
 	 * Array.isArray
 	 */
@@ -275,11 +279,10 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
 			// Descend scope and plugins from parent so that this scope can
 			// use them directly via the prototype chain
-			objects = initWireApi(delegate(parent.objects || {}));
-			resolvers = delegate(parent.resolvers || {});
-			factories = delegate(parent.factories || {});
-			facets = delegate(parent.facets || {});
-
+			objects = initWireApi(inherit(parent.objects));
+			resolvers = inherit(parent.resolvers);
+			factories = inherit(parent.factories);
+			facets = inherit(parent.facets);
 
 			// Set/override integral resolvers and factories
 			resolvers.wire   = wireResolver;
@@ -288,11 +291,11 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			factories.create = instanceFactory;
 			factories.wire   = wireFactory;
 
-			listeners = delegateArray(parent.listeners);// ? [].concat(parent.listeners) : [];
+			listeners = delegateArray(parent.listeners);
 
 			// Proxies is an array, have to concat
-			proxies = delegateArray(parent.proxies);// ? [].concat(parent.proxies) : [];
-			proxied = {};
+			proxies = delegateArray(parent.proxies);
+			proxied = inherit(parent.proxied);
 
 			modulesToLoad = [];
 			moduleLoadPromises = {};
@@ -306,6 +309,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			scopeParent = {
 				name: scopeName,
 				objects: objects,
+				proxied: proxied,
 				destroyed: scopeDestroyed
 			};
 
@@ -431,7 +435,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				deleteAll(scope);
 
 				for(var p in proxied) {
-					proxied[p].destroy();
+					if(proxied.hasOwnProperty(p)) proxied[p].destroy();
 				}
 
 				// Free Objects
@@ -692,9 +696,9 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 					// Push the object through the lifecycle steps, processing
 					// facets at each step.
 					return when.reduce(lifecycleSteps,
-							function (object, step) {
-								return processFacets(step, proxy);
-							}, proxy);
+						function (object, step) {
+							return processFacets(step, proxy);
+						}, proxy);
 				}
 			);
 		}
@@ -718,17 +722,10 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		}
 
 		function getProxy(name) {
-			return proxied[name]
-				? when(proxied[name])
-				: when(doResolveRef(name), function() {
+			return when(doResolveRef(name), function() {
 					return proxied[name];
 				}
 			);
-
-//			return when(doResolveRef(name), function() {
-//					return proxied[name];
-//				}
-//			);
 		}
 
 		function processFacets(step, proxy) {
