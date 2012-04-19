@@ -1,350 +1,119 @@
 (function (define) {
-define(['wire/dom/base', 'when'], function (base, when) {
-	"use strict";
-
-	var splitAtSpacesOrCommasRx,
-		isString,
-		undef;
-
-	// TODO: this regexp captures the blanks before commas
-	splitAtSpacesOrCommasRx = /\s*,\s*|\s+/;
-
-	/**
-	 * Creates a proxy that makes adding and removing oocss states simpler.
-	 * @param element {HTMLElement}
-	 * @param stateGroups {Object} required, but can be an empty object
-	 * @return {Object}
-	 *
-	 * @description The most tedious part of handling oocss states is
-	 * managing sets (groups) of classes. Typically, you want to apply a
-	 * new subset of a group of classes while removing others in the group
-	 * as one atomic operation. Keeping track of which ones to add and which
-	 * ones to remove requires tedious code.  This proxy allows you to define
-	 * groups of css classes in advance.  Then, any time you add a css class,
-	 * any other classes in the group are removed.
-	 */
-	function oocssProxy (element, stateGroups) {
-		var master, lookup;
-
-		master = normalizeMaster(stateGroups);
-		lookup = createGroupLookup(master);
-
-		return {
-
-			/**
-			 *
-			 * @param classes {String|Array|Object} a space-delimited* set of
-			 *   oocss states or an array of oocss states (css class names).
-			 *   *Note: commas are also acceptable as delimiters.
-			 *
-			 * @example 1
-			 * The following are all equivalent if the "disabled" and "admin"
-			 * state groups have been properly configured (and have unique keys):
-			 *   var set = oocss.setState;
-			 *   set(mynode, [ "view-disabled", "rights-edit", "rights-view" ]);
-			 *   set(mynode, "view-disabled rights-edit rights-view");
-			 *   set(mynode, [ "rights-edit", "rights-view" ]);
-			 *   set(mynode, "rights-edit rights-view");
-			 */
-			setState: function (classes) {
-				var classNames;
-				if (classes == null) classes = '';
-				classes = normalizeStates(classes, lookup);
-				classNames = parseClassNames(classes, master);
-				return element.className = spliceClassNames(element.className, classNames.removes, classNames.adds);
-			},
-
-			/**
-			 * Returns an object whose keys are (a subset) of the groups
-			 * defined in setStateGroups and whose values are a subset
-			 * of all the possible class names.  Only the groups and
-			 * class names currently set on the node are returned.
-			 * @return {Object}
-			 */
-			getState: function () {
-				return statesFromString(element.className, master);
-			},
-
-			setStateGroups: function (newMaster) {
-				master = normalizeMaster(newMaster);
-				return master;
-			},
-
-			getStateGroups: function () {
-				return master;
-			}
-
-		};
-	}
-
-	/**
-	 * Converts a string of classNames to an object whose property names
-	 * are group names and whose values are strings representing
-	 * the class names found ineach group.  The object represents the
-	 * partial set of class names out of all class names in all groups.
-	 * @private
-	 * @param string
-	 */
-	function statesFromString (string, master) {
-		var groups, gname;
-		groups = {};
-		for (gname in master) {
-			groups[gname] = master[gname].fromClassNames(string);
-		}
-		return groups;
-	}
-
-	/**
-	 * Convert from tokenized string or an object of arrays or strings.
-	 * The tokens in the string could be prefixed with tokens or not.
-	 * @private
-	 * @param states {Array|String}
-	 *   [ "view-disabled", "rights-edit", "rights-view" ]
-	 *   "view-disabled rights-edit rights-view"
-	 * @return {Object}
-	 *   { disabled: "view-disabled", rights: "edit view" }
-	 */
-	function normalizeStates (states, lookup) {
-		var groups, gname, i, group;
-
-		groups = {};
-
-		if (isString(states)) {
-			// convert to array, remove commas
-			states = states.split(splitAtSpacesOrCommasRx);
-		}
-
-		for (i = 0; i < states.length; i++) {
-			// lookup group name (gname)
-			gname = lookup[states[i]];
-			if (!groups[gname]) groups[gname] = [];
-			groups[gname].push(states[i]);
-		}
-
-		for (gname in groups) {
-			group = groups[gname];
-			// convert to string
-			groups[gname] = group.join(' ');
-		}
-
-		return groups;
-	}
-
-	/**
-	 * Converts to the most efficient internal format and splits the
-	 * mappings (of javascript-friendly state names to css classNames)
-	 * into a separate object.
-	 * @private
-	 * @param master {Object}
-	 *	{
-	 *	   disabled: "view-enabled view-disabled",
-	 *	   rights: "rights-edit rights-view"
-	 *	}
-	 *	{
-	 *	   disabled: [ "view-enabled", "view-disabled" ],
-	 *	   rights: [ "rights-edit", "rights-view" ]
-	 *	}
-	 *@return {Object} each value is an array of the states that also has
-	 *   an additional string property and a stateGroups property
-	 *	{
-	 *	   disabled: [ "view-disabled", "view-enabled" ],
-	 *	   rights: [ "rights-edit", "rights-view" ]
-	 *	}
-	 */
-	function normalizeMaster (master) {
-		var normalized, gname;
-
-		normalized = {};
-
-		for (gname in master) {
-			// wire 0.8 requires hasOwnProperty
-			if (master.hasOwnProperty(gname)) {
-				normalized[gname] = normalizeGroup(master[gname]);
-			}
-		}
-
-		return normalized;
-	}
-
-	function normalizeGroup (group) {
-		var string;
-
-		if (isString(group)) {
-			// removes commas while it splits
-			group = group.split(splitAtSpacesOrCommasRx);
-		}
-
-		// pre-processing and convenience functions
-		string = group.join(' ');
-		group.toString = function () {
-			return string;
-		};
-
-		return group;
-	}
-
-	/**
-	 * Creates a hash map to look up a class group (array) from a class name.
-	 * @private
-	 * @param master {Object}
-	 * @return {Object}
-	 */
-	function createGroupLookup (master) {
-		var lookup, gname, i, state;
-
-		lookup = {};
-
-		for (gname in master) {
-			for (i = 0; i < master[gname].length; i++) {
-				state = master[gname][i];
-				lookup[state] = gname;
-			}
-		}
-
-		return lookup;
-	}
-
-	function parseClassNames (normalized, master) {
-		var adds, removes, gname;
-
-		adds = [];
-		removes = [];
-
-		for (gname in normalized) {
-			if (gname in master) {
-				adds = adds.concat(normalized[gname]);
-				removes = removes.concat(master[gname]);
-			}
-			else {
-				// TODO: does this even work?
-				// should we allow dev to include non-translated classNames?
-				adds = adds.concat(normalized[gname]);
-			}
-		}
-
-		return { adds: adds.join(' '), removes: removes.join(' ') };
-	}
-
-	/***** wire plugin stuff *****/
-
-	function extendNodeProxy (baseNodeProxy) {
-		return function nodeProxyWithClassGroups (node) {
-			var proxy = baseNodeProxy(node);
-
-			if (proxy) {
-				proxy = addCssStateHandlingToProxy(proxy, node);
-			}
-
-			return proxy;
-		};
-	}
-
-	function addCssStateHandlingToProxy (proxy, element) {
-		var getter, setter, scope, master, lookup;
-
-		getter = proxy.get;
-		setter = proxy.set;
-
-		scope = oocssProxy(element, {});
-		master = scope.getStateGroups();
-		lookup = createGroupLookup(master);
-
-		proxy.get = function getCssState (name) {
-			if ('state' == name) {
-				// use the proxy to get className in case some other plugin
-				// has overridden className
-				return normalizeStates(getter('className'), lookup);
-			}
-			else if ('stateGroups' == name) {
-				// Note: scope has been normalized
-				return scope.getStateGroups();
-			}
-			return getter(name);
-		};
-
-		proxy.set = function setCssState (name, value) {
-			if ('state' == name) {
-				// use the proxy to set className in case some other proxy
-				// has overridden className
-				var tokens, classNames;
-				tokens = normalizeStates(value, lookup);
-				classNames = parseClassNames(tokens, master);
-				value = spliceClassNames(getter('className'), classNames.removes, classNames.adds);
-			}
-			else if ('stateGroups' == name) {
-				scope = scope.setStateGroups(value);
-				return scope;
-			}
-			return setter(name, value);
-		};
-
-		return proxy;
-
-	}
-
-	/*
-	TODO: once "on" and "connect" facets use proxy.invoke, we can enable this plugin, however...
-	Does it really make sense to have proxy.get('state') and proxy.set('state')? What can a dev do with those?
-	*/
-
-	/*
-	oocssProxy.wire$plugin = function (ready, destroyed, options) {
-		base.nodeProxy = extendNodeProxy(base.nodeProxy);
-		return {
-			facets: {
-				stateGroups: {
-					configure: configureStateGroups
-				}
-			}
-		};
-	};
-	*/
-
-	function configureStateGroups (resolver, facet, wire) {
-		when(wire(facet.options),
-			function (master) {
-
-				return facet.set('stateGroups', master);
-
-			}).then(resolver.resolve, resolver.reject);
-	}
-
-	/***** type detectors *****/
-
-	isString = (function (toString) {
-		return function (obj) {
-			return toString.call(obj) == '[object String]';
-		};
-	}(Object.prototype.toString));
-
-	/***** borrowed from and improved upon cola/classList *****/
+define(function () {
+"use strict";
 
 	var removeRxParts, trimLeadingRx;
-
 	removeRxParts = ['(\\s+|^)(', ')(\\b(?![\\-_])|$)'];
 	trimLeadingRx = /^\s+/;
 
 	/**
-	 * Adds and removes class names to a tokenized, space-delimited string.
-	 * @private
-	 * @param className {String} current set of tokens
-	 * @param removes {String} tokens to remove
-	 * @param adds {String} tokens to add (note: required!)
-	 * @returns {String} modified tokens
+	 * Configures a transform function that satisfies the most common
+	 * requirement for oocss states: while adding new classes, it removes
+	 * classes in the same group of states. This allows the dev to add
+	 * and remove classes in the same atomic action.
+	 * @param node {HTMLElement}
+	 * @param [options] {Object} a hashmap of options
+	 * @param [options.group] {Array|String} If specified, this is a list of
+	 *   all possible classes in the group.  If a single string is
+	 *   provided, it should be a space-delimited (TokenList) of classes.
+	 * @param [options.initial] {Array|String} If specified, this is the
+	 *   initial set of classes to set on the element.  This isn't just a
+	 *   convenience feature: it may be necessary for this transform to work
+	 *   correctly if not specifying a group.  See the description.
+	 *
+	 * @description
+	 * If the group param is provided, all of the class names in the group
+	 * will be removed from the element when new classes are added. A group
+	 * is a set of classes that always change together (e.g. "can-edit
+	 * can-delete can-view can-add" or "form-enabled form-disabled"). A
+	 * group could consist of several groups at once as long as the classes
+	 * for those groups are always set together, as well.
+	 * If the group param is omitted, group behavior can still be achieved
+	 * under most circumstances. As long as the transform function is always
+	 * used on the same group (or set of groups)*, an algorithm that removes
+	 * the previously set classes also works fine. (*It is possible to
+	 * set classes that are not specified within the configured group.)
+	 *
+	 * @example 1: groups is a string
+	 *   oocssSetter = configureReplaceClassNames(viewNode, {
+	 *     group: 'edit-mode readonly-mode'
+	 *   });
+	 *   // later:
+	 *   oocssSetter('edit-mode'); // viewNode.className == 'edit-mode';
+	 *   // even later:
+	 *   oocssSetter('readonly-mode'); // viewNode.className == 'readonly-mode';
+	 *
+	 * @example 2: groups is an array
+	 *   oocssSetter = configureReplaceClassNames(viewNode, {
+	 *     group: ['edit-mode', 'readonly-mode']
+	 *   });
+	 *
+	 * @example 3: multiple groups at once
+	 *   oocssSetter = configureReplaceClassNames(viewNode, {
+	 *     group: ['edit-mode readonly-mode form-enabled form-disabled']
+	 *   });
+	 *   // later, be sure to set both groups at once:
+	 *   oocssSetter('edit-mode form-enabled');
+	 *
+	 * @example 4: no group specified
+	 *   oocssSetter = configureReplaceClassNames(viewNode, {
+	 *     initial: 'form-disabled'
+	 *   });
+	 *   // later:
+	 *   oocssSetter('form-enabled'); // form-disabled is removed
+	 *
+	 * @example 5: extra classes not in a group
+	 *   oocssSetter = configureReplaceClassNames(viewNode, {
+	 *     group: ['edit-mode readonly-mode']
+	 *   });
+	 *   // later (this is problematic if you didn't specify a group!)
+	 *   oocssSetter('edit-mode error-in-form');
 	 */
-	function spliceClassNames (className, removes, adds) {
-		var rx, strip, leftovers;
-		// create regex to find all removes *and adds* since we're going to
-		// remove them all to prevent duplicates.
-		removes = removes.replace(/\s+/g, '|');
-		rx = new RegExp(removeRxParts.join(removes), 'g');
-		// remove and clean up whitespace
-		leftovers = className.replace(rx, '').replace(trimLeadingRx, '');
-		// put the adds back in
-		return leftovers && adds ? leftovers + ' ' + adds : adds;
-	}
+	return function configureReplaceClasses (node, options) {
+		var prev = '', removeRx = '', group;
 
-	return oocssProxy;
+		if (!options) options = {};
+
+		group = options.group;
+
+		if (group) {
+			// convert from array
+			group = typeof group.join == 'function'
+				? group.join('|')
+				: group.replace(/\s+/g, '|');
+			// set up the regexp to remove everything in the group
+			removeRx = removeRxParts.join(group);
+		}
+
+		if (options.initial) {
+			// set the original classes
+			replaceClasses(options.initial);
+		}
+
+		function replaceClasses (classes) {
+			var leftovers;
+
+			// if there were previous classes set, remove them
+			if (prev) {
+				if (classes) prev += ' ' + classes;
+				removeRx = removeRxParts.join(prev.replace(/\s+/g, '|'));
+				// there were likely classes we didn't remove (outside of group)
+				leftovers = node.className.replace(removeRx, '')
+					.replace(trimLeadingRx, '');
+			}
+
+			// save this set for next time (if we're not using a group)
+			if (!group) prev = classes;
+
+			// assemble new classes
+			if (leftovers) classes += ' ' + leftovers;
+
+			return node.className = classes;
+		}
+
+		return replaceClasses;
+
+	}
 
 });
 }(
