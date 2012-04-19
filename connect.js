@@ -118,7 +118,7 @@ function(when, apply, aop, functional) {
 
 					},
 					function() {
-						var promise, promises, target, methodSpec;
+						var promise, promises, methodSpec;
 
 						eventName = connect;
 						source = proxy.target;
@@ -129,7 +129,7 @@ function(when, apply, aop, functional) {
 
 							methodSpec = options;
 
-							promise = when(functional.compose.parse(null, methodSpec, wire.resolveRef, wire.getProxy),
+							promise = when(functional.compose.parse(proxy, methodSpec, wire.resolveRef, wire.getProxy),
 								function(func) {
 									connectHandles.push(doConnectOne(source, eventName, proxy, func));
 								});
