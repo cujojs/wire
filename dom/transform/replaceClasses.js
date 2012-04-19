@@ -82,7 +82,7 @@ define(function () {
 				? group.join('|')
 				: group.replace(/\s+/g, '|');
 			// set up the regexp to remove everything in the group
-			removeRx = removeRxParts.join(group);
+			removeRx = new RegExp(removeRxParts.join(group), 'g');
 		}
 
 		if (options.initial) {
@@ -93,20 +93,22 @@ define(function () {
 		function replaceClasses (classes) {
 			var leftovers;
 
-			// if there were previous classes set, remove them
+			if (!classes) classes = '';
+
+			// if there were previous classes set, remove them and current ones
 			if (prev) {
 				if (classes) prev += ' ' + classes;
-				removeRx = removeRxParts.join(prev.replace(/\s+/g, '|'));
-				// there were likely classes we didn't remove (outside of group)
-				leftovers = node.className.replace(removeRx, '')
-					.replace(trimLeadingRx, '');
+				removeRx = new RegExp(removeRxParts.join(prev.replace(/\s+/g, '|')), 'g');
 			}
+			// there were likely classes we didn't remove (outside of group)
+			leftovers = node.className.replace(removeRx, '')
+				.replace(trimLeadingRx, '');
 
 			// save this set for next time (if we're not using a group)
 			if (!group) prev = classes;
 
 			// assemble new classes
-			if (leftovers) classes += ' ' + leftovers;
+			classes = classes && leftovers ? classes + ' ' + leftovers : classes + leftovers;
 
 			return node.className = classes;
 		}
