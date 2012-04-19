@@ -5,7 +5,7 @@
 		hash = g.location.hash;
 	} catch(e) {}
 
-	doh.registerUrl('_fake', '../../_fake-doh.html' + hash);
+	doh.registerUrl('_fake', '../../_doh-fake.html' + hash);
 
 	// Core
 	doh.registerUrl('basic-types1', '../../basic-types1.html' + hash);
@@ -49,11 +49,25 @@
 	doh.registerUrl('introduce1', '../../wire/aop/introduce1.html' + hash);
 	doh.registerUrl('aop-weaving', '../../wire/aop/weave1.html' + hash);
 
+	// wire/on
+	doh.registerUrl('wire/on', '../../on.html' + hash);
+
+	// wire/connect
+	doh.registerUrl('wire/connect', '../../connect.html' + hash);
+
 	// wire/sizzle
 	doh.registerUrl('sizzle', '../../sizzle.html' + hash);
 
-	// wire/dojo/
-	// doh.registerUrl('wire/dojo/pubsub', '../../dojo/pubsub1.html' + hash);
+	// Dojo
+//	doh.registerUrl('wire/dojo/dom', '../../dojo/dom.html' + hash);
+//	doh.registerUrl('wire/dojo/dom-insert', '../../dojo/dom-insert.html' + hash);
+	doh.registerUrl('wire/dojo/on', '../../dojo/on.html' + hash);
+//	doh.registerUrl('wire/dojo/pubsub', '../../dojo/pubsub1.html' + hash);
+
+	// jQuery
+	doh.registerUrl('wire/jquery/dom', '../../jquery/dom.html' + hash);
+	doh.registerUrl('wire/jquery/dom-insert', '../../jquery/dom-insert.html' + hash);
+	doh.registerUrl('wire/jquery/on', '../../jquery/on.html' + hash);
 
 	// Go
 	doh.run();

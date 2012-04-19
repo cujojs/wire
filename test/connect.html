@@ -190,6 +190,36 @@
 
 					return dohd;
 				},
+				function connectFromSenderToReceiverTransformedShort(doh) {
+					var dohd = new doh.Deferred();
+
+					wire({
+						plugins: [ { module: 'wire/connect' } ],
+						tx: { module: 'transform' },
+						sender: {
+							create: 'Sender',
+							// Test connect
+							connect: {
+								onEvent: 'tx | receiver.handleEvent'
+							}
+						},
+						receiver: {
+							create: {
+								module: 'Receiver',
+								args: [{ literal: dohd }, expected+1]
+							}
+						}
+					}).then(
+							function(context) {
+								context.sender.onEvent(expected);
+							},
+							function(e) {
+								dohd.errback(e);
+							}
+					);
+
+					return dohd;
+				},
 				function connectFromSenderToReceiverLong(doh) {
 					var dohd = new doh.Deferred();
 

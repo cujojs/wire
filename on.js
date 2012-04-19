@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['./plugin-base/on', './dom/base'], function (createOnPlugin, base) {
+define(['./lib/plugin-base/on', './lib/dom/base'], function (createOnPlugin, base) {
 "use strict";
 
 	var contains;
@@ -24,16 +24,11 @@ define(['./plugin-base/on', './dom/base'], function (createOnPlugin, base) {
 	 * property instead of it's target property.
 	 * @param node {HTMLElement} element at which to listen
 	 * @param event {String} event name ('click', 'mouseenter')
-	 * @param context {Object} component on which to call method
-	 * @param method {String} name of method on context. Method should
-	 *   have the following signature: function (e) {}
+	 * @param handler {Function} handler function with the following signature: function (e) {}
 	 * @param [selector] {String} optional css query string to use to
 	 */
-	function on (node, event, context, method /*, selector */) {
-		var selector, handler;
-
-		selector = arguments[4];
-		handler = makeEventHandler(context, method);
+	function on (node, event, handler /*, selector */) {
+		var selector = arguments[3];
 
 		if (selector) {
 			handler = filteringHandler(node, selector, handler);
@@ -86,13 +81,6 @@ define(['./plugin-base/on', './dom/base'], function (createOnPlugin, base) {
 				}
 			}
 		};
-	}
-
-	function makeEventHandler (context, method, selector) {
-		if (typeof method == 'string') method = context[method];
-		return function (e) {
-			method.call(context, e);
-		}
 	}
 
 });

@@ -14,7 +14,7 @@
  * @author John Hann (@unscriptable)
  */
 
-define(['./plugin-base/dom', 'sizzle'], function(createDomPlugin, sizzle) {
+define(['./lib/plugin-base/dom', 'sizzle'], function(createDomPlugin, sizzle) {
 
 	/**
 	 * The usual addClass function

@@ -1,4 +1,4 @@
 module.exports['node'] = {
 	environment: 'node',
-	tests: ['node/**/*.js']
+	tests: ['node/**/*.js', 'functional.js']
 };
