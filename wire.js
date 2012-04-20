@@ -707,23 +707,25 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			var proxier, proxy, id, i;
 
 			i = 0;
-			id = spec.id;
 
 			while ((proxier = proxies[i++]) && !(proxy = proxier(object, spec))) {}
 
 			proxy.target = object;
 			proxy.spec = spec;
-			proxy.id = id;
-			proxy.path = createPath(id);
 
-			proxied[id] = proxy;
+			if(spec) {
+				id = spec && spec.id;
+				proxy.id = id;
+				proxy.path = createPath(id);
+				proxied[id] = proxy;
+			}
 
 			return proxy;
 		}
 
 		function getProxy(name) {
-			return when(doResolveRef(name), function() {
-					return proxied[name];
+			return when(doResolveRef(name), function(component) {
+					return createProxy(component);
 				}
 			);
 		}
