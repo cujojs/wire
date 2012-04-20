@@ -49,6 +49,29 @@
 		require(['wire'], function (wire) {
 
 			doh.register('wire/cola bind', [
+				function shouldPassPluginOptions() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						cola: { module: 'wire/cola', success: true },
+						hub: { create: 'hub' },
+						test: {
+							create: 'test',
+							bind: {
+								to: { $ref: 'hub' }
+							}
+						}
+					}).then(
+							function(context) {
+								dohd.callback(context.hub.secondaryOptions.success);
+							},
+							function(e) {
+								dohd.errback(e);
+							}
+					);
+
+					return dohd;
+				},
 				function shouldFailWhenToNotSpecified() {
 					var dohd = new doh.Deferred();
 

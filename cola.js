@@ -104,13 +104,12 @@ function(when) {
 		}, {});
 	}
 
-	function bindFacet(resolver, facet, wire) {
-		var options, target, promise;
+	function doBind(facet, options, wire) {
+		var target = facet.target;
 
-		target = facet.target;
-		options = facet.options;
+		options = copyOwnProps(facet.options, options);
 
-		promise = when(wire(options), function(options) {
+		return when(wire(options), function(options) {
 			var hubOptions, to, bindings;
 
 			to = options.to;
@@ -137,25 +136,58 @@ function(when) {
 				}
 			);
 		});
-
-		when.chain(promise, resolver);
 	}
 
-	function copyOwnProps(src) {
-		var dup, p;
+	/**
+	 * Copies own properties from each src object in the arguments list
+	 * to a new object and returns it.  Properties further to the right
+	 * win.
+	 *
+	 * @return {Object} a new object with own properties from all srcs.
+	 */
+	function copyOwnProps(/*srcs...*/) {
+		var i, len, p, src, dst;
 
-		dup = {};
-		for(p in src) {
-			if(src.hasOwnProperty(p)) {
-				dup[p] = src[p];
+		dst = {};
+
+		for(i = 0, len = arguments.length; i < len; i++) {
+			src = arguments[i];
+			if(src) {
+				for(p in src) {
+					if(src.hasOwnProperty(p)) {
+						dst[p] = src[p];
+					}
+				}
 			}
 		}
 
-		return dup;
+		return dst;
 	}
+
+	/**
+	 * We don't want to copy the module property from the plugin options, and
+	 * wire adds the id property, so we need to filter that out too.
+	 * @type {Object}
+	 */
+	var excludeOptions = {
+		id: 1,
+		module: 1
+	};
 
 	return {
 		wire$plugin: function(ready, destroyed, pluginOptions) {
+
+			var options = {};
+
+			for(var p in pluginOptions) {
+				if(!(p in excludeOptions)) {
+					options[p] = pluginOptions[p];
+				}
+			}
+
+			function bindFacet(resolver, facet, wire) {
+				when.chain(doBind(facet, options, wire), resolver);
+			}
 
 			return {
 				facets: {

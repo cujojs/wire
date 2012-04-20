@@ -58,6 +58,9 @@
 	// wire/sizzle
 	doh.registerUrl('sizzle', '../../sizzle.html' + hash);
 
+	// wire/cola
+	doh.registerUrl('wire/cola', '../../cola/bind.html' + hash);
+
 	// Dojo
 //	doh.registerUrl('wire/dojo/dom', '../../dojo/dom.html' + hash);
 //	doh.registerUrl('wire/dojo/dom-insert', '../../dojo/dom-insert.html' + hash);
