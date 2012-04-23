@@ -166,7 +166,8 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 				newNode.className = (oldNode.className ? oldNode.className + ' ' : '')
 					+ newNode.className;
 			}
-			else if (!newNode.hasAttribute(attr.name)) {
+			// Note: IE6&7 don't support node.hasAttribute() so we're using node.attributes
+			else if (!newNode.attributes[attr.name]) {
 				newNode.setAttribute(attr.name, oldNode.getAttribute(attr.name));
 			}
 		}

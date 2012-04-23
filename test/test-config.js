@@ -99,23 +99,14 @@
     // This is needed because we're running unit tests from *within* the wire dir
     addPackage({ name: 'wire', location: '.' });
 
-//    console.log(JSON.stringify(loaderConfig));
-
 	// Other loaders may not need this
 	loaderConfig.paths[loaderName] = loaderPath;
 
-	if(typeof console.log != 'function') {
-		doh.debug = function(){
-			var msg = "";
-			for(var x=0; x<arguments.length; x++){
-				msg += " "+arguments[x];
-			}
-//			sendToLogPane([msg]);
-			console.log("DEBUG:"+msg);
-		};
-	}
-
 	// That's right y'all, document.write FTW
+	if(typeof console == 'undefined' || typeof console.log != 'function') {
+		doc.write('<script src="' + baseUrl + 'test/firebug-lite/build/firebug-lite.js#startOpened' + '"></script>');
+	}
+	doc.write('<script src="' + baseUrl + 'test/util/doh/runner.js"></script>');
 	doc.write('<script src="' + baseUrl + loaderPath + '.js' + '"></script>');
 
 })(window);
