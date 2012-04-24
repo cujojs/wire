@@ -100,6 +100,20 @@ buster.testCase('wire/functional', {
 			).then(done, done);
 		},
 
+		'should compose a string specification with single function': function(done) {
+			wire({
+				functional: { module: './functional' },
+				f1: plusOne,
+				composed: {
+					compose: 'f1'
+				}
+			}).then(
+				function(c) {
+					assert.equals(c.composed(1), 2);
+				}
+			).then(done, done);
+		},
+
 		'should compose a string specification with contexts': function(done) {
 			wire({
 				functional: { module: './functional' },

@@ -16,10 +16,6 @@ define(['when', './lib/functional'], function(when, functional) {
 
 	var undef;
 
-	function bindFactory(resolver, spec, wire) {
-		resolver.resolve();
-	}
-
 	function composeFactory(resolver, spec, wire) {
 		var promise;
 
@@ -35,10 +31,6 @@ define(['when', './lib/functional'], function(when, functional) {
 		}
 
 		when.chain(promise, resolver);
-	}
-
-	function partialFactory(resolver, spec, wire) {
-		resolver.resolve();
 	}
 
 	function bindResolver(resolver, name, refObj, wire) {
@@ -62,9 +54,7 @@ define(['when', './lib/functional'], function(when, functional) {
 		wire$plugin: function(/*ready, destroyed, options*/) {
 			return {
 				factories: {
-					bind: bindFactory,
-					compose: composeFactory,
-					partial: partialFactory
+					compose: composeFactory
 				},
 				resolvers: {
 					bind: bindResolver

@@ -411,7 +411,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		//
 
 		function destroyContext() {
-			var p, promises, pDeferred, i;
+			var p, promises, pDeferred;
 
 			scopeDestroyed.resolve();
 
