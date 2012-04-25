@@ -10,8 +10,8 @@
  */
 
 (function(define) {
-define(['when'],
-function(when) {
+define(['when', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
+function(when, propertiesKey, byProperty) {
 
 	var isArray, undef, slice;
 
@@ -110,7 +110,7 @@ function(when) {
 		options = copyOwnProps(facet.options, options);
 
 		return when(wire(options), function(options) {
-			var hubOptions, to, bindings;
+			var hubOptions, to, bindings, identifier, comparator;
 
 			to = options.to;
 			if(!to) {
@@ -126,6 +126,18 @@ function(when) {
 
 			if(!hubOptions.querySelector) {
 				hubOptions.querySelector = querySelector;
+			}
+
+			// TODO: Extend syntax for identifier and comparator
+			// to allow more fields, and more complex expressions
+			identifier = hubOptions.identifier;
+			if(typeof identifier == 'string' || isArray(identifier)) {
+				hubOptions.identifier = propertiesKey(identifier);
+			}
+
+			comparator = hubOptions.comparator;
+			if(typeof comparator == 'string') {
+				hubOptions.comparator = byProperty(comparator);
 			}
 
 			return when(setupBindings(bindings, wire),
@@ -162,6 +174,10 @@ function(when) {
 		}
 
 		return dst;
+	}
+
+	function isArray(it) {
+		return Object.prototype.toString.call(it) == '[object Array]';
 	}
 
 	/**

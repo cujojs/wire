@@ -33,21 +33,34 @@ define(['when', './lib/functional'], function(when, functional) {
 		when.chain(promise, resolver);
 	}
 
-	function bindResolver(resolver, name, refObj, wire) {
-		var context = typeof refObj.context == 'string'
+	function doBind(resolver, bind, name, refObj, wire) {
+		var context, spec;
+
+		context = typeof refObj.context == 'string'
 			? { $ref: refObj.context }
 			: refObj.context;
 
-		var spec = [
+		spec = [
 			{ $ref: name },
 			context
 		];
 
-		if('args' in refObj) spec = spec.concat(refObj.args);
+		if('args' in refObj) {
+			spec = spec.concat(refObj.args);
+		}
 
-		when(wire(spec), function(args) {
-			return functional.bind.apply(undef, args);
+		return when(wire(spec), function(args) {
+			return bind.apply(undef, args);
 		}).then(resolver.resolve, resolver.reject);
+
+	}
+
+	function bindResolver(resolver, name, refObj, wire) {
+		doBind(resolver, functional.bind, name, refObj, wire);
+	}
+
+	function bindRightResolver(resolver, name, refObj, wire) {
+		doBind(resolver, functional.bindRight, name, refObj, wire);
 	}
 
 	return {
@@ -57,7 +70,8 @@ define(['when', './lib/functional'], function(when, functional) {
 					compose: composeFactory
 				},
 				resolvers: {
-					bind: bindResolver
+					bind: bindResolver,
+					bindRight: bindRightResolver
 				}
 			}
 		}
