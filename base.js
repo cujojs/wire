@@ -12,8 +12,9 @@
  */
 
 (function(define) {
-define(['when'], function(when) {
-    var tos, createObject, whenAll, chain;
+define(['when', './lib/array'], function(when, array) {
+
+    var tos, createObject, whenAll, chain, undef;
 
     tos = Object.prototype.toString;
 
@@ -30,7 +31,20 @@ define(['when'], function(when) {
 
 	createObject = Object.create || objectCreate;
 
-    function invoke(func, facet, args, wire) {
+	function chainReject(resolver) {
+		return function (err) {
+			resolver.reject(err);
+		};
+	}
+
+	function isStrictlyObject(it) {
+		// In IE7 tos.call(null) is '[object Object]'
+		// so we need to check to see if 'it' is
+		// even set
+		return it && tos.call(it) == '[object Object]';
+	}
+
+	function invoke(func, facet, args, wire) {
         return when(wire(args),
 			function (resolvedArgs) {
 				return facet.invoke(func, (tos.call(resolvedArgs) == '[object Array]')
@@ -159,6 +173,121 @@ define(['when'], function(when) {
         return destroyFunc();
     }
 
+	function moduleFactory(resolver, spec, wire) {
+		chain(wire.loadModule(spec.module, spec), resolver);
+	}
+
+	/**
+	 * Factory that uses an AMD module either directly, or as a
+	 * constructor or plain function to create the resulting item.
+	 *
+	 * @param resolver {Resolver} resolver to resolve with the created component
+	 * @param spec {Object} portion of the spec for the component to be created
+	 */
+	function instanceFactory(resolver, spec, wire) {
+		var create, module, args, isConstructor, name;
+
+		name = spec.id;
+
+		create = spec.create;
+		if (isStrictlyObject(create)) {
+			module = create.module;
+			args = create.args;
+			isConstructor = create.isConstructor;
+		} else {
+			module = create;
+		}
+
+		// Load the module, and use it to create the object
+		function handleModule(module) {
+			function resolve(resolvedArgs) {
+				return instantiate(module, resolvedArgs, isConstructor);
+			}
+
+			// We'll either use the module directly, or we need
+			// to instantiate/invoke it.
+			if (typeof module == 'function') {
+				// Instantiate or invoke it and use the result
+				if (args) {
+					args = array.isArray(args) ? args : [args];
+					return when(wire(args, { name: name }), resolve);
+
+				} else {
+					// No args, don't need to process them, so can directly
+					// insantiate the module and resolve
+					return resolve([]);
+
+				}
+
+			} else {
+				// Simply use the module as is
+				return module;
+
+			}
+		}
+
+		chain(when(wire.loadModule(module, spec), handleModule), resolver);
+	}
+
+	/**
+	 * Creates an object by either invoking ctor as a function and returning the result,
+	 * or by calling new ctor().  It uses a simple heuristic to try to guess which approach
+	 * is the "right" one.
+	 *
+	 * @param ctor {Function} function or constructor to invoke
+	 * @param args {Array} array of arguments to pass to ctor in either case
+	 *
+	 * @returns The result of invoking ctor with args, with or without new, depending on
+	 * the strategy selected.
+	 */
+	function instantiate(ctor, args, forceConstructor) {
+
+		var begotten;
+
+		if (forceConstructor || isConstructor(ctor)) {
+			WireInstantiated.prototype = ctor.prototype;
+			WireInstantiated.prototype.constructor = ctor;
+			begotten = new WireInstantiated(ctor, args);
+
+			WireInstantiated.prototype = undef;
+
+		} else {
+			begotten = ctor.apply(undef, args);
+
+		}
+
+		return begotten === undef ? null : begotten;
+	}
+
+	/**
+	 * Constructor used to beget objects that wire needs to create using new.
+	 * @param ctor {Function} real constructor to be invoked
+	 * @param args {Array} arguments to be supplied to ctor
+	 */
+	function WireInstantiated(ctor, args) {
+		return ctor.apply(this, args);
+	}
+
+	/**
+	 * Determines whether the supplied function should be invoked directly or
+	 * should be invoked using new in order to create the object to be wired.
+	 *
+	 * @param func {Function} determine whether this should be called using new or not
+	 *
+	 * @returns true iff func should be invoked using new, false otherwise.
+	 */
+	function isConstructor(func) {
+		var is = false, p;
+		for (p in func.prototype) {
+			if (p !== undef) {
+				is = true;
+				break;
+			}
+		}
+
+		return is;
+	}
+
 	return {
 		wire$plugin: function(ready, destroyed /*, options */) {
             // Components in the current context that will be destroyed
@@ -181,6 +310,8 @@ define(['when'], function(when) {
 
 			return {
 				factories: {
+					module: moduleFactory,
+					create: instanceFactory,
 					literal: literalFactory,
 					prototype: protoFactory
 				},
@@ -214,14 +345,10 @@ define(['when'], function(when) {
 	};
 });
 })(typeof define == 'function'
-	// use define for AMD if available
 	? define
-    : typeof module != 'undefined'
-        ? function(deps, factory) {
-            module.exports = factory.apply(this, deps.map(function(x) {
-				return require(x);
-			}));
-        }
-	    // If no define or module, attach to current context.
-	    : function(deps, factory) { this.wire_base = factory(this.when); }
+    : function(deps, factory) {
+		module.exports = factory.apply(this, deps.map(function(x) {
+			return require(x);
+		}));
+	}
 );
