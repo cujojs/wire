@@ -12,9 +12,9 @@
  */
 
 (function(define) {
-define(['when', './lib/array'], function(when, array) {
+define(['when', './lib/array', './lib/component'], function(when, array) {
 
-    var tos, createObject, whenAll, chain, undef;
+    var tos, createObject, whenAll, chain;
 
     tos = Object.prototype.toString;
 
@@ -30,12 +30,6 @@ define(['when', './lib/array'], function(when, array) {
 	}
 
 	createObject = Object.create || objectCreate;
-
-	function chainReject(resolver) {
-		return function (err) {
-			resolver.reject(err);
-		};
-	}
 
 	function isStrictlyObject(it) {
 		// In IE7 tos.call(null) is '[object Object]'
@@ -227,65 +221,6 @@ define(['when', './lib/array'], function(when, array) {
 		}
 
 		chain(when(wire.loadModule(module, spec), handleModule), resolver);
-	}
-
-	/**
-	 * Creates an object by either invoking ctor as a function and returning the result,
-	 * or by calling new ctor().  It uses a simple heuristic to try to guess which approach
-	 * is the "right" one.
-	 *
-	 * @param ctor {Function} function or constructor to invoke
-	 * @param args {Array} array of arguments to pass to ctor in either case
-	 *
-	 * @returns The result of invoking ctor with args, with or without new, depending on
-	 * the strategy selected.
-	 */
-	function instantiate(ctor, args, forceConstructor) {
-
-		var begotten;
-
-		if (forceConstructor || isConstructor(ctor)) {
-			WireInstantiated.prototype = ctor.prototype;
-			WireInstantiated.prototype.constructor = ctor;
-			begotten = new WireInstantiated(ctor, args);
-
-			WireInstantiated.prototype = undef;
-
-		} else {
-			begotten = ctor.apply(undef, args);
-
-		}
-
-		return begotten === undef ? null : begotten;
-	}
-
-	/**
-	 * Constructor used to beget objects that wire needs to create using new.
-	 * @param ctor {Function} real constructor to be invoked
-	 * @param args {Array} arguments to be supplied to ctor
-	 */
-	function WireInstantiated(ctor, args) {
-		return ctor.apply(this, args);
-	}
-
-	/**
-	 * Determines whether the supplied function should be invoked directly or
-	 * should be invoked using new in order to create the object to be wired.
-	 *
-	 * @param func {Function} determine whether this should be called using new or not
-	 *
-	 * @returns true iff func should be invoked using new, false otherwise.
-	 */
-	function isConstructor(func) {
-		var is = false, p;
-		for (p in func.prototype) {
-			if (p !== undef) {
-				is = true;
-				break;
-			}
-		}
-
-		return is;
 	}
 
 	return {
