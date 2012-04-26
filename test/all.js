@@ -15,8 +15,6 @@
 	doh.registerUrl('create-constructor', '../../create-constructor.html' + hash);
 	// create with raw constructors/functions
 	doh.registerUrl('plain-constructors', '../../required-modules.html' + hash);
-	// Non-amd environment limited support
-	doh.registerUrl('non-amd', '../../non-amd.html' + hash);
 
 	// wire resolver
 	doh.registerUrl('wire-resolver', '../../wire-resolver1.html' + hash);
