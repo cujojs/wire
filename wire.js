@@ -233,8 +233,8 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	 * @return {Promise} a promise for the new scope
 	 */
 	function createScope(scopeDef, parent, scopeName) {
-		var scope, scopeParent, local, proxied, objects,
-				pluginApi, resolvers, factories, facets, listeners, proxies,
+		var scope, scopeParent, local, proxiesByName, proxiedComponents, objects,
+				pluginApi, resolvers, factories, facets, listeners, proxiers,
 				modulesToLoad, moduleLoadPromises,
 				wireApi, modulesReady, scopeReady, scopeDestroyed,
 				contextPromise, doDestroy;
@@ -294,8 +294,9 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			listeners = delegateArray(parent.listeners);
 
 			// Proxies is an array, have to concat
-			proxies = delegateArray(parent.proxies);
-			proxied = inherit(parent.proxied);
+			proxiers = delegateArray(parent.proxiers);
+			proxiesByName = inherit(parent.proxiesByName);
+			proxiedComponents = [];
 
 			modulesToLoad = [];
 			moduleLoadPromises = {};
@@ -309,7 +310,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			scopeParent = {
 				name: scopeName,
 				objects: objects,
-				proxied: proxied,
+				proxiesByName: proxiesByName,
 				destroyed: scopeDestroyed
 			};
 
@@ -322,7 +323,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			scope.factories = factories;
 			scope.facets = facets;
 			scope.listeners = listeners;
-			scope.proxies = proxies;
+			scope.proxiers = proxiers;
 			scope.resolveRef = doResolveRef;
 			scope.destroy = destroy;
 			scope.path = createPath(scopeName, parent.path);
@@ -411,21 +412,24 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		//
 
 		function destroyContext() {
-			var p, promises, pDeferred;
+			var promises, pDeferred, i, len;
 
 			scopeDestroyed.resolve();
 
 			// TODO: Clear out the context prototypes?
 
 			promises = [];
-			for(p in proxied) {
+
+			for(i = 0, len = proxiedComponents.length; i < len; i++) {
 				pDeferred = defer();
 				promises.push(pDeferred);
-				processListeners(pDeferred, 'destroy', proxied[p]);
+				processListeners(pDeferred, 'destroy', proxiedComponents[i]);
 			}
 
 			// *After* listeners are processed,
 			whenAll(promises, function () {
+				var i, len;
+
 				function deleteAll(container) {
 					for(var p in container) delete container[p];
 				}
@@ -434,17 +438,16 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				deleteAll(objects);
 				deleteAll(scope);
 
-				for(var p in proxied) {
-					if(proxied.hasOwnProperty(p)) proxied[p].destroy();
+				for(i = 0, len = proxiedComponents.length; i < len; i++) {
+					proxiedComponents[i].destroy();
 				}
 
 				// Free Objects
-				local = objects = scope = proxied = proxies = parent
-						= resolvers = factories = facets
-						= wireApi = undef;
+				local = objects = scope = proxiesByName = parent
+					= resolvers = factories = facets = listeners
+					= wireApi = proxiedComponents = proxiers
+					= undef;
 
-				// Free Arrays
-				listeners = undef;
 			});
 
 			return scopeDestroyed;
@@ -587,16 +590,16 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		function addProxies(proxiesToAdd) {
 			if (!proxiesToAdd) return;
 
-			var newProxies, p, i = 0;
+			var newProxiers, p, i = 0;
 
-			newProxies = [];
+			newProxiers = [];
 			while (p = proxiesToAdd[i++]) {
-				if (indexOf(proxies, p) < 0) {
-					newProxies.push(p)
+				if (indexOf(proxiers, p) < 0) {
+					newProxiers.push(p)
 				}
 			}
 
-			scope.proxies = proxies = newProxies.concat(proxies);
+			scope.proxiers = proxiers = newProxiers.concat(proxiers);
 		}
 
 		function addPlugin(src, registry) {
@@ -708,7 +711,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
 			i = 0;
 
-			while ((proxier = proxies[i++]) && !(proxy = proxier(object, spec))) {}
+			while ((proxier = proxiers[i++]) && !(proxy = proxier(object, spec))) {}
 
 			proxy.target = object;
 			proxy.spec = spec;
@@ -717,7 +720,8 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				id = spec && spec.id;
 				proxy.id = id;
 				proxy.path = createPath(id);
-				proxied[id] = proxy;
+				proxiesByName[id] = proxy;
+				proxiedComponents.push(proxy);
 			}
 
 			return proxy;
