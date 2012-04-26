@@ -13,15 +13,16 @@
  */
 
 (function(global, define){
-define(['when', './lib/context'], function(when, createContext) {
+define(['require', 'when', './lib/context'], function(require, when, createContext) {
 
 	"use strict";
 
-	var rootSpec, rootContext;
+	var rootSpec, rootContext, rootOptions;
 
 	wire.version = "0.8.0";
 
 	rootSpec = global['wire'] || {};
+	rootOptions = { require: require };
 
 	//
 	// Module API
@@ -36,17 +37,17 @@ define(['when', './lib/context'], function(when, createContext) {
 	 *
 	 * @param spec {String|Array|*}
 	 */
-	function wire(spec) {
+	function wire(spec, options) {
 
 		// If the root context is not yet wired, wire it first
 		if (!rootContext) {
-			rootContext = createContext(rootSpec);
+			rootContext = createContext(rootSpec, null, rootOptions);
 		}
 
 		// Use the rootContext to wire all new contexts.
 		return when(rootContext,
 			function (root) {
-				return root.wire(spec);
+				return root.wire(spec, options);
 			}
 		);
 	}
@@ -74,16 +75,14 @@ define(['when', './lib/context'], function(when, createContext) {
 	 * @param config unused
 	 */
 	function amdLoad(name, require, callback, config) {
-		var resolver = callback.resolve
-			? callback
-			: {
-				resolve: callback,
-				reject: function (err) { throw err; }
-			};
+		var d = when.defer();
+		d.then(callback, function(e) {
+			throw e;
+		});
 
 		// If it's a string, try to split on ',' since it could be a comma-separated
 		// list of spec module ids
-		when.chain(wire(name.split(',')), resolver);
+		when.chain(wire(name.split(','), { require: require }), d);
 	}
 
 });
