@@ -42,6 +42,7 @@
             script: 'test/requirejs/require',
             mixin: {
                 paths: {
+					'jquery': 'test/lib/jquery',
 //                    'wire/domReady': 'test/requirejs/domReady'
                     domReady: 'test/requirejs/domReady'
                 }
