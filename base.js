@@ -12,7 +12,7 @@
  */
 
 (function(define) {
-define(['when', './lib/array', './lib/component'], function(when, array) {
+define(['when', './lib/array', './lib/component'], function(when, array, createComponent) {
 
     var tos, createObject, whenAll, chain;
 
@@ -195,7 +195,7 @@ define(['when', './lib/array', './lib/component'], function(when, array) {
 		// Load the module, and use it to create the object
 		function handleModule(module) {
 			function resolve(resolvedArgs) {
-				return instantiate(module, resolvedArgs, isConstructor);
+				return createComponent(module, resolvedArgs, isConstructor);
 			}
 
 			// We'll either use the module directly, or we need
