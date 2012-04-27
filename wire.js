@@ -70,7 +70,7 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 	/**
 	 * AMD Loader plugin API
 	 * @param name {String} spec module id, or comma-separated list of module ids
-	 * @param require unused
+	 * @param require {Function} loader-provide local require function
 	 * @param callback {Function|Promise} callback to call or promise to resolve when wiring is completed
 	 * @param config unused
 	 */
