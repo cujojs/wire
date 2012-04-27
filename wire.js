@@ -66,18 +66,20 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 
 	return wire;
 
-	//noinspection JSUnusedLocalSymbols
 	/**
 	 * AMD Loader plugin API
 	 * @param name {String} spec module id, or comma-separated list of module ids
 	 * @param require {Function} loader-provide local require function
-	 * @param callback {Function|Promise} callback to call or promise to resolve when wiring is completed
-	 * @param config unused
+	 * @param callback {Function} callback to call when wiring is completed. May have
+	 *  and error property that a function to call to inform the AMD loader of an error.
+	 *  See here: https://groups.google.com/forum/?fromgroups#!topic/amd-implement/u0f161drdJA
 	 */
-	function amdLoad(name, require, callback, config) {
+	function amdLoad(name, require, callback /*, config */) {
 		var d = when.defer();
-		d.then(callback, function(e) {
-			throw e;
+		d.then(callback, callback.error || function(e) {
+			// Throw uncatchable exception for loaders that don't support
+			// AMD error handling.  This will propagate up to the host environment
+			setTimeout(function() { throw e; }, 0);
 		});
 
 		// If it's a string, try to split on ',' since it could be a comma-separated
