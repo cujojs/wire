@@ -121,5 +121,5 @@ buster.testCase('create', {
 
 })(
 	require('buster'),
-	require('../..')
+	require('../../wire')
 );

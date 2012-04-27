@@ -24,5 +24,5 @@ buster.testCase('module', {
 
 })(
 	require('buster'),
-	require('wire')
+	require('../../wire')
 );
