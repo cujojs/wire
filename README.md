@@ -50,7 +50,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
-# 0.8.0
+### 0.8.0
 
 * See the [full release notes](https://github.com/cujojs/wire/wiki/release-notes-080) for more detail, documentation, and examples of all the new features.
 * Node and RingoJS
