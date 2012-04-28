@@ -40,7 +40,7 @@
 				test3: {
 					create: {
 						module: 'no-prototype-constructor',
-						args: 'test2'
+						args: 'test3'
 					}
 				}
 
@@ -61,7 +61,7 @@
 							doh.assertEqual('bar', context.test2.foo);
 						},
 						function(doh) {
-							doh.assertEqual(undef, context.test3);
+							doh.assertEqual(null, context.test3);
 						}
 					]);
 					doh.run();

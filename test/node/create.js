@@ -65,7 +65,10 @@ buster.testCase('create', {
 			function(context) {
 				assert.isObject(context.test);
 			},
-			fail
+			function(e) {
+				console.error(e);
+				return e;
+			}
 		).then(done, done);
 	},
 
