@@ -47,7 +47,7 @@ define(['./lib/plugin-base/on', './lib/dom/base'], function (createOnPlugin, bas
 
 	if (document && document.compareDocumentPosition) {
 		contains = function w3cContains (refNode, testNode) {
-			return refNode.compareDocumentPosition(testNode) == 8;
+			return (refNode.compareDocumentPosition(testNode) & 16) == 16;
 		}
 	}
 	else {
