@@ -50,6 +50,15 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 # What's new
 
+### 0.8.0
+
+* See the [full release notes](https://github.com/cujojs/wire/wiki/release-notes-080) for more detail, documentation, and examples of all the new features.
+* Node and RingoJS
+* New wire/dom/render plugin
+* Plenty of other new DOM features
+* Easier `wire/aop` single advices
+* Improved debugging with `wire/debug`
+
 ### 0.7.6
 
 * New `waitParent` option for the [wire factory](https://github.com/cujojs/wire/wiki/Factories).  When set to `true`, it guarantees a child context will not even start wiring until the encompassing parent has completed.
