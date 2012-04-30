@@ -75,16 +75,15 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 	 *  See here: https://groups.google.com/forum/?fromgroups#!topic/amd-implement/u0f161drdJA
 	 */
 	function amdLoad(name, require, callback /*, config */) {
-		var d = when.defer();
-		d.then(callback, callback.error || function(e) {
+		// If it's a string, try to split on ',' since it could be a comma-separated
+		// list of spec module ids
+		var errback = callback.error || function(e) {
 			// Throw uncatchable exception for loaders that don't support
 			// AMD error handling.  This will propagate up to the host environment
 			setTimeout(function() { throw e; }, 0);
-		});
+		};
 
-		// If it's a string, try to split on ',' since it could be a comma-separated
-		// list of spec module ids
-		when.chain(wire(name.split(','), { require: require }), d);
+		when(wire(name.split(','), { require: require }), callback, errback);
 	}
 
 });

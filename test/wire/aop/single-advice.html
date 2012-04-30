@@ -23,7 +23,9 @@
 			define('Handler', function() {
 				function Handler() {}
 				Handler.prototype = {
-					test: function(val) { this.val = val; return true; },
+					test: function(val) {
+						this.val = val; return true;
+					},
 					testAround: function(joinpoint) {
 						this.val = joinpoint.args[0];
 						this.val += joinpoint.proceed();
@@ -48,6 +50,30 @@
 							}
 						},
 						handler: { create: 'Handler'}
+					}).then(
+							function(context) {
+								context.target.init(1);
+								dohd.callback(1 === context.handler.val);
+							},
+							function(e) { console.error(e); dohd.errback(e); }
+//							dohd.errback
+					);
+
+					return dohd;
+				},
+
+				function testBeforeReverse() {
+					var dohd = new doh.Deferred();
+
+					wire({
+						aop: { module: 'wire/aop' },
+						target: { create: 'Target' },
+						handler: {
+							create: 'Handler',
+							before: {
+								'target.init': 'test'
+							}
+						}
 					}).then(
 							function(context) {
 								context.target.init(1);
