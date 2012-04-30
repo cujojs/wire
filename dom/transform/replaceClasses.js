@@ -2,9 +2,11 @@
 define(function () {
 "use strict";
 
-	var removeRxParts, trimLeadingRx;
+	var removeRxParts, trimLeadingRx, splitClassNamesRx;
+
 	removeRxParts = ['(\\s+|^)(', ')(\\b(?![\\-_])|$)'];
 	trimLeadingRx = /^\s+/;
+	splitClassNamesRx = /(\b\s+\b)|(\s+)/g;
 
 	/**
 	 * Configures a transform function that satisfies the most common
@@ -80,7 +82,7 @@ define(function () {
 			// convert from array
 			group = typeof group.join == 'function'
 				? group.join('|')
-				: group.replace(/\s+/g, '|');
+				: group.replace(splitClassNamesRx, '|');
 			// set up the regexp to remove everything in the group
 			removeRx = new RegExp(removeRxParts.join(group), 'g');
 		}
@@ -108,7 +110,7 @@ define(function () {
 			if (!group) prev = classes;
 
 			// assemble new classes
-			classes = classes && leftovers ? classes + ' ' + leftovers : classes + leftovers;
+			classes = classes + (classes && leftovers ? ' ' : '') + leftovers;
 
 			return node.className = classes;
 		}

@@ -642,6 +642,37 @@ require(['wire'], function(wire) {
 
 			return dohd;
 
+		},
+		function shouldCatchDeepEvents(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: { create: 'fixture' },
+				buttonContainer: {
+					render: {
+						// click event is a child of item we targeted with a selector:
+						template: '<div><div class="test"><button id="buttonDeep"></button></div></div>'
+					},
+					insert: { last: 'dom!container' },
+					on: {
+						'click:.test': { a: 'handle' }
+					}
+				},
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' },
+					{ module: 'wire/dom/render' }
+				]
+			}).then(
+					function(context) {
+						document.getElementById('buttonDeep').click();
+						dohd.callback(context.a.handled === 1);
+					},
+					fail(dohd)
+			);
+
+			return dohd;
+
 		}
 
 	]);
