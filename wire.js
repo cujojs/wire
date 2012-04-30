@@ -35,7 +35,19 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 	 *
 	 * @public
 	 *
-	 * @param spec {String|Array|*}
+	 * @param spec {Object|String|Array|Promise} can be any one of the following:
+	 *  1. Object - wiring spec
+	 *  2. String - module id of the wiring spec to load and then wire
+	 *  3. Array - mixed array of Strings and Objects, each of which is either
+	 *   a wiring spec, or the module id of a wiring spec
+	 *  4. Promise - a promise for any of the above
+	 *  @param options {Object} wiring options
+	 *  @param [options.require] {Function} the platform loader function.  Wire will
+	 *   attempt to automatically detect what loader to use (AMD, CommonJS, etc.), but
+	 *   if you want to explicitly provide it, you can do so.  In some cases this can
+	 *   be useful such as providing a local AMD require function so that module ids
+	 *   *within the wiring spec* can be relative.
+	 *  @return {Promise} a promise for the resulting wired context
 	 */
 	function wire(spec, options) {
 
