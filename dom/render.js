@@ -38,10 +38,10 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * Information contained in a hashmap is merged into the template
 	 * via tokens (${name}) before rendering into DOM nodes.
 	 * Nothing is done with the css parameter at this time.
-	 * @param template {String}
-	 * @param hashmap {Object}
-	 * @param optRefNode {HTMLElement}
-	 * @param optCss {Object}
+	 * @param template {String} html template
+	 * @param hashmap {Object} string replacements hash
+	 * @param optRefNode {HTMLElement} node to replace with root node of rendered template
+	 * @param optCss {Object} unused
 	 * @returns {HTMLElement}
 	 */
 	function render (template, hashmap, optRefNode, optCss) {
@@ -66,7 +66,7 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 		return node;
 	}
 
-	render.wire$plugin = function (ready, destroyed, options) {
+	render.wire$plugin = function (/*ready, destroyed, options*/) {
 		return {
 			factories: {
 				render: domRenderFactory
@@ -157,7 +157,8 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * @returns {HTMLElement} newNode
 	 */
 	function safeReplaceElement (newNode, oldNode) {
-		var i, attr, newClassesRx, parent;
+		var i, attr, parent;
+
 		for (i = 0; i < oldNode.attributes.length; i++) {
 			attr = oldNode.attributes[i];
 			if ('class' == attr.name) {
@@ -187,7 +188,7 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * @param template
 	 * @param hashmap {Object} the names of the properties of this object
 	 * are used as keys. The values replace the token in the string.
-	 * @param missing {Function} callback that deals with missing properties
+	 * @param [missing] {Function} callback that deals with missing properties
 	 * @returns {String}
 	 */
 	function replaceTokens (template, hashmap, missing) {
