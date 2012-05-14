@@ -49,7 +49,9 @@ buster.testCase('lifecycle', {
 
 				// Ensure that destroy happens and is always last
 				context.destroy().then(
-					function() { assert.equals(component.lifecycle, steps); },
+					function() {
+						assert.equals(component.lifecycle, steps);
+					},
 					fail
 				).then(done, done);
 			},
