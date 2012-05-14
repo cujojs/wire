@@ -32,10 +32,14 @@
 		define('parent-with-direct-child', {
 			child: { wire: { spec: 'child' } }
 		});
-        define('child', {
+
+		define('child-empty', {});
+
+		define('child', {
 //			debug: { module: 'wire/debug' },
 			success: true
 		});
+
 		define('child-component', {
 			debug: { module: 'wire/debug' },
 			thing: {
@@ -99,13 +103,50 @@
 					);
 
 					return dohd;
-				} ,
+				},
 				function wireChildImmediate(doh) {
 
 					var dohd = new doh.Deferred();
 
 					wire({
 						child: { wire: { spec: 'child' } }
+					}).then(
+							function(context) {
+
+								var success = typeof context.child.then == 'function';
+
+								context.child.then(function(childContext) {
+									success = success && !!childContext.success;
+
+									childContext.destroy().then(
+											function() {
+												dohd.callback(success);
+											},
+											fail(dohd)
+									);
+								});
+
+							},
+							fail(dohd)
+					);
+
+					return dohd;
+
+				},
+				function wireChildWithProvides(doh) {
+
+					var dohd = new doh.Deferred();
+
+					wire({
+						value: true,
+						child: {
+							wire: {
+								spec: 'child-empty',
+								provide: {
+									success: { $ref: 'value' }
+								}
+							}
+						}
 					}).then(
 							function(context) {
 
