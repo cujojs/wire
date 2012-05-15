@@ -14,29 +14,7 @@ buster.testCase('context', {
 			var executed = false;
 			createContext({}, null, {
 				require: require,
-				initializers: [
-					function() {
-						executed = true;
-					}
-				]
-			}).then(
-				function() {
-					assert(executed);
-				}
-			).then(done, done);
-		}
-	},
-
-	'finalizers': {
-		'should execute when context is created': function(done) {
-			var executed = false;
-			createContext({}, null, {
-				require: require,
-				finalizers: [
-					function() {
-						executed = true;
-					}
-				]
+				init: function() { executed = true; }
 			}).then(
 				function() {
 					assert(executed);
@@ -50,11 +28,7 @@ buster.testCase('context', {
 			var executed = false;
 			createContext({}, null, {
 				require: require,
-				destroyers: [
-					function() {
-						executed = true;
-					}
-				]
+				destroy: function() { executed = true; }
 			}).then(
 				function(context) {
 					refute(executed);
@@ -69,45 +43,30 @@ buster.testCase('context', {
 		}
 	},
 
-	'initializers, finalizers, and destroyers': {
+	'initializers and destroyers': {
 		'should execute in correct order': function(done) {
-			var initializers, finalizers, destroyers;
+		var init, destroy;
 			createContext({}, null, {
 				require: require,
-				initializers: [
-					function() {
-						refute(initializers);
-						refute(finalizers);
-						refute(destroyers);
-						initializers = true;
-					}
-				],
-				finalizers: [
-					function() {
-						assert(initializers);
-						refute(finalizers);
-						refute(destroyers);
-						finalizers = true;
-					}
-				],
-				destroyers: [
-					function() {
-						assert(initializers);
-						assert(finalizers);
-						refute(destroyers);
-						destroyers = true;
-					}
-				]
+				init: function() {
+					refute(init);
+					refute(destroy);
+					init = true;
+				},
+				destroy: function() {
+					assert(init);
+					refute(destroy);
+					destroy = true;
+				}
 			}).then(
 				function(context) {
 					// Should not have executed yet
-					refute(destroyers);
+					refute(destroy);
 
 					return context.destroy().then(
 						function() {
-							assert(initializers);
-							assert(finalizers);
-							assert(destroyers);
+							assert(init);
+							assert(destroy);
 						}
 					);
 				}
