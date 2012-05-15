@@ -65,7 +65,6 @@ buster.testCase('context', {
 
 					return context.destroy().then(
 						function() {
-							assert(init);
 							assert(destroy);
 						}
 					);
