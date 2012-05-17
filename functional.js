@@ -59,10 +59,6 @@ define(['when', './lib/functional'], function(when, functional) {
 		doBind(resolver, functional.bind, name, refObj, wire);
 	}
 
-	function bindRightResolver(resolver, name, refObj, wire) {
-		doBind(resolver, functional.bindRight, name, refObj, wire);
-	}
-
 	return {
 		wire$plugin: function(/*ready, destroyed, options*/) {
 			return {
@@ -70,8 +66,7 @@ define(['when', './lib/functional'], function(when, functional) {
 					compose: composeFactory
 				},
 				resolvers: {
-					bind: bindResolver,
-					bindRight: bindRightResolver
+					bind: bindResolver
 				}
 			}
 		}
