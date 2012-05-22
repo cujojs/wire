@@ -116,36 +116,26 @@ define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
 	}
 
 	function makeSingleAdviceAdd(adviceType) {
-		return function (source, sourceMethod, targetProxy, targetMethod) {
-			return aop[adviceType](source, sourceMethod, function() {
-				return targetProxy.invoke(targetMethod, arguments);
-			});
+		return function (source, sourceMethod, advice) {
+			return aop[adviceType](source, sourceMethod, advice);
 		};
 	}
 
-	function addAfterResolvingAdvice(source, sourceMethod, targetProxy, targetMethod) {
+	function addAfterResolvingAdvice(source, sourceMethod, advice) {
 		return aop.afterReturning(source, sourceMethod, function(promise) {
-			return when(promise, function(resolved) {
-				return targetProxy.invoke(targetMethod, [resolved]);
-			});
+			return when(promise, advice);
 		});
 	}
 
-	function addAfterRejectingAdvice(source, sourceMethod, targetProxy, targetMethod) {
+	function addAfterRejectingAdvice(source, sourceMethod, advice) {
 		return aop.afterReturning(source, sourceMethod, function(promise) {
-			return when(promise, null, function(resolved) {
-				return targetProxy.invoke(targetMethod, [resolved]);
-			});
+			return when(promise, null, advice);
 		});
 	}
 
-	function addAfterPromiseAdvice(source, sourceMethod, targetProxy, targetMethod) {
-		function handlePromise(value) {
-			return targetProxy.invoke(targetMethod, value);
-		}
-
+	function addAfterPromiseAdvice(source, sourceMethod, advice) {
 		return aop.afterReturning(source, sourceMethod, function(promise) {
-			return when(promise, handlePromise, handlePromise);
+			return when(promise, advice, advice);
 		});
 	}
 
