@@ -92,6 +92,7 @@
     }
 
     addPackage({ name: 'dojo', location: 'test/lib/dojo17/dojo' });
+//    addPackage({ name: 'dojo', location: 'test/lib/dojo16/dojo', main: 'lib/main-browser' });
     addPackage({ name: 'dijit', location: 'test/lib/dijit', main: 'lib/main' });
     addPackage({ name: 'sizzle', location: 'support/sizzle' });
     addPackage({ name: 'aop', location: 'support/aop' });

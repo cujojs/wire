@@ -13,43 +13,22 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['when', 'dojo', 'dojo/_base/event'], function(when, events) {
+define(['when', '../lib/connection', 'dojo', 'dojo/_base/event'],
+function(when, connection, events) {
 
 	return {
-		wire$plugin: function eventsPlugin(ready, destroyed, options) {
+		wire$plugin: function eventsPlugin(ready, destroyed /*, options*/) {
 			
 			var connectHandles = [];
 
-			function connect(target, ref, options, wire) {
-				var eventName, promise, promises;
+			function handleConnection(source, eventName, target, method) {
+				connectHandles.push(events.connect(source, eventName, function() {
+					return target.invoke(method, arguments);
+				}));
+			}
 
-                promises = [];
-
-				// If ref is a method on target, connect it to another object's method, i.e. calling a method on target
-				// causes a method on the other object to be called.
-				// If ref is a reference to another object, connect that object's method to a method on target, i.e.
-				// calling a method on the other object causes a method on target to be called.
-				if(typeof target[ref] == 'function') {
-					eventName = ref;
-					for(ref in options) {
-						promise = wire.resolveRef(ref).then(function(resolved) {
-							connectHandles.push(events.connect(target, eventName, resolved, options[ref]));
-						});
-
-                        promises.push(promise);
-					}
-
-                    promise = when.all(promises);
-
-				} else {
-					promise = wire.resolveRef(ref).then(function(resolved) {
-						for(eventName in options) {
-							connectHandles.push(events.connect(resolved, eventName, target, options[eventName]));
-						}
-					});
-				}
-
-                return promise;
+			function connect(source, connect, options, wire) {
+				return connection.parse(source, connect, options, wire, handleConnection);
 			}
 			
 			/*
@@ -79,11 +58,14 @@ define(['when', 'dojo', 'dojo/_base/event'], function(when, events) {
 					object - object being wired, will be the target of connected events
 					connects - specification of events to connect, see examples above.
 			*/
-			function connectFacet(wire, target, connects) {
-                var promises = [];
+			function connectFacet(wire, facet) {
+                var promises, connects;
+
+				promises = [];
+				connects = facet.options;
 
 				for(var ref in connects) {
-					promises.push(connect(target, ref, connects[ref], wire));
+					promises.push(connect(facet, ref, connects[ref], wire));
 				}
 
                 return when.all(promises);
@@ -99,7 +81,7 @@ define(['when', 'dojo', 'dojo/_base/event'], function(when, events) {
 				facets: {
 					connect: {
 						connect: function(resolver, facet, wire) {
-                            when.chain(connectFacet(wire, facet.target, facet.options), resolver);
+                            when.chain(connectFacet(wire, facet), resolver);
 						}
 					}
 				}

@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function(define) {
-define(['aop', 'when'], function(aop, when) {
+define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
 
     var obj, tos, isArray, adviceTypes, whenAll, chain, deferred, undef;
 
@@ -104,108 +104,44 @@ define(['aop', 'when'], function(aop, when) {
 	// Simple advice
 	//
 
-	function addSingleAdvice(addAdviceFunc, advices, target, advice, options, wire) {
-		var source, sourceMethod, targetMethod, promise, promises;
+	function addSingleAdvice(addAdviceFunc, advices, proxy, advice, options, wire) {
 
-		// First, determine the direction of the connection(s)
-		// If ref is a method on target, connect it to another object's method, i.e. calling a method on target
-		// causes a method on the other object to be called.
-		// If ref is a reference to another object, connect that object's method to a method on target, i.e.
-		// calling a method on the other object causes a method on target to be called.
-		if(typeof target[advice] == 'function') {
-			// Connecting from an event on the current component to a method on
-			// another component.  Set source = wiring target
-			source = target;
-			sourceMethod = advice;
-
-			if(typeof options == 'string') {
-				target = options.split('.');
-				// eventName: 'componentName.methodName'
-
-				targetMethod = target[1];
-				target = target[0];
-
-				promise = when(wire.resolveRef(target), function(target) {
-					advices.push(addAdviceFunc(source, sourceMethod, target, targetMethod));
-				});
-			} else {
-				// eventName: {
-				//   componentName: 'methodName'
-				// }
-
-				promises = [];
-				for(advice in options) {
-
-					targetMethod = options[advice];
-					promise = when(wire.resolveRef(advice), function(target) {
-						advices.push(addAdviceFunc(source, sourceMethod, target, targetMethod));
-					});
-
-					promises.push(promise);
-				}
-
-				promise = when.all(promises);
-
-			}
-
-		} else {
-			if(typeof options == 'string') {
-				// 'component.eventName': 'methodName'
-
-				source = advice.split('.');
-				sourceMethod = source[1];
-				source = source[0];
-				targetMethod = options;
-
-				promise = when(wire.resolveRef(source), function(source) {
-					console.log(source, sourceMethod, target, targetMethod);
-					advices.push(addAdviceFunc(source, sourceMethod, target, targetMethod))
-				});
-			} else {
-				// componentName: {
-				//   eventName: 'methodName'
-				// }
-
-				source = advice;
-				promise = when(wire.resolveRef(advice), function(source) {
-					for(sourceMethod in options) {
-						advices.push(addAdviceFunc(source, sourceMethod, target, options[sourceMethod]));
-					}
-				});
-
-			}
+		function handleAopConnection(srcObject, srcMethod, dstProxy, dstMethod) {
+			advices.push(addAdviceFunc(srcObject, srcMethod, function() {
+				return dstProxy.invoke(dstMethod, arguments);
+			}));
 		}
 
-		return promise;
+		return connection.parse(proxy, advice, options, wire, handleAopConnection);
 	}
 
 	function makeSingleAdviceAdd(adviceType) {
-		return function (source, sourceMethod, target, targetMethod) {
+		return function (source, sourceMethod, targetProxy, targetMethod) {
 			return aop[adviceType](source, sourceMethod, function() {
-				return target[targetMethod].apply(target, arguments);
+				return targetProxy.invoke(targetMethod, arguments);
 			});
 		};
 	}
 
-	function addAfterResolvingAdvice(source, sourceMethod, target, targetMethod) {
+	function addAfterResolvingAdvice(source, sourceMethod, targetProxy, targetMethod) {
 		return aop.afterReturning(source, sourceMethod, function(promise) {
 			return when(promise, function(resolved) {
-				return target[targetMethod].call(target, resolved);
+				return targetProxy.invoke(targetMethod, [resolved]);
 			});
 		});
 	}
 
-	function addAfterRejectingAdvice(source, sourceMethod, target, targetMethod) {
+	function addAfterRejectingAdvice(source, sourceMethod, targetProxy, targetMethod) {
 		return aop.afterReturning(source, sourceMethod, function(promise) {
 			return when(promise, null, function(resolved) {
-				return target[targetMethod].call(target, resolved);
+				return targetProxy.invoke(targetMethod, [resolved]);
 			});
 		});
 	}
 
-	function addAfterPromiseAdvice(source, sourceMethod, target, targetMethod) {
+	function addAfterPromiseAdvice(source, sourceMethod, targetProxy, targetMethod) {
 		function handlePromise(value) {
-			return target[targetMethod].call(target, value);
+			return targetProxy.invoke(targetMethod, value);
 		}
 
 		return aop.afterReturning(source, sourceMethod, function(promise) {
@@ -217,7 +153,7 @@ define(['aop', 'when'], function(aop, when) {
 		return function(resolver, facet, wire) {
 			var advice, target, advicesToAdd, promises;
 
-			target = facet.target;
+			target = facet;
 			advicesToAdd = facet.options;
 			promises = [];
 
@@ -265,6 +201,7 @@ define(['aop', 'when'], function(aop, when) {
     }
 
     function weave(resolver, proxy, wire, options, add) {
+		// TODO: Refactor weaving to use proxy.invoke
 
         var target, path, aspects, applyAdvice;
 
