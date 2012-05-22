@@ -22,7 +22,7 @@ define(['when', './lib/functional'], function(when, functional) {
 		spec = spec.compose;
 
 		if(typeof spec == 'string') {
-			promise = functional.compose.parse(undef, spec, wire.resolveRef, wire.getProxy);
+			promise = functional.compose.parse(undef, spec, wire);
 		} else {
 			// Assume it's an array of things that will wire to functions
 			promise = when(wire(spec), function(funcArray) {
