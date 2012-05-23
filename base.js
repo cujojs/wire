@@ -12,24 +12,14 @@
  */
 
 (function(define) {
-define(['when', './lib/array', './lib/component'], function(when, array, createComponent) {
+define(['when', './lib/array', './lib/object', './lib/component'], function(when, array, object, createComponent) {
 
-    var tos, createObject, whenAll, chain;
+    var tos, whenAll, chain;
 
     tos = Object.prototype.toString;
 
     whenAll = when.all;
     chain = when.chain;
-    
-	// In case Object.create isn't available
-	function T() {}
-
-	function objectCreate(prototype) {
-		T.prototype = prototype;
-		return new T();
-	}
-
-	createObject = Object.create || objectCreate;
 
 	function isStrictlyObject(it) {
 		// In IE7 tos.call(null) is '[object Object]'
@@ -103,7 +93,7 @@ define(['when', './lib/array', './lib/component'], function(when, array, createC
         
         when(promise,
 			function(parent) {
-				var child = createObject(parent);
+				var child = object.create(parent);
 				resolver.resolve(child);
 			},
             resolver.reject
