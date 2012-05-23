@@ -14,24 +14,15 @@
 (function(define) {
 define(['when', './lib/array', './lib/object', './lib/component'], function(when, array, object, createComponent) {
 
-    var tos, whenAll, chain;
-
-    tos = Object.prototype.toString;
-
-    whenAll = when.all;
+	var whenAll, chain;
+	
+	whenAll = when.all;
     chain = when.chain;
-
-	function isStrictlyObject(it) {
-		// In IE7 tos.call(null) is '[object Object]'
-		// so we need to check to see if 'it' is
-		// even set
-		return it && tos.call(it) == '[object Object]';
-	}
 
 	function invoke(func, facet, args, wire) {
         return when(wire(args),
 			function (resolvedArgs) {
-				return facet.invoke(func, (tos.call(resolvedArgs) == '[object Array]')
+				return facet.invoke(func, array.isArray(resolvedArgs)
 					? resolvedArgs
 					: [resolvedArgs]);
 			}
@@ -174,7 +165,7 @@ define(['when', './lib/array', './lib/object', './lib/component'], function(when
 		name = spec.id;
 
 		create = spec.create;
-		if (isStrictlyObject(create)) {
+		if (object.isObject(create)) {
 			module = create.module;
 			args = create.args;
 			isConstructor = create.isConstructor;
