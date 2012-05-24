@@ -13,7 +13,10 @@
 define(['when', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
 function(when, propertiesKey, byProperty) {
 
-	var isArray, undef, slice;
+	var isArray, undef, slice, defaultIdentifier, defaultComparator;
+
+	defaultIdentifier = propertiesKey('id');
+	defaultComparator = byProperty('id');
 
 	function querySelector (selector, node) {
 		return node.querySelector(selector);
@@ -64,7 +67,7 @@ function(when, propertiesKey, byProperty) {
 					}
 				);
 			}, [])
-		.then(
+			.then(
 			function(txList) {
 				return txList.length > 1 ? compose(txList) : txList[0];
 			}
@@ -82,10 +85,10 @@ function(when, propertiesKey, byProperty) {
 
 		return bindingSpec.transform
 			? when(createPropertyTransform(bindingSpec.transform, wire),
-				function(propertyTransform) {
-					binding.spec.transform = propertyTransform;
-					return binding;
-				})
+			function(propertyTransform) {
+				binding.spec.transform = propertyTransform;
+				return binding;
+			})
 			: binding;
 	}
 
@@ -113,7 +116,7 @@ function(when, propertiesKey, byProperty) {
 			var hubOptions, to, bindings, identifier, comparator;
 
 			to = options.to;
-			if(!to) {
+			if (!to) {
 				throw new Error('wire/cola: "to" must be specified');
 			}
 
@@ -124,24 +127,24 @@ function(when, propertiesKey, byProperty) {
 
 			hubOptions = copyOwnProps(options);
 
-			if(!hubOptions.querySelector) {
+			if (!hubOptions.querySelector) {
 				hubOptions.querySelector = querySelector;
 			}
 
 			// TODO: Extend syntax for identifier and comparator
 			// to allow more fields, and more complex expressions
-			identifier = hubOptions.identifier;
-			if(typeof identifier == 'string' || isArray(identifier)) {
-				hubOptions.identifier = propertiesKey(identifier);
-			}
+			identifier = hubOptions.identifier || defaultIdentifier;
+			hubOptions.identifier = typeof identifier == 'string' || isArray(identifier)
+				? propertiesKey(identifier)
+				: identifier;
 
-			comparator = hubOptions.comparator;
-			if(typeof comparator == 'string') {
-				hubOptions.comparator = byProperty(comparator);
-			}
+			comparator = hubOptions.comparator || defaultComparator;
+			hubOptions.comparator = typeof comparator == 'string'
+				? byProperty(comparator)
+				: comparator;
 
 			return when(setupBindings(bindings, wire),
-				function(bindings) {
+				function (bindings) {
 					hubOptions.bindings = copyOwnProps(bindings);
 					to.addSource(target, hubOptions);
 					return target; // doesn't matter what we return here
@@ -174,10 +177,6 @@ function(when, propertiesKey, byProperty) {
 		}
 
 		return dst;
-	}
-
-	function isArray(it) {
-		return Object.prototype.toString.call(it) == '[object Array]';
 	}
 
 	/**
@@ -220,8 +219,8 @@ function(when, propertiesKey, byProperty) {
 	// use define for AMD if available
 	? define
 	: function(deps, factory) {
-		module.exports = factory.apply(this, deps.map(function(x) {
-			return require(x);
-		}));
-	}
+	module.exports = factory.apply(this, deps.map(function(x) {
+		return require(x);
+	}));
+}
 );
