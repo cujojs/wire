@@ -15,14 +15,11 @@
  */
 
 define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser, dijit, Widget) {
-    var parsed, tos, isArray, loadTheme, placeAtFacet;
+    var parsed, isArray, loadTheme, placeAtFacet;
 
     parsed = false;
 
-    tos = Object.prototype.toString;
-    isArray = Array.isArray || function(it) {
-        return tos.call(it) == '[object Array]';
-    };
+    isArray = dojo.isArray;
 
     /**
      * Resolver for dijits by id.  Uses dijit.byId

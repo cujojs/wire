@@ -91,9 +91,10 @@
         loaderConfig[m] = loader.mixin[m];
     }
 
-    addPackage({ name: 'dojo', location: 'test/lib/dojo17/dojo' });
-//    addPackage({ name: 'dojo', location: 'test/lib/dojo16/dojo', main: 'lib/main-browser' });
-    addPackage({ name: 'dijit', location: 'test/lib/dijit', main: 'lib/main' });
+//    addPackage({ name: 'dojo', location: 'test/lib/dojo17/dojo' });
+//	addPackage({ name: 'dijit', location: 'test/lib/dojo17/dijit', main: 'main' });
+	addPackage({ name: 'dojo', location: 'test/lib/dojo16/dojo', main: 'lib/main-browser' });
+    addPackage({ name: 'dijit', location: 'test/lib/dojo16/dijit', main: 'lib/main' });
     addPackage({ name: 'sizzle', location: 'support/sizzle' });
     addPackage({ name: 'aop', location: 'support/aop' });
     addPackage({ name: 'when', location: 'support/when' });

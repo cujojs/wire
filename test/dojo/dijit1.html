@@ -24,7 +24,7 @@
 	</script>
 
 	<script type="text/javascript">
-		require(['wire'], function(wire) {
+		require(['wire', 'dijit/form/TextBox'], function(wire) {
 			wire('test/dojo/dijit1').then(function(context) {
 				// Properties/objects from the parent context are available via the prototype!
 				console.log("initialValue", context.initialValue);
