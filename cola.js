@@ -13,15 +13,11 @@
 define(['when', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
 function(when, propertiesKey, byProperty) {
 
-	var isArray, undef, slice;
+	var undef, slice;
 
 	function querySelector (selector, node) {
 		return node.querySelector(selector);
 	}
-
-	isArray = Array.isArray || function(it) {
-		return Object.prototype.toString.call(it) == '[object Array]';
-	};
 
 	slice = Array.prototype.slice;
 
@@ -31,7 +27,7 @@ function(when, propertiesKey, byProperty) {
 		// by avoiding the when.reduce.  If wire spec parsing perf
 		// ever becomes a problem, we can optimize a bit here.
 
-		if(!isArray(transforms)) {
+		if(!Array.isArray(transforms)) {
 			transforms = [transforms];
 		}
 
@@ -131,7 +127,7 @@ function(when, propertiesKey, byProperty) {
 			// TODO: Extend syntax for identifier and comparator
 			// to allow more fields, and more complex expressions
 			identifier = hubOptions.identifier;
-			if(typeof identifier == 'string' || isArray(identifier)) {
+			if(typeof identifier == 'string' || Array.isArray(identifier)) {
 				hubOptions.identifier = propertiesKey(identifier);
 			}
 
@@ -174,10 +170,6 @@ function(when, propertiesKey, byProperty) {
 		}
 
 		return dst;
-	}
-
-	function isArray(it) {
-		return Object.prototype.toString.call(it) == '[object Array]';
 	}
 
 	/**
