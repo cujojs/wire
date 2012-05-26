@@ -8,39 +8,39 @@ fail = buster.assertions.fail;
 
 buster.testCase('lib/functional', {
 
-	'bind': {
-		'should bind context': function() {
-			var context = {};
-
-			function f() {
-				assert.same(this, context);
-			}
-
-			functional.bind(f, context)();
-		},
-
-		'should bind arguments': function() {
-			function f(a, b) {
-				assert.equals(a, 1);
-				assert.equals(b, 2);
-			}
-
-			functional.bind(f, null, 1)(2);
-		},
-
-		'should bind context and arguments': function() {
-			var context = {};
-
-			function f(a, b) {
-				assert.same(this, context);
-				assert.equals(a, 1);
-				assert.equals(b, 2);
-			}
-
-			functional.bind(f, context, 1)(2);
-		}
-
-	},
+//	'bind': {
+//		'should bind context': function() {
+//			var context = {};
+//
+//			function f() {
+//				assert.same(this, context);
+//			}
+//
+//			functional.bind(f, context)();
+//		},
+//
+//		'should bind arguments': function() {
+//			function f(a, b) {
+//				assert.equals(a, 1);
+//				assert.equals(b, 2);
+//			}
+//
+//			functional.bind(f, null, 1)(2);
+//		},
+//
+//		'should bind context and arguments': function() {
+//			var context = {};
+//
+//			function f(a, b) {
+//				assert.same(this, context);
+//				assert.equals(a, 1);
+//				assert.equals(b, 2);
+//			}
+//
+//			functional.bind(f, context, 1)(2);
+//		}
+//
+//	},
 
 	'partial': {
 		'should return a function': function() {
