@@ -22,10 +22,6 @@ function(when, propertiesKey, byProperty) {
 		return node.querySelector(selector);
 	}
 
-	isArray = Array.isArray || function(it) {
-		return Object.prototype.toString.call(it) == '[object Array]';
-	};
-
 	slice = Array.prototype.slice;
 
 	function createPropertyTransform(transforms, wire) {
@@ -34,7 +30,7 @@ function(when, propertiesKey, byProperty) {
 		// by avoiding the when.reduce.  If wire spec parsing perf
 		// ever becomes a problem, we can optimize a bit here.
 
-		if(!isArray(transforms)) {
+		if(!Array.isArray(transforms)) {
 			transforms = [transforms];
 		}
 

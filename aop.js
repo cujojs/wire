@@ -13,14 +13,9 @@
 (function(define) {
 define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
 
-    var obj, tos, isArray, adviceTypes, whenAll, chain, deferred, undef;
+    var obj, adviceTypes, whenAll, chain, deferred, undef;
 
     obj = {};
-    tos = Object.prototype.toString;
-
-    isArray = Array.isArray || function(it) {
-        return tos.call(it) == '[object Array]';
-    };
 
     whenAll  = when.all;
     chain    = when.chain;
@@ -93,7 +88,7 @@ define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
         target = facet.target;
         intros = facet.options;
 
-        if(!isArray(intros)) intros = [intros];
+        if(!Array.isArray(intros)) intros = [intros];
 
         chain(when.reduce(intros, function(target, intro) {
             return doIntroduction(target, intro, wire);

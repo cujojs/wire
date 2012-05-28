@@ -12,19 +12,21 @@
  */
 
 (function(define) {
-define(['when', './lib/array', './lib/object', './lib/component'], function(when, array, object, createComponent) {
+define(['when', './lib/object', './lib/component'], function(when, object, createComponent) {
 
 	var whenAll, chain;
 	
 	whenAll = when.all;
     chain = when.chain;
 
+	function asArray(it) {
+		return Array.isArray(it) ? it : [it];
+	}
+
 	function invoke(func, facet, args, wire) {
         return when(wire(args),
 			function (resolvedArgs) {
-				return facet.invoke(func, array.isArray(resolvedArgs)
-					? resolvedArgs
-					: [resolvedArgs]);
+				return facet.invoke(func, asArray(resolvedArgs));
 			}
 		);
     }
@@ -84,7 +86,7 @@ define(['when', './lib/array', './lib/object', './lib/component'], function(when
         
         when(promise,
 			function(parent) {
-				var child = object.create(parent);
+				var child = Object.create(parent);
 				resolver.resolve(child);
 			},
             resolver.reject
@@ -184,8 +186,7 @@ define(['when', './lib/array', './lib/object', './lib/component'], function(when
 			if (typeof module == 'function') {
 				// Instantiate or invoke it and use the result
 				if (args) {
-					args = array.isArray(args) ? args : [args];
-					return when(wire(args, { name: name }), resolve);
+					return when(wire(asArray(args), { name: name }), resolve);
 
 				} else {
 					// No args, don't need to process them, so can directly

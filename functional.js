@@ -33,7 +33,7 @@ define(['when', './lib/functional'], function(when, functional) {
 		when.chain(promise, resolver);
 	}
 
-	function doBind(resolver, bind, name, refObj, wire) {
+	function doBind(resolver, name, refObj, wire) {
 		var context, spec;
 
 		context = typeof refObj.context == 'string'
@@ -50,13 +50,13 @@ define(['when', './lib/functional'], function(when, functional) {
 		}
 
 		return when(wire(spec), function(args) {
-			return bind.apply(undef, args);
+			return Function.prototype.bind.apply(args[0], args.slice(1));
 		}).then(resolver.resolve, resolver.reject);
 
 	}
 
 	function bindResolver(resolver, name, refObj, wire) {
-		doBind(resolver, functional.bind, name, refObj, wire);
+		doBind(resolver, name, refObj, wire);
 	}
 
 	return {
