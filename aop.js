@@ -13,10 +13,9 @@
 (function(define) {
 define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
 
-    var obj, tos, adviceTypes, whenAll, chain, deferred, undef;
+    var obj, adviceTypes, whenAll, chain, deferred, undef;
 
     obj = {};
-    tos = Object.prototype.toString;
 
     whenAll  = when.all;
     chain    = when.chain;
