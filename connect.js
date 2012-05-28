@@ -55,17 +55,14 @@ function(when, aop, functional, connection) {
              *
              * @param source source object
              * @param event source method
-             * @param targetProxy {Object} proxied target
-             * @param func target function to invoke
+             * @param handler {Function} function to invoke
              */
-            function doConnectOne(source, event, targetProxy, func) {
-                return aop.on(source, event, function() {
-					targetProxy.invoke(func, arguments);
-                });
+            function doConnectOne(source, event, handler) {
+                return aop.on(source, event, handler);
             }
 
-			function handleConnection(source, eventName, targetProxy, func) {
-				connectHandles.push(doConnectOne(source, eventName, targetProxy, func));
+			function handleConnection(source, eventName, handler) {
+				connectHandles.push(doConnectOne(source, eventName, handler));
 			}
 
             function doConnect(proxy, connect, options, wire) {

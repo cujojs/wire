@@ -101,10 +101,8 @@ define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
 
 	function addSingleAdvice(addAdviceFunc, advices, proxy, advice, options, wire) {
 
-		function handleAopConnection(srcObject, srcMethod, dstProxy, dstMethod) {
-			advices.push(addAdviceFunc(srcObject, srcMethod, function() {
-				return dstProxy.invoke(dstMethod, arguments);
-			}));
+		function handleAopConnection(srcObject, srcMethod, adviceHandler) {
+			advices.push(addAdviceFunc(srcObject, srcMethod, adviceHandler));
 		}
 
 		return connection.parse(proxy, advice, options, wire, handleAopConnection);

@@ -21,10 +21,8 @@ function(when, connection, events) {
 			
 			var connectHandles = [];
 
-			function handleConnection(source, eventName, target, method) {
-				connectHandles.push(events.connect(source, eventName, function() {
-					return target.invoke(method, arguments);
-				}));
+			function handleConnection(source, eventName, handler) {
+				connectHandles.push(events.connect(source, eventName, handler));
 			}
 
 			function connect(source, connect, options, wire) {
