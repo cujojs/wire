@@ -76,11 +76,13 @@ define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
         return target;
     }
 
-    function doIntroduction(target, introduction, wire) {
-        return when(wire.resolveRef(introduction), function(resolved) {
-            return introduce(target, resolved);
-        });
-    }
+	function doIntroduction(target, introduction, wire) {
+		introduction = typeof introduction == 'string'
+			? wire.resolveRef(introduction)
+			: wire(introduction);
+
+		return when(introduction, introduce.bind(null, target));
+	}
 
     function introduceFacet(resolver, facet, wire) {
         var target, intros;
