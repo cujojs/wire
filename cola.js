@@ -10,10 +10,10 @@
  */
 
 (function(define) {
-define(['when', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
-function(when, propertiesKey, byProperty) {
+define(['when', './lib/array', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
+function(when, array, propertiesKey, byProperty) {
 
-	var isArray, undef, slice, defaultIdentifier, defaultComparator;
+	var defaultIdentifier, defaultComparator, undef;
 
 	defaultIdentifier = propertiesKey('id');
 	defaultComparator = byProperty('id');
@@ -21,8 +21,6 @@ function(when, propertiesKey, byProperty) {
 	function querySelector (selector, node) {
 		return node.querySelector(selector);
 	}
-
-	slice = Array.prototype.slice;
 
 	function createPropertyTransform(transforms, wire) {
 
@@ -56,7 +54,7 @@ function(when, propertiesKey, byProperty) {
 				return when(wire.resolveRef(name),
 					function(transform) {
 						txList.push(function() {
-							var args = slice.call(arguments);
+							var args = array.fromArguments(arguments);
 							return transform.apply(undef, args.concat(txSpec[name]));
 						});
 						return txList;
@@ -130,7 +128,7 @@ function(when, propertiesKey, byProperty) {
 			// TODO: Extend syntax for identifier and comparator
 			// to allow more fields, and more complex expressions
 			identifier = hubOptions.identifier || defaultIdentifier;
-			hubOptions.identifier = typeof identifier == 'string' || isArray(identifier)
+			hubOptions.identifier = typeof identifier == 'string' || Array.isArray(identifier)
 				? propertiesKey(identifier)
 				: identifier;
 
