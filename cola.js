@@ -13,14 +13,10 @@
 define(['when', './lib/array', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
 function(when, array, propertiesKey, byProperty) {
 
-	var defaultIdentifier, defaultComparator, undef;
+	var defaultComparator, defaultQuerySelector, undef;
 
-	defaultIdentifier = propertiesKey('id');
 	defaultComparator = byProperty('id');
-
-	function querySelector (selector, node) {
-		return node.querySelector(selector);
-	}
+	defaultQuerySelector = { $ref: 'dom.first!' };
 
 	function createPropertyTransform(transforms, wire) {
 
@@ -106,6 +102,10 @@ function(when, array, propertiesKey, byProperty) {
 
 		options = copyOwnProps(facet.options, options);
 
+		if(!options.querySelector) {
+			options.querySelector = defaultQuerySelector;
+		}
+
 		return when(wire(options), function(options) {
 			var hubOptions, to, bindings, identifier, comparator;
 
@@ -121,13 +121,8 @@ function(when, array, propertiesKey, byProperty) {
 
 			hubOptions = copyOwnProps(options);
 
-			if (!hubOptions.querySelector) {
-				hubOptions.querySelector = querySelector;
-			}
-
 			// TODO: Extend syntax for identifier and comparator
 			// to allow more fields, and more complex expressions
-			identifier = hubOptions.identifier || defaultIdentifier;
 			hubOptions.identifier = typeof identifier == 'string' || Array.isArray(identifier)
 				? propertiesKey(identifier)
 				: identifier;
