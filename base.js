@@ -17,7 +17,7 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 	var whenAll, chain, obj, undef;
 	
 	whenAll = when.all;
-    chain = when.chain;
+	chain = when.chain;
 
 	obj = {};
 
@@ -31,9 +31,9 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 				return proxy.invoke(func, asArray(resolvedArgs));
 			}
 		);
-    }
+	}
 
-    function invokeAll(facet, wire) {
+	function invokeAll(facet, wire) {
 		var options = facet.options;
 
 		if(typeof options == 'string') {
@@ -115,6 +115,12 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 		resolver.resolve(spec.literal);
 	}
 
+	/**
+	 * @deprecated Use create (instanceFactory) instead
+	 * @param resolver
+	 * @param spec
+	 * @param wire
+	 */
 	function protoFactory(resolver, spec, wire) {
 		var parentRef, promise;
 
@@ -246,18 +252,22 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 	 * @param spec {Object} portion of the spec for the component to be created
 	 */
 	function instanceFactory(resolver, spec, wire) {
-		var create, module, args, isConstructor, name;
+		var create, module, args, isConstructor, name, promise;
 
 		name = spec.id;
-
 		create = spec.create;
-		if (object.isObject(create)) {
+
+		if (typeof create == 'string') {
+			promise = when(wire.loadModule(create, spec), handleModule);
+		} else {
 			module = create.module;
 			args = create.args;
 			isConstructor = create.isConstructor;
-		} else {
-			module = create;
+
+			promise = when(wire(create), handleModule);
 		}
+
+		chain(promise, resolver);
 
 		// Load the module, and use it to create the object
 		function handleModule(module) {
@@ -269,24 +279,15 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 			// to instantiate/invoke it.
 			if (typeof module == 'function') {
 				// Instantiate or invoke it and use the result
-				if (args) {
-					return when(wire(asArray(args), { name: name }), resolve);
-
-				} else {
-					// No args, don't need to process them, so can directly
-					// insantiate the module and resolve
-					return resolve([]);
-
-				}
+				return args
+					? when(wire(asArray(args), { name: name }), resolve)
+					: resolve([]);
 
 			} else {
 				// Simply use the module as is
-				return module;
-
+				return Object.create(module);
 			}
 		}
-
-		chain(when(wire.loadModule(module, spec), handleModule), resolver);
 	}
 
 	function composeFactory(resolver, spec, wire) {
@@ -315,7 +316,7 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 			destroyFuncs = [];
 
 			when(destroyed, function() {
-                when.reduce(destroyFuncs, destroyReducer, 0);
+                return when.reduce(destroyFuncs, destroyReducer, 0);
 			});
 
 			function destroyFacet(resolver, facet, wire) {
@@ -323,8 +324,8 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 					return invokeAll(facet, wire);
 				});
 
-                // This resolver is just related to *collecting* the functions to
-                // invoke when the component is destroyed.
+				// This resolver is just related to *collecting* the functions to
+				// invoke when the component is destroyed.
 				resolver.resolve();
 			}
 
@@ -376,7 +377,7 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 });
 })(typeof define == 'function'
 	? define
-    : function(deps, factory) {
+	: function(deps, factory) {
 		module.exports = factory.apply(this, deps.map(function(x) {
 			return require(x);
 		}));
