@@ -15,7 +15,7 @@
 define(['when', './lib/object', './lib/component'], function(when, object, createComponent) {
 
 	var whenAll, chain;
-	
+
 	whenAll = when.all;
     chain = when.chain;
 
@@ -77,13 +77,13 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 
 	function protoFactory(resolver, spec, wire) {
 		var parentRef, promise;
-        
+
         parentRef = spec.prototype;
-        
+
         promise = typeof parentRef === 'string'
                 ? wire.resolveRef(parentRef)
                 : wire(parentRef);
-        
+
         when(promise,
 			function(parent) {
 				var child = Object.create(parent);
@@ -136,8 +136,50 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 
 				return method.apply(object, args);
 			},
-			destroy: function() {}
+			destroy: function() {},
+			clone: function(options) {
+				// don't try to clone a primitive
+				// TODO: should we fail loudly here?
+				if (typeof object != 'object') return object;
+				// cloneThing doesn't clone functions (methods), so clone here:
+				else if (typeof object == 'function') return object.bind();
+				if (!options) options = {};
+				return cloneThing(object, options);
+			}
 		};
+	}
+
+	function cloneThing (thing, options) {
+		var deep, inherited, clone, prop;
+		deep = options.deep;
+		inherited = options.inherited;
+
+		// Note: this filters out primitives and methods
+		if (typeof thing != 'object') {
+			return thing;
+		}
+		else if (thing instanceof Date) {
+			return new Date(thing.getTime());
+		}
+		else if (thing instanceof RegExp) {
+			return new RegExp(thing);
+		}
+		else if (Array.isArray(thing)) {
+			return deep
+				? thing.slice()
+				: thing.map(function (i) { return cloneThing(i, options); });
+		}
+		else {
+			clone = {};
+			for (prop in thing) {
+				if (inherited || thing.hasOwnProperty(prop)) {
+					clone[prop] = deep
+						? cloneThing(thing[p], options)
+						: thing[p];
+				}
+			}
+			return clone;
+		}
 	}
 
     //noinspection JSUnusedLocalSymbols

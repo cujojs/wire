@@ -67,7 +67,10 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
                 },
                 destroy:function() {
                     destroyDijit(object);
-                }
+                },
+				clone: function (options) {
+					return dojo.clone(object);
+				}
             };
         }
 
