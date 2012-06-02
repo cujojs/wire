@@ -280,11 +280,14 @@ define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
 					afterPromise: {
 						create: makeAdviceFacet(addAfterPromiseAdvice, woven)
 					}
-                },
-                create: function(resolver, proxy, wire) {
-                    weave(resolver, proxy, wire, options, add);
                 }
             };
+
+			if(options.aspects) {
+				plugin.create = function(resolver, proxy, wire) {
+					weave(resolver, proxy, wire, options, add);
+				};
+			}
 
 			// Add all regular single advice facets
 			for(i = 0, len = adviceTypes.length; i<len; i++) {
