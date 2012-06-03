@@ -84,36 +84,19 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
                 ? wire.resolveRef(parentRef)
                 : wire(parentRef);
         
-        when(promise,
-			function(parent) {
-				var child = Object.create(parent);
-				resolver.resolve(child);
-			},
-            resolver.reject
-		);
+        when(promise, Object.create)
+			.then(resolver.resolve, resolver.reject);
 	}
 
 	function propertiesFacet(resolver, facet, wire) {
-		var options, promises, prop;
-		promises = [];
-		options = facet.options;
 
-		for(prop in options) {
-			promises.push(setProperty(facet, prop, options[prop], wire));
-		}
+		when(wire(facet.options),
+			function(wiredProperties) {
+				Object.keys(wiredProperties).forEach(function(name) {
+					facet.set(name, wiredProperties[name]);
+				});
+		}).then(resolver.resolve, resolver.reject);
 
-        whenAll(promises, resolver.resolve, resolver.reject);
-	}
-
-	function setProperty(proxy, name, val, wire) {
-		var wired = wire(val, name, proxy.path);
-		when(wired,
-            function(resolvedValue) {
-			    proxy.set(name, resolvedValue);
-		    }
-        );
-
-		return wired;
 	}
 
 	function invokerFacet(resolver, facet, wire) {
@@ -212,7 +195,7 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 			var destroyFuncs = [];
 
 			when(destroyed, function() {
-                when.reduce(destroyFuncs, destroyReducer, {});
+                when.reduce(destroyFuncs, destroyReducer, 0);
 			});
 
 			function destroyFacet(resolver, facet, wire) {
