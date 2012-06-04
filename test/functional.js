@@ -6,7 +6,7 @@ var assert, refute, fail;
 assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
-	
+
 function plusOne(x) {
 	return x+1;
 }
@@ -21,55 +21,11 @@ Thing.prototype = {
 	}
 };
 
-buster.testCase('wire/functional', {
-	'bind!': {
-		'should resolve without context or args': function(done) {
-			wire({
-				functional: { module: './functional' },
-				f: function() {},
-				bound: { $ref: 'bind!f' }
-			}).then(
-				function() {
-					assert(true);
-				},
-				fail
-			).then(done, done);
-		},
-
-		'should bind function to context': function(done) {
-			wire({
-				functional: { module: './functional' },
-				f: function() { assert.equals(this, 1); },
-				context: 1,
-				bound: { $ref: 'bind!f', context: { $ref: 'context' }}
-			}).then(
-				function(c) {
-					c.bound();
-				},
-				fail
-			).then(done, done);
-		},
-
-		'should create partial function with args': function(done) {
-			wire({
-				functional: { module: './functional' },
-				f: function() { assert.equals(arguments.length, 3); },
-				context: 1,
-				bound: { $ref: 'bind!f', args: [1, 2]}
-			}).then(
-				function(c) {
-					c.bound(3);
-				},
-				fail
-			).then(done, done);
-		}
-
-	},
+buster.testCase('functional', {
 	
 	'compose': {
 		'should compose array of functions': function(done) {
 			wire({
-				functional: { module: './functional' },
 				f1: plusOne,
 				f2: plusOne,
 				composed: {
@@ -87,7 +43,6 @@ buster.testCase('wire/functional', {
 		
 		'should compose a string specification': function(done) {
 			wire({
-				functional: { module: './functional' },
 				f1: plusOne,
 				f2: plusOne,
 				composed: {
@@ -102,7 +57,6 @@ buster.testCase('wire/functional', {
 
 		'should compose a string specification with single function': function(done) {
 			wire({
-				functional: { module: './functional' },
 				f1: plusOne,
 				composed: {
 					compose: 'f1'
@@ -116,7 +70,6 @@ buster.testCase('wire/functional', {
 
 		'should compose a string specification with contexts': function(done) {
 			wire({
-				functional: { module: './functional' },
 				f1: plusOne,
 				t1: { literal: new Thing(1) },
 				t2: { literal: new Thing(1) },

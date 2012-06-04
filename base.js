@@ -12,9 +12,9 @@
  */
 
 (function(define) {
-define(['when', './lib/object', './lib/component'], function(when, object, createComponent) {
+define(['when', './lib/object', './lib/functional', './lib/component'], function(when, object, functional, createComponent) {
 
-	var whenAll, chain, obj;
+	var whenAll, chain, obj, undef;
 	
 	whenAll = when.all;
     chain = when.chain;
@@ -25,10 +25,10 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 		return Array.isArray(it) ? it : [it];
 	}
 
-	function invoke(func, facet, args, wire) {
+	function invoke(func, proxy, args, wire) {
         return when(wire(args),
 			function (resolvedArgs) {
-				return facet.invoke(func, asArray(resolvedArgs));
+				return proxy.invoke(func, asArray(resolvedArgs));
 			}
 		);
     }
@@ -228,6 +228,23 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 		chain(when(wire.loadModule(module, spec), handleModule), resolver);
 	}
 
+	function composeFactory(resolver, spec, wire) {
+		var promise;
+
+		spec = spec.compose;
+
+		if(typeof spec == 'string') {
+			promise = functional.compose.parse(undef, spec, wire);
+		} else {
+			// Assume it's an array of things that will wire to functions
+			promise = when(wire(spec), function(funcArray) {
+				return functional.compose(funcArray);
+			});
+		}
+
+		when.chain(promise, resolver);
+	}
+
 	return {
 		wire$plugin: function(ready, destroyed /*, options */) {
             // Components in the current context that will be destroyed
@@ -255,7 +272,8 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 					module: moduleFactory,
 					create: instanceFactory,
 					literal: literalFactory,
-					prototype: protoFactory
+					prototype: protoFactory,
+					compose: composeFactory
 				},
 				facets: {
 					// properties facet.  Sets properties on components
