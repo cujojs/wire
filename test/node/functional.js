@@ -87,5 +87,5 @@ buster.testCase('functional', {
 });
 })(
 	require('buster'),
-	require('..')
+	require('../..')
 );
