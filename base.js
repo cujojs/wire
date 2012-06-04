@@ -221,8 +221,14 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 	function cloneFactory(resolver, spec, wire) {
 		var sourceRef, options;
 
-        sourceRef = spec.clone.source || spec.clone;
-		options = spec.clone;
+		if (wire.resolver.isRef(spec.clone.source)) {
+			sourceRef = spec.clone.source;
+			options = spec.clone;
+		}
+		else {
+			sourceRef = spec.clone;
+			options = {};
+		}
 
 		when(wire(sourceRef), function (ref) {
 			return when(wire.getProxy(ref), function (proxy) {

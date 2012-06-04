@@ -80,11 +80,52 @@ buster.testCase('wire/base', {
 					assert.defined(context.arr1[3][i], 'arr1[3][' + i + '] is defined');
 					assert.equals(context.arr1[3][i], context.arr[3][i]);
 				}
+				// check that copies were made
+				refute.same(context.arr[0], context.arr1[0], 'object array element');
+				refute.same(context.arr[3], context.arr1[3], 'nested array element');
 			}, fail
 			).then(done, done);
 		},
 
-		'// should copy all properties of an object': function () {}
+		'should copy all enumerable properties of an object': function (done) {
+			wire({
+				orig: {
+					literal: {
+						foo: 'foo',
+						bar: 'bar'
+					}
+				},
+				copy: {
+					clone: { $ref: 'orig' }
+				}
+			}).then(function (context) {
+				assert.defined(context.copy, 'copy exists');
+				assert.defined(context.copy.foo, 'copy.foo exists');
+				assert.defined(context.copy.bar, 'copy.bar exists');
+			}, fail).then(done, done);
+		},
+
+		'should call constructor when cloning an object with a constructor': function(done) {
+			function Fabulous () {
+				this.instanceProp = 'instanceProp';
+			}
+			Fabulous.prototype = {
+				prototypeProp: 'prototypeProp'
+			};
+			wire({
+				fab: {
+					create: Fabulous
+				},
+				copy: {
+					clone: { $ref: 'fab' }
+				}
+			}).then(function(context) {
+				assert.defined(context.copy, 'copy is defined');
+				assert.defined(context.copy.prototypeProp, 'copy.prototypeProp is defined');
+				assert.defined(context.copy.instanceProp, 'copy.instanceProp is defined');
+				refute.same(context.copy, context.fab);
+			}, fail).then(done, done);
+		}
 	}
 
 });
