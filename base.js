@@ -162,7 +162,6 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 			destroy: function() {},
 			clone: function(options) {
 				// don't try to clone a primitive
-				// TODO: should we fail loudly here?
 				if (typeof object != 'object') return object;
 				// cloneThing doesn't clone functions (methods), so clone here:
 				else if (typeof object == 'function') return object.bind();
@@ -177,7 +176,7 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 		deep = options.deep;
 		inherited = options.inherited;
 
-		// Note: this filters out primitives and methods
+		// Note: this filters out primitive properties and methods
 		if (typeof thing != 'object') {
 			return thing;
 		}
@@ -189,16 +188,16 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 		}
 		else if (Array.isArray(thing)) {
 			return deep
-				? thing.slice()
-				: thing.map(function (i) { return cloneThing(i, options); });
+				? thing.map(function (i) { return cloneThing(i, options); })
+				: thing.slice();
 		}
 		else {
-			clone = {};
+			clone = thing.constructor ? new thing.constructor() : {};
 			for (prop in thing) {
 				if (inherited || thing.hasOwnProperty(prop)) {
 					clone[prop] = deep
-						? cloneThing(thing[p], options)
-						: thing[p];
+						? cloneThing(thing[prop], options)
+						: thing[prop];
 				}
 			}
 			return clone;
@@ -217,6 +216,20 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 
 	function moduleFactory(resolver, spec, wire) {
 		chain(wire.loadModule(spec.module, spec), resolver);
+	}
+
+	function cloneFactory(resolver, spec, wire) {
+		var sourceRef, options;
+
+        sourceRef = spec.clone.source || spec.clone;
+		options = spec.clone;
+
+		when(wire(sourceRef), function (ref) {
+			return when(wire.getProxy(ref), function (proxy) {
+				if (!proxy.clone) throw new Error('No clone function found for ' + spec.id);
+				return proxy.clone(options);
+			});
+		}).then(resolver.resolve, resolver.reject);
 	}
 
 	/**
@@ -297,7 +310,8 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 					module: moduleFactory,
 					create: instanceFactory,
 					literal: literalFactory,
-					prototype: protoFactory
+					prototype: protoFactory,
+					clone: cloneFactory
 				},
 				facets: {
 					// properties facet.  Sets properties on components
