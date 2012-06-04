@@ -117,13 +117,13 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 
 	function protoFactory(resolver, spec, wire) {
 		var parentRef, promise;
-        
+
         parentRef = spec.prototype;
-        
+
         promise = typeof parentRef === 'string'
                 ? wire.resolveRef(parentRef)
                 : wire(parentRef);
-        
+
         when(promise, Object.create)
 			.then(resolver.resolve, resolver.reject);
 	}
@@ -159,8 +159,49 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 
 				return method.apply(object, args);
 			},
-			destroy: function() {}
+			destroy: function() {},
+			clone: function(options) {
+				// don't try to clone a primitive
+				if (typeof object != 'object') return object;
+				// cloneThing doesn't clone functions (methods), so clone here:
+				else if (typeof object == 'function') return object.bind();
+				if (!options) options = {};
+				return cloneThing(object, options);
+			}
 		};
+	}
+
+	function cloneThing (thing, options) {
+		var deep, inherited, clone, prop;
+		deep = options.deep;
+		inherited = options.inherited;
+
+		// Note: this filters out primitive properties and methods
+		if (typeof thing != 'object') {
+			return thing;
+		}
+		else if (thing instanceof Date) {
+			return new Date(thing.getTime());
+		}
+		else if (thing instanceof RegExp) {
+			return new RegExp(thing);
+		}
+		else if (Array.isArray(thing)) {
+			return deep
+				? thing.map(function (i) { return cloneThing(i, options); })
+				: thing.slice();
+		}
+		else {
+			clone = thing.constructor ? new thing.constructor() : {};
+			for (prop in thing) {
+				if (inherited || thing.hasOwnProperty(prop)) {
+					clone[prop] = deep
+						? cloneThing(thing[prop], options)
+						: thing[prop];
+				}
+			}
+			return clone;
+		}
 	}
 
     //noinspection JSUnusedLocalSymbols
@@ -175,6 +216,26 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 
 	function moduleFactory(resolver, spec, wire) {
 		chain(wire.loadModule(spec.module, spec), resolver);
+	}
+
+	function cloneFactory(resolver, spec, wire) {
+		var sourceRef, options;
+
+		if (wire.resolver.isRef(spec.clone.source)) {
+			sourceRef = spec.clone.source;
+			options = spec.clone;
+		}
+		else {
+			sourceRef = spec.clone;
+			options = {};
+		}
+
+		when(wire(sourceRef), function (ref) {
+			return when(wire.getProxy(ref), function (proxy) {
+				if (!proxy.clone) throw new Error('No clone function found for ' + spec.id);
+				return proxy.clone(options);
+			});
+		}).then(resolver.resolve, resolver.reject);
 	}
 
 	/**
@@ -273,6 +334,7 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 					create: instanceFactory,
 					literal: literalFactory,
 					prototype: protoFactory,
+					clone: cloneFactory,
 					compose: composeFactory
 				},
 				facets: {

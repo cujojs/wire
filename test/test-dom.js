@@ -17,9 +17,9 @@ require(['wire'], function(wire) {
 		firstResolver: { $ref:'dom.first!' },
 		allResolver: { $ref:'dom.all!' },
 
-		// test getElement and facets
+		// test element factory and facets
 		get1: {
-			getElement: { $ref: 'dom!get1' },
+			element: { $ref: 'dom!get1' },
 			properties: {
 				'class': 'foo',
 				target: 'top',
@@ -34,9 +34,9 @@ require(['wire'], function(wire) {
 			}
 		},
 
-		// test cloneElement and facets
+		// test clone factory and facets
 		clone1: {
-			cloneElement: { $ref: 'dom!clone1' },
+			clone: { $ref: 'dom!clone1' },
 			properties: {
 				'class': 'foo',
 				target: 'top',
@@ -261,24 +261,24 @@ require(['wire'], function(wire) {
 					return dohd;
 				},
 
-				// getElement tests
+				// element factory tests
 
-				function getElementGetsAnElement(doh) {
+				function elementGetsAnElement(doh) {
 					doh.assertEqual(context.get1, document.getElementById('get1'));
 				},
-				function getElementAllowsProperties(doh) {
+				function elementAllowsProperties(doh) {
 					doh.assertEqual(context.get1.className, 'foo');
 					doh.assertEqual(context.get1.target, 'top');
 				},
-				function getElementAllowsInsert(doh) {
+				function elementAllowsInsert(doh) {
 					doh.assertEqual(context.get1.parentNode, document.getElementById('get1-inserts-here'));
 				},
-				function getElementAllowsInvoke(doh) {
+				function elementAllowsInvoke(doh) {
 					doh.assertEqual(context.get1.firstChild, document.getElementById('get1-appends-this'));
 					doh.assertEqual(context.get1, document.activeElement);
 				},
 
-				// cloneElement tests
+				// clone tests
 
 				function cloneElementLeavesElementInDom(doh) {
 					doh.assertNotEqual(context.clone1, document.getElementById('clone1'));
