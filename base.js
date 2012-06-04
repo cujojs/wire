@@ -14,10 +14,12 @@
 (function(define) {
 define(['when', './lib/object', './lib/component'], function(when, object, createComponent) {
 
-	var whenAll, chain;
+	var whenAll, chain, obj;
 	
 	whenAll = when.all;
     chain = when.chain;
+
+	obj = {};
 
 	function asArray(it) {
 		return Array.isArray(it) ? it : [it];
@@ -47,6 +49,44 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 
 			return whenAll(promises);
 		}
+	}
+
+	//
+	// Mixins
+	//
+
+	function mixin(target, src) {
+		var name, s;
+
+		for(name in src) {
+			s = src[name];
+			if(!(name in target) || (target[name] !== s && (!(name in obj) || obj[name] !== s))) {
+				target[name] = s;
+			}
+		}
+
+		return target;
+	}
+
+	function doMixin(target, introduction, wire) {
+		introduction = typeof introduction == 'string'
+			? wire.resolveRef(introduction)
+			: wire(introduction);
+
+		return when(introduction, mixin.bind(null, target));
+	}
+
+	function mixinFacet(resolver, facet, wire) {
+		var target, intros;
+
+		target = facet.target;
+		intros = facet.options;
+
+		if(!Array.isArray(intros)) intros = [intros];
+
+		chain(when.reduce(intros, function(target, intro) {
+			return doMixin(target, intro, wire);
+		}, target), resolver);
 	}
 
     /**
@@ -192,7 +232,9 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 		wire$plugin: function(ready, destroyed /*, options */) {
             // Components in the current context that will be destroyed
             // when this context is destroyed
-			var destroyFuncs = [];
+			var destroyFuncs, plugin;
+
+			destroyFuncs = [];
 
 			when(destroyed, function() {
                 when.reduce(destroyFuncs, destroyReducer, 0);
@@ -208,7 +250,7 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 				resolver.resolve();
 			}
 
-			return {
+			plugin = {
 				factories: {
 					module: moduleFactory,
 					create: instanceFactory,
@@ -220,6 +262,9 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 					// after creation.
 					properties: {
 						configure: propertiesFacet
+					},
+					mixin: {
+						configure: mixinFacet
 					},
 					// init facet.  Invokes methods on components during
 					// the "init" stage.
@@ -241,6 +286,11 @@ define(['when', './lib/object', './lib/component'], function(when, object, creat
 					pojoProxy
 				]
 			};
+
+			// "introduce" is deprecated, but preserved here for now.
+			plugin.facets.introduce = plugin.facets.mixin;
+
+			return plugin;
 		}
 	};
 });

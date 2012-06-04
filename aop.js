@@ -13,9 +13,7 @@
 (function(define) {
 define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
 
-    var obj, adviceTypes, whenAll, chain, deferred, undef;
-
-    obj = {};
+    var adviceTypes, whenAll, chain, deferred, undef;
 
     whenAll  = when.all;
     chain    = when.chain;
@@ -57,44 +55,6 @@ define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
         }
 
         chain(whenAll(promises), resolver);
-    }
-
-    //
-    // Introductions
-    //
-
-    function introduce(target, src) {
-        var name, s;
-
-        for(name in src) {
-            s = src[name];
-            if(!(name in target) || (target[name] !== s && (!(name in obj) || obj[name] !== s))) {
-                target[name] = s;
-            }
-        }
-
-        return target;
-    }
-
-	function doIntroduction(target, introduction, wire) {
-		introduction = typeof introduction == 'string'
-			? wire.resolveRef(introduction)
-			: wire(introduction);
-
-		return when(introduction, introduce.bind(null, target));
-	}
-
-    function introduceFacet(resolver, facet, wire) {
-        var target, intros;
-
-        target = facet.target;
-        intros = facet.options;
-
-        if(!Array.isArray(intros)) intros = [intros];
-
-        chain(when.reduce(intros, function(target, intro) {
-            return doIntroduction(target, intro, wire);
-        }, target), resolver);
     }
 
 	//
@@ -270,7 +230,6 @@ define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
             plugin = {
                 facets: {
                     decorate:  makeFacet('configure', decorateFacet),
-                    introduce: makeFacet('configure', introduceFacet),
 					afterResolving: {
 						create: makeAdviceFacet(addAfterResolvingAdvice, woven)
 					},
