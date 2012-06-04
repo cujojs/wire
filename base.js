@@ -252,22 +252,23 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 	 * @param spec {Object} portion of the spec for the component to be created
 	 */
 	function instanceFactory(resolver, spec, wire) {
-		var create, module, args, isConstructor, name, promise;
+		var create, args, isConstructor, name, promise;
 
 		name = spec.id;
 		create = spec.create;
 
 		if (typeof create == 'string') {
-			promise = when(wire.loadModule(create, spec), handleModule);
+			promise = wire.loadModule(create, spec);
+		} else if(wire.resolver.isRef(create)) {
+			promise = wire(create);
 		} else {
-			module = create.module;
 			args = create.args;
 			isConstructor = create.isConstructor;
 
-			promise = when(wire(create), handleModule);
+			promise = wire(create);
 		}
 
-		chain(promise, resolver);
+		chain(when(promise, handleModule), resolver);
 
 		// Load the module, and use it to create the object
 		function handleModule(module) {
