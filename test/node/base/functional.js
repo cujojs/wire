@@ -21,7 +21,7 @@ Thing.prototype = {
 	}
 };
 
-buster.testCase('functional', {
+buster.testCase('base:functional', {
 	
 	'compose': {
 		'should compose array of functions': function(done) {
@@ -87,5 +87,5 @@ buster.testCase('functional', {
 });
 })(
 	require('buster'),
-	require('../..')
+	require('../../../wire')
 );

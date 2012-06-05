@@ -7,7 +7,7 @@ assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
 
-buster.testCase('properties', {
+buster.testCase('base:properties', {
 
 	'should set object properties': function(done) {
 		wire({
@@ -28,5 +28,5 @@ buster.testCase('properties', {
 
 })(
 	require('buster'),
-	require('../..')
+	require('../../../wire')
 );

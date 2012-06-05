@@ -6,7 +6,7 @@ assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
 
-buster.testCase('wire/base', {
+buster.testCase('base:clone', {
 
 	'clone factory': {
 		'should return same type of object': function(done) {
@@ -132,5 +132,5 @@ buster.testCase('wire/base', {
 
 })(
 	require('buster'),
-	require('..')
+	require('../../../wire')
 );

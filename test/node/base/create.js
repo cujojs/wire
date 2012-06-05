@@ -11,7 +11,7 @@ objectModule = './test/node/fixtures/object';
 functionModule = './test/node/fixtures/function';
 constructorModule = './test/node/fixtures/constructor';
 
-buster.testCase('create', {
+buster.testCase('base:create', {
 	'should call non-constructor functions': function(done) {
 		wire({
 			test: {
@@ -154,6 +154,6 @@ buster.testCase('create', {
 
 })(
 	require('buster'),
-	require('../../wire'),
-	require('./fixtures/constructor')
+	require('../../../wire'),
+	require('./../fixtures/constructor')
 );

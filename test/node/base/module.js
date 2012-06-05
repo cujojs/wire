@@ -7,7 +7,7 @@ assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
 
-buster.testCase('module', {
+buster.testCase('base:module', {
 	'should use module exports value as component': function(done) {
 		wire({
 			test: {
@@ -24,5 +24,5 @@ buster.testCase('module', {
 
 })(
 	require('buster'),
-	require('../../wire')
+	require('../../../wire')
 );
