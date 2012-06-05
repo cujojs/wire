@@ -1,12 +1,13 @@
-(function(buster, wire) {
+(function(buster, wire, ExpectedType) {
 "use strict";
 
-var assert, refute, fail, functionModule, constructorModule;
+var assert, refute, fail, objectModule, functionModule, constructorModule;
 
 assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
 
+objectModule = './test/node/fixtures/object';
 functionModule = './test/node/fixtures/function';
 constructorModule = './test/node/fixtures/constructor';
 
@@ -115,11 +116,44 @@ buster.testCase('create', {
 			},
 			fail
 		).then(done, done);
-	}
+	},
 
+	'should beget new object when used with object module': function(done) {
+		wire({
+			child: {
+				create: objectModule
+			}
+		}).then(
+			function(context) {
+				assert.isObject(context.child);
+			}
+		).then(done, done);
+	},
+
+	'should beget new object when used with constructed object ref': function(done) {
+		wire({
+			parent: {
+				create: {
+					module: constructorModule,
+					args: 1
+				}
+			},
+			child: {
+				create: { $ref: 'parent' }
+			}
+		}).then(
+			function(context) {
+				assert.isObject(context.child);
+				assert(context.child instanceof ExpectedType);
+				assert.equals(context.child.value, 1);
+				refute(context.child.hasOwnProperty('value'));
+			}
+		).then(done, done);
+	}
 });
 
 })(
 	require('buster'),
-	require('../../wire')
+	require('../../wire'),
+	require('./fixtures/constructor')
 );
