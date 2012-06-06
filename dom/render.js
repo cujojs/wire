@@ -26,7 +26,8 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 		'tfoot': 'table',
 		'caption': 'table',
 		'col': 'table',
-		'colgroup': 'table'
+		'colgroup': 'table',
+		'option': 'select'
 	};
 
 	parseTemplateRx = /\$\{([^}]*)\}/g;
