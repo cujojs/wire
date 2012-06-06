@@ -10,8 +10,8 @@
  */
 
 (function(define) {
-define(['when', './lib/array', './lib/functional', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
-function(when, array, functional, propertiesKey, byProperty) {
+define(['when', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
+function(when, propertiesKey, byProperty) {
 
 	var defaultComparator, defaultQuerySelector, defaultQuerySelectorAll, excludeOptions;
 
