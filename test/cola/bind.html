@@ -136,7 +136,7 @@
 
 					return dohd;
 				},
-				function shouldInjectQuerySelectorIntoOptions() {
+				function shouldInjectQuerySelectorsIntoOptions() {
 					var dohd = new doh.Deferred();
 
 					wire({
@@ -151,14 +151,16 @@
 						}
 					}).then(
 							function(context) {
-								dohd.callback(!!context.hub.secondaryOptions.querySelector);
+								var success = typeof context.hub.secondaryOptions.querySelector == 'function'
+									&& typeof context.hub.secondaryOptions.querySelectorAll == 'function';
+								dohd.callback(success);
 							},
 							fail(dohd)
 					);
 
 					return dohd;
 				},
-				function shouldProcessTransformFunctionsInBindings() {
+				function shouldResolveBindingOptions() {
 					var dohd = new doh.Deferred();
 
 					wire({
@@ -173,15 +175,15 @@
 									foo: {
 										node: '',
 										prop: '',
-										transform: { identity: 123 }
+										success: { $ref: 'success' }
 									}
 								}
 							}
 						},
-						identity: { create: 'transform' }
+						success: true
 					}).then(
 							function(context) {
-								dohd.callback(!!context.hub.secondaryOptions.bindings.foo.transform);
+								dohd.callback(context.hub.secondaryOptions.bindings.foo.success === true);
 							},
 							fail(dohd)
 					);

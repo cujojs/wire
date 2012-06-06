@@ -10,162 +10,55 @@
  */
 
 (function(define) {
-define(['when', './lib/array', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
-function(when, array, propertiesKey, byProperty) {
+define(['when', './lib/array', './lib/functional', 'cola/relational/propertiesKey', 'cola/comparator/byProperty'],
+function(when, array, functional, propertiesKey, byProperty) {
 
-	var defaultComparator, defaultQuerySelector, undef;
+	var defaultComparator, defaultQuerySelector, defaultQuerySelectorAll, excludeOptions;
 
 	defaultComparator = byProperty('id');
 	defaultQuerySelector = { $ref: 'dom.first!' };
+	defaultQuerySelectorAll = { $ref: 'dom.all!' };
 
-	function createPropertyTransform(transforms, wire) {
+	function initBindOptions(incomingOptions, pluginOptions) {
+		var options, identifier, comparator;
 
-		// Could optimize the single function/string case here
-		// by avoiding the when.reduce.  If wire spec parsing perf
-		// ever becomes a problem, we can optimize a bit here.
-
-		if(!Array.isArray(transforms)) {
-			transforms = [transforms];
-		}
-
-		return when.reduce(transforms,
-			function(txList, txSpec) {
-				var name;
-
-				if(typeof txSpec == 'function') {
-					return txSpec;
-				}
-
-				// Determine the name of the transform and try
-				// to resolve it as a component in the current
-				// wire spec
-				if(typeof txSpec == 'string') {
-					name = txSpec;
-				} else {
-					for(name in txSpec) {
-						if(name != 'inverse') break;
-					}
-				}
-
-				return when(wire.resolveRef(name),
-					function(transform) {
-						txList.push(function() {
-							var args = array.fromArguments(arguments);
-							return transform.apply(undef, args.concat(txSpec[name]));
-						});
-						return txList;
-					}
-				);
-			}, [])
-			.then(
-			function(txList) {
-				return txList.length > 1 ? compose(txList) : txList[0];
-			}
-		);
-	}
-
-	function setupBinding(bindingSpecs, name, wire) {
-		var bindingSpec, binding;
-
-		bindingSpec = copyOwnProps(bindingSpecs[name]);
-		binding = {
-			name: name,
-			spec: bindingSpec
-		};
-
-		return bindingSpec.transform
-			? when(createPropertyTransform(bindingSpec.transform, wire),
-			function(propertyTransform) {
-				binding.spec.transform = propertyTransform;
-				return binding;
-			})
-			: binding;
-	}
-
-	function setupBindings(bindingSpecs, wire) {
-		var promises = [];
-
-		for(var name in bindingSpecs) {
-			if(bindingSpecs.hasOwnProperty(name)) {
-				promises.push(setupBinding(bindingSpecs, name, wire));
-			}
-		}
-
-		return when.reduce(promises, function(bindings, bindingSpec) {
-			bindings[bindingSpec.name] = bindingSpec.spec;
-			return bindings;
-		}, {});
-	}
-
-	function doBind(facet, options, wire) {
-		var target = facet.target;
-
-		options = copyOwnProps(facet.options, options);
+		options = copyOwnProps(incomingOptions, pluginOptions);
 
 		if(!options.querySelector) {
 			options.querySelector = defaultQuerySelector;
 		}
 
-		return when(wire(options), function(options) {
-			var hubOptions, to, bindings, identifier, comparator;
-
-			to = options.to;
-			if (!to) {
-				throw new Error('wire/cola: "to" must be specified');
-			}
-
-			bindings = options.bindings;
-
-			delete options.to;
-			delete options.bindings;
-
-			hubOptions = copyOwnProps(options);
-
-			// TODO: Extend syntax for identifier and comparator
-			// to allow more fields, and more complex expressions
-			hubOptions.identifier = typeof identifier == 'string' || Array.isArray(identifier)
-				? propertiesKey(identifier)
-				: identifier;
-
-			comparator = hubOptions.comparator || defaultComparator;
-			hubOptions.comparator = typeof comparator == 'string'
-				? byProperty(comparator)
-				: comparator;
-
-			return when(setupBindings(bindings, wire),
-				function (bindings) {
-					hubOptions.bindings = copyOwnProps(bindings);
-					to.addSource(target, hubOptions);
-					return target; // doesn't matter what we return here
-				}
-			);
-		});
-	}
-
-	/**
-	 * Copies own properties from each src object in the arguments list
-	 * to a new object and returns it.  Properties further to the right
-	 * win.
-	 *
-	 * @return {Object} a new object with own properties from all srcs.
-	 */
-	function copyOwnProps(/*srcs...*/) {
-		var i, len, p, src, dst;
-
-		dst = {};
-
-		for(i = 0, len = arguments.length; i < len; i++) {
-			src = arguments[i];
-			if(src) {
-				for(p in src) {
-					if(src.hasOwnProperty(p)) {
-						dst[p] = src[p];
-					}
-				}
-			}
+		if(!options.querySelectorAll) {
+			options.querySelectorAll = defaultQuerySelectorAll;
 		}
 
-		return dst;
+		// TODO: Extend syntax for identifier and comparator
+		// to allow more fields, and more complex expressions
+		identifier = options.identifier;
+		options.identifier = typeof identifier == 'string' || Array.isArray(identifier)
+			? propertiesKey(identifier)
+			: identifier;
+
+		comparator = options.comparator || defaultComparator;
+		options.comparator = typeof comparator == 'string'
+			? byProperty(comparator)
+			: comparator;
+
+		return options;
+	}
+
+	function doBind(facet, options, wire) {
+		var target = facet.target;
+
+		return when(wire(initBindOptions(facet.options, options)),
+			function(options) {
+				var to = options.to;
+				if (!to) throw new Error('wire/cola: "to" must be specified');
+
+				to.addSource(target, copyOwnProps(options));
+				return target;
+			}
+		);
 	}
 
 	/**
@@ -173,7 +66,7 @@ function(when, array, propertiesKey, byProperty) {
 	 * wire adds the id property, so we need to filter that out too.
 	 * @type {Object}
 	 */
-	var excludeOptions = {
+	excludeOptions = {
 		id: 1,
 		module: 1
 	};
@@ -202,6 +95,32 @@ function(when, array, propertiesKey, byProperty) {
 			};
 		}
 	};
+
+	/**
+	 * Copies own properties from each src object in the arguments list
+	 * to a new object and returns it.  Properties further to the right
+	 * win.
+	 *
+	 * @return {Object} a new object with own properties from all srcs.
+	 */
+	function copyOwnProps(/*srcs...*/) {
+		var i, len, p, src, dst;
+
+		dst = {};
+
+		for(i = 0, len = arguments.length; i < len; i++) {
+			src = arguments[i];
+			if(src) {
+				for(p in src) {
+					if(src.hasOwnProperty(p)) {
+						dst[p] = src[p];
+					}
+				}
+			}
+		}
+
+		return dst;
+	}
 });
 
 })(typeof define == 'function'
