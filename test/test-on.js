@@ -120,6 +120,36 @@ require(['wire'], function(wire) {
 			return dohd;
 
 		},
+		function shouldAllowLongFormWithSelector(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				tx: { module: 'transform' },
+				a: {
+					create: 'fixture',
+					on: {
+						container: {
+							'click:.test': 'tx | handle'
+						}
+					}
+				},
+				container: { $ref: 'dom!container' },
+				plugins: [
+					{ module: pluginName },
+					{ module: 'wire/dom' }
+				]
+			}).then(
+				function(context) {
+					document.getElementById('test').click();
+					dohd.callback(context.a.handled === 1);
+					dohd.callback(context.a.e === 1);
+				},
+				fail(dohd)
+			);
+
+			return dohd;
+
+		},
 		function shouldAllowLongFormWithSelectorAndTransform(doh) {
 			var dohd = new doh.Deferred();
 
