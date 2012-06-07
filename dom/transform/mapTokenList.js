@@ -2,18 +2,14 @@
 define(function () {
 "use strict";
 
-	var defaultParser, defaultDelimiter;
-
-	defaultParser = /(^|\s+)([^\s]+)/g;
-	defaultDelimiter = ' ';
+	var parser = /(^|\s+)([^\s]+)/g;
 
 	return function (map, options) {
-		var parser, delimiter;
+		var fallbackToken;
 
 		if (!options) options = {};
 
-		parser = options.parser || defaultParser;
-		delimiter = options.delimiter || defaultDelimiter;
+		fallbackToken = options.otherwise || '';
 
 		return function translateTokenLists (tokenList) {
 			tokenList = '' + tokenList;
@@ -22,7 +18,7 @@ define(function () {
 				// if there's a delimiter already (spaces, typically),
 				// replace it. if a translated value exists, use it.
 				// otherwise, use original token.
-				return (s ? delimiter : s) + (trans ? trans : token);
+				return (s ? ' ' : s) + (trans ? trans : fallbackToken);
 			});
 		}
 
