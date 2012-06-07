@@ -2,11 +2,9 @@
 define(function (require) {
 	"use strict";
 
-	var mapTokenList, replaceClasses, functional, defaultClasses, defaultOtherwise;
+	var mapClasses, defaultClasses, defaultOtherwise;
 
-	mapTokenList = require('./mapTokenList');
-	replaceClasses = require('./replaceClasses');
-	functional = require('../../lib/functional');
+	mapClasses = require('./mapClasses');
 
 	defaultClasses = {
 		0: 'zero',
@@ -37,8 +35,7 @@ define(function (require) {
 
 		options.otherwise = prefix + defaultOtherwise;
 
-		return functional.compose(mapTokenList(classMap, options), replaceClasses(node, options))
-
+		return mapClasses(classMap, node, options);
 	}
 
 });
