@@ -17,7 +17,7 @@ define(function (require) {
 
 	return function(node, options) {
 
-		var classMap, otherwise, prefix, key;
+		var classMap, prefix, key;
 
 		classMap = {};
 		prefix = '';
@@ -26,15 +26,16 @@ define(function (require) {
 
 		if(typeof options == 'string') {
 			prefix = options + '-';
+			options = {};
 		} else if(options.prefix) {
 			prefix = options.prefix + '-';
 		}
 
-		otherwise = prefix + defaultOtherwise;
-
 		for(key in defaultClasses) {
 			classMap[key] = prefix + defaultClasses[key];
 		}
+
+		options.otherwise = prefix + defaultOtherwise;
 
 		return functional.compose(mapTokenList(classMap, options), replaceClasses(node, options))
 
