@@ -703,6 +703,53 @@ require(['wire'], function(wire) {
 
 			return dohd;
 
+		},
+		function shouldReturnAFunctionFromOnResolver(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				resolver1: { $ref: 'on!' },
+				resolver2: { $ref: 'on!.test' },
+				plugins: [
+					{ module: pluginName }
+				]
+			}).then(
+				function(context) {
+					dohd.callback(typeof context.resolver == 'function');
+				},
+				fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldResolveToAnEventHandler(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				a: { create: 'fixture' },
+				resolver1: { $ref: 'on!' },
+				resolver2: { $ref: 'on!:.test' },
+				resolver3: { $ref: 'on!click:.test' },
+				resolver4: { $ref: 'on!mousemove:.test' }, //should get overridden
+				plugins: [
+					{ module: pluginName }
+				]
+			}).then(
+				function(context) {
+					var fixture = context.a;
+					context.resolver1(document, 'click', fixture.handle, '.test');
+					context.resolver2(document, 'click', fixture.handle);
+					context.resolver3(document, fixture.handle);
+					context.resolver4(document, 'click', fixture.handle);
+					document.getElementById('test').click();
+					dohd.callback(fixture.handled == 3);
+				},
+				fail(dohd)
+			);
+
+			return dohd;
+
 		}
 
 	]);
