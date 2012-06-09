@@ -1,9 +1,9 @@
 /** @license MIT License (c) copyright B Cavalier & J Hann */
 
 /**
- * wire/dojo/on plugin
- * wire plugin that provides an "on" facet that uses dojo/on (dojo 1.7
- * and later) to connect to dom events, and includes support for delegation
+ * wire/on plugin
+ * wire plugin that provides an "on" facet to connect to dom events,
+ * and includes support for delegation
  *
  * wire is part of the cujo.js family of libraries (http://cujojs.com/)
  *
