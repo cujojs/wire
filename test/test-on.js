@@ -709,15 +709,35 @@ require(['wire'], function(wire) {
 
 			wire({
 				resolver1: { $ref: 'on!' },
-				resolver2: { $ref: 'on!.test' },
+				resolver2: { $ref: 'on!click:.test' },
 				plugins: [
 					{ module: pluginName }
 				]
 			}).then(
 				function(context) {
-					dohd.callback(typeof context.resolver == 'function');
+					var success = typeof context.resolver1 == 'function'
+						&& typeof context.resolver2 == 'function';
+					dohd.callback(success);
 				},
 				fail(dohd)
+			);
+
+			return dohd;
+
+		},
+		function shouldFailLoudlyIfDevForgotEvent(doh) {
+			var dohd = new doh.Deferred();
+
+			wire({
+				resolver2: { $ref: 'on!.test' },
+				plugins: [
+					{ module: pluginName }
+				]
+			}).then(
+				fail(dohd),
+				function () {
+					dohd.callback(true);
+				}
 			);
 
 			return dohd;
@@ -727,21 +747,19 @@ require(['wire'], function(wire) {
 			var dohd = new doh.Deferred();
 
 			wire({
-				a: { create: 'fixture' },
+				f: { create: 'fixture' },
 				resolver1: { $ref: 'on!' },
-				resolver2: { $ref: 'on!:.test' },
+				resolver2: { $ref: 'on!click:#container' },
 				resolver3: { $ref: 'on!click:.test' },
-				resolver4: { $ref: 'on!mousemove:.test' }, //should get overridden
 				plugins: [
 					{ module: pluginName }
 				]
 			}).then(
 				function(context) {
-					var fixture = context.a;
-					context.resolver1(document, 'click', fixture.handle, '.test');
-					context.resolver2(document, 'click', fixture.handle);
-					context.resolver3(document, fixture.handle);
-					context.resolver4(document, 'click', fixture.handle);
+					var fixture = context.f;
+					context.resolver1(document, 'click', fixture.handle.bind(fixture), '.test');
+					context.resolver2(document, fixture.handle.bind(fixture));
+					context.resolver3(fixture.handle.bind(fixture));
 					document.getElementById('test').click();
 					dohd.callback(fixture.handled == 3);
 				},
