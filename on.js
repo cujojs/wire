@@ -26,6 +26,7 @@ define(['./lib/plugin-base/on', './lib/dom/base'], function (createOnPlugin, bas
 	 * @param event {String} event name ('click', 'mouseenter')
 	 * @param handler {Function} handler function with the following signature: function (e) {}
 	 * @param [selector] {String} optional css query string to use to
+	 * @return {Function} removes the event handler
 	 */
 	function on (node, event, handler /*, selector */) {
 		var selector = arguments[3];
