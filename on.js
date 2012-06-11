@@ -1,9 +1,9 @@
 /** @license MIT License (c) copyright B Cavalier & J Hann */
 
 /**
- * wire/dojo/on plugin
- * wire plugin that provides an "on" facet that uses dojo/on (dojo 1.7
- * and later) to connect to dom events, and includes support for delegation
+ * wire/on plugin
+ * wire plugin that provides an "on" facet to connect to dom events,
+ * and includes support for delegation
  *
  * wire is part of the cujo.js family of libraries (http://cujojs.com/)
  *
@@ -26,6 +26,7 @@ define(['./lib/plugin-base/on', './lib/dom/base'], function (createOnPlugin, bas
 	 * @param event {String} event name ('click', 'mouseenter')
 	 * @param handler {Function} handler function with the following signature: function (e) {}
 	 * @param [selector] {String} optional css query string to use to
+	 * @return {Function} removes the event handler
 	 */
 	function on (node, event, handler /*, selector */) {
 		var selector = arguments[3];
