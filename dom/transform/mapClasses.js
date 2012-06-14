@@ -8,10 +8,10 @@ define(function (require) {
 	replaceClasses = require('./replaceClasses');
 	functional = require('../../lib/functional');
 
-	return function(map, node, options) {
+	return function(map, options) {
 		return functional.compose(
 			mapTokenList(map, options),
-			replaceClasses(node, options)
+			replaceClasses(options)
 		);
 	}
 

@@ -71,7 +71,7 @@ define(function () {
 	 *   // later (this is problematic if you didn't specify a group!)
 	 *   oocssSetter('edit-mode error-in-form');
 	 */
-	return function configureReplaceClasses (node, options) {
+	return function configureReplaceClasses (options) {
 		var prev = '', removeRx = '', group;
 
 		if (!options) options = {};
@@ -93,7 +93,9 @@ define(function () {
 		}
 
 		function replaceClasses (classes) {
-			var leftovers;
+			var node, leftovers;
+
+			node = options.node || this;
 
 			if (!classes) classes = '';
 

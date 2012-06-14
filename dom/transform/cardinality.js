@@ -13,7 +13,7 @@ define(function (require) {
 
 	defaultOtherwise = 'many';
 
-	return function(node, options) {
+	return function(options) {
 
 		var classMap, prefix, key;
 
@@ -35,7 +35,7 @@ define(function (require) {
 
 		options.otherwise = prefix + defaultOtherwise;
 
-		return mapClasses(classMap, node, options);
+		return mapClasses(classMap, options);
 	}
 
 });
