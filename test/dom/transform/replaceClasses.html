@@ -24,8 +24,8 @@
 					create: {
 						module: 'wire/dom/transform/replaceClasses',
 						args: [
-							{ $ref: 'node1' },
 							{
+								node: { $ref: 'node1' },
 								group: 'foo-mode bar-mode edit-rights view-rights delete-rights simple-one simple-two simple-three'
 							}
 						]
@@ -35,8 +35,8 @@
 					create: {
 						module: 'wire/dom/transform/replaceClasses',
 						args: [
-							{ $ref: 'node1' },
 							{
+								node: { $ref: 'node1' },
 								group: 'other-one other-two'
 							}
 						]
