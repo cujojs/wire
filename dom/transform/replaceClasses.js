@@ -14,7 +14,7 @@ define(['require'], function (require) {
 	 * requirement for oocss states: while adding new classes, it removes
 	 * classes in the same group of states. This allows the dev to add
 	 * and remove classes in the same atomic action.
-	 * @param node {HTMLElement}
+	 * @param [options.node] {HTMLElement}
 	 * @param [options] {Object} a hashmap of options
 	 * @param [options.group] {Array|String|Function} If specified, this is a
 	 *   list of all possible classes in the group.  If a single string is
@@ -23,6 +23,13 @@ define(['require'], function (require) {
 	 *   initial set of classes to set on the element.  This isn't just a
 	 *   convenience feature: it may be necessary for this transform to work
 	 *   correctly if not specifying a group.  See the description.
+	 * @param [options.remover] {Function} a custom remover function that can
+	 *   be used to remove old classes when adding new ones.  If this option is
+	 *   specified, the group option is ignored. Remover signature:
+	 *   function (classesToRemove, baseRemover) { return newClasses; }
+	 *   The baseRemover param is a function that will remove classes in the
+	 *   usual way.  Call baseRemover.setRemoves(groupOrString) to set
+	 *   the classes that should be removed when next invoked.
 	 *
 	 * @description
 	 * If the group param is provided, all of the class names in the group
