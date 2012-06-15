@@ -44,6 +44,16 @@
 				},
 				replacer3: {
 					create: 'wire/dom/transform/replaceClasses'
+				},
+				replacer4: {
+					create: {
+						module: 'wire/dom/transform/replaceClasses',
+						args: [
+							{
+								node: { $ref: 'node1' }
+							}
+						]
+					}
 				}
 			});
 
@@ -52,6 +62,7 @@
 					var replacer = context.replacer,
 						replacer2 = context.replacer2,
 						replacer3 = context.replacer3,
+						replacer4 = context.replacer4,
 						node1 = context.node1;
 
 					function setup () {
@@ -105,6 +116,13 @@
 							replacer('delete-rights edit-rights');
 							doh.assertTrue(hasClassName(node1, 'delete-rights'));
 							doh.assertTrue(hasClassName(node1, 'edit-rights'));
+						},
+						function replaceClassesShouldUsePrevClassesWhenNoGroup () {
+							setup();
+							replacer4('foo-mode');
+							doh.assertTrue(hasClassName(node1, 'foo-mode'), 'added className');
+							replacer4('');
+							doh.assertFalse(hasClassName(node1, 'foo-mode'), 'removed className');
 						},
 						function replaceClassesShouldAcceptNodeWhenNotConfigured () {
 							var node = document.createElement('div');
