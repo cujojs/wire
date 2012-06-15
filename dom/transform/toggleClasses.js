@@ -1,5 +1,5 @@
 (function (define) {
-define(['require'], function (require) {
+define(function (require) {
 
 	var replaceClasses, weave, removes;
 	replaceClasses = require('./replaceClasses')({ remover: classRemover });
@@ -55,5 +55,5 @@ define(['require'], function (require) {
 }(
 	typeof define == 'function' && define.amd
 		? define
-		: function (deps, factory) { module.exports = factory(deps.map(require)); }
+		: function (factory) { module.exports = factory(require); }
 ));

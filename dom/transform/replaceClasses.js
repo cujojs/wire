@@ -132,6 +132,7 @@ define(['require'], function (require) {
 		function createClassRemover (tokens) {
 			var removeRx;
 			function genRx (tokens) {
+				if(!tokens) return;
 				// convert from array
 				tokens = typeof tokens.join == 'function'
 					? tokens.join('|')
