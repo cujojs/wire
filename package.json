@@ -34,7 +34,7 @@
     ],
     "dependencies": {
         "aop": "git://github.com/cujojs/aop#0.5.3",
-        "when": "~1.2"
+        "when": "~1"
     },
     "main": "./wire",
     "directories": {
