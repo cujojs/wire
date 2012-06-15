@@ -16,8 +16,8 @@ define(['require'], function (require) {
 	 * and remove classes in the same atomic action.
 	 * @param node {HTMLElement}
 	 * @param [options] {Object} a hashmap of options
-	 * @param [options.group] {Array|String} If specified, this is a list of
-	 *   all possible classes in the group.  If a single string is
+	 * @param [options.group] {Array|String|Function} If specified, this is a
+	 *   list of all possible classes in the group.  If a single string is
 	 *   provided, it should be a space-delimited (TokenList) of classes.
 	 * @param [options.initial] {Array|String} If specified, this is the
 	 *   initial set of classes to set on the element.  This isn't just a
@@ -73,19 +73,25 @@ define(['require'], function (require) {
 	 *   oocssSetter('edit-mode error-in-form');
 	 */
 	return function configureReplaceClasses (options) {
-		var prev = '', removeRx = '', group, replace;
+		var group, remover, replace, prev = '';
 
 		if (!options) options = {};
 
 		group = options.group;
 
-		if (group) {
-			// convert from array
-			group = typeof group.join == 'function'
-				? group.join('|')
-				: group.replace(splitClassNamesRx, '|');
-			// set up the regexp to remove everything in the group
-			removeRx = new RegExp(removeRxParts.join(group), 'g');
+		if (options.remover) {
+			remover = createCustomRemover(options.remover);
+		}
+		else if (group) {
+			remover = createClassRemover(group);
+		}
+		else {
+			remover = (function createPrevRemover (remover) {
+				return function removePrev (classes) {
+					remover.setRemoves(prev);
+					return remover(classes);
+				};
+			}(createClassRemover()));
 		}
 
 		replace = options.node
@@ -104,22 +110,52 @@ define(['require'], function (require) {
 
 			if (!classes) classes = '';
 
-			// if there were previous classes set, remove them and current ones
-			if (prev) {
-				if (classes) prev += ' ' + classes;
-				removeRx = new RegExp(removeRxParts.join(prev.replace(/\s+/g, '|')), 'g');
-			}
-			// there were likely classes we didn't remove (outside of group)
-			leftovers = node.className.replace(removeRx, '')
-				.replace(trimLeadingRx, '');
+			// there were likely classes we didn't remove
+			leftovers = remover(node.className);
 
-			// save this set for next time (if we're not using a group)
-			if (!group) prev = classes;
+			// save
+			prev = classes;
 
 			// assemble new classes
 			classes = classes + (classes && leftovers ? ' ' : '') + leftovers;
 
 			return node.className = classes;
+		}
+
+		function createClassRemover (tokens) {
+			var removeRx;
+			function genRx (tokens) {
+				// convert from array
+				tokens = typeof tokens.join == 'function'
+					? tokens.join('|')
+					: tokens.replace(splitClassNamesRx, '|');
+				// set up the regexp to remove everything in the set of tokens
+				removeRx = new RegExp(removeRxParts.join(tokens), 'g');
+			}
+			function remover (classes) {
+				return classes.replace(removeRx, '').replace(trimLeadingRx, '');
+			}
+			remover.setRemoves = genRx;
+			if (tokens) genRx(tokens);
+			return remover;
+		}
+
+		function createCustomRemover (custom) {
+			var remover = createClassRemover();
+			return function removeCustom (classes) {
+				return custom(classes, remover);
+			};
+		}
+
+		function createPrevRemover () {
+			var prev = '', remover = createClassRemover();
+			return function removePrev (classes) {
+				var next;
+				remover.setRemoves(prev);
+				next = remover(classes);
+				prev = classes;
+				return next;
+			};
 		}
 
 	};
