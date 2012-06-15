@@ -1,12 +1,13 @@
 (function (define) {
-define(function () {
+define(['require'], function (require) {
 "use strict";
 
-	var removeRxParts, trimLeadingRx, splitClassNamesRx;
+	var removeRxParts, trimLeadingRx, splitClassNamesRx, partial;
 
 	removeRxParts = ['(\\s+|^)(', ')(\\b(?![\\-_])|$)'];
 	trimLeadingRx = /^\s+/;
 	splitClassNamesRx = /(\b\s+\b)|(\s+)/g;
+	partial = require('../../lib/functional').partial;
 
 	/**
 	 * Configures a transform function that satisfies the most common
@@ -71,8 +72,8 @@ define(function () {
 	 *   // later (this is problematic if you didn't specify a group!)
 	 *   oocssSetter('edit-mode error-in-form');
 	 */
-	return function configureReplaceClasses (node, options) {
-		var prev = '', removeRx = '', group;
+	return function configureReplaceClasses (options) {
+		var prev = '', removeRx = '', group, replace;
 
 		if (!options) options = {};
 
@@ -87,12 +88,18 @@ define(function () {
 			removeRx = new RegExp(removeRxParts.join(group), 'g');
 		}
 
+		replace = options.node
+			? partial(replaceClasses, options.node)
+			: replaceClasses;
+
 		if (options.initial) {
 			// set the original classes
-			replaceClasses(options.initial);
+			replace(options.initial);
 		}
 
-		function replaceClasses (classes) {
+		return replace;
+
+		function replaceClasses (node, classes) {
 			var leftovers;
 
 			if (!classes) classes = '';
@@ -115,9 +122,7 @@ define(function () {
 			return node.className = classes;
 		}
 
-		return replaceClasses;
-
-	}
+	};
 
 });
 }(

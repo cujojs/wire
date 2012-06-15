@@ -24,8 +24,8 @@
 					create: {
 						module: 'wire/dom/transform/replaceClasses',
 						args: [
-							{ $ref: 'node1' },
 							{
+								node: { $ref: 'node1' },
 								group: 'foo-mode bar-mode edit-rights view-rights delete-rights simple-one simple-two simple-three'
 							}
 						]
@@ -35,12 +35,15 @@
 					create: {
 						module: 'wire/dom/transform/replaceClasses',
 						args: [
-							{ $ref: 'node1' },
 							{
+								node: { $ref: 'node1' },
 								group: 'other-one other-two'
 							}
 						]
 					}
+				},
+				replacer3: {
+					create: 'wire/dom/transform/replaceClasses'
 				}
 			});
 
@@ -48,6 +51,7 @@
 				function(context) {
 					var replacer = context.replacer,
 						replacer2 = context.replacer2,
+						replacer3 = context.replacer3,
 						node1 = context.node1;
 
 					function setup () {
@@ -101,6 +105,13 @@
 							replacer('delete-rights edit-rights');
 							doh.assertTrue(hasClassName(node1, 'delete-rights'));
 							doh.assertTrue(hasClassName(node1, 'edit-rights'));
+						},
+						function replaceClassesShouldAcceptNodeWhenNotConfigured () {
+							var node = document.createElement('div');
+							replacer3(node, 'foo-mode');
+							doh.assertTrue(hasClassName(node, 'foo-mode'), 'added className');
+							replacer3(node, '');
+							doh.assertFalse(hasClassName(node, 'foo-mode'), 'removed className');
 						}
 					]);
 					doh.register('multi-groups', [
