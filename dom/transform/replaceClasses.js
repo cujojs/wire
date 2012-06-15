@@ -1,27 +1,35 @@
 (function (define) {
-define(function () {
+define(['require'], function (require) {
 "use strict";
 
-	var removeRxParts, trimLeadingRx, splitClassNamesRx;
+	var removeRxParts, trimLeadingRx, splitClassNamesRx, partial;
 
 	removeRxParts = ['(\\s+|^)(', ')(\\b(?![\\-_])|$)'];
 	trimLeadingRx = /^\s+/;
 	splitClassNamesRx = /(\b\s+\b)|(\s+)/g;
+	partial = require('../../lib/functional').partial;
 
 	/**
 	 * Configures a transform function that satisfies the most common
 	 * requirement for oocss states: while adding new classes, it removes
 	 * classes in the same group of states. This allows the dev to add
 	 * and remove classes in the same atomic action.
-	 * @param node {HTMLElement}
+	 * @param [options.node] {HTMLElement}
 	 * @param [options] {Object} a hashmap of options
-	 * @param [options.group] {Array|String} If specified, this is a list of
-	 *   all possible classes in the group.  If a single string is
+	 * @param [options.group] {Array|String} If specified, this is a
+	 *   list of all possible classes in the group.  If a single string is
 	 *   provided, it should be a space-delimited (TokenList) of classes.
 	 * @param [options.initial] {Array|String} If specified, this is the
 	 *   initial set of classes to set on the element.  This isn't just a
 	 *   convenience feature: it may be necessary for this transform to work
 	 *   correctly if not specifying a group.  See the description.
+	 * @param [options.remover] {Function} a custom remover function that can
+	 *   be used to remove old classes when adding new ones.  If this option is
+	 *   specified, the group option is ignored. Remover signature:
+	 *   function (classesToRemove, baseRemover) { return newClasses; }
+	 *   The baseRemover param is a function that will remove classes in the
+	 *   usual way.  Call baseRemover.setRemoves(groupOrString) to set
+	 *   the classes that should be removed when next invoked.
 	 *
 	 * @description
 	 * If the group param is provided, all of the class names in the group
@@ -72,44 +80,48 @@ define(function () {
 	 *   oocssSetter('edit-mode error-in-form');
 	 */
 	return function configureReplaceClasses (options) {
-		var prev = '', removeRx = '', group;
+		var group, remover, replace, prev = '';
 
 		if (!options) options = {};
 
 		group = options.group;
 
-		if (group) {
-			// convert from array
-			group = typeof group.join == 'function'
-				? group.join('|')
-				: group.replace(splitClassNamesRx, '|');
-			// set up the regexp to remove everything in the group
-			removeRx = new RegExp(removeRxParts.join(group), 'g');
+		if (options.remover) {
+			remover = createCustomRemover(options.remover);
 		}
+		else if (group) {
+			remover = createClassRemover(group);
+		}
+		else {
+			remover = (function createPrevRemover (remover) {
+				return function removePrev (classes) {
+					remover.setRemoves(prev);
+					return remover(classes);
+				};
+			}(createClassRemover()));
+		}
+
+		replace = options.node
+			? partial(replaceClasses, options.node)
+			: replaceClasses;
 
 		if (options.initial) {
 			// set the original classes
-			replaceClasses(options.initial);
+			replace(options.initial);
 		}
 
-		function replaceClasses (classes) {
-			var node, leftovers;
+		return replace;
 
-			node = options.node || this;
+		function replaceClasses (node, classes) {
+			var leftovers;
 
 			if (!classes) classes = '';
 
-			// if there were previous classes set, remove them and current ones
-			if (prev) {
-				if (classes) prev += ' ' + classes;
-				removeRx = new RegExp(removeRxParts.join(prev.replace(/\s+/g, '|')), 'g');
-			}
-			// there were likely classes we didn't remove (outside of group)
-			leftovers = node.className.replace(removeRx, '')
-				.replace(trimLeadingRx, '');
+			// there were likely classes we didn't remove
+			leftovers = remover(node.className);
 
-			// save this set for next time (if we're not using a group)
-			if (!group) prev = classes;
+			// save
+			prev = classes;
 
 			// assemble new classes
 			classes = classes + (classes && leftovers ? ' ' : '') + leftovers;
@@ -117,9 +129,43 @@ define(function () {
 			return node.className = classes;
 		}
 
-		return replaceClasses;
+		function createClassRemover (tokens) {
+			var removeRx;
+			function genRx (tokens) {
+				// convert from array
+				tokens = typeof tokens.join == 'function'
+					? tokens.join('|')
+					: tokens.replace(splitClassNamesRx, '|');
+				// set up the regexp to remove everything in the set of tokens
+				removeRx = new RegExp(removeRxParts.join(tokens), 'g');
+			}
+			function remover (classes) {
+				return classes.replace(removeRx, '').replace(trimLeadingRx, '');
+			}
+			remover.setRemoves = genRx;
+			if (tokens) genRx(tokens);
+			return remover;
+		}
 
-	}
+		function createCustomRemover (custom) {
+			var remover = createClassRemover();
+			return function removeCustom (classes) {
+				return custom(classes, remover);
+			};
+		}
+
+		function createPrevRemover () {
+			var prev = '', remover = createClassRemover();
+			return function removePrev (classes) {
+				var next;
+				remover.setRemoves(prev);
+				next = remover(classes);
+				prev = classes;
+				return next;
+			};
+		}
+
+	};
 
 });
 }(
