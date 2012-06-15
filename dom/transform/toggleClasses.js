@@ -1,8 +1,8 @@
 (function (define) {
 define(['require'], function (require) {
 
-	var replaceClasses, weave, current;
-	replaceClasses = require('./replaceClasses')({ group: getCurrent });
+	var replaceClasses, weave, removes;
+	replaceClasses = require('./replaceClasses')({ remover: classRemover });
 	weave = require('../../lib/functional').weave;
 
 	return function (options) {
@@ -29,24 +29,27 @@ define(['require'], function (require) {
 		removeClasses(fake, node.className);
 		adds = fake.className;
 		// remove toggled classes and put back adds
-		current = classes;
+		removes = classes;
 		replaceClasses(node, adds);
 		return node;
 	}
 
 	function addClasses (node, classes) {
-		current = classes;
+		removes = classes;
 		replaceClasses(node, classes);
 		return node;
 	}
 
 	function removeClasses (node, classes) {
-		current = classes;
+		removes = classes;
 		replaceClasses(node, '');
 		return node;
 	}
 
-	function getCurrent () { return current; }
+	function classRemover (classes, remover) {
+		remover.setRemoves(removes);
+		return remover(classes);
+	}
 
 });
 }(
