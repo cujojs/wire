@@ -24,6 +24,36 @@ buster.testCase('lib/functional', {
 		}
 	},
 
+	'weave': {
+		'should return a function': function() {
+			assert.isFunction(functional.weave(function() {}, {}));
+		},
+
+		'should weave arguments defined with sparse arrays': function() {
+			function f(a, b) {
+				assert.equals(a, 1);
+				assert.equals(b, 2);
+			}
+
+			functional.weave(f, [1])(2);
+			functional.weave(f, [,2])(1);
+			functional.weave(f, [])(1, 2);
+			functional.weave(f, [1, 2])();
+		},
+
+		'should weave arguments defined with array-like objects': function() {
+			function f(a, b) {
+				assert.equals(a, 1);
+				assert.equals(b, 2);
+			}
+
+			functional.weave(f, { 0: 1 })(2);
+			functional.weave(f, { 1: 2 })(1);
+			functional.weave(f, {})(1, 2);
+			functional.weave(f, { 0: 1, 1: 2 })();
+		}
+	},
+
 	'compose': {
 		'should return a function': function() {
 			assert.isFunction(functional.compose([function() {}]));
