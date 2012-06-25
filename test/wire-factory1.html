@@ -111,23 +111,19 @@
 					wire({
 						child: { wire: { spec: 'child' } }
 					}).then(
-							function(context) {
+						function(context) {
 
-								var success = typeof context.child.then == 'function';
+							var success = !!context.child.success;
 
-								context.child.then(function(childContext) {
-									success = success && !!childContext.success;
+							context.child.destroy().then(
+								function() {
+									dohd.callback(success);
+								},
+								fail(dohd)
+							);
 
-									childContext.destroy().then(
-											function() {
-												dohd.callback(success);
-											},
-											fail(dohd)
-									);
-								});
-
-							},
-							fail(dohd)
+						},
+						fail(dohd)
 					);
 
 					return dohd;
@@ -148,23 +144,19 @@
 							}
 						}
 					}).then(
-							function(context) {
+						function(context) {
 
-								var success = typeof context.child.then == 'function';
+							var success = !!context.child.success;
 
-								context.child.then(function(childContext) {
-									success = success && !!childContext.success;
+							context.child.destroy().then(
+								function() {
+									dohd.callback(success);
+								},
+								fail(dohd)
+							);
 
-									childContext.destroy().then(
-											function() {
-												dohd.callback(success);
-											},
-											fail(dohd)
-									);
-								});
-
-							},
-							fail(dohd)
+						},
+						fail(dohd)
 					);
 
 					return dohd;
@@ -175,23 +167,22 @@
 					var dohd = new doh.Deferred();
 
 					wire('parent').then(
-							function(context) {
+						function(context) {
 
-								var success = typeof context.parent.child.then == 'function';
+							var child, success;
 
-								context.parent.child.then(function(childContext) {
-									success = success && !!childContext.success;
+							child = context.parent.child;
+							success = !!child.success;
 
-									childContext.destroy().then(
-											function() {
-												dohd.callback(success);
-											},
-											fail(dohd)
-									);
-								});
+							child.destroy().then(
+								function() {
+									dohd.callback(success);
+								},
+								fail(dohd)
+							);
 
-							},
-							fail(dohd)
+						},
+						fail(dohd)
 					);
 
 					return dohd;
