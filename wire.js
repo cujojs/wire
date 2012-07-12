@@ -191,7 +191,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		function doWireContexts(spec) {
 			return when(createScope(spec, parent),
 				function (scope) {
-					return scope.objects;
+					return scope;
 				}
 			);
 		}
@@ -625,13 +625,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 					},
 					function () {
 						// No factory found, treat object spec as a nested scope
-						return when(createScope(spec, scope, name),
-							function (created) {
-								// Return *only* the objects, and none of the
-								// other scope stuff (like plugins, promises etc)
-								return created.local;
-							}
-						);
+						return createScope(spec, scope, name);
 					}
 			);
 		}
