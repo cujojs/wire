@@ -7,7 +7,14 @@ assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
 
-steps = ['create', 'configure', 'initialize', 'connect', 'ready', 'destroy'];
+steps = ['create', 'configure', 'initialize', 'connect', 'ready', 'destroy'].reduce(
+	function(lifecycle, step) {
+		lifecycle.push(step + ':before');
+		lifecycle.push(step);
+		lifecycle.push(step + ':after');
+		return lifecycle;
+	}, []
+);
 
 buster.testCase('lifecycle', {
 	setUp: function() {
@@ -45,7 +52,7 @@ buster.testCase('lifecycle', {
 
 				// Ensure that create thru ready happen in order, and that
 				// destroy does not happen
-				assert.equals(component.lifecycle, steps.slice(0, steps.length-1));
+				assert.equals(component.lifecycle, steps.slice(0, steps.length-3));
 
 				// Ensure that destroy happens and is always last
 				context.destroy().then(
