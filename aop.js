@@ -26,16 +26,18 @@ define(['aop', 'when', './lib/connection'], function(aop, when, connection) {
     //
 
     function applyDecorator(target, Decorator, args) {
-        args = args ? [target].concat(args) : [target];
+        var decorated;
+		args = args ? [target].concat(args) : [target];
 
-        Decorator.apply(null, args);
+		decorated = Decorator.apply(null, args);
+		return decorated !== undef ? decorated : target;
     }
 
     function doDecorate(target, decorator, args, wire) {
         function apply(Decorator) {
             return args
                 ? when(wire(args), function (resolvedArgs) {
-                    applyDecorator(target, Decorator, resolvedArgs);
+                    return applyDecorator(target, Decorator, resolvedArgs);
                 })
                 : applyDecorator(target, Decorator);
         }
