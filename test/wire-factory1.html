@@ -19,7 +19,7 @@
         });
 
         var parentSpec = {
-			debug: { module: 'wire/debug', verbose: true, filter: 'child' },
+//			debug: { module: 'wire/debug', verbose: true, filter: 'child' },
             parent: {
                 create: 'Thing',
                 properties: {
@@ -33,7 +33,15 @@
 			child: { wire: { spec: 'child' } }
 		});
 
-		define('child-empty', {});
+		define('child-expects', {
+            success: { $ref: 'value' },
+            value: false
+        });
+
+        define('child-exports', {
+            $exports: { $ref: 'value' },
+            value: true
+        });
 
 		define('child', {
 //			debug: { module: 'wire/debug' },
@@ -41,7 +49,7 @@
 		});
 
 		define('child-component', {
-			debug: { module: 'wire/debug' },
+//			debug: { module: 'wire/debug' },
 			thing: {
 				create: 'Thing',
 				properties: {
@@ -51,7 +59,7 @@
 		});
 
 		define('defer2-parent', {
-			debug: { module: 'wire/debug' },
+//			debug: { module: 'wire/debug' },
 			thing: {
 				create: 'Thing',
 				properties: {
@@ -66,7 +74,7 @@
 		});
 
 		define('defer2-child', {
-			debug: { module: 'wire/debug' },
+//			debug: { module: 'wire/debug' },
 			childThing: {
 				create: {
 					module: 'Thing',
@@ -134,10 +142,10 @@
 					var dohd = new doh.Deferred();
 
 					wire({
-						value: true,
-						child: {
+                        value: true,
+                        child: {
 							wire: {
-								spec: 'child-empty',
+								spec: 'child-expects',
 								provide: {
 									success: { $ref: 'value' }
 								}
@@ -162,7 +170,27 @@
 					return dohd;
 
 				},
-				function wireChildImmediateNested(doh) {
+                function wireChildWithExports(doh) {
+
+                    var dohd = new doh.Deferred();
+
+                    wire({
+                        success: {
+                            wire: {
+                                spec: 'child-exports'
+                            }
+                        }
+                    }).then(
+                            function(context) {
+                                dohd.callback(context.success === true);
+                            },
+                            fail(dohd)
+                    );
+
+                    return dohd;
+
+                },
+                function wireChildImmediateNested(doh) {
 
 					var dohd = new doh.Deferred();
 
@@ -220,7 +248,7 @@
 					var dohd = new doh.Deferred();
 
 					wire({
-						debug: { module: 'wire/debug', verbose: true, filter: 'child' },
+//						debug: { module: 'wire/debug', verbose: true, filter: 'child' },
 						parent: {
 							create: 'Thing',
 							properties: {
