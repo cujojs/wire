@@ -65,6 +65,57 @@ buster.testCase('refs', {
 				);
 			}
 		);
+	},
+
+	'should resolve': function() {
+		return wire({
+			a: true,
+			success: { $ref: 'a' }
+		}).then(
+			function(context) {
+				assert(context.success);
+			},
+			fail
+		);
+	},
+
+	'should resolve from plugin': function() {
+		return wire({
+			a: true,
+			thing: {
+				literal: {},
+				properties: {
+					success: { $ref: 'a' }
+				}
+			}
+		}).then(
+			function(context) {
+				assert(context.thing.success);
+			},
+			fail
+		);
+	},
+
+	'should allow 1 level of dot traversal for nested references': function() {
+		return wire({
+			a: { b: true },
+			success: { $ref: 'a.b' }
+		}).then(
+			function(context) {
+				assert(context.success);
+			},
+			fail
+		);
+	},
+
+	'should not allow > 1 level of dot traversal': function() {
+		return wire({
+			a: { b: { c: true } },
+			success: { $ref: 'a.b.c' }
+		}).then(
+			fail,
+			function() { assert(true); }
+		);
 	}
 
 });
