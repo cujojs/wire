@@ -21,10 +21,6 @@
 	doh.registerUrl('wire-resolver', '../../wire-resolver1.html' + hash);
 	doh.registerUrl('wire-factory', '../../wire-factory1.html' + hash);
 
-	// resolver errors
-	doh.registerUrl('ref-missing1', '../../ref-missing1.html' + hash);
-	doh.registerUrl('ref-missing2', '../../ref-missing2.html' + hash);
-
 	// Facets
 
 	// Base
