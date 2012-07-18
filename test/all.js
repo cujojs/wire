@@ -8,7 +8,6 @@
 	doh.registerUrl('_fake', '../../_doh-fake.html' + hash);
 
 	// Core
-	doh.registerUrl('basic-types1', '../../basic-types1.html' + hash);
 	doh.registerUrl('nested1', '../../nested1.html' + hash);
 	doh.registerUrl('nested2', '../../nested2.html' + hash);
 	doh.registerUrl('module-factory', '../../module.html' + hash);
