@@ -26,7 +26,7 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 	}
 
 	function invoke(func, proxy, args, wire) {
-        return when(wire(args),
+        return when(wire(args, proxy.path),
 			function (resolvedArgs) {
 				return proxy.invoke(func, asArray(resolvedArgs));
 			}
@@ -128,7 +128,7 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 
         promise = typeof parentRef === 'string'
                 ? wire.resolveRef(parentRef)
-                : wire(parentRef);
+                : wire(parentRef, spec.id);
 
         when(promise, Object.create)
 			.then(resolver.resolve, resolver.reject);
@@ -136,12 +136,14 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 
 	function propertiesFacet(resolver, facet, wire) {
 
-		when(wire(facet.options),
-			function(wiredProperties) {
-				Object.keys(wiredProperties).forEach(function(name) {
-					facet.set(name, wiredProperties[name]);
-				});
-		}).then(resolver.resolve, resolver.reject);
+		when.reduce(Object.keys(facet.options), function(properties, key) {
+			return wire(properties[key], facet.path).then(
+				function(wiredProperty) {
+					facet.set(key, wiredProperty);
+					return properties;
+				}
+			);
+		}, facet.options).then(resolver.resolve, resolver.reject);
 
 	}
 
@@ -236,7 +238,7 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 			options = {};
 		}
 
-		when(wire(sourceRef), function (ref) {
+		when(wire(sourceRef, spec.id), function (ref) {
 			return when(wire.getProxy(ref), function (proxy) {
 				if (!proxy.clone) throw new Error('No clone function found for ' + spec.id);
 				return proxy.clone(options);
@@ -260,12 +262,12 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 		if (typeof create == 'string') {
 			promise = wire.loadModule(create, spec);
 		} else if(wire.resolver.isRef(create)) {
-			promise = wire(create);
+			promise = wire(create, name);
 		} else {
 			args = create.args;
 			isConstructor = create.isConstructor;
 
-			promise = wire(create);
+			promise = wire(create, name);
 		}
 
 		chain(when(promise, handleModule), resolver);
@@ -281,7 +283,7 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 			if (typeof module == 'function') {
 				// Instantiate or invoke it and use the result
 				return args
-					? when(wire(asArray(args), { name: name }), resolve)
+					? when(wire(asArray(args), name), resolve)
 					: resolve([]);
 
 			} else {
@@ -300,7 +302,7 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 			promise = functional.compose.parse(undef, spec, wire);
 		} else {
 			// Assume it's an array of things that will wire to functions
-			promise = when(wire(spec), function(funcArray) {
+			promise = when(wire(spec, spec.id), function(funcArray) {
 				return functional.compose(funcArray);
 			});
 		}

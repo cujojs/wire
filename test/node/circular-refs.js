@@ -56,7 +56,11 @@ buster.testCase('circular-refs', {
 	},
 
 	'should not resolve circular deps before init has finished': function(done) {
-		var promise = timeout(wire({
+		var clock, promise;
+
+		clock = this.useFakeTimers();
+
+		promise = wire({
 			component1: {
 				module: './test/node/fixtures/object',
 				shouldNotResolve: 'component2'
@@ -65,15 +69,22 @@ buster.testCase('circular-refs', {
 				module: './test/node/fixtures/object',
 				shouldNotResolve: 'component1'
 			}
-		}), 100);
+		});
+
+		// Force 5 clock advancement
+		clock.tick(5000);
 
 		promise.then(
 			fail,
 			function() {
 				assert(true);
 			}
-		).always(done);
+		).always(function() {
+			clock.restore();
+			done();
+		});
 	}
+
 });
 
 })(
