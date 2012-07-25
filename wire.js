@@ -229,7 +229,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	 * @return {Promise} a promise for the new scope
 	 */
 	function createScope(scopeDef, parent, scopeName) {
-		var scope, scopeParent, local, proxied, objects,
+		var scope, scopeParent, proxied, objects,
 				pluginApi, resolvers, factories, facets, listeners, proxies,
 				modulesToLoad, moduleLoadPromises,
 				wireApi, modulesReady, scopeReady, scopeDestroyed,
@@ -246,7 +246,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 
 		contextPromise = initContextPromise(scopeDef, scopeReady);
 
-		createComponents(local, scopeDef);
+		createComponents(scopeDef);
 
 		// Once all modules are loaded, all the components can finish
 		ensureAllModulesLoaded();
@@ -271,8 +271,6 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		//
 
 		function initFromParent(parent) {
-			local = {};
-
 			// Descend scope and plugins from parent so that this scope can
 			// use them directly via the prototype chain
 			objects = initWireApi(delegate(parent.objects || {}));
@@ -313,7 +311,6 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			// but should never be given to child contexts
 			scope = delegate(scopeParent);
 
-			scope.local = local;
 			scope.resolvers = resolvers;
 			scope.factories = factories;
 			scope.facets = facets;
@@ -368,7 +365,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			// Setup a promise for each item in this scope
 			for (var name in scopeDef) {
 				if (scopeDef.hasOwnProperty(name)) {
-					promises.push(local[name] = objects[name] = defer());
+					promises.push(objects[name] = defer());
 				}
 			}
 
@@ -383,10 +380,10 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 		// Context Startup
 		//
 
-		function createComponents(names, scopeDef) {
+		function createComponents(scopeDef) {
 			// Process/create each item in scope and resolve its
 			// promise when completed.
-			for (var name in names) {
+			for (var name in scopeDef) {
 				// No need to check hasOwnProperty since we know names
 				// only contains scopeDef's own prop names.
 				createScopeItem(name, scopeDef[name], objects[name]);
@@ -425,7 +422,6 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 					for(var p in container) delete container[p];
 				}
 
-				deleteAll(local);
 				deleteAll(objects);
 				deleteAll(scope);
 
@@ -436,7 +432,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				}
 
 				// Free Objects
-				local = objects = scope = proxied = proxies = parent
+				objects = scope = proxied = proxies = parent
 						= resolvers = factories = facets
 						= wireApi = undef;
 
@@ -499,8 +495,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			var p = createItem(val, name);
 
 			return when(p, function (resolved) {
-				resolved = getResolvedValue(resolved);
-				objects[name] = local[name] = resolved;
+				objects[name] = resolved = getResolvedValue(resolved);
 				itemPromise.resolve(resolved);
 			}, chainReject(itemPromise));
 		}
