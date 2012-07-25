@@ -107,23 +107,10 @@
 					wire({
 						child: { wire: { spec: 'child' } }
 					}).then(
-							function(context) {
-
-								var success = typeof context.child.then == 'function';
-
-								context.child.then(function(childContext) {
-									success = success && !!childContext.success;
-
-									childContext.destroy().then(
-											function() {
-												dohd.callback(success);
-											},
-											fail(dohd)
-									);
-								});
-
-							},
-							fail(dohd)
+                        function(context) {
+                            dohd.callback(context.child.success);
+                        },
+                        fail(dohd)
 					);
 
 					return dohd;
@@ -134,23 +121,10 @@
 					var dohd = new doh.Deferred();
 
 					wire('parent').then(
-							function(context) {
-
-								var success = typeof context.parent.child.then == 'function';
-
-								context.parent.child.then(function(childContext) {
-									success = success && !!childContext.success;
-
-									childContext.destroy().then(
-											function() {
-												dohd.callback(success);
-											},
-											fail(dohd)
-									);
-								});
-
-							},
-							fail(dohd)
+                        function(context) {
+                            dohd.callback(context.parent.child.success);
+                        },
+                        fail(dohd)
 					);
 
 					return dohd;
