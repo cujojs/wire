@@ -495,7 +495,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 			var p = createItem(val, name);
 
 			return when(p, function (resolved) {
-				objects[name] = resolved = getResolvedValue(resolved);
+				objects[name] = getResolvedValue(resolved);
 				itemPromise.resolve(resolved);
 			}, chainReject(itemPromise));
 		}
