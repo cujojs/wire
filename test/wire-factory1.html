@@ -19,7 +19,7 @@
         });
 
         var parentSpec = {
-			debug: { module: 'wire/debug', verbose: true, filter: 'child' },
+//			debug: { module: 'wire/debug', verbose: true, filter: 'child' },
             parent: {
                 create: 'Thing',
                 properties: {
@@ -37,7 +37,7 @@
 			success: true
 		});
 		define('child-component', {
-			debug: { module: 'wire/debug' },
+//			debug: { module: 'wire/debug' },
 			thing: {
 				create: 'Thing',
 				properties: {
@@ -47,7 +47,7 @@
 		});
 
 		define('defer2-parent', {
-			debug: { module: 'wire/debug' },
+//			debug: { module: 'wire/debug' },
 			thing: {
 				create: 'Thing',
 				properties: {
@@ -62,7 +62,7 @@
 		});
 
 		define('defer2-child', {
-			debug: { module: 'wire/debug' },
+//			debug: { module: 'wire/debug' },
 			childThing: {
 				create: {
 					module: 'Thing',
@@ -162,7 +162,7 @@
 					var dohd = new doh.Deferred();
 
 					wire({
-						debug: { module: 'wire/debug', verbose: true, filter: 'child' },
+//						debug: { module: 'wire/debug', verbose: true, filter: 'child' },
 						parent: {
 							create: 'Thing',
 							properties: {
@@ -172,9 +172,9 @@
 					}).then(
 							function(context) {
 
-								var success = typeof context.parent.child.then == 'function';
+								var success = typeof context.parent.child.value.then == 'function';
 
-								context.parent.child.then(function(childContext) {
+								context.parent.child.value.then(function(childContext) {
 									success = success && !!childContext.success;
 
 									childContext.destroy().then(

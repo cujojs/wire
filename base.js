@@ -111,16 +111,16 @@ define(['when'], function(when) {
 			promises.push(setProperty(facet, prop, options[prop], wire));
 		}
 
-        whenAll(promises, resolver.resolve, resolver.reject);
+		whenAll(promises, resolver.resolve, resolver.reject);
 	}
 
 	function setProperty(proxy, name, val, wire) {
 		var wired = wire(val, name, proxy.path);
 		when(wired,
-            function(resolvedValue) {
-			    proxy.set(name, resolvedValue);
-		    }
-        );
+			function(resolvedValue) {
+				proxy.set(name, resolvedValue);
+			}
+		);
 
 		return wired;
 	}

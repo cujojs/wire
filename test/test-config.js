@@ -42,8 +42,8 @@
             script: 'test/requirejs/require',
             mixin: {
                 paths: {
-//                    'wire/domReady': 'test/requirejs/domReady'
-                    domReady: 'test/requirejs/domReady'
+//                    'wire/domReady': 'test/requirejs-domReady/domReady',
+                    domReady: 'test/requirejs-domReady/domReady'
                 }
             }
         }

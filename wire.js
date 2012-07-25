@@ -9,7 +9,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @version 0.8.1
+ * @version 0.8.2
  */
 
 (function(global, define){
@@ -20,7 +20,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 	var tos, arrayProto, apIndexOf, apSlice, rootSpec, rootContext, delegate, emptyObject,
 		defer, chain, whenAll, isArray, indexOf, lifecycleSteps, undef;
 
-	wire.version = "0.8.1";
+	wire.version = "0.8.2";
 
 	rootSpec = global['wire'] || {};
 	lifecycleSteps = ['create', 'configure', 'initialize', 'connect', 'ready'];
@@ -350,7 +350,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				// have it be resolved in the chain.  So, it may return
 				var d = defer();
 				when(createItem(spec, createPath(name, path)), function(val) {
-					d.resolve(getResolvedValue(val));
+					d.resolve(val);
 				}, d.reject);
 
 				return d.promise;
@@ -878,7 +878,7 @@ define(['require', 'when', './base'], function(require, when, basePlugin) {
 				resolver.resolve(new PromiseKeeper(childPromise));
 
 			} else {
-				resolver.resolve(createChild());
+				chain(createChild(), resolver);
 
 			}
 		}
