@@ -237,9 +237,9 @@
 					}).then(
 							function(context) {
 
-								var success = typeof context.parent.child.value.then == 'function';
+								var success = typeof context.parent.child.valueOf().then == 'function';
 
-								context.parent.child.value.then(function(childContext) {
+								context.parent.child.valueOf().then(function(childContext) {
 									success = success && !!childContext.success;
 
 									childContext.destroy().then(
