@@ -1,6 +1,7 @@
 node_modules/
 experiments/
 .npmignore
+experiments/
 *~
 .idea/
 tools/

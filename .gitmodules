@@ -16,3 +16,6 @@
 [submodule "test/requirejs"]
 	path = test/requirejs
 	url = https://github.com/jrburke/requirejs.git
+[submodule "test/requirejs-domReady"]
+	path = test/requirejs-domReady
+	url = https://github.com/requirejs/domReady.git
