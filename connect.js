@@ -41,8 +41,8 @@
  */
 
 (function(define) {
-define(['when', 'aop', './lib/functional', './lib/connection'],
-function(when, aop, functional, connection) {
+define(['when', 'meld', './lib/functional', './lib/connection'],
+function(when, meld, functional, connection) {
 
 	return {
         wire$plugin: function eventsPlugin(ready, destroyed /*, options */) {
@@ -59,7 +59,7 @@ function(when, aop, functional, connection) {
              * @param handler {Function} function to invoke
              */
             function doConnectOne(source, event, handler) {
-                return aop.on(source, event, handler);
+                return meld.on(source, event, handler);
             }
 
 			function handleConnection(source, eventName, handler) {

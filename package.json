@@ -39,7 +39,7 @@
         }
     ],
     "dependencies": {
-        "aop": "git://github.com/cujojs/aop#0.5.3",
+        "meld": "~0.6",
         "when": ">=1.4.0 <2.0.0"
     },
     "main": "./wire",
