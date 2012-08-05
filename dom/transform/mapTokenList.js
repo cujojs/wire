@@ -31,7 +31,6 @@ define(function () {
 				// if there's a delimiter already (spaces, typically),
 				// replace it. if a translated value exists, use it.
 				// otherwise, use original token.
-//				return (s ? ' ' : s) + (trans ? trans : fallbackToken);
 				var s2 = s + (token in map ? map[token] : fallbackToken);
 				return s2 == s ? '' : s2;
 			});
