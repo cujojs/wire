@@ -13,7 +13,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['dojo', 'aop', 'dojo/_base/connect'], function(pubsub, aop) {
+define(['dojo', 'meld', 'dojo/_base/connect'], function(pubsub, meld) {
 
 	return {
 		wire$plugin: function pubsubPlugin(ready, destroyed /*, options */) {
@@ -27,7 +27,7 @@ define(['dojo', 'aop', 'dojo/_base/connect'], function(pubsub, aop) {
 			 * @param topic {String} dojo.publish topic on which to publish the result
 			 */
 			function addPublishAdvice(target, method, topic) {
-				return aop.after(target, method, function(result) {
+				return meld.after(target, method, function(result) {
 					pubsub.publish(topic, [result]);
 				});
 			}

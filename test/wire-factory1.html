@@ -152,19 +152,10 @@
 							}
 						}
 					}).then(
-						function(context) {
-
-							var success = !!context.child.success;
-
-							context.child.destroy().then(
-								function() {
-									dohd.callback(success);
-								},
-								fail(dohd)
-							);
-
-						},
-						fail(dohd)
+                        function(context) {
+                            dohd.callback(context.child.success);
+                        },
+                        fail(dohd)
 					);
 
 					return dohd;
@@ -195,22 +186,10 @@
 					var dohd = new doh.Deferred();
 
 					wire('parent').then(
-						function(context) {
-
-							var child, success;
-
-							child = context.parent.child;
-							success = !!child.success;
-
-							child.destroy().then(
-								function() {
-									dohd.callback(success);
-								},
-								fail(dohd)
-							);
-
-						},
-						fail(dohd)
+                        function(context) {
+                            dohd.callback(context.parent.child.success);
+                        },
+                        fail(dohd)
 					);
 
 					return dohd;
@@ -258,9 +237,9 @@
 					}).then(
 							function(context) {
 
-								var success = typeof context.parent.child.then == 'function';
+								var success = typeof context.parent.child.valueOf().then == 'function';
 
-								context.parent.child.then(function(childContext) {
+								context.parent.child.valueOf().then(function(childContext) {
 									success = success && !!childContext.success;
 
 									childContext.destroy().then(

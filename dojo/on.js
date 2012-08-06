@@ -33,6 +33,10 @@ define(['../lib/plugin-base/on', 'dojo/on', 'dojo/query'], function(createOnPlug
 			event = dojoOn.selector(selector, event);
 		}
 
+		// dojo's lite selector relies on node.getAttribute, which will fail if
+		// node is document.  So, substitute documentElement instead.
+		if(node === document) node = document.documentElement;
+
 		return dojoOn(node, event, makeEventHandler(handler, selector)).remove;
 	}
 

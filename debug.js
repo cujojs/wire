@@ -75,7 +75,7 @@
  * }
  */
 (function(global, define) {
-define(['aop'], function(aop) {
+define(['meld'], function(meld) {
     var timer, defaultTimeout, logger, createTracer;
 
     function noop() {}
@@ -309,7 +309,7 @@ define(['aop'], function(aop) {
             trace = function (path, target) {
                 if (traceFilter(path)) {
                     // Create the aspect, if the path matched
-                    traceAspects.push(aop.add(target, pointcut, createTraceAspect(path)));
+                    traceAspects.push(meld.add(target, pointcut, createTraceAspect(path)));
                 }
                 // trace intentionally does not resolve the promise
                 // trace relies on the existing plugin method to resolve it

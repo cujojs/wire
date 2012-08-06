@@ -1,5 +1,5 @@
 (function (define) {
-define(['require'], function (require) {
+define(function (require) {
 "use strict";
 
 	var removeRxParts, trimLeadingRx, splitClassNamesRx, partial;
@@ -155,22 +155,11 @@ define(['require'], function (require) {
 			};
 		}
 
-		function createPrevRemover () {
-			var prev = '', remover = createClassRemover();
-			return function removePrev (classes) {
-				var next;
-				remover.setRemoves(prev);
-				next = remover(classes);
-				prev = classes;
-				return next;
-			};
-		}
-
 	};
 
 });
 }(
 	typeof define == 'function' && define.amd
 		? define
-		: function (deps, factory) { module.exports = factory(deps.map(require)); }
+		: function (factory) { module.exports = factory(require); }
 ));
