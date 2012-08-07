@@ -1,5 +1,8 @@
 /** @license MIT License (c) copyright B Cavalier & J Hann */
 
+/*jshint sub:true*/
+/*global Node:true*/
+
 /**
  * debug
  * wire plugin that logs timing and debug information about wiring context and object
@@ -76,114 +79,116 @@
  */
 (function(global, define) {
 define(['meld'], function(meld) {
-    var timer, defaultTimeout, logger, createTracer;
+	var timer, defaultTimeout, logger, createTracer;
 
-    function noop() {}
+	function noop() {}
 
-    // Setup console for node, sane browsers, or IE
-    logger = typeof console != 'undefined'
-        ? console
-        : global['console'] || { log:noop, error:noop };
+	// Setup console for node, sane browsers, or IE
+	logger = typeof console != 'undefined'
+		? console
+		: global['console'] || { log:noop, error:noop };
 
-    // TODO: Consider using stacktrace.js
-    // https://github.com/eriwen/javascript-stacktrace
-    // For now, quick and dirty, based on how stacktrace.js chooses the appropriate field
-    // and log using console.error
-    function logStack(e) {
-        var stack = e.stack || e.stacktrace;
-        if(!stack) {
-            // If e.sourceURL and e.line are available, this is probably Safari, so
-            // we can build a clickable source:line
-            // Fallback to message if available
-            // If all else fails, just use e itself
-            stack = e.sourceURL && e.line
-                ? e.sourceURL + ':' + e.line
-                : e.message || e;
-        }
+	// TODO: Consider using stacktrace.js
+	// https://github.com/eriwen/javascript-stacktrace
+	// For now, quick and dirty, based on how stacktrace.js chooses the appropriate field
+	// and log using console.error
+	function logStack(e) {
+		var stack = e.stack || e.stacktrace;
+		if(!stack) {
+			// If e.sourceURL and e.line are available, this is probably Safari, so
+			// we can build a clickable source:line
+			// Fallback to message if available
+			// If all else fails, just use e itself
+			stack = e.sourceURL && e.line
+				? e.sourceURL + ':' + e.line
+				: e.message || e;
+		}
 
-        logger.error(stack);
-    }
+		logger.error(stack);
+	}
 
-    timer = createTimer();
+	timer = createTimer();
 
-    // If we don't see any wiring progress in this amount of time
-    // since the last time we saw something happen, then we'll log
-    // an error.
-    defaultTimeout = 5000;
+	// If we don't see any wiring progress in this amount of time
+	// since the last time we saw something happen, then we'll log
+	// an error.
+	defaultTimeout = 5000;
 
-    /**
-     * Builds a string with timing info and a message for debug output
-     *
-     * @param text {String} message
-     * @param contextTimer per-context timer information
-     *
-     * @returns A formatted string for output
-     */
-    function time(text, contextTimer) {
-        var all, timing;
+	/**
+	 * Builds a string with timing info and a message for debug output
+	 *
+	 * @param text {String} message
+	 * @param contextTimer per-context timer information
+	 *
+	 * @returns A formatted string for output
+	 */
+	function time(text, contextTimer) {
+		var all, timing;
 
-        all = timer();
-        timing = "(total: " +
-                 (contextTimer
-                     ? all.total + "ms, context: " + contextTimer()
-                     : all)
-            + "): ";
+		all = timer();
+		timing = "(total: " +
+				 (contextTimer
+					 ? all.total + "ms, context: " + contextTimer()
+					 : all)
+			+ "): ";
 
-        return "DEBUG " + timing + text;
-    }
+		return "DEBUG " + timing + text;
+	}
 
-    /**
-     * Creates a timer function that, when called, returns an object containing
-     * the total elapsed time since the timer was created, and the split time
-     * since the last time the timer was called.  All times in milliseconds
-     *
-     * @returns timer
-     */
-    function createTimer() {
-        var start, split;
+	/**
+	 * Creates a timer function that, when called, returns an object containing
+	 * the total elapsed time since the timer was created, and the split time
+	 * since the last time the timer was called.  All times in milliseconds
+	 *
+	 * @returns timer
+	 */
+	function createTimer() {
+		var start, split;
 
-        start = new Date().getTime();
-        split = start;
+		start = new Date().getTime();
+		split = start;
 
-        /**
-         * Returns the total elapsed time since this timer was created, and the
-         * split time since this getTime was last called.
-         *
-         * @returns Object containing total and split times in milliseconds, plus a
-         * toString() function that is useful in logging the time.
-         */
-        return function getTime() {
-            var now, total, splitTime;
+		/**
+		 * Returns the total elapsed time since this timer was created, and the
+		 * split time since this getTime was last called.
+		 *
+		 * @returns Object containing total and split times in milliseconds, plus a
+		 * toString() function that is useful in logging the time.
+		 */
+		return function getTime() {
+			var now, total, splitTime;
 
-            now = new Date().getTime();
-            total = now - start;
-            splitTime = now - split;
-            split = now;
+			now = new Date().getTime();
+			total = now - start;
+			splitTime = now - split;
+			split = now;
 
-            return {
-                total:total,
-                split:splitTime,
-                toString:function () {
-                    return '' + splitTime + 'ms / ' + total + 'ms';
-                }
-            };
-        };
-    }
+			return {
+				total:total,
+				split:splitTime,
+				toString:function () {
+					return '' + splitTime + 'ms / ' + total + 'ms';
+				}
+			};
+		};
+	}
 
-    function defaultFilter(path) {
-        return !!path;
-    }
+	function defaultFilter(path) {
+		return !!path;
+	}
 
-    function createPathFilter(filter) {
-        if (!filter) return defaultFilter;
+	function createPathFilter(filter) {
+		if (!filter) {
+			return defaultFilter;
+		}
 
-        var rx = filter.test ? filter : new RegExp(filter);
+		var rx = filter.test ? filter : new RegExp(filter);
 
-        return function (path) {
-            return rx.test(path);
-        }
+		return function (path) {
+			return rx.test(path);
+		};
 
-    }
+	}
 
 	/**
 	 * Returns true if it is a Node
@@ -192,92 +197,93 @@ define(['meld'], function(meld) {
 	 * @return true iff it is a Node
 	 */
 	function isNode(it) {
-		return typeof Node === "object" ? it instanceof Node :
-				it && typeof it === "object" && typeof it.nodeType === "number" && typeof it.nodeName==="string";
+		return typeof Node === "object"
+			? it instanceof Node
+			: it && typeof it === "object" && typeof it.nodeType === "number" && typeof it.nodeName==="string";
 	}
 
-    /**
-     * Function that applies tracing AOP to components being wired
-     * @function
-     * @param options {Object} tracing options
-     * @param plugin {Object} debug plugin instance to which to add tracing functionality
-     */
-    createTracer = (function() {
-        var depth, padding, defaultStep, defaultPointcut;
+	/**
+	 * Function that applies tracing AOP to components being wired
+	 * @function
+	 * @param options {Object} tracing options
+	 * @param plugin {Object} debug plugin instance to which to add tracing functionality
+	 */
+	createTracer = (function() {
+		var depth, padding, defaultStep, defaultPointcut;
 
-        /** Current trace depth */
-        depth = 0;
+		/** Current trace depth */
+		depth = 0;
 
-        /** Padding character for indenting traces */
-        padding =  '.';
+		/** Padding character for indenting traces */
+		padding =  '.';
 
-        /** 2^8 padding = 128 */
-        for(var i=0; i<8; i++) {
-            padding += padding;
-        }
+		/** 2^8 padding = 128 */
+		for(var i=0; i<8; i++) {
+			padding += padding;
+		}
 
-        /** Default lifecycle step at which to begin tracing */
-        defaultStep = 'configure';
+		/** Default lifecycle step at which to begin tracing */
+		defaultStep = 'configure';
 
-        /** Default pointcut query to match methods that will be traced */
-        defaultPointcut = /^[^_]/;
-        
-        function logAfter(context, tag, start, val) {
-            console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms): ', val);
-        }
+		/** Default pointcut query to match methods that will be traced */
+		defaultPointcut = /^[^_]/;
+		
+		function logAfter(context, tag, start, val) {
+			console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms): ', val);
+		}
 
-        /**
-         * Creates an aspect to be applied to components that are being traced
-         * @param path {String} component path
-         */
-        function createTraceAspect(path) {
-            return {
-                around:function (joinpoint) {
-                    var val, context, start, indent;
-                    
-                    // Setup current indent level
-                    indent = padding.substr(0, depth);
-                    // Form full path to invoked method
-                    context = indent + 'DEBUG: ' + path + '.' + joinpoint.method;
+		/**
+		 * Creates an aspect to be applied to components that are being traced
+		 * @param path {String} component path
+		 */
+		function createTraceAspect(path) {
+			return {
+				around:function (joinpoint) {
+					var val, context, start, indent;
+					
+					// Setup current indent level
+					indent = padding.substr(0, depth);
+					// Form full path to invoked method
+					context = indent + 'DEBUG: ' + path + '.' + joinpoint.method;
 
-                    // Increase the depth before proceeding so that nested traces will be indented
-                    ++depth;
+					// Increase the depth before proceeding so that nested traces will be indented
+					++depth;
 
-                    logger.log(context, joinpoint.args);
+					logger.log(context, joinpoint.args);
 
-                    try {
-                        start = new Date();
-                        val = joinpoint.proceed();
+					try {
+						start = new Date();
+						val = joinpoint.proceed();
 
-                        logAfter(context, ' RETURN (', start, val);
+						logAfter(context, ' RETURN (', start, val);
 
-                        // return result
-                        return val;
+						// return result
+						return val;
 
-                    } catch (e) {
+					} catch (e) {
 
-                        // rethrow
-                        logAfter(context, ' THROW (', start, e ? e.toString() : e);
+						// rethrow
+						logAfter(context, ' THROW (', start, e ? e.toString() : e);
 
-                        throw e;
+						throw e;
 
-                    } finally {
-                        // And now decrease the depth after
-                        --depth;
-                    }
-                }
-            };
-        }
+					} finally {
+						// And now decrease the depth after
+						--depth;
+					}
+				}
+			};
+		}
 
-        /**
-         * Implementation of createTracer
-         */
-        return function(options, plugin, filter) {
-            var trace, untrace, traceStep, traceFilter, tracePointcut, traceAspects;
+		/**
+		 * Implementation of createTracer
+		 */
+		return function(options, plugin, filter) {
+			var trace, untrace, traceStep, traceFilter, tracePointcut, traceAspects;
 
-            traceFilter = options.trace.filter ? createPathFilter(options.trace.filter) : filter;
-            tracePointcut = options.trace.pointcut || defaultPointcut;
-            traceStep = options.trace.step || defaultStep;
+			traceFilter = options.trace.filter ? createPathFilter(options.trace.filter) : filter;
+			tracePointcut = options.trace.pointcut || defaultPointcut;
+			traceStep = options.trace.step || defaultStep;
 
 			function isTraceable(target, prop) {
 				return typeof target[prop] === 'function'
@@ -285,148 +291,152 @@ define(['meld'], function(meld) {
 					&& tracePointcut.test(prop);
 			}
 
-            /**
-             * Trace pointcut query function that filters out wire plugins
-             * @param target {Object} target object to query for methods to advise
-             */
-            function pointcut(target) {
-                var matches = [];
+			/**
+			 * Trace pointcut query function that filters out wire plugins
+			 * @param target {Object} target object to query for methods to advise
+			 */
+			function pointcut(target) {
+				var matches = [];
 
-				if(isNode(target)) return matches;
+				if(isNode(target)) {
+					return matches;
+				}
 
-                for (var p in target) {
-                    // Only match functions, exclude wire plugins, and then apply
-                    // the supplied tracePointcut regexp
-                    if (isTraceable(target, p)) {
-                        matches.push(p);
-                    }
-                }
+				for (var p in target) {
+					// Only match functions, exclude wire plugins, and then apply
+					// the supplied tracePointcut regexp
+					if (isTraceable(target, p)) {
+						matches.push(p);
+					}
+				}
 
-                return matches;
-            }
+				return matches;
+			}
 
-            traceAspects = [];
-            trace = function (path, target) {
-                if (traceFilter(path)) {
-                    // Create the aspect, if the path matched
-                    traceAspects.push(meld.add(target, pointcut, createTraceAspect(path)));
-                }
-                // trace intentionally does not resolve the promise
-                // trace relies on the existing plugin method to resolve it
-            };
+			traceAspects = [];
+			trace = function (path, target) {
+				if (traceFilter(path)) {
+					// Create the aspect, if the path matched
+					traceAspects.push(meld.add(target, pointcut, createTraceAspect(path)));
+				}
+				// trace intentionally does not resolve the promise
+				// trace relies on the existing plugin method to resolve it
+			};
 
-            untrace = function () {
-                for (var i = traceAspects.length-1; i >= 0; --i) {
-                    traceAspects[i].remove();
-                }
-            };
+			untrace = function () {
+				for (var i = traceAspects.length-1; i >= 0; --i) {
+					traceAspects[i].remove();
+				}
+			};
 
-            // Defend against changes to the plugin in future revs
-            var orig = plugin[traceStep] || function (promise) { promise.resolve(); };
+			// Defend against changes to the plugin in future revs
+			var orig = plugin[traceStep] || function (promise) { promise.resolve(); };
 
-            // Replace the plugin listener method with one that will call trace()
-            // and add traceAspect
-            plugin[traceStep] = function (promise, proxy, wire) {
-                trace(proxy.path, proxy.target);
-                orig(promise, proxy, wire);
-            };
+			// Replace the plugin listener method with one that will call trace()
+			// and add traceAspect
+			plugin[traceStep] = function (promise, proxy, wire) {
+				trace(proxy.path, proxy.target);
+				orig(promise, proxy, wire);
+			};
 
-            return { trace: trace, untrace: untrace };
-        }
+			return { trace: trace, untrace: untrace };
+		};
 
-    })();
+	})();
 
 	function logSeparator() {
 		logger.log('---------------------------------------------------');
 	}
 
-    return {
-        wire$plugin:function debugPlugin(ready, destroyed, options) {
+	return {
+		wire$plugin:function debugPlugin(ready, destroyed, options) {
 
-            var contextTimer, timeout, paths, count, tag, logCreated, logDestroyed, checkPathsTimeout,
-                verbose, filter, plugin, tracer;
+			var contextTimer, timeout, paths, count, tag, logCreated, logDestroyed, checkPathsTimeout,
+				verbose, filter, plugin, tracer;
 
-            verbose = options.verbose;
-            contextTimer = createTimer();
+			verbose = options.verbose;
+			contextTimer = createTimer();
 
-            count = 0;
-            tag = "WIRING";
+			count = 0;
+			tag = "WIRING";
 
-            tracer = { trace: noop, untrace: noop };
+			tracer = { trace: noop, untrace: noop };
 
-            filter = createPathFilter(options.filter);
+			filter = createPathFilter(options.filter);
 
-            function contextTime(msg) {
-                return time(msg, contextTimer);
-            }
+			function contextTime(msg) {
+				return time(msg, contextTimer);
+			}
 
-            logger.log(contextTime("Context init"));
+			logger.log(contextTime("Context init"));
 
-            ready.then(
-                function onContextReady(context) {
-                    cancelPathsTimeout();
-                    logger.log(contextTime("Context ready"), context);
-                },
-                function onContextError(err) {
-                    cancelPathsTimeout();
-                    console.error(contextTime("Context ERROR: ") + err, err);
-                    logStack(err);
-                }
-            );
+			ready.then(
+				function onContextReady(context) {
+					cancelPathsTimeout();
+					logger.log(contextTime("Context ready"), context);
+				},
+				function onContextError(err) {
+					cancelPathsTimeout();
+					console.error(contextTime("Context ERROR: ") + err, err);
+					logStack(err);
+				}
+			);
 
-            destroyed.then(
-                function onContextDestroyed() {
-                    tracer.untrace();
-                    logger.log(contextTime("Context destroyed"));
-                },
-                function onContextDestroyError(err) {
-                    tracer.untrace();
-                    logger.error(contextTime("Context destroy ERROR") + err, err);
-                    logStack(err);
-                }
-            );
+			destroyed.then(
+				function onContextDestroyed() {
+					tracer.untrace();
+					logger.log(contextTime("Context destroyed"));
+				},
+				function onContextDestroyError(err) {
+					tracer.untrace();
+					logger.error(contextTime("Context destroy ERROR") + err, err);
+					logStack(err);
+				}
+			);
 
-            function makeListener(step, verbose) {
-                return function (promise, proxy /*, wire */) {
-                    cancelPathsTimeout();
+			function makeListener(step, verbose) {
+				return function (promise, proxy /*, wire */) {
+					cancelPathsTimeout();
 
-                    var path = proxy.path;
+					var path = proxy.path;
 
-                    if (paths[path]) {
-                        paths[path].status = step;
-                    }
+					if (paths[path]) {
+						paths[path].status = step;
+					}
 
-                    if (verbose && filter(path)) {
-                        var message = time(step + ' ' + (path || proxy.id || ''), contextTimer);
-                        if (proxy.target) {
-                            logger.log(message, proxy.target, proxy.spec);
-                        } else {
-                            logger.log(message, proxy);
-                        }
-                    }
+					if (verbose && filter(path)) {
+						var message = time(step + ' ' + (path || proxy.id || ''), contextTimer);
+						if (proxy.target) {
+							logger.log(message, proxy.target, proxy.spec);
+						} else {
+							logger.log(message, proxy);
+						}
+					}
 
-                    if(count) {
-                        checkPathsTimeout = setTimeout(checkPaths, timeout);
-                    }
+					if(count) {
+						checkPathsTimeout = setTimeout(checkPaths, timeout);
+					}
 
-                    promise.resolve();
-                }
-            }
+					promise.resolve();
+				};
+			}
 
-            paths = {};
-            timeout = options.timeout || defaultTimeout;
-            logCreated = makeListener('created', verbose);
-            logDestroyed = makeListener('destroyed', true);
+			paths = {};
+			timeout = options.timeout || defaultTimeout;
+			logCreated = makeListener('created', verbose);
+			logDestroyed = makeListener('destroyed', true);
 
-            function cancelPathsTimeout() {
-                clearTimeout(checkPathsTimeout);
-                checkPathsTimeout = null;
-            }
+			function cancelPathsTimeout() {
+				clearTimeout(checkPathsTimeout);
+				checkPathsTimeout = null;
+			}
 
-            function checkPaths() {
-                if (!checkPathsTimeout) return;
+			function checkPaths() {
+				if (!checkPathsTimeout) {
+					return;
+				}
 
-                var p, component, msg, ready, notReady;
+				var p, component, msg, ready, notReady;
 
 				logSeparator();
 				if(count) {
@@ -434,14 +444,14 @@ define(['meld'], function(meld) {
 					notReady = [];
 					logger.error(tag + ': No progress in ' + timeout + 'ms, status:');
 
-                    for (p in paths) {
-                        component = paths[p];
+					for (p in paths) {
+						component = paths[p];
 						msg = p + ': ' + component.status;
 
 						(component.status == 'ready' ? ready : notReady).push(
 							{ msg: msg, spec: component.spec }
 						);
-                    }
+					}
 
 					if(notReady.length > 0) {
 						logSeparator();
@@ -460,58 +470,58 @@ define(['meld'], function(meld) {
 							logger.log(component.msg, component.spec);
 						}
 					}
-                } else {
-                    logger.error(tag + ': No components created after ' + timeout + 'ms');
-                }
+				} else {
+					logger.error(tag + ': No components created after ' + timeout + 'ms');
+				}
 
 				logSeparator();
 			}
 
-            plugin = {
-                create:function (promise, proxy) {
-                    var path = proxy.path;
+			plugin = {
+				create:function (promise, proxy) {
+					var path = proxy.path;
 
-                    count++;
-                    paths[path || ('(unnamed-' + count + ')')] = {
-                        spec:proxy.spec
-                    };
+					count++;
+					paths[path || ('(unnamed-' + count + ')')] = {
+						spec:proxy.spec
+					};
 
-                    logCreated(promise, proxy);
-                },
-                configure:  makeListener('configured', verbose),
-                initialize: makeListener('initialized', verbose),
-                ready:      makeListener('ready', true),
-                destroy:    function(promise, proxy) {
-                    // stop tracking destroyed components, since we don't
-                    // care anymore
-                    delete paths[proxy.path];
-                    count--;
-                    tag = "DESTROY";
+					logCreated(promise, proxy);
+				},
+				configure:  makeListener('configured', verbose),
+				initialize: makeListener('initialized', verbose),
+				ready:      makeListener('ready', true),
+				destroy:    function(promise, proxy) {
+					// stop tracking destroyed components, since we don't
+					// care anymore
+					delete paths[proxy.path];
+					count--;
+					tag = "DESTROY";
 
-                    logDestroyed(promise, proxy);
-                }
-            };
+					logDestroyed(promise, proxy);
+				}
+			};
 
-            if (options.trace) {
-                tracer = createTracer(options, plugin, filter);
-            }
+			if (options.trace) {
+				tracer = createTracer(options, plugin, filter);
+			}
 
-            checkPathsTimeout = setTimeout(checkPaths, timeout);
+			checkPathsTimeout = setTimeout(checkPaths, timeout);
 
-            return plugin;
-        }
-    };
+			return plugin;
+		}
+	};
 
 });
 })(this, typeof define == 'function'
 	// use define for AMD if available
 	? define
-    : typeof module != 'undefined'
-        ? function(deps, factory) {
+	: typeof module != 'undefined'
+		? function(deps, factory) {
 			module.exports = factory.apply(this, deps.map(function(x) {
 				return require(x);
 			}));
-        }
-	    // If no define or module, attach to current context.
-	    : function(deps, factory) { this.wire_debug = factory(this.aop); }
+		}
+		// If no define or module, attach to current context.
+		: function(deps, factory) { this.wire_debug = factory(this.aop); }
 );
