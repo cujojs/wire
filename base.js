@@ -82,7 +82,9 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 		target = facet.target;
 		intros = facet.options;
 
-		if(!Array.isArray(intros)) intros = [intros];
+		if(!Array.isArray(intros)) {
+			intros = [intros];
+		}
 
 		chain(when.reduce(intros, function(target, intro) {
 			return doMixin(target, intro, wire);
@@ -170,10 +172,18 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 			destroy: function() {},
 			clone: function(options) {
 				// don't try to clone a primitive
-				if (typeof object != 'object') return object;
+				if (typeof object != 'object') {
+					return object;
+				}
 				// cloneThing doesn't clone functions (methods), so clone here:
-				else if (typeof object == 'function') return object.bind();
-				if (!options) options = {};
+				else if (typeof object == 'function') {
+					return object.bind();
+				}
+				
+				if (!options) {
+					options = {};
+				}
+
 				return cloneThing(object, options);
 			}
 		};
@@ -240,7 +250,10 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 
 		when(wire(sourceRef), function (ref) {
 			return when(wire.getProxy(ref), function (proxy) {
-				if (!proxy.clone) throw new Error('No clone function found for ' + spec.id);
+				if (!proxy.clone) {
+					throw new Error('No clone function found for ' + spec.id);
+				}
+				
 				return proxy.clone(options);
 			});
 		}).then(resolver.resolve, resolver.reject);

@@ -105,7 +105,7 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
 			}
 
 			when.chain(when.all(promises), resolver);
-		}
+		};
 	}
 
     //
