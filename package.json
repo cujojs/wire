@@ -7,7 +7,8 @@
 		"aop",
 		"dependency injection",
 		"dependency inversion",
-		"application composition"
+		"application composition",
+		"cujo"
 	],
 	"licenses": [
 		{
