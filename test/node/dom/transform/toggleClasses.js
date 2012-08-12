@@ -11,7 +11,7 @@ function fakeNode(classes) {
 	return { className: classes||'' }
 }
 
-// TODO: Add tests cases when node and/or classes are preconfigured
+// TODO: Add tests cases when both node AND classes are preconfigured
 
 buster.testCase('dom/transform/toggleClasses', {
 
