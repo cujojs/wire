@@ -26,6 +26,11 @@ buster.testCase('dom/transform/toggleClasses', {
 			assert.equals(t.add(fakeNode('a'), 'a').className, 'a');
 		},
 
+		'should preserve existing classes': function() {
+			var t = toggleClasses();
+			assert.match(t.add(fakeNode('b c'), 'a').className, /^(a\sb\sc)|(b\sc\sa)|(b\sa\sc)$/);
+		},
+
 		'when node is bound': {
 			'should add class to bound node': function() {
 				var n, t;
@@ -41,6 +46,16 @@ buster.testCase('dom/transform/toggleClasses', {
 				var t = toggleClasses({ classes: 'a' });
 				assert.equals(t.add(fakeNode()).className, 'a');
 			}
+		},
+
+		'when node and classes are bound': {
+			'should add bound classes to bound node': function() {
+				var n, t;
+				n = fakeNode();
+				t = toggleClasses({ node: n, classes: 'a' });
+
+				assert.equals(t.add().className, 'a');
+			}
 		}
 
 	},
@@ -54,6 +69,11 @@ buster.testCase('dom/transform/toggleClasses', {
 		'should be a noop if classes not present': function() {
 			var t = toggleClasses();
 			assert.equals(t.remove(fakeNode('a'), 'b').className, 'a');
+		},
+
+		'should preserve existing classes': function() {
+			var t = toggleClasses();
+			assert.match(t.remove(fakeNode('b a c'), 'a').className, /^(b\sc)|(c\sb)$/);
 		},
 
 		'when node is bound': {
@@ -71,8 +91,17 @@ buster.testCase('dom/transform/toggleClasses', {
 				var t = toggleClasses({ classes: 'a' });
 				assert.equals(t.remove(fakeNode('a')).className, '');
 			}
-		}
+		},
 
+		'when node and classes are bound': {
+			'should remove bound classes from bound node': function() {
+				var n, t;
+				n = fakeNode('a');
+				t = toggleClasses({ node: n, classes: 'a' });
+
+				assert.equals(t.remove().className, '');
+			}
+		}
 	},
 
 	'toggle': {
@@ -84,6 +113,16 @@ buster.testCase('dom/transform/toggleClasses', {
 		'should remove classes if present': function() {
 			var toggle = toggleClasses();
 			assert.equals(toggle(fakeNode('a'), 'a').className, '');
+		},
+
+		'should preserve existing classes': function() {
+			var n, toggle;
+
+			n = fakeNode('b c');
+			toggle = toggleClasses();
+
+			assert.match(toggle(n, 'a').className, /^(a\sb\sc)|(b\sc\sa)|(b\sa\sc)$/);
+			assert.match(toggle(n, 'a').className, /^(b\sc)|(c\sb)$/);
 		},
 
 		'when node is bound': {
@@ -107,6 +146,18 @@ buster.testCase('dom/transform/toggleClasses', {
 
 				assert.equals(toggle(n).className, 'a');
 				assert.equals(toggle(n).className, '');
+			}
+		},
+
+		'when node and classes are bound': {
+			'should toggle bound classes on bound node': function() {
+				var n, toggle;
+
+				n = fakeNode();
+				toggle = toggleClasses({ node: n, classes: 'a' });
+
+				assert.equals(toggle().className, 'a');
+				assert.equals(toggle().className, '');
 			}
 		}
 
