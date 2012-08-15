@@ -52,7 +52,7 @@ Plugins also allow you to use capabilities of your existing modules/libraries/fr
 
 ### 0.8.2
 
-* Compatible with [when.js](https://github.com/cujojs/when) v1.0.x - v1.4.0
+* Compatible with [when.js](https://github.com/cujojs/when) v1.0.x - v1.4.x
 
 ### 0.8.1
 
