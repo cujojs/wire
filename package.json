@@ -39,7 +39,7 @@
 		}
 	],
 	"dependencies": {
-		"meld": "~0.6",
+		"meld": "~0.7",
 		"when": ">=1.4.0 <2.0.0"
 	},
 	"devDependencies": {
