@@ -10,10 +10,12 @@ define(function (require) {
 	return function (options) {
 		var mapper, replacer;
 
+		if(!options) options = {};
+
 		if (!options.group) options.group = mapToGroup(options.map);
 
-		mapper = mapTokenList(options.map, options);
-		replacer = replaceClasses(options);
+		mapper = options.mapper || mapTokenList(options.map, options);
+		replacer = options.replacer || replaceClasses(options);
 
 		return options.node
 			? function (val) { return replacer(mapper(val)); }

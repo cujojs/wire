@@ -43,8 +43,8 @@
             mixin: {
                 paths: {
 					'jquery': 'test/lib/jquery',
-//                    'wire/domReady': 'test/requirejs/domReady'
-                    domReady: 'test/requirejs/domReady'
+//                    'wire/domReady': 'test/requirejs-domReady/domReady',
+                    domReady: 'test/requirejs-domReady/domReady'
                 }
             }
         }
@@ -96,7 +96,7 @@
 //	addPackage({ name: 'dojo', location: 'test/lib/dojo16/dojo', main: 'lib/main-browser' });
 //    addPackage({ name: 'dijit', location: 'test/lib/dojo16/dijit', main: 'lib/main' });
     addPackage({ name: 'sizzle', location: 'support/sizzle' });
-    addPackage({ name: 'aop', location: 'support/aop' });
+    addPackage({ name: 'meld', location: 'support/meld' });
     addPackage({ name: 'when', location: 'support/when' });
     // This is needed because we're running unit tests from *within* the wire dir
     addPackage({ name: 'wire', location: '.' });

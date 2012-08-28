@@ -1,5 +1,7 @@
 /** @license MIT License (c) copyright B Cavalier & J Hann */
 
+/*jshint sub:true*/
+
 /**
  * wire
  * Javascript IOC Container

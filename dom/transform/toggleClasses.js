@@ -14,6 +14,9 @@ define(function (require) {
 		removes = '';
 
 		args = [];
+
+		if(!options) options = {};
+
 		if (options.node) args.push(options.node);
 		if (options.classes) args.push(options.classes);
 
