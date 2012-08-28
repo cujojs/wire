@@ -1,6 +1,6 @@
 # Rendering the DOM
 
-Wire includes a DOM rendering plugin, wire/dom/render that exposes a wire factory.  The `render` factory creates a DOM fragment from a logic-less HTML template.  You may specify an accompanying CSS file, an i18n string bundle, and a DOM element onto which to merge the rendered DOM fragment.  For better placement control, you can also use the [wire/dom](#wire-dom) plugin's `insert` facet to place the DOM fragment in or around any other DOM node.
+Wire includes a DOM rendering plugin, wire/dom/render that exposes a wire factory.  The `render` factory creates a DOM fragment from a logic-less HTML template.  You may specify an accompanying CSS file, an i18n string bundle, and a DOM element onto which to merge the rendered DOM fragment.  For better placement control, you can also use the [wire/dom](#inserting-dom-nodes) plugin's `insert` facet to place the DOM fragment in or around any other DOM node.
 
 ### Why logic-less?
 
@@ -10,9 +10,9 @@ We include a logic-less template engine mainly for better separation of concerns
 * creation of a collection of sub-views in a loop
 * transformation or formatting of data
 
-Conditional visibility can often be better solved by toggling CSS state classes at the top element of a view.  [wire/dom/transform](#wire-dom-transform) has several helper functions that can be easily composed into your wire specs.
+Conditional visibility can often be better solved by toggling CSS state classes at the top element of a view.  [wire/dom/transform](#modifying-css-classes) has several helper functions that can be easily composed into your wire specs.
 
-Creating several sub-views in a loop is a sure sign that your view is data-driven.  Consider using a data-binding library, such as [cola.js](https://github.com/cujojs/cola).  Similarly, data formatting can typically be more elegantly handled in a wire spec than in a template language.
+Creating several sub-views in a loop is a sure sign that your view is data-driven.  Consider using a data-binding library, such as [cola.js](https://github.com/cujojs/cola).  Similarly, data formatting can typically be more elegantly handled in a wire spec than in a template language.  [wire/aop](./aop.md)
 
 If you have existing templates that use other template engines, such as [mustache](http://mustache.github.com/) or [handlebars](http://handlebarsjs.com//), you can still use them.
 
@@ -49,6 +49,8 @@ require = {
 # Cloning DOM nodes
 
 # Inserting DOM nodes
+
+# Modifying CSS classes
 
 # Listening for events
 
