@@ -1,3 +1,33 @@
+# Working with DOM Nodes
+
+When using wire.js in a browser, you're likely going to need to work with DOM nodes.  No problem.  You can query, move, create, and manipulate DOM nodes directly in wire specs!  Use the built-in wire/jquery/dom or wire/dom/dojo plugins to leverage the DOM manipulation features of those libraries, or use wire's lightweight wire/sizzle plugin, or -- if you're targeting modern browsers only -- use the tiny wire/dom plugin.
+
+All of these DOM plugins have the exact same set of features and identical syntax so they're interchangeable.  Start out with wire/dom during early development and move over to wire/sizzle to target a wider range of browsers later if necessary.
+
+For simplicity, we will refer to the entire set of these plugins as wire/*/dom, rather than write the entire set every time.
+
+### Browser support
+
+The wire/jquery/dom and wire/dojo/dom plugins support the same browsers as their underlying library.  So, for instance, if you are using jQuery 1.8.0, you can expect wire/jquery/dom to work with IE6+ and the current version of all other major browsers.
+
+The wire/sizzle plugin similarly supports the same browsers as Sizzle.  (Sizzle is the query engine used by jQuery.)
+
+wire/dom relies on `querySelectorAll` for some features.  Therefore, some features don't work in IE6-7.  In addition, IE8 doesn't support many CSS3 selectors.  You should probably only use wire.dom in production if you only need to support fairly recent versions of the major browsers.  Use wire/sizzle instead.
+
+## Querying the DOM
+
+The wire/*/dom plugins expose a couple of [reference resolvers](needs reference!) for obtaining elements in the document.  
+
+## Cloning DOM nodes
+
+## Inserting DOM nodes
+
+## Modifying CSS classes
+
+# Working with DOM events
+
+See [[wire/on]] for information about adding event listeners to DOM nodes.
+
 # Rendering the DOM
 
 Wire includes a DOM rendering plugin, wire/dom/render that exposes a wire factory.  The `render` factory creates a DOM fragment from a logic-less HTML template.  You may specify an accompanying CSS file, an i18n string bundle, and a DOM element onto which to merge the rendered DOM fragment.  For better placement control, you can also use the [wire/dom](#inserting-dom-nodes) plugin's `insert` facet to place the DOM fragment in or around any other DOM node.
@@ -43,15 +73,3 @@ require = {
 	}
 };
 ```
-
-# Querying the DOM
-
-# Cloning DOM nodes
-
-# Inserting DOM nodes
-
-# Modifying CSS classes
-
-# Listening for events
-
-See [[wire/on]] for information about adding event listeners to DOM nodes.
