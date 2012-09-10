@@ -1,6 +1,6 @@
 # Connections
 
-Any software system or application consists of components, and those components collaborate to do the really useful stuff.  Once you've [[created some things|create-things]], you will usually want to connect them together in various ways so that they can collaborate.
+Any software system or application consists of components that must collaborate to do the really useful stuff.  Once you've [created some components](#components.md), you'll want to connect them together in various ways so that they can collaborate.
 
 Similarly to [[factories]] used to [[create things]], wire uses plugin [[facets]] to apply new behavior to components after they have been created.  There are several facets that are used to make connections between components.  For example, you can connect a Javascript controller to DOM events on an HTML view.
 
@@ -8,8 +8,8 @@ Wire itself, plus its bundled plugins support 4 types of connections:
 
 1. Dependency Injection - The simplest type of "connection".  Inject a reference to one component into another so you can call methods on it directly
 1. DOM events - As you'd expect, when a DOM event happens, invoke a component's method(s) to handle it
-2. Javascript to Javascript "events" - When a method is called on one component, automatically invoke a method on another component
-3. Aspect Oriented Programming (AOP) advice - A more advanced form of Javascript to Javascript connection.  When a method is called on a component, invoke a method on another component before or after it.
+1. Javascript to Javascript "events" - When a method is called on one component, automatically invoke a method on another component
+1. Aspect Oriented Programming (AOP) advice - A more advanced form of Javascript to Javascript connection.  When a method is called on a component, invoke a method on another component before or after it.
 
 Each of these type of connections can be useful in various situations, and picking what type of connection to use should be a part of designing your application architecture.
 
@@ -17,7 +17,7 @@ Each of these type of connections can be useful in various situations, and picki
 
 **Plugins:** None needed
 
-We may tend not to think of method calls as a type of connection between components, but it's probably the we use the most.  With wire you can inject properties into Javascript components so that they can invoke methods directly on one another:
+You may tend not to think of method calls as a type of connection between components, but it's probably the you use the most.  With wire you can inject properties into Javascript components so that they can invoke methods directly on one another:
 
 ```js
 define({

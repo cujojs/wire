@@ -1,7 +1,5 @@
 # Components
 
-One of the main things you'll do when assembling any application, whether you're doing it programmatically in pure Javascript, or declaratively using wire, is to create instances of components--from primitive Javascript types, like Numbers and Strings, to more elaborate things like DOM-based views and Javascript controllers.
-
 Wire provides a declarative, *extensible*, Domain Specific Language (DSL) for describing the components of your application.
 
 **NOTE:** The examples use AMD module syntax, but wire also supports CommonJS module environments, such as Node and RingoJS.  In those environments, you can use equivalent CommonJS module syntax.
