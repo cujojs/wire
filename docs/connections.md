@@ -2,7 +2,7 @@
 
 Any software system or application consists of components that must collaborate to do the really useful stuff.  Once you've [created some components](#components.md), you'll want to connect them together in various ways so that they can collaborate.
 
-Similarly to [[factories]] used to [[create things]], wire uses plugin [[facets]] to apply new behavior to components after they have been created.  There are several facets that are used to make connections between components.  For example, you can connect a Javascript controller to DOM events on an HTML view.
+Similarly to [factories](./concepts.md#factories) used to [create components](./components.md#factories), wire uses plugin [facets](./concepts.md#facets) to apply new behavior to components after they have been created.  There are several facets that are used to make connections between components.  For example, you can connect a Javascript controller to DOM events on an HTML view.
 
 Wire itself, plus its bundled plugins support 4 types of connections:
 
@@ -41,7 +41,7 @@ define({
 });
 ```
 
-Rather than setting properties, you may need to pass dependent components to a constructor when creating a component instance.  You can supply constructor parameters using the longer form of the [[create factory|factories]] and providing an array of arguments.
+Rather than setting properties, you may need to pass dependent components to a constructor when creating a component instance.  You can supply constructor parameters using the longer form of the [create factory](./components.md#create) and providing an array of arguments.
 
 For example, if the controller in the example above accepted a datastore via its constructor:
 
