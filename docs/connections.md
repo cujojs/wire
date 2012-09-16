@@ -76,6 +76,57 @@ define({
 
 **Plugin:** wire/connect, wire/dojo/events (uses dojo.connect)
 
+These plugins allow you to make simple Javascript to Javascript connections.  You can specify that when a method on one component is called, a method on another component will also be called.  This allows any method to act as an event emitter without having to mixin an event emitter object.
+
+```js
+define({
+	plugins: [
+		{ module: 'wire/connect'},
+	    // other plugins ...
+	],
+
+	component1: {
+		create: // ...
+	},
+
+	component2: {
+		create: // ...
+		connect: {
+			// Whenever component2's doSomething method is
+			// called, component1.doSomethingAlso will also
+			// be invoked, with the same parameters.
+			'doSomething': 'component1.doSomethingAlso'
+		}
+	}
+});
+```
+
+Connections can be made in either direction.  For example, the following example is equivalent to the previous:
+
+```js
+define({
+	plugins: [
+		{ module: 'wire/connect'},
+	    // other plugins ...
+	],
+
+	component1: {
+		create: // ...
+		connect: {
+			// Whenever component2.doSomething is called,
+			// component1.doSomethingAlso will also
+			// be invoked, with the same parameters.
+			'component2.doSomething': 'doSomethingAlso'
+		}
+	},
+
+	component2: {
+		create: // ...
+	}
+});
+```
+
+
 *Coming Soon*
 
 ## Aspect Oriented Programming (AOP)
@@ -84,7 +135,7 @@ define({
 
 The wire/aop plugin lets you make Javascript to Javascript connections similar to wire/connect, but provides more connection types.  For example, you can have one method called before another, after another method returns, or after another method throws an exception.
 
-```javascript
+```js
 define({
 	// Include the wire/aop plugin
 	plugins: [

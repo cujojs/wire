@@ -144,7 +144,7 @@ TODO
 
 # Working with DOM events
 
-See [[wire/on]] for information about adding event listeners to DOM nodes.
+See the [DOM events](./connections.md#dom-events) section of [Connections](./connections.md) for information about adding event listeners to DOM nodes.
 
 # Rendering DOM nodes
 
