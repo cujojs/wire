@@ -1,6 +1,6 @@
 # Connections
 
-Any software system or application consists of components that must collaborate to do the really useful stuff.  Once you've [created some components](#components.md), you'll want to connect them together in various ways so that they can collaborate.
+Any software system or application consists of components that must collaborate to do the really useful stuff.  Once you've [created  components](./components.md), you can connect them together in various ways so that they can collaborate.
 
 Similarly to [factories](./concepts.md#factories) used to [create components](./components.md#factories), wire uses plugin [facets](./concepts.md#facets) to apply new behavior to components after they have been created.  There are several facets that are used to make connections between components.  For example, you can connect a Javascript controller to DOM events on an HTML view.
 
