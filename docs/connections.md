@@ -13,7 +13,7 @@ Wire itself, plus its bundled plugins support 4 types of connections:
 
 Each of these type of connections can be useful in various situations, and picking what type of connection to use should be a part of designing your application architecture.
 
-## Injection
+# Injection
 
 **Plugins:** None needed
 
@@ -66,13 +66,13 @@ define({
 });
 ```
 
-## DOM events
+# DOM events
 
 **Plugins:** wire/on, wire/dojo/on (uses dojo/on), wire/jquery/on (uses jQuery.on)
 
 *Coming Soon*
 
-## Javascript to Javascript
+# Javascript to Javascript
 
 **Plugin:** wire/connect, wire/dojo/events (uses dojo.connect)
 
@@ -129,7 +129,7 @@ define({
 
 *Coming Soon*
 
-## Aspect Oriented Programming (AOP)
+# Aspect Oriented Programming (AOP)
 
 **Plugin:** wire/aop
 
