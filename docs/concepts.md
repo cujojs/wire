@@ -105,7 +105,7 @@ The wire spec also contains two [[references]] using [JSON Referencing](http://w
 { $ref: 'dom!hello' }
 ```
 
-The second references the `messages` String (the first item in the wire spec):
+The second references the `message` String (the first item in the wire spec):
 ```javascript
 { $ref: 'message' }
 ```
