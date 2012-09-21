@@ -55,7 +55,7 @@ buster.testCase('circular-refs', {
 		).always(done);
 	},
 
-	'//should not resolve circular deps before init has finished': function(done) {
+	'should not resolve circular deps before init has finished': function(done) {
 		var clock, promise;
 
 		clock = this.useFakeTimers();
@@ -72,7 +72,7 @@ buster.testCase('circular-refs', {
 		});
 
 		// Force 5s clock advancement
-		clock.tick(5000);
+		clock.tick(1e4);
 
 		promise.then(
 			fail,
