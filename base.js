@@ -170,75 +170,6 @@ define(['when', './lib/object', './lib/functional', './lib/component', './lib/in
 		chain(invokeAll(facet, wire), resolver);
 	}
 
-	function pojoProxy(object /*, spec */) {
-		return {
-			get: function(property) {
-				return object[property];
-			},
-			set: function(property, value) {
-				object[property] = value;
-				return value;
-			},
-			invoke: function(method, args) {
-				if(typeof method === 'string') {
-					method = object[method];
-				}
-
-				return method.apply(object, args);
-			},
-			destroy: function() {},
-			clone: function(options) {
-				// don't try to clone a primitive
-				if (typeof object != 'object') {
-					return object;
-				}
-				// cloneThing doesn't clone functions (methods), so clone here:
-				else if (typeof object == 'function') {
-					return object.bind();
-				}
-
-				if (!options) {
-					options = {};
-				}
-
-				return cloneThing(object, options);
-			}
-		};
-	}
-
-	function cloneThing (thing, options) {
-		var deep, inherited, clone, prop;
-		deep = options.deep;
-		inherited = options.inherited;
-
-		// Note: this filters out primitive properties and methods
-		if (typeof thing != 'object') {
-			return thing;
-		}
-		else if (thing instanceof Date) {
-			return new Date(thing.getTime());
-		}
-		else if (thing instanceof RegExp) {
-			return new RegExp(thing);
-		}
-		else if (Array.isArray(thing)) {
-			return deep
-				? thing.map(function (i) { return cloneThing(i, options); })
-				: thing.slice();
-		}
-		else {
-			clone = thing.constructor ? new thing.constructor() : {};
-			for (prop in thing) {
-				if (inherited || thing.hasOwnProperty(prop)) {
-					clone[prop] = deep
-						? cloneThing(thing[prop], options)
-						: thing[prop];
-				}
-			}
-			return clone;
-		}
-	}
-
     //noinspection JSUnusedLocalSymbols
     /**
      * Wrapper for use with when.reduce that calls the supplied destroyFunc
@@ -395,10 +326,7 @@ define(['when', './lib/object', './lib/functional', './lib/component', './lib/in
 					destroy: {
 						ready: destroyFacet
 					}
-				},
-				proxies: [
-					pojoProxy
-				]
+				}
 			};
 
 			// "introduce" is deprecated, but preserved here for now.

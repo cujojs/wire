@@ -7,7 +7,7 @@ assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
 
-buster.testCase('=>proxy', {
+buster.testCase('proxy', {
 	'should create a base proxy for the supplied target': function() {
 		var p, target;
 

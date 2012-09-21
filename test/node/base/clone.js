@@ -27,13 +27,14 @@ buster.testCase('base:clone', {
 				rx1: {
 					clone: { $ref: 'regexp' }
 				}
-			}).then(function (context) {
-				assert.equals(({}).toString.call(context.obj1), '[object Object]');
-				assert.isArray(context.array1);
-				assert.equals(({}).toString.call(context.date1), '[object Date]');
-				assert.equals(({}).toString.call(context.rx1), '[object RegExp]');
-				done();
-			}, fail
+			}).then(
+				function (context) {
+					assert.equals(({}).toString.call(context.obj1), '[object Object]');
+					assert.isArray(context.array1);
+					assert.equals(({}).toString.call(context.date1), '[object Date]');
+					assert.equals(({}).toString.call(context.rx1), '[object RegExp]');
+				},
+				fail
 			).then(done, done);
 		},
 
@@ -64,26 +65,28 @@ buster.testCase('base:clone', {
 				arr1: {
 					clone: { source: { $ref: 'arr' }, deep: true }
 				}
-			}).then(function (context) {
-				// check object
-				assert.defined(context.obj1, 'obj1 is defined');
-				assert.defined(context.obj1.foo, 'obj1.foo is defined');
-				assert.defined(context.obj1.foo.bar, 'obj1.foo.bar is defined');
-				refute.same(context.orig.foo.bar, context.obj1.foo.bar); // should be diff objects
-				assert.equals(context.orig.foo.bar.prop, context.obj1.foo.bar.prop);
-				// check array
-				assert.defined(context.arr1, 'arr1 is defined');
-				assert.defined(context.arr1[0].foo, 'arr1[0].foo is defined');
-				assert.defined(context.arr1[1], 'arr1[1] is defined');
-				assert.defined(context.arr1[2], 'arr1[2] is defined');
-				for (var i = 0; i < 3; i++) {
-					assert.defined(context.arr1[3][i], 'arr1[3][' + i + '] is defined');
-					assert.equals(context.arr1[3][i], context.arr[3][i]);
-				}
-				// check that copies were made
-				refute.same(context.arr[0], context.arr1[0], 'object array element');
-				refute.same(context.arr[3], context.arr1[3], 'nested array element');
-			}, fail
+			}).then(
+				function (context) {
+					// check object
+					assert.defined(context.obj1, 'obj1 is defined');
+					assert.defined(context.obj1.foo, 'obj1.foo is defined');
+					assert.defined(context.obj1.foo.bar, 'obj1.foo.bar is defined');
+					refute.same(context.orig.foo.bar, context.obj1.foo.bar); // should be diff objects
+					assert.equals(context.orig.foo.bar.prop, context.obj1.foo.bar.prop);
+					// check array
+					assert.defined(context.arr1, 'arr1 is defined');
+					assert.defined(context.arr1[0].foo, 'arr1[0].foo is defined');
+					assert.defined(context.arr1[1], 'arr1[1] is defined');
+					assert.defined(context.arr1[2], 'arr1[2] is defined');
+					for (var i = 0; i < 3; i++) {
+						assert.defined(context.arr1[3][i], 'arr1[3][' + i + '] is defined');
+						assert.equals(context.arr1[3][i], context.arr[3][i]);
+					}
+					// check that copies were made
+					refute.same(context.arr[0], context.arr1[0], 'object array element');
+					refute.same(context.arr[3], context.arr1[3], 'nested array element');
+				},
+				fail
 			).then(done, done);
 		},
 
@@ -98,11 +101,14 @@ buster.testCase('base:clone', {
 				copy: {
 					clone: { $ref: 'orig' }
 				}
-			}).then(function (context) {
-				assert.defined(context.copy, 'copy exists');
-				assert.defined(context.copy.foo, 'copy.foo exists');
-				assert.defined(context.copy.bar, 'copy.bar exists');
-			}, fail).then(done, done);
+			}).then(
+				function (context) {
+					assert.defined(context.copy, 'copy exists');
+					assert.defined(context.copy.foo, 'copy.foo exists');
+					assert.defined(context.copy.bar, 'copy.bar exists');
+				},
+				fail
+			).then(done, done);
 		},
 
 		'should call constructor when cloning an object with a constructor': function(done) {
@@ -119,12 +125,15 @@ buster.testCase('base:clone', {
 				copy: {
 					clone: { $ref: 'fab' }
 				}
-			}).then(function(context) {
-				assert.defined(context.copy, 'copy is defined');
-				assert.defined(context.copy.prototypeProp, 'copy.prototypeProp is defined');
-				assert.defined(context.copy.instanceProp, 'copy.instanceProp is defined');
-				refute.same(context.copy, context.fab);
-			}, fail).then(done, done);
+			}).then(
+				function(context) {
+					assert.defined(context.copy, 'copy is defined');
+					assert.defined(context.copy.prototypeProp, 'copy.prototypeProp is defined');
+					assert.defined(context.copy.instanceProp, 'copy.instanceProp is defined');
+					refute.same(context.copy, context.fab);
+				},
+				fail
+			).then(done, done);
 		}
 	}
 

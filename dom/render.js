@@ -73,7 +73,7 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 				render: domRenderFactory
 			},
 			proxies: [
-				base.nodeProxy
+				base.proxyNode
 			]
 		};
 	};

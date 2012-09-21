@@ -47,44 +47,23 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
         return it instanceof Widget;
     }
 
-    function createDijitProxy(object /*, spec */) {
-        var proxy;
+    function proxyDijit(proxy) {
+		var object = proxy.target;
 
         if (isDijit(object)) {
-            proxy = {
-                get:function(property) {
-                    return object.get(property);
-                },
-                set:function(property, value) {
-                    return object.set(property, value);
-                },
-                invoke:function(method, args) {
-                    if (typeof method === 'string') {
-                        method = object[method];
-                    }
-
-                    return method.apply(object, args);
-                },
-                destroy:function() {
-                    destroyDijit(object);
-                },
-				clone: function (options) {
-					return dojo.clone(object);
-				}
-            };
+			proxy.get = object.get.bind(object);
+			proxy.set = object.set.bind(object);
+			proxy.destroy = destroyDijit.bind(null, object);
+			proxy.clone = dojo.clone.bind(dojo, object);
         }
-
-        return proxy;
     }
 
     function destroyDijit(target) {
         // Prefer destroyRecursive over destroy
         if (typeof target.destroyRecursive == 'function') {
             target.destroyRecursive(false);
-
         } else if (typeof target.destroy == 'function') {
             target.destroy(false);
-
         }
     }
 
@@ -152,7 +131,7 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
                     dijit:dijitById
                 },
                 proxies:[
-                    createDijitProxy
+                    proxyDijit
                 ],
                 facets: {
                     placeAt: placeAtFacet
