@@ -19,3 +19,6 @@
 [submodule "test/requirejs-domReady"]
 	path = test/requirejs-domReady
 	url = https://github.com/requirejs/domReady.git
+[submodule "support/poly"]
+	path = support/poly
+	url = git://github.com/cujojs/poly.git
