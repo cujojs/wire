@@ -1,4 +1,4 @@
-1. [General Concepts](#wire-)
+1. [General Concepts](#general-concepts)
 	1. [Inversion of Control](#inversion-of-control)
 	1. [Dependency Inversion](#dependency-inversion)
 	1. [Application Composition](#application-composition)
@@ -7,6 +7,7 @@
 	1. [Contexts](#contexts)
 	1. [Components](#components)
 	1. [Factories](#factories)
+	1. [Proxies](#proxies)
 	1. [Component Lifecycle](#component-lifecycle)
 	1. [Facets](#facets)
 	1. [References](#references)
@@ -223,6 +224,12 @@ A component can be any native Javascript type: Number, String, Boolean, Date, Re
 In addition to simple types, wire uses *factories* to create more interesting components, such as AMD and CommonJS modules, object instances using constructors or `Object.create` (in an ES5 environment), functions, etc. 
 
 [Read more about creating components](components.md#factories)
+
+## Proxies
+
+Proxies are closely related to factories.  For each component, wire creates a proxy that allows other plugins to interact with the component in a generic way.
+
+For example, each proxy implements a simple `get()/set()` API for getting and setting its component's properties.  This allows plugins to set properties on objects where simple property assignment is not sufficient.  For example, Dojo Dijit widgets require calling their `get()` and `set()` methods.
 
 ## Component Lifecycle
 

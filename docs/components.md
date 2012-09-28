@@ -1,4 +1,9 @@
-# Components
+1. [Creating Components](#creating-components)
+1. [Simple Types](#simple-types)
+1. [Factories](#factories)
+1. [Built-in Factories](#built-in-factories)
+
+# Creating Components
 
 Wire provides a declarative, *extensible*, Domain Specific Language (DSL) for describing the components of your application.
 
