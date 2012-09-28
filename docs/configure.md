@@ -6,13 +6,13 @@
 
 # Configuring Components
 
-After creating a component, wire moves the component through its [lifecycle](docs/concepts.md#component-lifecycle).  During the *configure* lifecycle step, you can set properties on the component, and then during the *initialize* step that follows, you can invoke initialization methods to do further configuration, before [connections](docs/connections.md) are made between components.
+After creating a component, wire moves the component through its [lifecycle](concepts.md#component-lifecycle).  During the *configure* lifecycle step, you can set properties on the component, and then during the *initialize* step that follows, you can invoke initialization methods to do further configuration, before [connections](connections.md) are made between components.
 
 The final step of the lifecycle, *ready*, occurs after connections are made, and gives you a chance to invoke methods on the component, if necessary, to ensure it is ready to fulfill its responsibilities within the application.
 
 # Properties
 
-Use the `properties` [facet](docs/concepts.md#facets) to set properties on a component after it has been created.  Properties can be any [simple type](docs/components.md#simple-types), a component created by a [factory](docs/components.md#factories), or a [reference](docs/concepts.md#references) to an existing component in the same [wire context](docs/concepts.md#contexts) or any [ancestor context](docs/concepts.md#context-hierarchy) (parent, grandparent, etc.).
+Use the `properties` [facet](concepts.md#facets) to set properties on a component after it has been created.  Properties can be any [simple type](components.md#simple-types), a component created by a [factory](components.md#factories), or a [reference](concepts.md#references) to an existing component in the same [wire context](concepts.md#contexts) or any [ancestor context](concepts.md#context-hierarchy) (parent, grandparent, etc.).
 
 ## Properties example
 
