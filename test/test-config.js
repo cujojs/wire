@@ -34,6 +34,7 @@
 //                    'wire/domReady': 'test/curl/src/curl/domReady'
                 },
                 preloads: [
+					'poly/all',
                     'curl/shim/dojo16'
                 ]
             }
@@ -45,6 +46,9 @@
 					'jquery': 'test/lib/jquery',
 //                    'wire/domReady': 'test/requirejs-domReady/domReady',
                     domReady: 'test/requirejs-domReady/domReady'
+                },
+                config: {
+                	when: { paranoid: false }
                 }
             }
         }
@@ -98,6 +102,7 @@
     addPackage({ name: 'sizzle', location: 'support/sizzle' });
     addPackage({ name: 'meld', location: 'support/meld' });
     addPackage({ name: 'when', location: 'support/when' });
+    addPackage({ name: 'poly', location: 'support/poly' });
     // This is needed because we're running unit tests from *within* the wire dir
     addPackage({ name: 'wire', location: '.' });
 
