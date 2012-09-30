@@ -1,8 +1,16 @@
 # Connections
 
+1. [Connection Types](#connection-types)
+1. [Injection](#injection)
+1. [DOM Events](#dom-events)
+1. [Javascript to Javascript](#javascript-to-javascript)
+1. [Aspect Oriented Programming (AOP)](#aspect-oriented-programming-aop)
+
 Any software system or application consists of components that must collaborate to do the really useful stuff.  Once you've [created  components](./components.md), you can connect them together in various ways so that they can collaborate.
 
 Similarly to [factories](./concepts.md#factories) used to [create components](./components.md#factories), wire uses plugin [facets](./concepts.md#facets) to apply new behavior to components after they have been created.  There are several facets that are used to make connections between components.  For example, you can connect a Javascript controller to DOM events on an HTML view.
+
+# Connection Types
 
 Wire itself, plus its bundled plugins support 4 types of connections:
 
