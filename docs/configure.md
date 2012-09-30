@@ -2,7 +2,6 @@
 
 1. [Configuring Components](#configuring-components)
 1. [Properties](#properties)
-	1. [Properties Example](#properties-example)
 1. [Init Methods](#init-methods)
 1. [Ready Methods](#ready-methods)
 1. [Destroy Methods](#destroy-methods)
