@@ -78,7 +78,13 @@ define({
 
 **Plugins:** wire/on, wire/dojo/on (uses dojo/on), wire/jquery/on (uses jQuery.on)
 
-*Coming Soon*
+Wire supports connecting component methods to DOM events via its DOM plugins.  These plugins allow you to use CSS selectors to connect DOM events to component methods.
+
+*Example needed*
+
+When you have components that are DOM nodes, for example, those created using the [render factory](dom.md#render-factory), connections can be made in either direction.  In this example, connections are specified on the DOM node component.
+
+*Example needed*
 
 # Javascript to Javascript
 
@@ -133,9 +139,6 @@ define({
 	}
 });
 ```
-
-
-*Coming Soon*
 
 # Aspect Oriented Programming (AOP)
 
