@@ -78,13 +78,98 @@ define({
 
 **Plugins:** wire/on, wire/dojo/on (uses dojo/on), wire/jquery/on (uses jQuery.on)
 
-Wire supports connecting component methods to DOM events via its DOM plugins.  These plugins allow you to use CSS selectors to connect DOM events to component methods.
+Wire supports connecting component methods to DOM events via its DOM plugins.  These plugins allow you to use CSS selectors to connect DOM events to component methods.  You can use wire/on to connect to DOM events on any DOM node that you create or reference.
 
-*Example needed*
+For more info on creating, referencing DOM Nodes in wire, see [Working with DOM Nodes](dom.md).
+
+## DOM event examples
+
+This example connects to the `click` events of links and buttons within a node that is grabbed using a [DOM reference resolver](dom.md#querying-the-dom).
+
+```js
+define({
+	plugins: [
+		{ module: 'wire/on' },
+		{ module: 'wire/dom' },
+	    // other plugins ...
+	],
+
+	// Get a reference to the first node with the class 'some-class'
+	domNode: { $ref: 'dom.first!.some-class' },
+
+	component1: {
+		create: // ...
+		on: {
+			// Whenever the user clicks a link or a <button>
+			// within domNode, call component1.doSomething 
+			domNode: {
+				'click:a,button': 'doSomething'
+			}
+		}
+	}
+});
+```
+
+Similarly, connecting to a events within a DOM node created using the [render factory](dom.md#render-factory).
+
+```js
+define({
+	plugins: [
+		{ module: 'wire/on' },
+		{ module: 'wire/dom' },
+		{ module: 'wire/dom/render' },
+	    // other plugins ...
+	],
+
+	// Render a template. domNode will be the top-level
+	// node of the rendered template
+	domNode: {
+		render: {
+			template: { module: 'text!my-view/template.html' }
+		}
+	},
+
+	component1: {
+		create: // ...
+		on: {
+			// Whenever the user clicks a link or a <button>
+			// within domNode, call component1.doSomething 
+			domNode: {
+				'click:a,button': 'doSomething'
+			}
+		}
+	}
+});
+```
 
 When you have components that are DOM nodes, for example, those created using the [render factory](dom.md#render-factory), connections can be made in either direction.  In this example, connections are specified on the DOM node component.
 
-*Example needed*
+```js
+define({
+	plugins: [
+		{ module: 'wire/on'},
+	    // other plugins ...
+	],
+
+	// Render a template. domNode will be the top-level
+	// node of the rendered template
+	domNode: {
+		render: {
+			template: { module: 'text!my-view/template.html' }
+		},
+		on: {
+			// Whenever the user clicks a link or a <button>
+			// within domNode, call component1.doSomething 			
+			'click:a,button': 'component1.doSomething'
+		}
+
+	},
+
+	component1: {
+		create: // ...
+	}
+});
+```
 
 # Javascript to Javascript
 

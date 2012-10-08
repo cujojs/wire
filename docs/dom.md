@@ -16,7 +16,7 @@ wire/dom relies on `querySelectorAll` for some features.  Therefore, some featur
 
 ## Querying the DOM
 
-The wire/*/dom plugins expose a couple of [reference resolvers](needs reference!) for obtaining elements in the document.
+The wire/*/dom plugins expose a couple of [reference resolvers](concepts.md#references) for obtaining elements in the document.
 
 ### `dom!`
 
@@ -54,7 +54,7 @@ deepNodeInMyView: { $ref: 'dom.first!.my-view form.ship-to label.first-name' }
 
 ### `element` factory
 
-The `dom!` reference resolver is the preferred way to grab a reference to a single DOM node.  However, if you plan to use [wire facets](need reference!) on the DOM node, a reference resolver won't work.  Facets only run on components that are created using a [factory](need reference!).  There's probably only one common use case that requires using a facet on a DOM node that's *already in the document*: moving the node.  For this reason, there's the `element` wire factory.  Here's it is in action:
+The `dom!` reference resolver is the preferred way to grab a reference to a single DOM node.  However, if you plan to use [wire facets](concepts.md#references) on the DOM node, a reference resolver won't work.  Facets only run on components that are created using a [factory](concepts.md#references).  There's probably only one common use case that requires using a facet on a DOM node that's *already in the document*: moving the node.  For this reason, there's the `element` wire factory.  Here's it is in action:
 
 ```js
 {
@@ -68,7 +68,7 @@ The `dom!` reference resolver is the preferred way to grab a reference to a sing
 
 ## Cloning DOM nodes
 
-The [clone factory](need reference!) also works with single DOM nodes. It's as simple as this:
+The clone [factory](concepts.md#factories) also works with single DOM nodes. It's as simple as this:
 
 ```js
 clonedButton: { clone: { $ref: 'dom!orig-button' } }
@@ -78,7 +78,7 @@ clonedButton: { clone: { $ref: 'dom!orig-button' } }
 
 Once you have a reference to a node using either the [`element` factory](#element-factory), [`clone` factory](#Cloning-DOM-nodes), or [`render` factory](#Rendering-DOM-nodes), you can use the `insert` facet.
 
-The `insert` facet executes during the [initialize phase](need reference!) and takes a single option, which can be any of the following:
+The `insert` facet executes during the [initialize phase](concepts.md#component-lifecycle) and takes a single option, which can be any of the following:
 
 * `last` -- DOM node is inserted as the last child of a reference node
 * `first` -- DOM node is inserted as the first child of a reference node
