@@ -22,7 +22,7 @@ Thing.prototype = {
 };
 
 buster.testCase('base:functional', {
-	
+
 	'compose': {
 		'should compose array of functions': function(done) {
 			wire({
@@ -40,7 +40,7 @@ buster.testCase('base:functional', {
 				}
 			).then(done, done);
 		},
-		
+
 		'should compose a string specification': function(done) {
 			wire({
 				f1: plusOne,
@@ -79,10 +79,63 @@ buster.testCase('base:functional', {
 			}).then(
 				function(c) {
 					assert.equals(c.composed(1), 4);
-				}
+				},
+				fail
 			).then(done, done);
 		}
 
+	},
+
+	'invoker': {
+		'should wire to a function': function(done) {
+			wire({
+				i1: {
+					invoker: {
+						method: 'f', args: []
+					}
+				}
+			}).then(
+				function(c) {
+					assert.isFunction(c.i1);
+				},
+				fail
+			).then(done, done);
+		},
+
+		'should invoke method on target': function(done) {
+			var spy, expected;
+
+			spy = this.spy();
+			expected = 1;
+
+			wire({
+				i1: {
+					invoker: {
+						method: 'f', args: [expected]
+					}
+				},
+				t1: {
+					literal: {},
+					properties: {
+						f: { literal: spy }
+					}
+				},
+				component: {
+					literal: {},
+					properties: {
+						method: { $ref: 'i1' }
+					},
+					ready: {
+						method: { $ref: 't1' }
+					}
+				}
+			}).then(
+				function(c) {
+					assert.calledOnceWith(spy, expected);
+				},
+				fail
+			).then(done, done);
+		}
 	}
 });
 })(

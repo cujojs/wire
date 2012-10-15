@@ -12,7 +12,7 @@
  */
 
 (function(define) {
-define(['when', './lib/object', './lib/functional', './lib/component'], function(when, object, functional, createComponent) {
+define(['when', './lib/object', './lib/functional', './lib/component', 'lib/invoker'], function(when, object, functional, createComponent, createInvoker) {
 
 	var whenAll, chain, obj, undef;
 
@@ -151,20 +151,13 @@ define(['when', './lib/object', './lib/functional', './lib/component'], function
 
 	function invokerFactory(resolver, componentDef, wire) {
 
-		chain(wire(componentDef.invoker), function(invokerContext) {
-			var method, args;
-
-			method = invokerContext.method;
-			args = invokerContext.args;
-
-			return function(target) {
-				// It'd be nice to use wire.getProxy() then proxy.invoke()
-				// here, but that means the invoker must always return
-				// a promise.  Not sure that's best, so for now, just
-				// call the method directly
-				return target[method].apply(target, args);
-			};
-		}, resolver);
+		wire(componentDef.invoker).then(function(invokerContext) {
+			// It'd be nice to use wire.getProxy() then proxy.invoke()
+			// here, but that means the invoker must always return
+			// a promise.  Not sure that's best, so for now, just
+			// call the method directly
+			return createInvoker(invokerContext.method, invokerContext.args);
+		}).then(resolver.resolve, resolver.reject);
 
 	}
 
