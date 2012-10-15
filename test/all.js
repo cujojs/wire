@@ -1,4 +1,5 @@
 (function(g) {
+	/*global doh:true*/
 
 	var hash = '';
 	try {
@@ -6,6 +7,10 @@
 	} catch(e) {}
 
 	doh.registerUrl('_fake', '../../_doh-fake.html' + hash);
+
+	// AMD
+	doh.registerUrl('amd/module', '../../amd/module.html' + hash);
+	doh.registerUrl('amd/plugin', '../../amd/plugin.html' + hash);
 
 	// Core
 	doh.registerUrl('nested1', '../../nested1.html' + hash);

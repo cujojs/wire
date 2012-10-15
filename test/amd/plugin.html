@@ -1,0 +1,27 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>AMD plugin test</title>
+
+    <script src="../test-config.js"></script>
+
+	<script type="text/javascript">
+        define('spec', {
+            success: true
+        });
+
+		require(['wire!spec'], function(context) {
+            doh.register('amd/plugin', [
+                function(doh) {
+                    doh.assertTrue(context.success);
+                }
+            ]);
+
+            doh.run();
+		});
+	</script>
+</head>
+<body>
+</body>
+</html>

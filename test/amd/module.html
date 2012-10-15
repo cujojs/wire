@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>AMD module test</title>
+
+    <script src="../test-config.js"></script>
+
+	<script type="text/javascript">
+		require(['wire'], function(wire) {
+            doh.register('amd/module', [
+                function(doh) {
+                    doh.assertEqual(typeof wire, 'function');
+                }
+            ]);
+
+            doh.run();
+		});
+	</script>
+</head>
+<body>
+</body>
+</html>
