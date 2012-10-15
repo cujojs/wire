@@ -12,7 +12,7 @@
  */
 
 (function(define) {
-define(['when', './lib/object', './lib/functional', './lib/component', 'lib/invoker'], function(when, object, functional, createComponent, createInvoker) {
+define(['when', './lib/object', './lib/functional', './lib/component', './lib/invoker'], function(when, object, functional, createComponent, createInvoker) {
 
 	var whenAll, chain, obj, undef;
 
