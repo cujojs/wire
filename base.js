@@ -138,14 +138,19 @@ define(['when', './lib/object', './lib/functional', './lib/component', './lib/in
 
 	function propertiesFacet(resolver, facet, wire) {
 
-		when.reduce(Object.keys(facet.options), function(properties, key) {
-			return wire(properties[key], key, facet.path).then(
-				function(wiredProperty) {
-					facet.set(key, wiredProperty);
-					return properties;
+		var properties, path, setProperty;
+
+		properties = facet.options;
+		path = facet.path;
+		setProperty = facet.set.bind(facet);
+
+		when.map(Object.keys(facet.options), function(key) {
+			return wire(properties[key], key, facet.path)
+				.then(function(wiredProperty) {
+					setProperty(key, wiredProperty);
 				}
 			);
-		}, facet.options).then(resolver.resolve, resolver.reject);
+		}).then(resolver.resolve, resolver.reject);
 
 	}
 
