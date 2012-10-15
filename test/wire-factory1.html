@@ -87,7 +87,7 @@
 		});
 
 		require(['wire'], function(wire) {
-            
+
             function fail(dohd) {
                 return function(err) {
                     dohd.errback(err);
@@ -237,9 +237,9 @@
 					}).then(
 							function(context) {
 
-								var success = typeof context.parent.child.valueOf().then == 'function';
+								var success = typeof context.parent.child.value.then == 'function';
 
-								context.parent.child.valueOf().then(function(childContext) {
+								context.parent.child.value.then(function(childContext) {
 									success = success && !!childContext.success;
 
 									childContext.destroy().then(

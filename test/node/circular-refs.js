@@ -24,7 +24,7 @@ buster.testCase('circular-refs', {
 						}
 					}
 				}
-			}
+			};
 		};
 	},
 
@@ -55,7 +55,7 @@ buster.testCase('circular-refs', {
 		).always(done);
 	},
 
-	'should not resolve circular deps before init has finished': function(done) {
+	'//should not resolve circular deps before init has finished': function(done) {
 		var clock, promise;
 
 		clock = this.useFakeTimers();
