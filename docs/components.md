@@ -393,6 +393,8 @@ Now, when the user clicks/selects User Prefs, the controller's `_showPrefs()` me
 
 ## prototype
 
+**Deprecated:** The prototype factory is deprecated in favor of simply using the [create factory](#create).
+
 The prototype factory begets a new component from an existing component, using the Javascript prototype chain.  This is useful when you want to create several similar components.  You can create a base component, configure it, then beget several components from the base, and specialize their configuration as needed.
 
 ### Syntax
@@ -440,24 +442,4 @@ myComponent3: {
 		title: 'VP of Javascriptiness'
 	}
 }
-```
-
-----
-
-The wire factory is a more advanced topic.  You can read its [[full documentation here|factories]]
-
-In it's simplest form, the wire factory can be used to wire a child [[context|contexts]] of
-the current context.
-
-```js
-define({
-	
-	// When given the module id of another wire spec, the wire factory will
-	// wire the spec as a child of the current context.
-	// The component named 'aChildSpec' will be a wire context
-	aChildSpec: {
-		wire: 'myapp/spec/another-spec'
-	}
-
-});
 ```
