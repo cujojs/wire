@@ -52,7 +52,7 @@ myFunctionComponent: {
 
 ## Functions that Create Functions
 
-Because functions are first-class in Javascript, functions can create and return other functions.  This can be very useful in creating specialized functions for a particular situation.  Here is an example of a module that is a function which returns a new function.  This example uses AMD module syntax, but could have just as easily been authored as a Node-style extende CommonJS module ([as above](#function-modules)).
+Because functions are first-class in Javascript, functions can create and return other functions.  This can be very useful in creating specialized functions for a particular situation.  Here is an example of a module that is a function which returns a new function.  This example uses AMD module syntax, but could have just as easily been authored as a Node-style extended CommonJS module ([as above](#function-modules)).
 
 ```js
 // my/app/configureDoSomething
@@ -131,7 +131,7 @@ function doSomethingThenSomethingElse(x) {
 }
 ```
 
-You can compose any number of functions this way, not just 2 as in the example above, as long as their inputs and outputs are compatible.
+You can compose any number of functions this way, not just two as in the example above, as long as their inputs and outputs are compatible.
 
 ## Compose pipelines
 
@@ -148,7 +148,6 @@ doSomethingElse: {
 },
 
 doSomethingThenSomethingElse: {
-	// compose factory accepts an array of functions
 	compose: 'doSomething | doSomethingElse'
 }
 ```
@@ -169,7 +168,6 @@ doSomethingElse: {
 },
 
 doSomethingThenSomethingElse: {
-	// compose factory accepts an array of functions
 	compose: 'aComponent.doSomething | doSomethingElse'
 }
 ```
