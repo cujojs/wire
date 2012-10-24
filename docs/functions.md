@@ -148,7 +148,6 @@ doSomethingElse: {
 },
 
 doSomethingThenSomethingElse: {
-	// compose factory accepts an array of functions
 	compose: 'doSomething | doSomethingElse'
 }
 ```
@@ -169,7 +168,6 @@ doSomethingElse: {
 },
 
 doSomethingThenSomethingElse: {
-	// compose factory accepts an array of functions
 	compose: 'aComponent.doSomething | doSomethingElse'
 }
 ```
