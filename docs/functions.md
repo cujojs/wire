@@ -187,15 +187,34 @@ function doSomethingThenSomethingElse(x) {
 
 # Injecting Functions
 
-Functions can be injected into other components in the same way that other parameters or properties can be injected.  This is an very powerful way to specialize components by injecting situation-specific method implementations into them.  For example, a component may provide a default implementation of a method, but you can overwrite it by injecting a function that is specialized for a particular situation.
+Functions can be injected into components in the same way that any other properties can be injected.  This is an very powerful way to specialize components by injecting situation-specific method implementations into them.  For example, a component may provide a default implementation of a method, but you can overwrite it by injecting a function that is specialized for a particular situation.
 
-*Code Example*
+```js
+doSomething: {
+	module: 'my/app/doSomething'
+}
+
+// Create a component
+aComponent: {
+	create: 'my/app/Controller',
+	properties: {
+		// Inject the doSomething function component
+		// from above as the method aComponent.doStuff
+		doStuff: { $ref: 'doSomething' },
+		// Similarly, inject doSomethingElse as the method
+		// aComponent.doOtherStuff
+		doOtherStuff: {
+			module: 'my/app/doSomethingElse'
+		}
+	}
+}
+```
 
 # Connecting to Functions
 
-You can connect directly to functions when connecting DOM events, and when simple Javascript-to-Javascript connections, or even AOP connections.
+Similarly to [connecting component methods](connections.md), you can connect directly to functions when creating connections to DOM events, to Javascript-to-Javascript connections, or even AOP connections.
 
-*Code Example*
+
 
 # Transform Connections
 
