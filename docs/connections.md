@@ -5,6 +5,7 @@
 1. [DOM Events](#dom-events)
 1. [Javascript to Javascript](#javascript-to-javascript)
 1. [Aspect Oriented Programming (AOP)](#aspect-oriented-programming-aop)
+1. [Transform Connections](#transform-connections)
 
 Any software system or application consists of components that must collaborate to do the really useful stuff.  Once you've [created  components](./components.md), you can connect them together in various ways so that they can collaborate.
 
@@ -282,3 +283,124 @@ define({
 	}
 })
 ```
+
+# Transform Connections
+
+Connections can transform the data that flows through them.  This allows you to write components without including data transformation logic.  They can expect to receive only the data format they really need, and you use a connection to transform data into the expected format.
+
+To do this, you use the [function pipeline](functions.md#compose-pipelines) string syntax to feed data through one or more transformation functions before sending it on to a component method.
+
+## Short transform connections example
+
+This is simple example of how to use a function pipeline in a connection.  [Below](#component-transform-connections-example) is a more detailed example.
+
+Imagine a simple shopping cart controller that has an `addItem` method that should be called to add an item when a button is clicked:
+
+```js
+// wire spec
+// A DOM container in which we'll attach events.
+// See "on" in controller
+itemList: { $ref: 'dom.first!.item-list'},
+
+// A function that takes a DOM event and returns the
+// item to add to the shopping cart. This encapsulates
+// the algorithm for finding an item given an event.
+findItem: { module: 'myApp/data/findItemFromEvent' }
+
+// Shopping cart controller with an addItem(item) method
+// Using a function pipeline allows separation of the
+// algorithm for finding the item given a DOM event, and
+// actually adding it.
+controller: {
+    create: 'myApp/Controller',
+    on: {
+        itemList: {
+            'click:button.add': 'findItem | addItem'
+        }
+    }
+}
+```
+
+## Component transform connections example
+
+Assume a simple shopping cart controller that has an `addItem` method for adding items to the cart when a button is clicked.
+
+```js
+function Controller() {}
+
+Controller.prototype = {
+    addItem: function(domEvent) {
+        // How to find the item data, in order to add it?
+    }
+}
+```
+
+### Coupled parameters
+
+This is not ideal. Controller receives a DOM event, but must locate the associated item.  To do that, the Controller needs to understand the DOM event, and probably also the DOM structure in order to traverse the dom to find a data id or hash key stored in a DOM attribute.
+
+It also means that the DOM event and that DOM structure must be mocked in order to unit test the Controller.
+
+Controller only really cares about the item.
+
+### Refactor
+
+We can refactor the controller to care only about the item.  Note that this also makes unit testing the Controller easier, since you no longer need to mock the DOM event or the DOM structure.
+
+```js
+function Controller() {}
+
+Controller.prototype = {
+    addItem: function(item) {
+        // Just add it
+    }
+}
+```
+
+### Create a transform function
+
+Then, we can create a [function module](functions.md#function-modules) that encapsulates the algorithm for finding item data given a DOM event.
+
+This function can be unit tested separately, and reused across the application, if necessary.
+
+```js
+define(function() {
+
+    // Encapsulate the work of finding the item
+    return function findItemFromEvent(domEvent) {
+        // Find the item, then
+        return item;
+    }
+
+});
+```
+
+### Putting it together
+
+Finally, we can use a function pipeline to transform the DOM event into an item, and then pass the item on to the Controller's `addItem` method.
+
+This removes any knowledge of the DOM event and DOM structure from the Controller.  It only needs to know how to add the item.
+
+    itemList: { $ref: 'dom.first!.item-list'},
+
+    findItem: { module: 'myApp/data/findItemFromEvent' }
+
+    controller: {
+        create: 'myApp/Controller',
+        on: {
+            itemList: {
+                'click:button.add': 'findItem | addItem'
+            }
+        }
+    }
+
+## Benefits of transform connections
+
+To reiterate, the benefits of using a transform connection in the [example above](#component-transform-connections-example) are:
+
+* Controller is easier to unit test
+* Algorithm for finding the thing
+    * can also be unit tested separately and more easily
+    * can be changed separately from Controller
+    * can be reused in other parts of the app
+

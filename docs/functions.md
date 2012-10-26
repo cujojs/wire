@@ -214,7 +214,27 @@ aComponent: {
 
 Similarly to [connecting component methods](connections.md), you can connect directly to functions when creating connections to DOM events, to Javascript-to-Javascript connections, or even AOP connections.
 
+## Connecting to a Function Example
 
+Here is simple example of using an [AOP after connection](#aspect-oriented-programming-aop) to connect directly to a function component. Assuming `my/app/Controller` has an existing method named `doStuff`, you can arrange for `doSomething` to be called after `doStuff`.  The return value of `doStuff` will be passed to `doSomething` as the only argument.
+
+```js
+doSomething: {
+	module: 'my/app/doSomething'
+}
+
+// Create a component
+aComponent: {
+	create: 'my/app/Controller',
+	afterReturning: {
+		// After aComponent.doStuff returns successfully, call
+		// doSomething, passing doStuff's return value as the
+		// only argument
+		'doStuff': 'doSomething'
+	}
+}
+```
 
 # Transform Connections
 
+The function pipeline syntax can be used in connections to create connections that transform data as it flows through them.  This is a very powerful decoupling technique.  You can [read the full documentation here](connections.md#transform-connections), complete with examples.
