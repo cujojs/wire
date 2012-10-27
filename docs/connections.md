@@ -5,6 +5,7 @@
 1. [DOM Events](#dom-events)
 1. [Javascript to Javascript](#javascript-to-javascript)
 1. [Aspect Oriented Programming (AOP)](#aspect-oriented-programming-aop)
+1. [Promise-aware AOP](#promise-aware-aop)
 1. [Transform Connections](#transform-connections)
 
 Any software system or application consists of components that must collaborate to do the really useful stuff.  Once you've [created  components](./components.md), you can connect them together in various ways so that they can collaborate.
@@ -284,6 +285,67 @@ define({
 })
 ```
 
+# Promise-aware AOP
+
+Because Javascript is a highly asynchronous platform, it can be difficult or impossible to use standard after, afterReturning, and afterThrowing AOP advice.
+
+Promises are a powerful alternative to the messy nested callback approach.  By using promises, your functions and methods can *return a promise* that represents the eventual value of an asynchronous operation.
+
+You can read more about promises on the [cujojs/when wiki](https://github.com/cujojs/when/wiki).
+
+Wire uses [when](http://github.com/cujojs/when) to provide *promise-aware* AOP advice that can be applied to asynchronous functions and methods that may return a promise.  The promise-aware advice types are close analogs of their standard AOP counterparts:
+
+* afterResolving - like afterReturning, executing only after a returning promise resolves successfully.
+* afterRejecting - like afterThrowing, executing only after a returned promise rejects.
+* afterPromise - like after, executing after a returned promise *either* resolves successfully or rejects.
+
+## Promise-aware AOP examples
+
+```js
+define({
+	// Include the wire/aop plugin
+	plugins: [
+	    { module: 'wire/aop' },
+	    // other plugins ...
+	],
+
+	component1: {
+		create: //...
+	},
+
+	component2: {
+	    create: //...
+
+	    // Promise-aware advice types
+	    afterResolving: {
+	        // component1.doSomethingAfterReturning will be invoked 
+	        // after the promise returned by component2.doSomething 
+	        // resolves successfully (but not if it rejects). The 
+	        // resolution value of the promise will be passed to
+	        // component1.doSomethingAftefResolving
+	        doSomething: 'component1.doSomethingAftefResolving'
+	    },
+
+	    afterThrowing: {
+	        // component1.handleError will be invoked after the
+	        // promise returned by component2.doSomething
+	        // rejects (but not if it resolves successfully). The 
+	        // rejection reason of the promise will be passed to
+	        // component1.handleError
+	        doSomething: 'component1.handleError'
+	    },
+
+	    after: {
+	        // component1.alwaysDoSomethingAfter will be invoked
+	        // after the promise returned by component2.doSomething
+	        // regardless of whether it resolves successfully or
+	        // rejects.  The resolution value or the rejection
+	        // reason will be passed to component1.alwaysDoSomethingAfter
+	        doSomething: 'component1.alwaysDoSomethingAfter'
+	    }
+	}
+})
+```
 # Transform Connections
 
 Connections can transform the data that flows through them.  This allows you to write components without including data transformation logic.  They can expect to receive only the data format they really need, and you use a connection to transform data into the expected format.
