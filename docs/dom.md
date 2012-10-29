@@ -1,4 +1,12 @@
-# Working with DOM Nodes
+# Working with the DOM
+
+1. [Querying the DOM](#querying-the-dom)
+1. [Cloning DOM nodes](#cloning-dom-nodes)
+1. [Inserting DOM nodes](#inserting-dom-nodes)
+1. [Connecting DOM events](#connecting-dom-events)
+1. [Rendering DOM elements](#rendering-dom-elements)
+	1. [Creating DOM components](#creating-dom-components)
+1. [Notes on DOMReady](#notes-on-domready)
 
 When using wire.js in a browser, you're likely going to need to work with DOM nodes.  No problem.  You can query, move, create, and manipulate DOM nodes directly in wire specs!  Use the built-in wire/jquery/dom or wire/dom/dojo plugins to leverage the DOM manipulation features of those libraries, or use wire's lightweight wire/sizzle plugin, or -- if you're targeting modern browsers only -- use the tiny wire/dom plugin.
 
@@ -6,7 +14,7 @@ All of these DOM plugins have the exact same set of features and identical synta
 
 For simplicity, we will refer to the entire set of these plugins as wire/*/dom, rather than write the entire set every time.
 
-### Browser support
+## Browser support
 
 The wire/jquery/dom and wire/dojo/dom plugins support the same browsers as their underlying library.  So, for instance, if you are using jQuery 1.8.0, you can expect wire/jquery/dom to work with IE6+ and the current version of all other major browsers.
 
@@ -14,7 +22,7 @@ The wire/sizzle plugin similarly supports the same browsers as Sizzle.  (Sizzle 
 
 wire/dom relies on `querySelectorAll` for some features.  Therefore, some features don't work in IE6-7.  In addition, IE8 doesn't support many CSS3 selectors.  You should probably only use wire.dom in production if you only need to support fairly recent versions of the major browsers.  Use wire/sizzle instead.
 
-## Querying the DOM
+# Querying the DOM
 
 The wire/*/dom plugins expose a couple of [reference resolvers](concepts.md#references) for obtaining elements in the document.
 
@@ -66,7 +74,7 @@ The `dom!` reference resolver is the preferred way to grab a reference to a sing
 }
 ```
 
-## Cloning DOM nodes
+# Cloning DOM nodes
 
 The clone [factory](concepts.md#factories) also works with single DOM nodes. It's as simple as this:
 
@@ -74,7 +82,7 @@ The clone [factory](concepts.md#factories) also works with single DOM nodes. It'
 clonedButton: { clone: { $ref: 'dom!orig-button' } }
 ```
 
-## Inserting DOM nodes
+# Inserting DOM nodes
 
 Once you have a reference to a node using either the [`element` factory](#element-factory), [`clone` factory](#Cloning-DOM-nodes), or [`render` factory](#Rendering-DOM-nodes), you can use the `insert` facet.
 
@@ -142,7 +150,7 @@ As the example suggests, the element is cloned as many times as needed to be ins
 
 TODO
 
-# Working with DOM events
+# Connecting DOM events
 
 See the [DOM events](./connections.md#dom-events) section of [Connections](./connections.md) for information about adding event listeners to DOM nodes.
 
@@ -257,9 +265,9 @@ Creating several sub-views in a loop is a sure sign that your view is data-drive
 
 If you have existing templates that use other template engines, such as [mustache](http://mustache.github.com/) or [handlebars](http://handlebarsjs.com/), you can still use them.
 
-# DOMReady
+# Notes on DOMReady
 
-When you use wire to reference DOM Nodes via any of the DOM-related plugins (e.g. [[wire/dom]], [[wire/sizzle]], etc.), wire will only resolve the DOM Node reference after the DOM is ready.  You don't need to worry about DOM Ready--simply reference DOM Nodes or do DOM queries (e.g. via wire/*/dom), and wire will do the right thing.
+When you use wire to reference DOM Nodes via any of the DOM-related plugins (e.g. wire/dom, wire/dom, wire/sizzle, etc.), wire will only resolve the DOM Node reference after the DOM is ready.  You don't need to worry about DOM Ready--simply reference DOM Nodes or do DOM queries (e.g. via `dom!`, `dom.first!`, etc.), and wire will do the right thing.
 
 To do this, wire relies on its environment providing a `domReady!` AMD plugin.  Alternatively, wire will detect a global `require.ready` function for backward compatibility with some loaders (e.g. older versions of RequireJS).
 
