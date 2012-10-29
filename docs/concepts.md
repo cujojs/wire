@@ -49,7 +49,6 @@ This is probably a good time to go read [Martin Fowler's well known article on t
 
 *Side note*: The term IOC Container is usually a bit of a misnomer.  Most IOC Containers focus primarily on providing Dependency Inversion, and so a better name might be "Dependency Inversion Container".  Fowler mentions this as well.
 
-
 ## Application Composition
 
 Implementing application logic inside components, and composing those components together into a running application are very different activities.  Many times, however, they are done at the same time, in the same code.  That leads to tightly coupled components that can be impossible to unit test and refactor.
@@ -71,9 +70,9 @@ Components can be implemented and tested without embedding connection logic and 
 
 Similar to declarative IOC containers for other platforms, such as Spring Framework for Java, wire has an *extensible* DSL.  The core DSL has a very simple form, and only a handful of top-level keywords.  The DSL can be extended by plugins.
 
-Wire specs are *declarative*, and thus order does not matter.  Wire will process the spec in dependency order, regardless of how you choose to order components.  A typical best practice is to order your spec in a logical way, placing related components near each other, and optimizing for readability and understandability.
+Wire specs are *declarative*, and thus order does not matter.  Wire will process the spec in dependency order, regardless of the order in which you declare components.  A typical best practice is to order your spec in a logical way, placing related components near each other, and optimizing for readability and understandability.
 
-A wire spec is a Javascript object literal or JSON object that describes a set of [[components]].  Wire.js parses a wire spec as input and produces the fully realized set of components as output.
+A wire spec is a Javascript object literal or JSON object that describes a set of components.  Wire parses a spec as input and produces the fully realized set of components as output.
 
 In their simplest form, components can be any simple Javascript type, such as Strings, Numbers, Arrays, etc., including RegExp and Date when the spec is a Javascript object literal.  More interestingly, components can be things such as AMD modules, constructors, or factory functions that wire.js can use to create instances of larger, more complex components of your application.
 
@@ -105,11 +104,11 @@ This simple wire spec has three top-level components:
 
 * `message` - a String
 * `helloWired` - an AMD module with module id `hello-wired`. In this case the [module is a constructor function](https://github.com/briancavalier/hello-wire.js/blob/master/js/hello-wired.js), which wire.js will use to create an object instance.
-* `plugins` - an Array containing one AMD module to load.  This module happens to be a wire.js plugin for referencing DOM nodes--read more on referencing below and in the [[References]] section.
+* `plugins` - an Array containing one AMD module to load.  This module happens to be a wire.js plugin for referencing DOM nodes--read more on referencing below and in the [References](#references) section.
 
 ### References
 
-The wire spec also contains two [[references]] using [JSON Referencing](http://www.sitepen.com/blog/2008/06/17/json-referencing-in-dojo/)*-like* syntax.  The first references a DOM Node by id:
+The wire spec also contains two *references* using [JSON Referencing](http://www.sitepen.com/blog/2008/06/17/json-referencing-in-dojo/)*-like* syntax.  The first references a DOM Node by id:
 
 ```javascript
 { $ref: 'dom!hello' }
@@ -122,11 +121,11 @@ The second references the `message` String (the first item in the wire spec):
 
 ### Wiring the spec
 
-When you feed a wire spec to wire.js, it will create a [[Context|Contexts]] containing fully realized versions of the components in the spec.  In the Hello Wire case, the [[Context|Contexts]] will contain the message String, an *instance* of the `HelloWired` object from the `hello-wired` AMD module, and an Array with one element--the `wire/dom` plugin AMD module.
+When you feed a spec to wire.js, it will create a [context](#contexts) containing fully realized versions of the components in the spec.  In the Hello Wire case, the context will contain the message String, an *instance* of the `HelloWired` object from the `hello-wired` AMD module, and an Array with one element--the `wire/dom` plugin AMD module.
 
 ## Contexts
 
-When you feed a [[spec|wire specs]] to wire.js as input, it produces a **context**.  The context is a Javascript Object that contains the all fully realized components that were specified in the wiring spec.  The context also has methods for wiring child contexts, resolving references, and destroying the context and all the objects, etc. that were created when it was wired.
+As the result of processing a spec, wire.js produces a **Context**.  The context is a Javascript Object that contains the all fully realized components that were specified in the wiring spec.  The context also has methods for wiring child contexts, resolving references, and destroying the context and all the objects, etc. that were created when it was wired.
 
 ### Context example
 
@@ -163,7 +162,7 @@ require(['wire!hello-wired-spec'], function(context) {
 which creates the *context*, `context`, that contains fully realized components:
 
 1. `message` - a String
-2. `helloWired` - an object created from the AMD module `hello-wired`, whose constructor was passed a DOM node by the `wire/dom` plugin's DOM [[reference resolver|references]], and whose `init()` function has been called and passed the `message` String.
+2. `helloWired` - an object created from the AMD module `hello-wired`, whose constructor was passed a DOM node by the `wire/dom` plugin's DOM [reference resolver](#references), and whose `init()` function has been called and passed the `message` String.
 3. `plugins` - an Array containing a single wire.js plugin, `wire/dom`.
 
 The `wired` context has properties for the components from the wiring spec.
@@ -256,7 +255,7 @@ Wire.js comes with several builtin facets, and plugins can provide additional fa
 
 ## References
 
-References allow you to reference components and other existing resources.  Wire.js uses a [JSON-referencing](http://groups.google.com/group/json-schema/browse_thread/thread/95fb4006f1f92a40)-like syntax for references, but allows for extensions to the referencing syntax via [[plugins|plugin-format]], which can provide Reference Resolvers to do more sophisticated things, such as [[referencing DOM nodes|wire-dom]].
+References allow you to reference components and other existing resources.  Wire.js uses a [JSON-referencing](http://groups.google.com/group/json-schema/browse_thread/thread/95fb4006f1f92a40)-like syntax for references, but allows for extensions to the referencing syntax via plugins, which can provide Reference Resolvers to do more sophisticated things, such as [referencing DOM nodes](./dom.md#querying-the-dom)
 
 ### Syntax
 
