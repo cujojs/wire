@@ -20,7 +20,7 @@ To find out more, read the [full introduction](wire/blob/master/docs/introductio
 * [Even more DOM support](wire/blob/master/docs/dom.md), including DOM event connections via wire/on and cloning DOM elements.
 * [Functions are first-class citizens](wire/blob/master/docs/functions.md) that can be used in very powerful ways.
 * [Transform connections](#transform-connections) use functions to transform data as it flows through connections (including DOM event connections).
-* Built on latest [cujo.js](http://cujojs.com) libs: [when](https://github.com/cujojs/when) >= 1.5.x, and [meld](https://github.com/cujojs/meld) >= 1.0.0
+* Built on latest [cujo.js](http://cujojs.com) libs: [when](https://github.com/cujojs/when) >= 1.5.0, and [meld](https://github.com/cujojs/meld) >= 1.0.0
 
 [Full Changelog](https://github.com/cujojs/wire/wiki/Changelog)
 
