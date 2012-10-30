@@ -20,7 +20,7 @@ Apps constructed with wire.js:
 
 * Have a high degree of modularity
 * Can be unit tested easily, because they inherently separate application logic from application composition
-* Allow application structure to be refactored indenpendently from application logic
+* Allow application structure to be refactored independently from application logic
 * Have no explicit dependencies on DOM Ready, DOM query engines, or DOM event libraries
 
 ## Example Apps

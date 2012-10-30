@@ -7,7 +7,7 @@
 	1. [Inversion of Control](concepts.md#inversion-of-control)
 	1. [Dependency Inversion](concepts.md#dependency-inversion)
 	1. [Application Composition](concepts.md#application-composition)
-	1. [Wire-specific Concepts](concepts.md#wire-concepts))
+	1. [Wire-specific Concepts](concepts.md#wire-concepts)
 1. [Creating Components](components.md)
 	1. [Simple Types](components.md#simple-types)
 	1. [Application Components](components.md#application-components)
