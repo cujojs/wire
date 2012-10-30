@@ -1,8 +1,8 @@
 # wire.js Reference
 
 1. [Introduction](introduction.md)
-	1. [Features]
-	1. [Examples]
+	1. [Features](introduction.md#features)
+	1. [Examples](introduction.md#example-apps)
 1. [Concepts](concepts.md)
 	1. [Inversion of Control](concepts.md#inversion-of-control)
 	1. [Dependency Inversion](concepts.md#dependency-inversion)
