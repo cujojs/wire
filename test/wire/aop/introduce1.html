@@ -7,6 +7,25 @@
     <script src="../../test-config.js"></script>
 
 	<script type="text/javascript">
+		define('Thing', [], function() {
+
+			var me = function() {
+			};
+
+			me.prototype = {
+				doSomething: function(message) {
+					var completeMessage = this.name + ": " + message;
+					console.log(completeMessage);
+					return completeMessage;
+				},
+				doSomethingElse: function(message) {
+					throw new Error(message);
+				}
+			};
+
+			return me;
+		});
+
         define('Mixin', [], function() {
             return {
                 doSomethingMixedIn: function(message) {
@@ -14,6 +33,7 @@
                 }
             };
         });
+
         require(['wire'], function(wire) {
 			wire({
 				plugins: [
@@ -22,7 +42,7 @@
                 ],
                 mixin1: { module: 'Mixin' },
 				thing: {
-					create: 'test/wire/aop/Thing',
+					create: 'Thing',
 					introduce: 'mixin1'
 				}
 			}).then(
@@ -40,7 +60,7 @@
 				function(err) {
 					console.log("aop: FAILED", err);
 				}
-			);			
+			);
 		});
 	</script>
 </head>
