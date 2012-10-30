@@ -1,6 +1,5 @@
 # Configuring Components
 
-1. [Configuring Components](#configuring-components)
 1. [Properties](#properties)
 1. [Init Methods](#init-methods)
 1. [Ready Methods](#ready-methods)

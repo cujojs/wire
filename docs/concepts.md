@@ -21,7 +21,7 @@
 
 Inversion of Control (IOC) is a general principle of software architecture, that can be applied in different ways.  The [Wikipedia article on IOC](http://en.wikipedia.org/wiki/Inversion_of_control "Inversion of control - Wikipedia, the free encyclopedia") says it is where "the flow of control of a system is inverted in comparison to procedural programming."
 
-That's one of those definitions that's more useful after you already understand IOC, and not as useful when you're trying to figure it out in the first place.  It basically says that IOC is in effect in some form in any system where control is inverted from what is "normal" is.  But what is "normal"?
+That's one of those definitions that's more useful after you already understand IOC, and not as useful when you're trying to figure it out in the first place.  It basically says that IOC is in effect in some form in any system where control is inverted from what "normal" is.  But what is "normal"?
 
 If you write Javascript in a browser environment, you're already using one form of IOC.  Let's look at a simple example to compare "normal" vs. "inverted" control.
 

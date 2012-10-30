@@ -1,7 +1,7 @@
 # Connections
 
 1. [Connection Types](#connection-types)
-1. [Injection](#injection)
+1. [Dependency Injection](#dependency-injection)
 1. [DOM Events](#dom-events)
 1. [Javascript to Javascript](#javascript-to-javascript)
 1. [Aspect Oriented Programming (AOP)](#aspect-oriented-programming-aop)
@@ -23,7 +23,7 @@ Wire itself, plus its bundled plugins support 4 types of connections:
 
 Each of these type of connections can be useful in various situations, and picking what type of connection to use should be a part of designing your application architecture.
 
-# Injection
+# Dependency Injection
 
 **Plugins:** None needed
 

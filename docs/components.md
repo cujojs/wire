@@ -1,7 +1,7 @@
 # Creating Components
 
 1. [Simple Types](#simple-types)
-1. [Factories](#factories)
+1. [Application Components](#application-components)
 1. [Built-in Factories](#built-in-factories)
 
 Wire provides a declarative, *extensible*, Domain Specific Language (DSL) for describing the components of your application.
@@ -33,7 +33,7 @@ define({
 });
 ```
 
-# Factories
+# Application Components
 
 To create more sophisticated applications components, wire.js uses *Factory plugins*.  Factory plugins extend the wire spec DSL, and provide simple syntax for creating objects and functions from AMD modules.  Developers can implement new factory plugins to create other types of components.
 
