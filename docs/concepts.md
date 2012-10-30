@@ -307,4 +307,14 @@ Notice that order doesn't matter.  Even though `view` is referenced before it is
 
 ## Connections
 
-...
+Connecting components together so they can collaborate is at the heart of building any application.  Connections are the lines in your "box and line" diagrams.  The type of connections as well as how they are created can be just as important as the components they connect.
+
+Many times, application components create their own connections to other components, which can lead to an inflexible architecture that is difficult to refactor.
+
+Wire.js allows you to [connect components](connections.md) together *non-invasively* using several types of connectors, such as dependency injection, synthetic Javascript events, and Aspect-Oriented Programming (AOP). For browser-based applications, it also treats the DOM in the same way.  It allows you to [bind DOM events](connections.md#dom-events) between DOM nodes and Javascript components without coding it into your components.
+
+Wire.js connections [can also *transform data*](connections.md#transform-connections) that flows through them, making it easier to mix and match components by not forcing you to put data-adapting logic into the components themselves.
+
+Separating connections from application logic makes for simpler testing, easier refactoring, and a more flexible architecture.
+
+[Read more about connections](connections.md)
