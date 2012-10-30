@@ -39,6 +39,12 @@ Hello Wire is a very simple introduction to wire.js.  You can fork and run the a
 * [Hello Wire on github](https://github.com/briancavalier/hello-wire.js)
 * [Walkthrough in the README](https://github.com/briancavalier/hello-wire.js#hello-wirejs)
 
+### "Monty Hall" Game
+
+The UI for this "Monty Hall Problem" game is built with cujo.js.  The application was used as a demo during several talks at [SpringOne 2GX](http://springone2gx.com/conference/washington/2012/10/home).
+
+* [Monty Hall UI on github](https://github.com/five-eleven/monty-hall-ui)
+
 ### Notes demo
 
 This is a simple notes app built as a demo for Dojoconf 2011 using cujo.js.  It shows several more advanced aspects of wire.js, such as dividing an application into sections that can be wired on-demand, Aspect Oriented Programming (AOP), and Dojo integration via wire.js plugins.
