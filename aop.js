@@ -88,7 +88,7 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
 	}
 
 	function addAfterPromiseAdvice(source, sourceMethod, advice) {
-		return meld.afterReturning(source, sourceMethod, function(promise) {
+		return meld.after(source, sourceMethod, function(promise) {
 			return when(promise, advice, advice);
 		});
 	}
@@ -228,7 +228,7 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
             // Plugin
             plugin = {
                 facets: {
-                    decorate:       makeFacet('configure', decorateFacet),
+                    decorate:       makeFacet('configure:after', decorateFacet),
 					afterFulfilling: makeFacet(adviceStep, makeAdviceFacet(addAfterFulfillingAdvice, woven)),
 					afterRejecting:  makeFacet(adviceStep, makeAdviceFacet(addAfterRejectingAdvice, woven)),
 					after: makeFacet(adviceStep, makeAdviceFacet(addAfterPromiseAdvice, woven))
