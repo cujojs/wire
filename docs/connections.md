@@ -112,7 +112,7 @@ define({
 });
 ```
 
-Similarly, connecting to a events within a DOM node created using the [render factory](dom.md#render-factory).
+Similarly, connecting to events within a DOM node created using the [render factory](dom.md#render-factory).
 
 ```js
 define({
@@ -295,9 +295,9 @@ You can read more about promises on the [cujojs/when wiki](https://github.com/cu
 
 Wire uses [when](http://github.com/cujojs/when) to provide *promise-aware* AOP advice that can be applied to asynchronous functions and methods that may return a promise.  The promise-aware advice types are close analogs of their standard AOP counterparts:
 
-* afterResolving - like afterReturning, executing only after a returning promise resolves successfully.
-* afterRejecting - like afterThrowing, executing only after a returned promise rejects.
-* afterPromise - like after, executing after a returned promise *either* resolves successfully or rejects.
+* afterFulfilling - like afterReturning, executing only after a returned promise is fulfilled successfully.
+* afterRejecting - like afterThrowing, executing only after a returned promise is rejected.
+* after - After advice is always promise aware, and handles both regular return/throw or promises.  It executes after a returned promise is *either* fulfilled or rejected.
 
 ## Promise-aware AOP examples
 
@@ -317,7 +317,7 @@ define({
 	    create: //...
 
 	    // Promise-aware advice types
-	    afterResolving: {
+	    afterFulfilling: {
 	        // component1.doSomethingAfterReturning will be invoked 
 	        // after the promise returned by component2.doSomething 
 	        // resolves successfully (but not if it rejects). The 
@@ -326,7 +326,7 @@ define({
 	        doSomething: 'component1.doSomethingAftefResolving'
 	    },
 
-	    afterThrowing: {
+	    afterRejecting: {
 	        // component1.handleError will be invoked after the
 	        // promise returned by component2.doSomething
 	        // rejects (but not if it resolves successfully). The 

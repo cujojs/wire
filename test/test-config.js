@@ -2,70 +2,72 @@
 
 	function noop() {}
 
-    // Fake console if we need to
-   	if (typeof global.console === undef) {
-   		global.console = { log: noop, error: noop };
-   	}
+	// Fake console if we need to
+	if (typeof global.console === undef) {
+		global.console = { log: noop, error: noop };
+	}
 
 	var doc, head, scripts, script, i, baseUrl, baseUrlSuffix,
 		selfName, selfRegex, loaders, loader, loaderName, loaderPath, loaderConfig;
 
-    loaderName = 'curl';
+	loaderName = 'curl';
 
-    // Try to get loader name from location hash
-    try {
-        loaderName = (global.location.hash).slice(1) || loaderName;
-    } catch(e) {
-    }
+	// Try to get loader name from location hash
+	try {
+		loaderName = (global.location.hash).slice(1) || loaderName;
+	} catch(e) {
+	}
 
 	selfName = 'test-config.js';
 	selfRegex = new RegExp(selfName + '$');
 
 	baseUrlSuffix = '../';
 
-    loaders = {
-        curl: {
-            script: 'test/curl/src/curl',
-            mixin: {
-                apiName: 'require',
-                pluginPath: 'curl/plugin',
-                paths: {
+	loaders = {
+		curl: {
+			script: 'test/curl/src/curl',
+			mixin: {
+				apiName: 'require',
+				pluginPath: 'curl/plugin',
+				paths: {
 					'jquery': 'test/lib/jquery'
 //                    'wire/domReady': 'test/curl/src/curl/domReady'
-                },
-                preloads: [
+				},
+				preloads: [
 					'poly/all',
-                    'curl/shim/dojo16'
-                ]
-            }
-        },
-        requirejs: {
-            script: 'test/requirejs/require',
-            mixin: {
-                paths: {
+					'curl/shim/dojo16'
+				]
+			}
+		},
+		requirejs: {
+			script: 'test/requirejs/require',
+			mixin: {
+				paths: {
 					'jquery': 'test/lib/jquery',
 //                    'wire/domReady': 'test/requirejs-domReady/domReady',
-                    domReady: 'test/requirejs-domReady/domReady'
-                },
-                config: {
-                	when: { paranoid: false }
-                }
-            }
-        }
-    };
-    
-    function addPackage(pkgInfo) {
-        var cfg;
-        
-        if(!loaderConfig.packages) loaderConfig.packages = [];
-        
-        cfg = loaderConfig.packages;
-        pkgInfo.main = pkgInfo.main || pkgInfo.name;
-        cfg.push(pkgInfo);
-    }
+					domReady: 'test/requirejs-domReady/domReady'
+				},
+				config: {
+					when: { paranoid: false }
+				}
+			}
+		}
+	};
 
-    loader = loaders[loaderName];
-    
+	function addPackage(pkgInfo) {
+		var cfg;
+
+		if(!loaderConfig.packages) {
+			loaderConfig.packages = [];
+		}
+
+		cfg = loaderConfig.packages;
+		pkgInfo.main = pkgInfo.main || pkgInfo.name;
+		cfg.push(pkgInfo);
+	}
+
+	loader = loaders[loaderName];
+
 	loaderPath = loader.script;
 
 	doc = global.document;
@@ -90,21 +92,21 @@
 		baseUrl: baseUrl,
 		paths: {}
 	};
-    
-    for(var m in loader.mixin) {
-        loaderConfig[m] = loader.mixin[m];
-    }
 
-    addPackage({ name: 'dojo', location: 'test/lib/dojo18/dojo' });
+	for(var m in loader.mixin) {
+		loaderConfig[m] = loader.mixin[m];
+	}
+
+	addPackage({ name: 'dojo', location: 'test/lib/dojo18/dojo' });
 //	addPackage({ name: 'dijit', location: 'test/lib/dojo17/dijit', main: 'main' });
 //	addPackage({ name: 'dojo', location: 'test/lib/dojo16/dojo', main: 'lib/main-browser' });
 //    addPackage({ name: 'dijit', location: 'test/lib/dojo16/dijit', main: 'lib/main' });
-    addPackage({ name: 'sizzle', location: 'support/sizzle' });
-    addPackage({ name: 'meld', location: 'support/meld' });
-    addPackage({ name: 'when', location: 'support/when' });
-    addPackage({ name: 'poly', location: 'support/poly' });
-    // This is needed because we're running unit tests from *within* the wire dir
-    addPackage({ name: 'wire', location: '.' });
+	addPackage({ name: 'sizzle', location: 'support/sizzle' });
+	addPackage({ name: 'meld', location: 'support/meld' });
+	addPackage({ name: 'when', location: 'support/when' });
+	addPackage({ name: 'poly', location: 'support/poly' });
+	// This is needed because we're running unit tests from *within* the wire dir
+	addPackage({ name: 'wire', location: '.' });
 
 	// Other loaders may not need this
 	loaderConfig.paths[loaderName] = loaderPath;

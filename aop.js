@@ -15,7 +15,9 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
 
 	var adviceTypes, adviceStep, undef;
 
-	adviceTypes = ['before', 'around', 'after', 'afterReturning', 'afterThrowing'];
+	// "after" is not included in these standard advice types because
+	// it is created as promise-aware advice.
+	adviceTypes = ['before', 'around', 'afterReturning', 'afterThrowing'];
 	adviceStep = 'connect:before';
 
     //
@@ -73,7 +75,7 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
 		};
 	}
 
-	function addAfterResolvingAdvice(source, sourceMethod, advice) {
+	function addAfterFulfillingAdvice(source, sourceMethod, advice) {
 		return meld.afterReturning(source, sourceMethod, function(promise) {
 			return when(promise, advice);
 		});
@@ -227,9 +229,9 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
             plugin = {
                 facets: {
                     decorate:       makeFacet('configure', decorateFacet),
-					afterResolving: makeFacet(adviceStep, makeAdviceFacet(addAfterResolvingAdvice, woven)),
-					afterRejecting: makeFacet(adviceStep, makeAdviceFacet(addAfterRejectingAdvice, woven)),
-					afterPromise:   makeFacet(adviceStep, makeAdviceFacet(addAfterPromiseAdvice, woven))
+					afterFulfilling: makeFacet(adviceStep, makeAdviceFacet(addAfterFulfillingAdvice, woven)),
+					afterRejecting:  makeFacet(adviceStep, makeAdviceFacet(addAfterRejectingAdvice, woven)),
+					after: makeFacet(adviceStep, makeAdviceFacet(addAfterPromiseAdvice, woven))
                 }
             };
 

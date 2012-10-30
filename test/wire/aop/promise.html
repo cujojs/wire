@@ -10,13 +10,13 @@
 
 		require(['wire', 'when'], function (wire, when) {
 
-			function resolved(val) {
+			function resolver(val) {
 				var d = when.defer();
 				d.resolve(val);
 				return d.promise;
 			}
 
-			function rejected(val) {
+			function rejecter(val) {
 				var d = when.defer();
 				d.reject(val);
 				return d.promise;
@@ -25,8 +25,8 @@
 			define('Target', function () {
 				function Target() {}
 				Target.prototype = {
-					resolve: resolved,
-					reject: rejected
+					resolver: resolver,
+					rejecter: rejecter
 				};
 
 				return Target;
@@ -49,14 +49,14 @@
 						aop: { module: 'wire/aop' },
 						target: {
 							create: 'Target',
-							afterResolving: {
-								resolve: 'handler.test'
+							afterFulfilling: {
+								resolver: 'handler.test'
 							}
 						},
 						handler: { create: 'Handler'}
 					}).then(
 						function(context) {
-							context.target.resolve(1);
+							context.target.resolver(1);
 							dohd.callback(1 === context.handler.val);
 						},
 						dohd.errback
@@ -72,13 +72,13 @@
 						target: {
 							create: 'Target',
 							afterRejecting: {
-								reject: 'handler.test'
+								rejecter: 'handler.test'
 							}
 						},
 						handler: { create: 'Handler'}
 					}).then(
 						function(context) {
-							context.target.reject(1);
+							context.target.rejecter(1);
 							dohd.callback(1 === context.handler.val);
 						},
 						dohd.errback
@@ -93,18 +93,18 @@
 						aop: { module: 'wire/aop' },
 						target: {
 							create: 'Target',
-							afterPromise: {
-								resolve: 'handler.test',
-								reject: 'handler.test'
+							after: {
+								resolver: 'handler.test',
+								rejecter: 'handler.test'
 							}
 						},
 						handler: { create: 'Handler'}
 					}).then(
 						function(context) {
-							context.target.resolve(1);
+							context.target.resolver(1);
 							dohd.callback(1 === context.handler.val);
 
-							context.target.reject(2);
+							context.target.rejecter(2);
 							dohd.callback(2 === context.handler.val);
 						},
 						dohd.errback
