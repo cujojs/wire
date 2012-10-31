@@ -8,19 +8,24 @@ To find out more, read the [full introduction](wire/blob/master/docs/introductio
 
 # Documentation
 
-1. [Reference Documentation](wire/blob/master/docs/TOC.md#wirejs-reference)
-2. [Example Code Applications](wire/blob/master/docs/introduction.md#example-apps)
+1. [Getting Started](wire/blob/master/docs/get.md)
+1. [Reference Documentation](wire/blob/master/docs/TOC.md)
+1. [Example Code Applications](wire/blob/master/docs/introduction.md#example-apps)
 
 # What's new
 
 ### 0.9.0
 
-* See the [full release notes](https://github.com/cujojs/wire/wiki/release-notes-090) for info on getting it
+* [Get it!](wire/blob/master/docs/get.md)
 * [All new documentation](wire/blob/master/docs/TOC.md)
 * [Even more DOM support](wire/blob/master/docs/dom.md), including DOM event connections via wire/on and cloning DOM elements.
 * [Functions are first-class citizens](wire/blob/master/docs/functions.md) that can be used in very powerful ways.
 * [Transform connections](#transform-connections) use functions to transform data as it flows through connections (including DOM event connections).
-* Built on latest [cujo.js](http://cujojs.com) libs: [when](https://github.com/cujojs/when) >= 1.5.0, and [meld](https://github.com/cujojs/meld) >= 1.0.0
+* Built on latest [cujo.js](http://cujojs.com) platform:
+	* [curl](https://github.com/cujojs/curl) >= 0.7.1, or 0.6.8
+	* [when](https://github.com/cujojs/when) >= 1.5.0
+	* [meld](https://github.com/cujojs/meld) >= 1.0.0
+	* [poly](https://github.com/cujojs/poly) >= 0.5.0
 
 [Full Changelog](https://github.com/cujojs/wire/wiki/Changelog)
 
