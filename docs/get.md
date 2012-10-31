@@ -21,6 +21,7 @@ Wire.js requires an **AMD compatible loader** and an **ES5 environment** when ru
 1. `git clone https://github.com/cujojs/wire`
 1. `cd wire`
 1. `git submodule init && git submodule update`
+	* NOTE: poly is included as a submodule, so you won't need to download it separately if you install wire.js this way.
 
 ## Download
 
@@ -34,12 +35,12 @@ Download each of the following and arrange into your project:
 
 ## Getting curl
 
-Wire.js 0.9.x requires [curl](https://github.com/cujojs/curl) 0.7.1 or higher, or 0.6.8.  You can [clone](https://github.com/cujojs/curl) or [download](https://github.com/cujojs/curl/tags) curl into your project, or install it via yeoman/bower:
+To use curl as your AMD loader, wire.js 0.9.x requires [curl](https://github.com/cujojs/curl) 0.7.1 or higher, or 0.6.8.  You can [clone](https://github.com/cujojs/curl) or [download](https://github.com/cujojs/curl/tags) curl into your project, or install it via yeoman/bower:
 
 `yeoman install curl` *or* `bower install curl`
 
 ## Getting poly
 
-Wire.js 0.9.x requires [poly](https://github.com/cujojs/poly) 0.5.0 or higher.  You can [clone](https://github.com/cujojs/poly) or [download](https://github.com/cujojs/poly/tags) poly into your project, or install it via yeoman/bower:
+To support non-ES5 legacy browsers, wire.js 0.9.x requires [poly](https://github.com/cujojs/poly) 0.5.0 or higher.  You can [clone](https://github.com/cujojs/poly) or [download](https://github.com/cujojs/poly/tags) poly into your project, or install it via yeoman/bower:
 
 `yeoman instal poly` *or* `bower install poly`
