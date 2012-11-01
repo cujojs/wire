@@ -10,7 +10,7 @@ To find out more, read the [full introduction](wire/blob/master/docs/introductio
 
 1. [Getting Started](wire/blob/master/docs/get.md)
 1. [Reference Documentation](wire/blob/master/docs/TOC.md)
-1. [Example Code Applications](wire/blob/master/docs/introduction.md#example-apps)
+1. [Example Code and Apps](wire/blob/master/docs/introduction.md#example-apps)
 
 # What's new
 

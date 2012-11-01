@@ -11,7 +11,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @version 0.9.0-dev
+ * @version 0.9.0
  */
 (function(global, define){
 define(['require', 'when', './lib/context'], function(require, when, createContext) {
@@ -20,7 +20,7 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 
 	var rootSpec, rootContext, rootOptions;
 
-	wire.version = "0.9.0-dev";
+	wire.version = "0.9.0";
 
 	rootSpec = global['wire'] || {};
 	rootOptions = { require: require };
