@@ -41,7 +41,7 @@ Now you might be asking yourself "If I'm already doing IOC, why do I need wire.j
 
 ## Dependency Inversion
 
-[Dependency Inversion](http://en.wikipedia.org/wiki/Dependency_inversion_principle "Dependency inversion principle - Wikipedia, the free encyclopedia") is a pattern where concrete components do not directly depend on other concrete components, but rather on abstractions and APIs.  The concrete dependencies are provided, via a mechanism such as Depedency Injection (more info below) by the environment in which the components are used.
+[Dependency Inversion](http://en.wikipedia.org/wiki/Dependency_inversion_principle "Dependency inversion principle - Wikipedia, the free encyclopedia") is a pattern where concrete components do not directly depend on other concrete components, but rather on abstractions and APIs.  The concrete dependencies are provided, via a mechanism such as Dependency Injection (more info below) by the environment in which the components are used.
 
 So, the "inversion" in this case, refers to how components' dependencies are satisfied.
 
