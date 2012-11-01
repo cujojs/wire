@@ -34,7 +34,7 @@ buster.testCase('types', {
 				function(context) {
 					assert.equals(collectKeys(context.a), collectKeys({}));
 				}
-			)
+			);
 		}
 	},
 
@@ -129,7 +129,7 @@ buster.testCase('types', {
 		'should support Boolean()': function() {
 			return wire({ a: new Boolean(true) }).then(
 				function(context) {
-					assert.equals(toString.call(context.a), '[object Boolean]')
+					assert.equals(toString.call(context.a), '[object Boolean]');
 					assert.equals(context.a, true);
 				}
 			);
