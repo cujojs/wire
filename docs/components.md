@@ -164,14 +164,13 @@ define('my/app/ModuleWithConstructor', function() {
 
 ## compose
 
-### Syntax
+Functions are first-class citizens in wire.js.  For example, you can [use them as components](functions.md#functions-as-components).  The compose factory allows you to compose function components and component methods into new functions.
 
-```js
-```
+See [Composing Functions](functions.md#composing-functions) for more information on composing new functions with the compose factory.
 
 ## literal
 
-It can be useful to have object literals in [[wire specs]] for various reasons, such as reference data or common configuration shared between several components.  Most times, object literals can be declared directly:
+It can be useful to have object literals in [wire specs](concepts.md#wire-specs) for various reasons, such as reference data or common configuration shared between several components.  Most times, object literals can be declared directly:
 
 ```javascript
 // An object literal can be declared directly in a wire spec
