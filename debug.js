@@ -79,9 +79,11 @@
  */
 (function(global, define) {
 define(['meld'], function(meld) {
-	var timer, defaultTimeout, logger, createTracer;
+	var timer, defaultTimeout, logger, createTracer, ownProp;
 
 	function noop() {}
+
+	ownProp = Object.prototype.hasOwnProperty.call.bind(Object.prototype.hasOwnProperty);
 
 	// Setup console for node, sane browsers, or IE
 	logger = typeof console != 'undefined'
@@ -227,7 +229,7 @@ define(['meld'], function(meld) {
 
 		/** Default pointcut query to match methods that will be traced */
 		defaultPointcut = /^[^_]/;
-		
+
 		function logAfter(context, tag, start, val) {
 			console.log(context + tag + (new Date().getTime() - start.getTime()) + 'ms): ', val);
 		}
@@ -240,7 +242,7 @@ define(['meld'], function(meld) {
 			return {
 				around:function (joinpoint) {
 					var val, context, start, indent;
-					
+
 					// Setup current indent level
 					indent = padding.substr(0, depth);
 					// Form full path to invoked method
@@ -477,14 +479,46 @@ define(['meld'], function(meld) {
 				logSeparator();
 			}
 
+			/**
+			 * Adds a named constructor function property to the supplied component
+			 * so that the name shows up in debug inspectors.  Squelches all errors.
+			 */
+			function makeConstructor(name, component) {
+				/*jshint evil:true*/
+				var ctor;
+				try {
+					// Generate a named function to use as the constructor
+					name = name.replace(/^[^a-zA-Z$_]|[^a-zA-Z0-9$_]+/g, '_');
+					eval('ctor = function ' + name + ' () {}');
+
+					// Be friendly and make configurable and writable just in case
+					// some other library or application code tries to set constructor.
+					Object.defineProperty(component, 'constructor', {
+						configurable: true,
+						writable: true,
+						value: ctor
+					});
+
+				} catch(e) {
+					// Oh well, ignore.
+				}
+			}
+
 			plugin = {
 				create:function (promise, proxy) {
-					var path = proxy.path;
+					var path, component;
+
+					path = proxy.path;
+					component = proxy.target;
 
 					count++;
 					paths[path || ('(unnamed-' + count + ')')] = {
 						spec:proxy.spec
 					};
+
+					if(typeof component == 'object' && !ownProp(component, 'constructor')) {
+						makeConstructor(proxy.id, component);
+					}
 
 					logCreated(promise, proxy);
 				},
