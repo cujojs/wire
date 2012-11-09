@@ -217,7 +217,7 @@ myReferenceData: {
 
 ## wire
 
-The wire factory provides a way of creating [[child contexts|contexts]].  This allows you to modularize your [[wire specs|wire-specs]], so that they can be mixed and matched.  It also allows you to modularize your application by wiring sections of your application into existence when needed, and destroying them once they are no longer needed.
+The wire factory provides a way of creating [child contexts](concepts.md#contexts).  This allows you to modularize your [wire specs](concepts.md#wire-specs), so that they can be mixed and matched.  It also allows you to modularize your application by wiring sections of your application into existence when needed, and destroying them once they are no longer needed.
 
 The `defer` option (see below) provides an especially powerful mechanism for modularizing applications.
 
@@ -258,7 +258,7 @@ childContext: {
 
 ### Why is childContext a Promise?
 
-Due to the [[parent-child relationship between contexts|contexts]], a child cannot finish until its parent has finished wiring.  When using the wire factory, the *current* context is the parent.  Since it is *currently* being wired, it has not finished (obviously!), and the child context created by the wire factory cannot finish.  So the wire factory returns a promise for the child context.
+Due to the [parent-child relationship between contexts](concepts.md#contexts), a child cannot finish until its parent has finished wiring.  When using the wire factory, the *current* context is the parent.  Since it is *currently* being wired, it has not finished (obviously!), and the child context created by the wire factory cannot finish.  So the wire factory returns a promise for the child context.
 
 So, to use components in the child context from the parent, you must wait for the promise to resolve.  The promise is a [CommonJS Promises/A](http://wiki.commonjs.org/wiki/Promises/A "Promises/A - CommonJS Spec Wiki") compliant promise, so you can use its then() method:
 
@@ -366,7 +366,7 @@ define(/* 'my/Controller' */, [], function() {
 });
 ```
 
-Now, let's create a [[wire spec|wire specs]] that will create an instance of our controller and setup the _showPrefs method using the wire factory.
+Now, let's create a [wire spec](concepts.md#wire-specs) that will create an instance of our controller and setup the _showPrefs method using the wire factory.
 
 ```javascript
 // Create our controller
