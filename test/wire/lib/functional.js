@@ -24,36 +24,6 @@ buster.testCase('lib/functional', {
 		}
 	},
 
-	'weave': {
-		'should return a function': function() {
-			assert.isFunction(functional.weave(function() {}, {}));
-		},
-
-		'should weave arguments defined with sparse arrays': function() {
-			function f(a, b) {
-				assert.equals(a, 1);
-				assert.equals(b, 2);
-			}
-
-			functional.weave(f, [1])(2);
-			functional.weave(f, [,2])(1);
-			functional.weave(f, [])(1, 2);
-			functional.weave(f, [1, 2])();
-		},
-
-		'should weave arguments defined with array-like objects': function() {
-			function f(a, b) {
-				assert.equals(a, 1);
-				assert.equals(b, 2);
-			}
-
-			functional.weave(f, { 0: 1 })(2);
-			functional.weave(f, { 1: 2 })(1);
-			functional.weave(f, {})(1, 2);
-			functional.weave(f, { 0: 1, 1: 2 })();
-		}
-	},
-
 	'compose': {
 		'should return a function': function() {
 			assert.isFunction(functional.compose([function() {}]));
@@ -73,6 +43,36 @@ buster.testCase('lib/functional', {
 			function f(x) { return this; }
 
 			assert.equals(functional.compose([f]).bind('a')(), 'a');
+
+		}
+	},
+
+	'compose.async': {
+		'should return a function': function() {
+			assert.isFunction(functional.compose.async([function() {}]));
+			assert.isFunction(functional.compose.async([function() {}, function() {}]));
+			assert.isFunction(functional.compose.async([function() {}], {}));
+			assert.isFunction(functional.compose.async([function() {}, function() {}], {}));
+		},
+
+		'should return a function that returns a promise for the result': function(done) {
+			function f(x) { return x + 'f'; }
+			function g(x) { return x + 'g'; }
+
+			var result = functional.compose.async([f, g])('a');
+
+			assert.isFunction(result.then);
+			result.then(function(result) {
+				assert.equals(result, 'afg');
+			}).then(done, done);
+		},
+
+		'should not change context': function(done) {
+			function f(x) { return this; }
+
+			functional.compose.async([f]).bind('a')().then(function(result) {
+				assert.equals(result, 'a');
+			}).then(done, done);
 
 		}
 	}
