@@ -216,7 +216,7 @@ Similarly to [connecting component methods](connections.md), you can connect dir
 
 ## Connecting to a Function Example
 
-Here is simple example of using an [AOP after connection](#aspect-oriented-programming-aop) to connect directly to a function component. Assuming `my/app/Controller` has an existing method named `doStuff`, you can arrange for `doSomething` to be called after `doStuff`.  The return value of `doStuff` will be passed to `doSomething` as the only argument.
+Here is simple example of using an [AOP after connection](connections.md#aspect-oriented-programming-aop) to connect directly to a function component. Assuming `my/app/Controller` has an existing method named `doStuff`, you can arrange for `doSomething` to be called after `doStuff`.  The return value of `doStuff` will be passed to `doSomething` as the only argument.
 
 ```js
 doSomething: {
