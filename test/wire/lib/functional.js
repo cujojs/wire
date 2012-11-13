@@ -6,6 +6,14 @@ assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
 
+function promised(val) {
+	return {
+		then: function(f) {
+			return promised(f(val));
+		}
+	};
+}
+
 buster.testCase('lib/functional', {
 
 	'partial': {
@@ -32,6 +40,22 @@ buster.testCase('lib/functional', {
 			assert.isFunction(functional.compose([function() {}, function() {}], {}));
 		},
 
+		'should not change context': function() {
+			function f(x) { return this; }
+
+			assert.equals(functional.compose([f]).bind('a')(), 'a');
+
+		},
+
+		'should not change context when returning a promise': function(done) {
+			function f(x) { return promised(this); }
+
+			functional.compose([f]).bind('a')().then(function(result) {
+				assert.equals(result, 'a');
+			}).then(done, done);
+
+		},
+
 		'should invoke originals left to right': function() {
 			function f(x) { return x + 'f'; }
 			function g(x) { return x + 'g'; }
@@ -39,41 +63,17 @@ buster.testCase('lib/functional', {
 			assert.equals(functional.compose([f, g])('a'), 'afg');
 		},
 
-		'should not change context': function() {
-			function f(x) { return this; }
-
-			assert.equals(functional.compose([f]).bind('a')(), 'a');
-
-		}
-	},
-
-	'compose.async': {
-		'should return a function': function() {
-			assert.isFunction(functional.compose.async([function() {}]));
-			assert.isFunction(functional.compose.async([function() {}, function() {}]));
-			assert.isFunction(functional.compose.async([function() {}], {}));
-			assert.isFunction(functional.compose.async([function() {}, function() {}], {}));
-		},
-
-		'should return a function that returns a promise for the result': function(done) {
+		'should return a promise when any composed function introduces a promise': function(done) {
 			function f(x) { return x + 'f'; }
-			function g(x) { return x + 'g'; }
+			function g(x) { return promised(x + 'g'); }
+			function h(x) { return x + 'h'; }
 
-			var result = functional.compose.async([f, g])('a');
+			var result = functional.compose([f, g, h])('a');
 
 			assert.isFunction(result.then);
 			result.then(function(result) {
-				assert.equals(result, 'afg');
+				assert.equals(result, 'afgh');
 			}).then(done, done);
-		},
-
-		'should not change context': function(done) {
-			function f(x) { return this; }
-
-			functional.compose.async([f]).bind('a')().then(function(result) {
-				assert.equals(result, 'a');
-			}).then(done, done);
-
 		}
 	}
 
