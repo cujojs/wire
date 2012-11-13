@@ -7,7 +7,20 @@ assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
 
+var log;
+
 buster.testCase('wire/debug', {
+	setUp: function() {
+		// Silence debug logging
+		log = console.log;
+		console.log = function() {};
+	},
+
+	tearDown: function() {
+		// Restore console
+		console.log = log;
+	},
+
 	'should set constructor on constructor-less object components': function(done) {
 		wire({
 			debug: { module: './debug' },

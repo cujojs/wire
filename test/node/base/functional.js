@@ -11,6 +11,14 @@ function plusOne(x) {
 	return x+1;
 }
 
+function promisedPlusOne(x) {
+	return {
+		then: function(f) {
+			return promisedPlusOne(f(x+1));
+		}
+	};
+}
+
 function Thing(x) {
 	this.x = x;
 }
@@ -41,6 +49,29 @@ buster.testCase('base:functional', {
 			).then(done, done);
 		},
 
+		'should return a promise when array introduces a promise': function(done) {
+			wire({
+				f1: plusOne,
+				f2: promisedPlusOne,
+				f3: plusOne,
+				composed: {
+					compose: [
+						{ $ref: 'f1' },
+						{ $ref: 'f2' },
+						{ $ref: 'f3' }
+					]
+				}
+			}).then(
+				function(c) {
+					var result = c.composed(1);
+					assert.isFunction(result.then);
+					return result.then(function(result) {
+						assert.equals(result, 4);
+					});
+				}
+			).then(done, done);
+		},
+
 		'should compose a string specification': function(done) {
 			wire({
 				f1: plusOne,
@@ -51,6 +82,25 @@ buster.testCase('base:functional', {
 			}).then(
 				function(c) {
 					assert.equals(c.composed(1), 3);
+				}
+			).then(done, done);
+		},
+
+		'should return a promise when pipeline introduces a promise': function(done) {
+			wire({
+				f1: plusOne,
+				f2: promisedPlusOne,
+				f3: plusOne,
+				composed: {
+					compose: 'f1 | f2 | f3'
+				}
+			}).then(
+				function(c) {
+					var result = c.composed(1);
+					assert.isFunction(result.then);
+					return result.then(function(result) {
+						assert.equals(result, 4);
+					});
 				}
 			).then(done, done);
 		},
