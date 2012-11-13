@@ -49,8 +49,6 @@ buster.testCase('wire/aop', {
 		'should execute function around method': function(done) {
 			var beforeSpy, afterSpy;
 
-			fixture.method = this.stub().returns(sentinel);
-
 			beforeSpy = this.spy();
 			afterSpy = this.spy();
 
