@@ -103,7 +103,7 @@ define({
 		create: // ...
 		on: {
 			// Whenever the user clicks a link or a <button>
-			// within domNode, call component1.doSomething 
+			// within domNode, call component1.doSomething
 			domNode: {
 				'click:a,button': 'doSomething'
 			}
@@ -135,7 +135,7 @@ define({
 		create: // ...
 		on: {
 			// Whenever the user clicks a link or a <button>
-			// within domNode, call component1.doSomething 
+			// within domNode, call component1.doSomething
 			domNode: {
 				'click:a,button': 'doSomething'
 			}
@@ -161,7 +161,7 @@ define({
 		},
 		on: {
 			// Whenever the user clicks a link or a <button>
-			// within domNode, call component1.doSomething 			
+			// within domNode, call component1.doSomething
 			'click:a,button': 'component1.doSomething'
 		}
 
@@ -318,9 +318,9 @@ define({
 
 	    // Promise-aware advice types
 	    afterFulfilling: {
-	        // component1.doSomethingAfterReturning will be invoked 
-	        // after the promise returned by component2.doSomething 
-	        // resolves successfully (but not if it rejects). The 
+	        // component1.doSomethingAfterReturning will be invoked
+	        // after the promise returned by component2.doSomething
+	        // resolves successfully (but not if it rejects). The
 	        // resolution value of the promise will be passed to
 	        // component1.doSomethingAftefResolving
 	        doSomething: 'component1.doSomethingAftefResolving'
@@ -329,7 +329,7 @@ define({
 	    afterRejecting: {
 	        // component1.handleError will be invoked after the
 	        // promise returned by component2.doSomething
-	        // rejects (but not if it resolves successfully). The 
+	        // rejects (but not if it resolves successfully). The
 	        // rejection reason of the promise will be passed to
 	        // component1.handleError
 	        doSomething: 'component1.handleError'
