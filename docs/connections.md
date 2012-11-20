@@ -27,7 +27,7 @@ Each of these type of connections can be useful in various situations, and picki
 
 **Plugins:** None needed
 
-You may tend not to think of method calls as a type of connection between components, but it's probably the you use the most.  With wire you can inject properties into Javascript components so that they can invoke methods directly on one another:
+You may tend not to think of method calls as a type of connection between components, but it's probably what you use the most.  With wire you can inject properties into Javascript components so that they can invoke methods directly on one another:
 
 ```js
 define({
