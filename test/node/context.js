@@ -12,13 +12,17 @@ buster.testCase('context', {
 	'initializers': {
 		'should execute when context is created': function(done) {
 			var executed = false;
-			createContext({}, null, {
+			var context = createContext({}, null, {
 				require: require,
-				init: function() { executed = true; }
-			}).then(
+				contextHandlers: {
+					init: function() { executed = true; }
+				}
+			});
+			context.then(
 				function() {
 					assert(executed);
-				}
+				},
+				fail
 			).then(done, done);
 		}
 	},
@@ -28,7 +32,9 @@ buster.testCase('context', {
 			var executed = false;
 			createContext({}, null, {
 				require: require,
-				destroy: function() { executed = true; }
+				contextHandlers: {
+					destroy: function() { executed = true; }
+				}
 			}).then(
 				function(context) {
 					refute(executed);
@@ -48,15 +54,17 @@ buster.testCase('context', {
 		var init, destroy;
 			createContext({}, null, {
 				require: require,
-				init: function() {
-					refute(init);
-					refute(destroy);
-					init = true;
-				},
-				destroy: function() {
-					assert(init);
-					refute(destroy);
-					destroy = true;
+				contextHandlers: {
+					init: function() {
+						refute(init);
+						refute(destroy);
+						init = true;
+					},
+					destroy: function() {
+						assert(init);
+						refute(destroy);
+						destroy = true;
+					}
 				}
 			}).then(
 				function(context) {
