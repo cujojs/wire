@@ -88,9 +88,9 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 	/**
 	 * AMD Builder plugin API
 	 */
-	// pluginBuilder: './build/amd/builder'
-	// cram > v0.2 will support pluginBuilder property
-	wire['pluginBuilder'] = './build/amd/builder';
+	// pluginBuilder: './builder/rjs'
+	wire['pluginBuilder'] = './builder/rjs';
+	wire['cramPlugin'] = './builder/cram';
 
 	return wire;
 
