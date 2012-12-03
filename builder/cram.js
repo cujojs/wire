@@ -103,7 +103,7 @@ define(function() {
 		function generateDefine(specId, dependencies) {
 			var buffer;
 
-			io.read(resourceId, function(specText) {
+			io.read(specId, function(specText) {
 				buffer = 'define("' + specId + '",\n[';
 				buffer += dependencies.map(function(id) {
 					return '"' + id + '"'

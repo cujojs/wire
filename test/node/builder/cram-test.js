@@ -83,28 +83,47 @@ buster.testCase('wire/builder/cram', {
 
 	'with a comma-separated list of specs': {
 		'should generate a define for each': function(done) {
-			var specs, json;
+			var specs = {
+				atest: { a: { module: 'a' } },
+				btest: { b: { module: 'b' } }
+			};
 
-			specs = [
-				{ a: { module: 'a' } },
-				{ b: { module: 'b' } }
-			];
-
-			json = specs.map(JSON.stringify);
-
-			function req() {
-				return specs.shift();
+			function req(moduleId) {
+				return specs[moduleId];
 			}
 
 			builder.compile('wire!atest,btest', req, {
-				read: function(_, cb) {
-					cb(json.shift());
+				read: function(path, cb) {
+					cb(JSON.stringify(specs[path]));
 				},
 				write: function(content) {
 					assert(/^define\("atest",[\s\S]+\);\s*define\("btest",[\s\S]+\);$/.test(content));
 					done();
 				}
 			});
+		},
+
+		'should generate defines with original content for each': function(done) {
+			var specs = {
+				atest: { a: { module: 'a' } },
+				btest: { b: { module: 'b' } }
+			};
+
+			function req(moduleId) {
+				return specs[moduleId];
+			}
+
+			builder.compile('wire!atest,btest', req, {
+				read: function(path, cb) {
+					cb(JSON.stringify(specs[path]));
+				},
+				write: function(content) {
+					refute.equals(content.indexOf(JSON.stringify(specs.atest)), -1);
+					refute.equals(content.indexOf(JSON.stringify(specs.btest)), -1);
+					done();
+				}
+			});
 		}
+
 	}
 });
