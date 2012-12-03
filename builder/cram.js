@@ -61,7 +61,7 @@ define(function() {
 
 			addDependency(wireId);
 			scanObj(require(specId));
-			generateDefine(dependencies);
+			generateDefine(specId, dependencies);
 
 			function scanObj(obj, path) {
 				// Scan all keys.  This might be the spec itself, or any sub-object-literal
@@ -100,11 +100,11 @@ define(function() {
 			}
 		}
 
-		function generateDefine(dependencies) {
+		function generateDefine(specId, dependencies) {
 			var buffer;
 
 			io.read(resourceId, function(specText) {
-				buffer = 'define("' + resourceId + '",\n[';
+				buffer = 'define("' + specId + '",\n[';
 				buffer += dependencies.map(function(id) {
 					return '"' + id + '"'
 				}).join(',');

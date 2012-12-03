@@ -9,7 +9,7 @@ builder = require('../../../builder/cram');
 
 forEach = Array.prototype.forEach.call.bind(Array.prototype.forEach);
 
-buster.testCase('=>wire/builder/cram', {
+buster.testCase('wire/builder/cram', {
 
 	'should write a named define': function(done) {
 		var spec = {};
@@ -79,5 +79,32 @@ buster.testCase('=>wire/builder/cram', {
 				done();
 			}
 		});
+	},
+
+	'with a comma-separated list of specs': {
+		'should generate a define for each': function(done) {
+			var specs, json;
+
+			specs = [
+				{ a: { module: 'a' } },
+				{ b: { module: 'b' } }
+			];
+
+			json = specs.map(JSON.stringify);
+
+			function req() {
+				return specs.shift();
+			}
+
+			builder.compile('wire!atest,btest', req, {
+				read: function(_, cb) {
+					cb(json.shift());
+				},
+				write: function(content) {
+					assert(/^define\("atest",[\s\S]+\);\s*define\("btest",[\s\S]+\);$/.test(content));
+					done();
+				}
+			});
+		}
 	}
 });
