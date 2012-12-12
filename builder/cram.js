@@ -13,9 +13,12 @@
 (function(define) {
 define(function() {
 
-	var defaultModuleRegex;
+	var defaultModuleRegex, replaceIdsRegex;
 	// default dependency regex
 	defaultModuleRegex = /\.(module|create)$/;
+	// adapted from cram's scan function:
+	//replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]+)\]\s*,)?\s*(function)?\s*(?:\(([^)]*)\))?/g;
+	replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]*)\]\s*,)?/;
 
 	return {
 		normalize: normalize,
@@ -109,11 +112,7 @@ define(function() {
 			var buffer;
 
 			io.read(ensureExtension(specId, 'js'), function(specText) {
-				buffer = 'define("' + specId + '",\n[';
-				buffer += dependencies.map(function(id) {
-					return '"' + id + '"'
-				}).join(',');
-				buffer += '], function() {\nreturn ' + specText + '}\n);';
+				buffer = injectIds(specText, specId, dependencies);
 
 				defines.push(buffer);
 
@@ -161,6 +160,24 @@ define(function() {
 		return id.lastIndexOf('.') <= id.lastIndexOf('/')
 			? id + '.' + ext
 			: id;
+	}
+
+	function injectIds (moduleText, absId, moduleIds) {
+		// note: replaceIdsRegex removes commas, parens, and brackets
+		return moduleText.replace(replaceIdsRegex, function (m, def, mid, depIds) {
+
+			// merge deps, but not args since they're not referenced in module
+			if (depIds) moduleIds = moduleIds.concat(depIds);
+
+			moduleIds = moduleIds.map(quoted).join(', ');
+			if (moduleIds) moduleIds = '[' + moduleIds + '], ';
+
+			return def + '(' + quoted(absId) + ', ' + moduleIds;
+		});
+	}
+
+	function quoted (id) {
+		return '"' + id + '"';
 	}
 
 });
