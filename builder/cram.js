@@ -26,13 +26,10 @@ define(function() {
 		return resourceId ? toAbsId(resourceId.split("!")[0]) : resourceId;
 	}
 
-	function compile(absId, require, io, config) {
+	function compile(wireId, resourceId, require, io, config) {
 		// Track all modules seen in wire spec, so we only include them once
-		var wireId, resourceId, specIds, defines, remaining, seenModules, childSpecRegex, moduleRegex;
-
-		wireId = absId.split('!');
-		resourceId = wireId[1];
-		wireId = wireId[0];
+		var specIds, defines, remaining, seenModules, childSpecRegex,
+			moduleRegex, countdown;
 
 		defines = [];
 		seenModules = {};
@@ -49,18 +46,26 @@ define(function() {
 		specIds = resourceId.split(',');
 		remaining = specIds.length;
 
+		// get all the specs
+		countdown = createCountdown(remaining, processSpec, null, io.error);
+		specIds.forEach(function(id) {
+			require(
+				[id],
+				function (spec) { countdown(spec, id); },
+				io.error
+			);
+		});
+
 		// For each spec id, add the spec itself as a dependency, and then
 		// scan the spec contents to find all modules that it needs (e.g.
 		// "module" and "create")
-		specIds.forEach(processSpec);
-
-		function processSpec(specId) {
+		function processSpec(spec, specId) {
 			var dependencies;
 
 			dependencies = [];
 
 			addDependency(wireId);
-			scanObj(require(specId));
+			scanObj(spec);
 			generateDefine(specId, dependencies);
 
 			function scanObj(obj, path) {
@@ -103,7 +108,7 @@ define(function() {
 		function generateDefine(specId, dependencies) {
 			var buffer;
 
-			io.read(specId, function(specText) {
+			io.read(ensureExtension(specId, 'js'), function(specText) {
 				buffer = 'define("' + specId + '",\n[';
 				buffer += dependencies.map(function(id) {
 					return '"' + id + '"'
@@ -115,7 +120,7 @@ define(function() {
 				if(!--remaining) {
 					done();
 				}
-			});
+			}, io.error);
 		}
 
 		function done() {
@@ -133,6 +138,29 @@ define(function() {
 
 	function isStrictlyObject(it) {
 		return (it && Object.prototype.toString.call(it) == '[object Object]');
+	}
+
+	function createCountdown(howMany, each, done, fail) {
+		return function() {
+			var result;
+			try {
+				if(--howMany >= 0) result = each.apply(this, arguments);
+				if(howMany == 0 && done) done();
+				return result;
+			} catch(ex) {
+				error(ex);
+			}
+		};
+		function error(ex) {
+			howMany = 0;
+			if(fail) fail(ex);
+		}
+	}
+
+	function ensureExtension(id, ext) {
+		return id.lastIndexOf('.') <= id.lastIndexOf('/')
+			? id + '.' + ext
+			: id;
 	}
 
 });
