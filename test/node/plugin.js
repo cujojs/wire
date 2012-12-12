@@ -31,10 +31,11 @@ buster.testCase('plugin', {
 
 		'should initialize': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object' }
+				plugin: { module: './test/node/fixtures/object' },
+				fixture: { literal: {} }
 			}).then(
 				function(context) {
-					assert(context.plugin.success);
+					assert(context.fixture.success);
 				},
 				fail
 			).then(done, done);
@@ -52,10 +53,11 @@ buster.testCase('plugin', {
 
 		'should initialize': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object' }
+				plugin: { module: './test/node/fixtures/object' },
+				fixture: { literal: {} }
 			}).then(
 				function(context) {
-					assert(context.plugin.success);
+					assert(context.fixture.success);
 				},
 				fail
 			).then(done, done);
