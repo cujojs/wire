@@ -13,12 +13,13 @@
 (function(define) {
 define(function() {
 
-	var defaultModuleRegex, replaceIdsRegex;
+	var defaultModuleRegex, replaceIdsRegex, removeCommentsRx;
 	// default dependency regex
 	defaultModuleRegex = /\.(module|create)$/;
 	// adapted from cram's scan function:
 	//replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]+)\]\s*,)?\s*(function)?\s*(?:\(([^)]*)\))?/g;
 	replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]*)\]\s*,)?/;
+	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?[\n\r]/g;
 
 	return {
 		normalize: normalize,
@@ -164,7 +165,7 @@ define(function() {
 
 	function injectIds (moduleText, absId, moduleIds) {
 		// note: replaceIdsRegex removes commas, parens, and brackets
-		return moduleText.replace(replaceIdsRegex, function (m, def, mid, depIds) {
+		return moduleText.replace(removeCommentsRx, '').replace(replaceIdsRegex, function (m, def, mid, depIds) {
 
 			// merge deps, but not args since they're not referenced in module
 			if (depIds) moduleIds = moduleIds.concat(depIds);
