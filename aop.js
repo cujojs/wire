@@ -10,10 +10,14 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
-(function(define) {
-define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
+(function(define) { 'use strict';
+define(function(require) {
 
-	var adviceTypes, adviceStep, undef;
+	var meld, when, connection, adviceTypes, adviceStep, undef;
+
+	meld = require('meld');
+	when = require('when');
+	connection = require('./lib/connection');
 
 	// "after" is not included in these standard advice types because
 	// it is created as promise-aware advice.
@@ -254,7 +258,5 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
 })(typeof define == 'function'
 	// use define for AMD if available
 	? define
-    : function(deps, factory) {
-        module.exports = factory.apply(this, deps.map(require));
-    }
+    : function(factory) { module.exports = factory(require); }
 );
