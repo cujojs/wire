@@ -18,6 +18,10 @@
 
 	buster.testCase('lifecycle', {
 
+		tearDown: function() {
+			delete plugin.wire$plugin;
+		},
+
 		'step order': {
 			setUp: function() {
 
@@ -38,10 +42,6 @@
 
 					return instance;
 				};
-			},
-
-			tearDown: function() {
-				delete plugin.wire$plugin;
 			},
 
 			'should be consistent': function(done) {
@@ -81,7 +81,24 @@
 					assert.match(e.toString(), 'foo');
 				}
 			).always(done);
+		},
+
+		'should allow dual module/plugin to have options': function(done) {
+			plugin.wire$plugin = this.stub().returns({});
+
+			wire({
+				component: {
+					create: './test/node/fixtures/object',
+					foo: 123
+				}
+			}).then(
+				function(c) {
+					assert.calledOnce(c.component.wire$plugin);
+				},
+				fail
+			).always(done);
 		}
+
 	});
 
 })(
