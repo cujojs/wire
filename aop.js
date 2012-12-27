@@ -13,10 +13,11 @@
 (function(define) { 'use strict';
 define(function(require) {
 
-	var meld, when, connection, adviceTypes, adviceStep, undef;
+	var meld, when, sequence, connection, adviceTypes, adviceStep, undef;
 
 	meld = require('meld');
 	when = require('when');
+	sequence = require('when/sequence');
 	connection = require('./lib/connection');
 
 	// "after" is not included in these standard advice types because
@@ -34,30 +35,32 @@ define(function(require) {
         Decorator.apply(null, args);
     }
 
-    function doDecorate(target, decorator, args, wire) {
-        function apply(Decorator) {
-            return args
-                ? when(wire(args), function (resolvedArgs) {
-                    applyDecorator(target, Decorator, resolvedArgs);
-                })
-                : applyDecorator(target, Decorator);
-        }
+    function makeDecorator(decorator, args, wire) {
+		return function(target) {
+			function apply(Decorator) {
+				return args
+					? when(wire(args), function (resolvedArgs) {
+					applyDecorator(target, Decorator, resolvedArgs);
+				})
+					: applyDecorator(target, Decorator);
+			}
 
-        return when(wire.resolveRef(decorator), apply);
+			return when(wire.resolveRef(decorator), apply);
+		};
     }
 
     function decorateFacet(resolver, facet, wire) {
-        var target, options, promises;
+        var target, options, tasks;
 
         target = facet.target;
         options = facet.options;
-        promises = [];
+        tasks = [];
 
-        for(var d in options) {
-            promises.push(doDecorate(target, d, options[d], wire));
+        for(var decoratorRefName in options) {
+            tasks.push(makeDecorator(decoratorRefName, options[decoratorRefName], wire));
         }
 
-        when.chain(when.all(promises), resolver);
+        when.chain(sequence(tasks, target), resolver);
     }
 
 	//
