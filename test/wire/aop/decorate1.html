@@ -55,7 +55,6 @@
                     function(context) {
                         doh.register('decorate1', [
                             function(doh) {
-                                console.log(context.thing.doSomething('test1'));
                                 doh.assertTrue(/DECORATED AGAIN!/.test(context.thing.doSomething('test1')));
                             }
                         ]);
