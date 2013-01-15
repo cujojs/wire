@@ -60,7 +60,7 @@ define(function(require) {
             tasks.push(makeDecorator(decoratorRefName, options[decoratorRefName], wire));
         }
 
-        when.chain(sequence(tasks, target), resolver);
+		resolver.resolve(sequence(tasks, target));
     }
 
 	//
@@ -113,7 +113,7 @@ define(function(require) {
 					target, advice, advicesToAdd[advice], wire));
 			}
 
-			when.chain(when.all(promises), resolver);
+			resolver.resolve(when.all(promises));
 		};
 	}
 
@@ -168,7 +168,7 @@ define(function(require) {
         applyAdvice = applyAspectCombined;
 
         // Reduce will preserve order of aspects being applied
-        when.chain(when.reduce(aspects, function(target, aspect) {
+        resolver.resolve(when.reduce(aspects, function(target, aspect) {
             var aspectPath;
 
             if (aspect.advice) {
@@ -182,7 +182,7 @@ define(function(require) {
                 ? applyAdvice(target, aspect, wire, add)
                 : target;
 
-        }, target), resolver);
+        }, target));
     }
 
     return {
