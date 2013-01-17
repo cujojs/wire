@@ -100,9 +100,13 @@ buster.testCase('wire/aop', {
 				handler: {
 					test: spy
 				}
-			}, { require: require }).then(
+			}, { require: require })
+			.then(
 				function(context) {
-					context.target.method(other);
+					return context.target.method(sentinel);
+				}
+			).then(
+				function() {
 					assert.calledOnceWith(spy, sentinel);
 				},
 				fail
@@ -158,17 +162,16 @@ buster.testCase('wire/aop', {
 				handler: {
 					test: spy
 				}
-			}, { require: require }).then(
+			}, { require: require })
+			.then(
 				function(context) {
-					try {
-						// AOP still propagates exceptions, so must catch here
-						// to allow test to continue.
-						context.target.method(other);
-					} catch(e) {}
-
+					context.target.method(other);
+				}
+			).then(
+				fail,
+				function() {
 					assert.calledOnceWith(spy, sentinel);
-				},
-				fail
+				}
 			).then(done, done);
 		},
 
@@ -216,9 +219,13 @@ buster.testCase('wire/aop', {
 				handler: {
 					test: spy
 				}
-			}, { require: require }).then(
+			}, { require: require })
+			.then(
 				function(context) {
-					context.target.method(other);
+					return context.target.method(sentinel);
+				}
+			).then(
+				function() {
 					assert.calledOnceWith(spy, sentinel);
 				},
 				fail
@@ -241,17 +248,16 @@ buster.testCase('wire/aop', {
 				handler: {
 					test: spy
 				}
-			}, { require: require }).then(
+			}, { require: require })
+			.then(
 				function(context) {
-					try {
-						// AOP still propagates exceptions, so must catch here
-						// to allow test to continue.
-						context.target.method(other);
-					} catch(e) {}
-
+					context.target.method(other);
+				}
+			).then(
+				fail,
+				function() {
 					assert.calledOnceWith(spy, sentinel);
-				},
-				fail
+				}
 			).then(done, done);
 		}
 	},
@@ -283,9 +289,13 @@ buster.testCase('wire/aop', {
 					handler: {
 						test: spy
 					}
-				}, { require: require }).then(
+				}, { require: require })
+				.then(
 					function(context) {
-						context.target.resolver(sentinel);
+						return context.target.resolver(sentinel);
+					}
+				).then(
+					function() {
 						assert.calledOnceWith(spy, sentinel);
 					},
 					fail
@@ -306,12 +316,16 @@ buster.testCase('wire/aop', {
 					handler: {
 						test: spy
 					}
-				}, { require: require }).then(
+				}, { require: require })
+				.then(
 					function(context) {
-						context.target.rejecter();
+						return context.target.rejecter();
+					}
+				).then(
+					fail,
+					function() {
 						refute.called(spy);
-					},
-					fail
+					}
 				).then(done, done);
 			}
 		},
@@ -331,12 +345,16 @@ buster.testCase('wire/aop', {
 					handler: {
 						test: spy
 					}
-				}, { require: require }).then(
+				}, { require: require })
+				.then(
 					function(context) {
-						context.target.rejecter(sentinel);
+						return context.target.rejecter(sentinel);
+					}
+				).then(
+					fail,
+					function() {
 						assert.calledOnceWith(spy, sentinel);
-					},
-					fail
+					}
 				).then(done, done);
 			},
 
@@ -354,9 +372,13 @@ buster.testCase('wire/aop', {
 					handler: {
 						test: spy
 					}
-				}, { require: require }).then(
+				}, { require: require })
+				.then(
 					function(context) {
-						context.target.resolver();
+						return context.target.resolver();
+					}
+				).then(
+					function() {
 						refute.called(spy);
 					},
 					fail
@@ -379,9 +401,13 @@ buster.testCase('wire/aop', {
 					handler: {
 						test: spy
 					}
-				}, { require: require }).then(
+				}, { require: require })
+				.then(
 					function(context) {
-						context.target.resolver(sentinel);
+						return context.target.resolver(sentinel);
+					}
+				).then(
+					function() {
 						assert.calledOnceWith(spy, sentinel);
 					},
 					fail
@@ -402,12 +428,16 @@ buster.testCase('wire/aop', {
 					handler: {
 						test: spy
 					}
-				}, { require: require }).then(
+				}, { require: require })
+				.then(
 					function(context) {
-						context.target.rejecter(sentinel);
+						return context.target.rejecter(sentinel);
+					}
+				).then(
+					fail,
+					function() {
 						assert.calledOnceWith(spy, sentinel);
-					},
-					fail
+					}
 				).then(done, done);
 			}
 		}
