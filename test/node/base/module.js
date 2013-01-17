@@ -11,9 +11,9 @@ buster.testCase('base:module', {
 	'should use module exports value as component': function(done) {
 		wire({
 			test: {
-				module: 'test/node/fixtures/module'
+				module: '../fixtures/module'
 			}
-		}).then(
+		}, { require: require }).then(
 			function(context) {
 				assert(context.test.success);
 			},

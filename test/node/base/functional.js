@@ -8,7 +8,11 @@ refute = buster.refute;
 fail = buster.assertions.fail;
 
 function plusOne(x) {
-	return x+1;
+	return plus(x, 1);
+}
+
+function plus(x, y) {
+	return x + y;
 }
 
 function Thing(x) {
@@ -51,6 +55,20 @@ buster.testCase('base:functional', {
 			}).then(
 				function(c) {
 					assert.equals(c.composed(1), 3);
+				}
+			).then(done, done);
+		},
+
+		'should allow multiple args when composing a string specification': function(done) {
+			wire({
+				f1: plus,
+				f2: plusOne,
+				composed: {
+					compose: 'f1 | f2'
+				}
+			}).then(
+				function(c) {
+					assert.equals(c.composed(1, 2), 4);
 				}
 			).then(done, done);
 		},
