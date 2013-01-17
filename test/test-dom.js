@@ -2,41 +2,41 @@ require(['wire'], function(wire) {
 
 	wire({
 		plugins: [
-//					{ module: 'wire/debug' },
+					{ module: 'wire/debug' },
 			{ module: pluginName }
 		],
-		node1: { $ref: 'dom.all!#node1' },
-		divs: { $ref: 'dom.all!.test' },
-		div: { $ref: 'dom.all!.test', i: 0 },
-		atNode: { $ref: 'dom.all!div', i: 0 },
-		deep: { $ref: 'dom.all!p', at: { $ref: 'atNode' }, i: 0 },
-		deep2: { $ref: 'dom.all!p', at: 'atNode', i: 0 },
-		domFirst: { $ref: 'dom.first!.test' },
-		domFirstAt: { $ref: 'dom.first!p', at: { $ref: 'atNode' } },
-		byIdResolver: { $ref:'dom!' },
-		firstResolver: { $ref:'dom.first!' },
-		allResolver: { $ref:'dom.all!' },
+		node1: { $ref: 'all!#node1' },
+		divs: { $ref: 'all!.test' },
+		div: { $ref: 'all!.test', i: 0 },
+		atNode: { $ref: 'all!div', i: 0 },
+		deep: { $ref: 'all!p', at: { $ref: 'atNode' }, i: 0 },
+		deep2: { $ref: 'all!p', at: 'atNode', i: 0 },
+		domFirst: { $ref: 'first!.test' },
+		domFirstAt: { $ref: 'first!p', at: { $ref: 'atNode' } },
+		byIdResolver: { $ref:'id!' },
+		firstResolver: { $ref:'first!' },
+		allResolver: { $ref:'all!' },
 
 		// test element factory and facets
 		get1: {
-			element: { $ref: 'dom!get1' },
+			element: { $ref: 'id!get1' },
 			properties: {
 				'class': 'foo',
 				target: 'top',
 				href: '#'
 			},
 			insert: {
-				at: { $ref: 'dom!get1-inserts-here' }
+				at: { $ref: 'id!get1-inserts-here' }
 			},
 			ready: {
 				focus: [],
-				appendChild: { $ref: 'dom!get1-appends-this' }
+				appendChild: { $ref: 'id!get1-appends-this' }
 			}
 		},
 
 		// test clone factory and facets
 		clone1: {
-			clone: { $ref: 'dom!clone1' },
+			clone: { $ref: 'id!clone1' },
 			properties: {
 				'class': 'foo',
 				target: 'top',
@@ -44,17 +44,17 @@ require(['wire'], function(wire) {
 				id: 'anotherId'
 			},
 			insert: {
-				at: { $ref: 'dom!clone1-inserts-here' }
+				at: { $ref: 'id!clone1-inserts-here' }
 			},
 			ready: {
-				appendChild: { $ref: 'dom!clone1-appends-this' }
+				appendChild: { $ref: 'id!clone1-appends-this' }
 			}
 		}
 	}).then(
 		function(context) {
 			doh.register(pluginName, [
 				function domAllReturnsAtLeastOne(doh) {
-					// dom.all/query always returns an array, so test
+					// all/query always returns an array, so test
 					// against the first
 					doh.assertEqual(1, context.node1.length);
 					doh.assertEqual('node1', context.node1[0].id);
@@ -76,7 +76,7 @@ require(['wire'], function(wire) {
 					doh.assertEqual('node1', context.deep2 && context.deep2.id);
 				},
 				function domFirst(doh) {
-					// basic dom.first!
+					// basic first!
 					doh.assertEqual('test one', context.domFirst.className);
 				},
 				function byIdResolver(doh) {
@@ -100,7 +100,7 @@ require(['wire'], function(wire) {
 
 					wire({
 						dom: { module: pluginName },
-						node: { $ref: 'dom.first!.this-will-fail' }
+						node: { $ref: 'first!.this-will-fail' }
 					}).then(
 						function(e) {
 							dohd.errback(e);
@@ -118,7 +118,7 @@ require(['wire'], function(wire) {
 
 					wire({
 						dom: { module: pluginName },
-						node: { $ref: 'dom.all!.test', i: 10 }
+						node: { $ref: 'all!.test', i: 10 }
 					}).then(
 						function(e) {
 							dohd.errback(e);
@@ -136,7 +136,7 @@ require(['wire'], function(wire) {
 
 					wire({
 						dom: { module: pluginName },
-						node: { $ref: 'dom.all!.test', i: -1 }
+						node: { $ref: 'all!.test', i: -1 }
 					}).then(
 						function(e) {
 							dohd.errback(e);
@@ -154,7 +154,7 @@ require(['wire'], function(wire) {
 
 					wire({
 						dom: { module: pluginName },
-						node: { $ref: 'dom.all!.test', i: 'foo' }
+						node: { $ref: 'all!.test', i: 'foo' }
 					}).then(
 						function(e) {
 							dohd.errback(e);
@@ -172,7 +172,7 @@ require(['wire'], function(wire) {
 
 					wire({
 						dom: { module: pluginName },
-						node: { $ref: 'dom.first!.test', i: 0 }
+						node: { $ref: 'first!.test', i: 0 }
 					}).then(
 						function(e) {
 							dohd.errback(e);
@@ -189,8 +189,8 @@ require(['wire'], function(wire) {
 					var dohd = new doh.Deferred();
 
 					wire({
-						dom: { module: pluginName, at: 'dom.first!#at-tests .root' },
-						node: { $ref: 'dom.first!.at-test' }
+						dom: { module: pluginName, at: 'first!#at-tests .root' },
+						node: { $ref: 'first!.at-test' }
 					}).then(
 						function(context) {
 							dohd.callback(context.node.className === 'at-test ok');
@@ -205,8 +205,8 @@ require(['wire'], function(wire) {
 					var dohd = new doh.Deferred();
 
 					wire({
-						dom: { module: pluginName, at: 'dom.first!#at-tests .root' },
-						nodes: { $ref: 'dom.all!.test', at: 'dom.first!body' }
+						dom: { module: pluginName, at: 'first!#at-tests .root' },
+						nodes: { $ref: 'all!.test', at: 'first!body' }
 					}).then(
 						function(context) {
 							dohd.callback(context.nodes.length === 3);
@@ -226,7 +226,7 @@ require(['wire'], function(wire) {
 //                            { module: 'wire/debug' },
 							{ module: pluginName, classes: { init: 'init', ready: 'ready' } }
 						],
-						node: { $ref: 'dom!node1' }
+						node: { $ref: 'id!node1' }
 					}).then(
 						function(context) {
 							var html;
@@ -248,13 +248,45 @@ require(['wire'], function(wire) {
 //                            { module: 'wire/debug' },
 							{ module: pluginName }
 						],
-						node: { $ref: 'dom!node3' }
+						node: { $ref: 'id!node3' }
 					}).then(
-						function(context) {
+						function() {
 							dohd.errback('node3 should not have been resolvable');
 						},
-						function(e) {
+						function() {
 							dohd.callback(true);
+						}
+					);
+
+					return dohd;
+				},
+
+				function shouldSupportLegacySynonyms(doh) {
+					var dohd = new doh.Deferred();
+
+					wire({
+						plugins: [
+							{ module: pluginName }
+						],
+						nodeByDom: { $ref: 'dom!node1' },
+						nodeById: { $ref: 'id!node1' },
+						nodeByFirst: { $ref: 'first!.test' },
+						nodeByDomFirst: { $ref: 'dom.first!.test' },
+						nodesByAll: { $ref: 'all!.test' },
+						nodesByDomAll: { $ref: 'dom.all!.test' },
+						nodesByQuery: { $ref: 'query!.test' },
+						nodesByDomQuery: { $ref: 'dom.query!.test' }
+					}).then(
+						function(context) {
+							var success = context.nodeByDom === context.nodeById
+								&& context.nodeByFirst === context.nodeByDomFirst
+								&& context.nodesByAll.length === context.nodesByDomAll.length
+								&& context.nodesByQuery.length === context.nodesByDomQuery.length;
+
+							dohd.callback(success);
+						},
+						function(e) {
+							dohd.errback(e);
 						}
 					);
 

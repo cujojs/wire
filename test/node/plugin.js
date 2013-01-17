@@ -100,7 +100,7 @@ buster.testCase('plugin', {
 
 		'should not be in global namespace when namespace provided': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object', ns: 'namespace' },
+				plugin: { module: './test/node/fixtures/object', namespace: 'namespace' },
 				fixture: {
 					literal: {},
 					test: {}
@@ -115,7 +115,7 @@ buster.testCase('plugin', {
 
 		'should be in provided namespace': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object', ns: 'namespace' },
+				plugin: { module: './test/node/fixtures/object', namespace: 'namespace' },
 				fixture: {
 					literal: {},
 					'namespace:test': {}
