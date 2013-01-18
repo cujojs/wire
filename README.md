@@ -14,6 +14,10 @@ To find out more, read the [full introduction](wire/blob/master/docs/introductio
 
 # What's new
 
+### 0.9.1
+
+* Fix for compose factory. See [#69](https://github.com/cujojs/wire/issues/69)
+
 ### 0.9.0
 
 * [Get it!](wire/blob/master/docs/get.md)
