@@ -261,6 +261,25 @@ require(['wire'], function(wire) {
 					return dohd;
 				},
 
+				function insertShouldFailLoudlyIfPluginNotPresent(doh) {
+					var dohd = new doh.Deferred();
+
+					wire({
+						node: {
+							// Intentionally missing plugin
+							literal: {}, // doesn't matter,
+							insert: { last: { $ref: 'dom.first!body' } }
+						}
+					}).then(
+						function() {
+							dohd.errback('insert should have caused wiring failure')
+						},
+						function() {
+							dohd.callback(true);
+						}
+					);
+				},
+
 				// element factory tests
 
 				function elementGetsAnElement(doh) {
