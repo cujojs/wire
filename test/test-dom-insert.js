@@ -6,7 +6,7 @@ define('NodeFactory', function () {
 });
 
 require(['wire'], function (wire) {
-	var wired, undef;
+	var wired;
 
 	wired = wire({
 		plugins: [
@@ -14,15 +14,15 @@ require(['wire'], function (wire) {
 			{ module: pluginName }
 		],
 		parentNode: {
-			$ref: 'dom!target'
+			$ref: 'id!target'
 		},
 		parentNode2: {
-			$ref: 'dom!target2'
+			$ref: 'id!target2'
 		},
 		firstNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!first' }
+				args: { $ref: 'id!first' }
 			},
 			insert: {
 				first: 'parentNode'
@@ -31,7 +31,7 @@ require(['wire'], function (wire) {
 		lastNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!last' }
+				args: { $ref: 'id!last' }
 			},
 			insert: {
 				last: 'parentNode'
@@ -40,7 +40,7 @@ require(['wire'], function (wire) {
 		middleNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!middle' }
+				args: { $ref: 'id!middle' }
 			},
 			insert: {
 				2: 'parentNode'
@@ -49,7 +49,7 @@ require(['wire'], function (wire) {
 		afterNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!after' }
+				args: { $ref: 'id!after' }
 			},
 			insert: {
 				after: 'parentNode'
@@ -58,7 +58,7 @@ require(['wire'], function (wire) {
 		beforeNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!before' }
+				args: { $ref: 'id!before' }
 			},
 			insert: {
 				before: 'parentNode'
@@ -67,7 +67,7 @@ require(['wire'], function (wire) {
 		zeroNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!zero' }
+				args: { $ref: 'id!zero' }
 			},
 			insert: {
 				0: 'parentNode2'
@@ -76,7 +76,7 @@ require(['wire'], function (wire) {
 		oneNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!one' }
+				args: { $ref: 'id!one' }
 			},
 			insert: {
 				1: 'parentNode2'
@@ -85,7 +85,7 @@ require(['wire'], function (wire) {
 		twoNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!two' }
+				args: { $ref: 'id!two' }
 			},
 			insert: {
 				2: 'parentNode2'
@@ -94,7 +94,7 @@ require(['wire'], function (wire) {
 		nineTnineNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!nineTnine' }
+				args: { $ref: 'id!nineTnine' }
 			},
 			insert: {
 				99: 'parentNode2'
@@ -103,7 +103,7 @@ require(['wire'], function (wire) {
 		negativeNode: {
 			create: {
 				module: 'NodeFactory',
-				args: { $ref: 'dom!negative' }
+				args: { $ref: 'id!negative' }
 			},
 			insert: {
 				"-1": 'parentNode2'

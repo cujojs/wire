@@ -47,7 +47,7 @@ require(['wire'], function(wire) {
 						button: { click: 'handle' }
 					}
 				},
-				button: { $ref: 'dom!test' },
+				button: { $ref: 'id!test' },
 				plugins: [
 					{ module: pluginName },
 					{ module: 'wire/dom' }
@@ -76,7 +76,7 @@ require(['wire'], function(wire) {
 					}
 				},
 				tx: { module: 'transform' },
-				button: { $ref: 'dom!test' },
+				button: { $ref: 'id!test' },
 				plugins: [
 					{ module: pluginName },
 					{ module: 'wire/dom' }
@@ -104,7 +104,7 @@ require(['wire'], function(wire) {
 						}
 					}
 				},
-				container: { $ref: 'dom!container' },
+				container: { $ref: 'id!container' },
 				plugins: [
 					{ module: pluginName },
 					{ module: 'wire/dom' }
@@ -133,7 +133,7 @@ require(['wire'], function(wire) {
 						}
 					}
 				},
-				container: { $ref: 'dom!container' },
+				container: { $ref: 'id!container' },
 				plugins: [
 					{ module: pluginName },
 					{ module: 'wire/dom' }
@@ -164,7 +164,7 @@ require(['wire'], function(wire) {
 					}
 				},
 				tx: { module: 'transform' },
-				container: { $ref: 'dom!container' },
+				container: { $ref: 'id!container' },
 				plugins: [
 					{ module: pluginName },
 					{ module: 'wire/dom' }
@@ -193,7 +193,7 @@ require(['wire'], function(wire) {
 						}
 					}
 				},
-				container: { $ref: 'dom!container' },
+				container: { $ref: 'id!container' },
 				plugins: [
 					{ module: pluginName },
 					{ module: 'wire/dom' }
@@ -224,7 +224,7 @@ require(['wire'], function(wire) {
 					}
 				},
 				tx: { module: 'transform' },
-				container: { $ref: 'dom!container' },
+				container: { $ref: 'id!container' },
 				plugins: [
 					{ module: pluginName },
 					{ module: 'wire/dom' }
@@ -249,7 +249,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<button id="button1"></button>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						click: { a: 'handle' }
 					}
@@ -278,7 +278,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<button id="button-t1"></button>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						click: { a: 'tx | handle' }
 					}
@@ -309,7 +309,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<div><button id="button2" class="test"></button></div>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click:.test': { a: 'handle' }
 					}
@@ -339,7 +339,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<div><button id="button3"></button></div>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						click: 'a.handle'
 					}
@@ -369,7 +369,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<div><button id="button4" class="test"></button></div>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click:.test': 'a.handle'
 					}
@@ -399,7 +399,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<div><button id="button5" class="test"></button></div>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click:.test': 'a.handle'
 					}
@@ -429,7 +429,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<div><button id="button6" class="test"></button></div>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click,mouseup,keypress:.test': 'a.handle'
 					}
@@ -459,7 +459,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<div><button id="buttonMultiSelector" class="test"></button></div>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click,mouseup,keypress:.test,button': 'a.handle'
 					}
@@ -489,7 +489,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<div><button id="button7" class="test"></button></div>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click': 'a.handle'
 					}
@@ -519,7 +519,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<form><a href="#"></a><button id="buttonInsideForm" type="submit"></button></form>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click': 'a.handle'
 					}
@@ -554,7 +554,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<button id="buttonOutsideForm"></button>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click': 'a.handle'
 					}
@@ -586,7 +586,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<button id="buttonOutsideForm2"></button>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click': 'a.handle'
 					}
@@ -618,7 +618,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<div><button id="buttonOutsideForm"></button></div>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click': 'a.handle'
 					}
@@ -650,7 +650,7 @@ require(['wire'], function(wire) {
 					render: {
 						template: '<div><button id="buttonOutsideForm"></button></div>'
 					},
-					insert: { last: 'dom!container' },
+					insert: { last: 'id!container' },
 					on: {
 						'click': 'a.handle'
 					}
