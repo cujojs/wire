@@ -15,12 +15,12 @@ buster.testCase('circular-refs', {
 				facets: {
 					shouldResolve: {
 						'connect:before': function(resolver, facet, wire) {
-							wire.resolveRef(facet.options).then(resolver.resolve, resolver.reject);
+							resolver.resolve(wire.resolveRef(facet.options));
 						}
 					},
 					shouldNotResolve: {
 						'initialize:after': function(resolver, facet, wire) {
-							wire.resolveRef(facet.options).then(resolver.reject, resolver.resolve);
+							resolver.resolve(wire.resolveRef(facet.options));
 						}
 					}
 				}
@@ -36,12 +36,13 @@ buster.testCase('circular-refs', {
 
 	'should resolve circular deps after init has finished': function(done) {
 		var promise = timeout(wire({
+			plugin: { module: './test/node/fixtures/object' },
 			component1: {
-				module: './test/node/fixtures/object',
+				literal: {},
 				shouldResolve: 'component2'
 			},
 			component2: {
-				module: './test/node/fixtures/object',
+				literal: {},
 				shouldResolve: 'component1'
 			}
 		}), 100);
@@ -55,23 +56,24 @@ buster.testCase('circular-refs', {
 		).always(done);
 	},
 
-	'//should not resolve circular deps before init has finished': function(done) {
+	'should not resolve circular deps before init has finished': function(done) {
 		var clock, promise;
 
 		clock = this.useFakeTimers();
 
 		promise = wire({
+			plugin: { module: './test/node/fixtures/object' },
 			component1: {
-				module: './test/node/fixtures/object',
+				literal: { name: '1' },
 				shouldNotResolve: 'component2'
 			},
 			component2: {
-				module: './test/node/fixtures/object',
+				literal: { name: '2' },
 				shouldNotResolve: 'component1'
 			}
 		});
 
-		// Force 5s clock advancement
+		// Force clock advancement
 		clock.tick(1e4);
 
 		promise.then(

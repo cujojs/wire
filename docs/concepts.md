@@ -98,7 +98,7 @@ define({
 });
 ```
 
-### Components
+### Example components
 
 This simple wire spec has three top-level components:
 
@@ -177,14 +177,14 @@ Any context can be used to create a child by calling `context.wire(childSpec)`. 
 // First, create the hello-wire context, same as above.
 require(['wire!hello-wired-spec'], function(context) {
 	console.log(context);
-	
+
 	// Use the context to wire a child
 	context.wire({
-		// Child context 
+		// Child context
 		anotherComponent: {
 			// Create an instance by calling constructor with no args
 			create: 'my/other/component',
-			
+
 			// Call anotherComponent.sayHowdy(message)
 			// Message refers to the message String in the parent context
 			init: {
@@ -196,10 +196,10 @@ require(['wire!hello-wired-spec'], function(context) {
 		// The child can see components in its parent, similar to
 		// a Javascript prototype
 		console.log(childContext.helloWired);
-		
+
 		// But also has its own components
 		console.log(childContext.anotherComponent);
-		
+
 		// The parent *cannot* see components in the child
 		console.log(context.anotherComponent); // logs undefined
 	});
@@ -207,6 +207,38 @@ require(['wire!hello-wired-spec'], function(context) {
 ```
 
 The `childContext` will have properties for all the components in its parent `context`: `message`, `helloWired`, and `plugins`, but will also have the additional component `anotherComponent`.
+
+## Plugins
+
+Wire.js's core DSL is very small, but can be extended by plugins.  For example, there is no builtin handling of [DOM Nodes](dom.md#querying-the-dom) or [DOM Events](dom.md#connecting-dom-events).  That functionality is provided the bundled [DOM plugins](dom.md).
+
+Including plugins in a [wire spec](#wire-specs) is simple.  Wire scans modules for plugins, so you can simply include them in your spec using the [module factory](components.md#module).  Although it's not necessary, a good convention is to group plugins together in a plugins array:
+
+```js
+plugins: [
+	{ module: 'wire/debug' },
+	{ module: 'wire/dom' },
+	{ module: 'wire/dom/render' },
+	{ module: 'wire/aop' }
+]
+```
+
+### Plugin options
+
+Plugins may have options, which can be included as properties.  For example, to turn on the `wire/debug` plugin's `trace` option:
+
+```js
+	plugins: [
+		{ module: 'wire/debug', trace: true },
+		{ module: 'wire/dom' },
+		{ module: 'wire/dom/render' },
+		{ module: 'wire/aop' }
+	]
+```
+
+### Plugin namespaces
+
+By default, all the factories and facets provided by each plugin are available *un-namespaced* within the current wire spec.
 
 ## Components
 
@@ -222,7 +254,7 @@ A component can be any native Javascript type: Number, String, Boolean, Date, Re
 
 ## Factories
 
-In addition to simple types, wire uses *factories* to create more interesting components, such as AMD and CommonJS modules, object instances using constructors or `Object.create` (in an ES5 environment), functions, etc. 
+In addition to simple types, wire uses *factories* to create more interesting components, such as AMD and CommonJS modules, object instances using constructors or `Object.create` (in an ES5 environment), functions, etc.
 
 [Read more about creating components](components.md#factories)
 
@@ -285,7 +317,7 @@ Using references in a [wire spec](#wire-specs) is similar to using variables.  F
 // Create a controller instance
 controller: {
 	create: 'my/Controller',
-	
+
 	// Set controller properties
 	properties: {
 		// Set the controller's myView property to the view
