@@ -1,11 +1,13 @@
 (function(buster, delay, wire, pluginModule) {
 "use strict";
 
-var assert, refute, plugin, fail;
+var assert, refute, plugin, fail, sentinel;
 
 assert = buster.assert;
 refute = buster.refute;
 fail = buster.assertions.fail;
+
+sentinel = {};
 
 plugin = {
 	ready: function(resolver, proxy) {
@@ -31,10 +33,11 @@ buster.testCase('plugin', {
 
 		'should initialize': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object' }
+				plugin: { module: './test/node/fixtures/object' },
+				fixture: { literal: {} }
 			}).then(
 				function(context) {
-					assert(context.plugin.success);
+					assert(context.fixture.success);
 				},
 				fail
 			).then(done, done);
@@ -52,10 +55,74 @@ buster.testCase('plugin', {
 
 		'should initialize': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object' }
+				plugin: { module: './test/node/fixtures/object' },
+				fixture: { literal: {} }
 			}).then(
 				function(context) {
-					assert(context.plugin.success);
+					assert(context.fixture.success);
+				},
+				fail
+			).then(done, done);
+		}
+	},
+
+	'namespace': {
+		setUp: function() {
+			// Setup a plugin that will record lifecycle steps
+			pluginModule.wire$plugin = function() {
+				return {
+					facets: {
+						test: {
+							ready: function(resolver, proxy) {
+								proxy.target.success = true;
+								resolver.resolve();
+							}
+						}
+					}
+				};
+			};
+		},
+
+		'should be in global namespace when not specified': function(done) {
+			wire({
+				plugin: { module: './test/node/fixtures/object' },
+				fixture: {
+					literal: {},
+					test: {}
+				}
+			}).then(
+				function(context) {
+					assert(context.fixture.success);
+				},
+				fail
+			).then(done, done);
+		},
+
+		'should not be in global namespace when namespace provided': function(done) {
+			wire({
+				plugin: { module: './test/node/fixtures/object', namespace: 'namespace' },
+				fixture: {
+					literal: {},
+					test: {}
+				}
+			}).then(
+				fail,
+				function(e) {
+					assert.defined(e);
+				}
+			).then(done, done);
+		},
+
+		'should be in provided namespace': function(done) {
+			wire({
+				plugin: { module: './test/node/fixtures/object', namespace: 'namespace' },
+				fixture: {
+					literal: {},
+					'namespace:test': {}
+				}
+			}).then(
+				function(context) {
+					assert(context.fixture.success);
 				},
 				fail
 			).then(done, done);

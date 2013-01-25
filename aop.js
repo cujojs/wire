@@ -10,10 +10,15 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
-(function(define) {
-define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
+(function(define) { 'use strict';
+define(function(require) {
 
-	var adviceTypes, adviceStep, undef;
+	var meld, when, sequence, connection, adviceTypes, adviceStep, undef;
+
+	meld = require('meld');
+	when = require('when');
+	sequence = require('when/sequence');
+	connection = require('./lib/connection');
 
 	// "after" is not included in these standard advice types because
 	// it is created as promise-aware advice.
@@ -30,30 +35,32 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
         Decorator.apply(null, args);
     }
 
-    function doDecorate(target, decorator, args, wire) {
-        function apply(Decorator) {
-            return args
-                ? when(wire(args), function (resolvedArgs) {
-                    applyDecorator(target, Decorator, resolvedArgs);
-                })
-                : applyDecorator(target, Decorator);
-        }
+    function makeDecorator(decorator, args, wire) {
+		return function(target) {
+			function apply(Decorator) {
+				return args
+					? when(wire(args), function (resolvedArgs) {
+					applyDecorator(target, Decorator, resolvedArgs);
+				})
+					: applyDecorator(target, Decorator);
+			}
 
-        return when(wire.resolveRef(decorator), apply);
+			return when(wire.resolveRef(decorator), apply);
+		};
     }
 
     function decorateFacet(resolver, facet, wire) {
-        var target, options, promises;
+        var target, options, tasks;
 
         target = facet.target;
         options = facet.options;
-        promises = [];
+        tasks = [];
 
-        for(var d in options) {
-            promises.push(doDecorate(target, d, options[d], wire));
+        for(var decoratorRefName in options) {
+            tasks.push(makeDecorator(decoratorRefName, options[decoratorRefName], wire));
         }
 
-        when.chain(when.all(promises), resolver);
+		resolver.resolve(sequence(tasks, target));
     }
 
 	//
@@ -106,7 +113,7 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
 					target, advice, advicesToAdd[advice], wire));
 			}
 
-			when.chain(when.all(promises), resolver);
+			resolver.resolve(when.all(promises));
 		};
 	}
 
@@ -161,7 +168,7 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
         applyAdvice = applyAspectCombined;
 
         // Reduce will preserve order of aspects being applied
-        when.chain(when.reduce(aspects, function(target, aspect) {
+        resolver.resolve(when.reduce(aspects, function(target, aspect) {
             var aspectPath;
 
             if (aspect.advice) {
@@ -175,7 +182,7 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
                 ? applyAdvice(target, aspect, wire, add)
                 : target;
 
-        }, target), resolver);
+        }, target));
     }
 
     return {
@@ -254,7 +261,5 @@ define(['meld', 'when', './lib/connection'], function(meld, when, connection) {
 })(typeof define == 'function'
 	// use define for AMD if available
 	? define
-    : function(deps, factory) {
-        module.exports = factory.apply(this, deps.map(require));
-    }
+    : function(factory) { module.exports = factory(require); }
 );

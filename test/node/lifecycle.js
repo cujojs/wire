@@ -17,54 +17,88 @@
 	);
 
 	buster.testCase('lifecycle', {
-		setUp: function() {
-			// Setup a plugin that will record lifecycle steps
-			plugin.wire$plugin = function() {
-				var instance, order;
-
-				instance = {};
-				order = 0;
-
-				steps.forEach(function(step) {
-					instance[step] = function(resolver, proxy) {
-						if(!proxy.target.lifecycle) proxy.target.lifecycle = [];
-						proxy.target.lifecycle.push(step);
-						resolver.resolve();
-					}
-				});
-
-				return instance;
-			};
-		},
 
 		tearDown: function() {
-			// Remove the plugin
-			// Since this is a cached plugin
 			delete plugin.wire$plugin;
 		},
 
-		'should process components in lifecycle step order': function(done) {
+		'step order': {
+			setUp: function() {
+
+				// Setup a plugin that will record lifecycle steps
+				plugin.wire$plugin = function() {
+					var instance, order;
+
+					instance = {};
+					order = 0;
+
+					steps.forEach(function(step) {
+						instance[step] = function(resolver, proxy) {
+							if(!proxy.target.lifecycle) proxy.target.lifecycle = [];
+							proxy.target.lifecycle.push(step);
+							resolver.resolve();
+						}
+					});
+
+					return instance;
+				};
+			},
+
+			'should be consistent': function(done) {
+				wire({
+					component: { module: './test/node/fixtures/object' },
+					fixture: { literal: {} }
+				}).then(
+					function(context) {
+						var component = context.fixture;
+
+						// Ensure that create thru ready happen in order, and that
+						// destroy does not happen
+						assert.equals(component.lifecycle, steps.slice(0, steps.length-3));
+
+						// Ensure that destroy happens and is always last
+						return context.destroy().then(
+							function() {
+								assert.equals(component.lifecycle, steps);
+							},
+							fail
+						);
+					},
+					fail
+				).always(done);
+			}
+		},
+
+		'should fail when encountering unrecognized facets': function(done) {
 			wire({
-				component: { module: './test/node/fixtures/object' }
+				component: {
+					literal: {},
+					foo: 123
+				}
 			}).then(
-				function(context) {
-					var component = context.component;
+				fail,
+				function(e) {
+					assert.match(e.toString(), 'foo');
+				}
+			).always(done);
+		},
 
-					// Ensure that create thru ready happen in order, and that
-					// destroy does not happen
-					assert.equals(component.lifecycle, steps.slice(0, steps.length-3));
+		'should allow dual module/plugin to have options': function(done) {
+			plugin.wire$plugin = this.stub().returns({});
 
-					// Ensure that destroy happens and is always last
-					return context.destroy().then(
-						function() {
-							assert.equals(component.lifecycle, steps);
-						},
-						fail
-					);
+			wire({
+				component: {
+					create: './test/node/fixtures/object',
+					foo: 123
+				}
+			}).then(
+				function(c) {
+					assert.calledOnce(c.component.wire$plugin);
 				},
 				fail
 			).always(done);
 		}
+
 	});
 
 })(
