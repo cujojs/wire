@@ -13,14 +13,12 @@
  *
  * @version 0.9.1
  */
-(function(global, define){
+(function(global, define){ 'use strict';
 define(['require', 'when', './lib/context'], function(require, when, createContext) {
-
-	"use strict";
 
 	var rootSpec, rootContext, rootOptions;
 
-	wire.version = "0.9.1";
+	wire.version = '0.9.1';
 
 	rootSpec = global['wire'] || {};
 	rootOptions = { require: require };
@@ -88,9 +86,9 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 	/**
 	 * AMD Builder plugin API
 	 */
-	// pluginBuilder: './build/amd/builder'
-	// cram > v0.2 will support pluginBuilder property
-	wire['pluginBuilder'] = './build/amd/builder';
+	// pluginBuilder: './builder/rjs'
+	wire['pluginBuilder'] = './builder/rjs';
+	wire['cramPlugin'] = './builder/cram';
 
 	return wire;
 
