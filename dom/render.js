@@ -45,7 +45,7 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * @param optCss {Object} unused
 	 * @returns {HTMLElement}
 	 */
-	function render (template, hashmap, optRefNode, optCss) {
+	function render (template, hashmap, optRefNode /*, optCss */) {
 		var node;
 
 		// replace tokens (before attempting to find top tag name)
@@ -121,8 +121,8 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 		if (!first) {
 			child = parent.firstChild;
 			while (child) {
-				if (child.nodeType == 1) {
-					if (!first) first = child;
+				if (child.nodeType == 1 && !first) {
+					first = child;
 				}
 				child = child.nextSibling;
 			}
@@ -193,8 +193,14 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * @returns {String}
 	 */
 	function replaceTokens (template, hashmap, missing) {
-		if (!hashmap) return template;
-		if (!missing) missing = blankIfMissing;
+		if (!hashmap) {
+			return template;
+		}
+		
+		if (!missing) {
+			missing = blankIfMissing;
+		}
+		
 		return template.replace(parseTemplateRx, function (m, token) {
 			return missing(findProperty(hashmap, token));
 		});
