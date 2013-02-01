@@ -138,11 +138,11 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	/**
 	 * Creates rendered dom trees for the "render" factory.
 	 * @param resolver
-	 * @param spec
+	 * @param componentDef
 	 * @param wire
 	 */
-	function domRenderFactory (resolver, spec, wire) {
-		when(wire(spec.render), function (options) {
+	function domRenderFactory (resolver, componentDef, wire) {
+		when(wire(componentDef.options), function (options) {
 			var template;
 			template = options.template || options;
 			return render(template, options.replace, options.at, options.css);

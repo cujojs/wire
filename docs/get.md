@@ -41,6 +41,6 @@ To use curl as your AMD loader, wire.js 0.9.x requires [curl](https://github.com
 
 ## Getting poly
 
-To support non-ES5 legacy browsers, wire.js 0.9.x requires [poly](https://github.com/cujojs/poly) 0.5.0 or higher.  You can [clone](https://github.com/cujojs/poly) or [download](https://github.com/cujojs/poly/tags) poly into your project, or install it via yeoman/bower:
+To support non-ES5 legacy browsers, wire.js requires [poly](https://github.com/cujojs/poly) 0.5.0 or higher.  You can [clone](https://github.com/cujojs/poly) or [download](https://github.com/cujojs/poly/tags) poly into your project, or install it via yeoman/bower:
 
 `yeoman instal poly` *or* `bower install poly`

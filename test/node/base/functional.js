@@ -198,7 +198,7 @@ buster.testCase('base:functional', {
 					}
 				}
 			}).then(
-				function(c) {
+				function() {
 					assert.calledOnceWith(spy, expected);
 				},
 				fail
