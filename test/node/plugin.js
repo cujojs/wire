@@ -1,4 +1,4 @@
-(function(buster, delay, wire, pluginModule) {
+(function(buster, delay, wire, pluginModule, pluginModule2) {
 "use strict";
 
 var assert, refute, plugin, fail, sentinel;
@@ -21,6 +21,7 @@ buster.testCase('plugin', {
 		// Remove the plugin
 		// Since this is a cached plugin
 		delete pluginModule.wire$plugin;
+		delete pluginModule2.wire$plugin;
 	},
 
 	'sync-init': {
@@ -68,19 +69,25 @@ buster.testCase('plugin', {
 
 	'namespace': {
 		setUp: function() {
-			// Setup a plugin that will record lifecycle steps
-			pluginModule.wire$plugin = function() {
-				return {
-					facets: {
-						test: {
-							ready: function(resolver, proxy) {
-								proxy.target.success = true;
-								resolver.resolve();
+
+			makePlugin(pluginModule);
+			makePlugin(pluginModule2);
+
+			function makePlugin(plugin) {
+				// Setup a plugin that will record lifecycle steps
+				plugin.wire$plugin = function() {
+					return {
+						facets: {
+							test: {
+								ready: function(resolver, proxy) {
+									proxy.target.success = true;
+									resolver.resolve();
+								}
 							}
 						}
-					}
+					};
 				};
-			};
+			}
 		},
 
 		'should be in global namespace when not specified': function(done) {
@@ -126,6 +133,18 @@ buster.testCase('plugin', {
 				},
 				fail
 			).then(done, done);
+		},
+
+		'should fail wiring if non-unique': function(done) {
+			wire({
+				plugin1: { module: './test/node/fixtures/object', $ns: 'namespace' },
+				plugin2: { module: './test/node/fixtures/object2', $ns: 'namespace' }
+			}).then(
+				fail,
+				function(e) {
+					assert.defined(e);
+				}
+			).then(done, done);
 		}
 	}
 });
@@ -133,5 +152,6 @@ buster.testCase('plugin', {
 	require('buster'),
 	require('when/delay'),
 	require('../..'),
-	require('./fixtures/object')
+	require('./fixtures/object'),
+	require('./fixtures/object2')
 );
