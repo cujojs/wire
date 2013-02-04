@@ -7,6 +7,7 @@
 1. [Wire Concepts](#wire-concepts)
 	1. [Wire specs](#wire-specs)
 	1. [Contexts](#contexts)
+	1. [Plugins](#plugins)
 	1. [Components](#components)
 	1. [Factories](#factories)
 	1. [Proxies](#proxies)
@@ -82,18 +83,24 @@ Here is the wire spec from the [Hello Wire](https://github.com/briancavalier/hel
 
 ```javascript
 define({
-	message: "I haz been wired",
+	message: 'I haz been wired',
+
+	// Create an instance of the hello-wired module.
 	helloWired: {
+
 		create: {
-			module: 'hello-wired',
-			args: { $ref: 'dom!hello' }
+			module: 'app/HelloWire',
+			args: { $ref: 'dom:first!.hello' }
 		},
-		init: {
+
+		ready: {
 			sayHello: { $ref: 'message' }
 		}
 	},
+
 	plugins: [
-		{ module: 'wire/dom' }
+		{ module: 'wire/debug', trace: true },
+		{ module: 'wire/dom', namespace: 'dom' }
 	]
 });
 ```
@@ -103,7 +110,7 @@ define({
 This simple wire spec has three top-level components:
 
 * `message` - a String
-* `helloWired` - an AMD module with module id `hello-wired`. In this case the [module is a constructor function](https://github.com/briancavalier/hello-wire.js/blob/master/js/hello-wired.js), which wire.js will use to create an object instance.
+* `helloWired` - an AMD module with module id `app/HelloWired`. In this case the module is a constructor function, which wire.js will use to create an object instance.
 * `plugins` - an Array containing one AMD module to load.  This module happens to be a wire.js plugin for referencing DOM nodes--read more on referencing below and in the [References](#references) section.
 
 ### References
@@ -133,18 +140,24 @@ Let's look again at the simple wiring spec from the [Hello Wire](https://github.
 
 ```javascript
 define({
-	message: "I haz been wired",
+	message: 'I haz been wired',
+
+	// Create an instance of the hello-wired module.
 	helloWired: {
+
 		create: {
-			module: 'hello-wired',
-			args: { $ref: 'dom!hello' }
+			module: 'app/HelloWire',
+			args: { $ref: 'dom:first!.hello' }
 		},
-		init: {
+
+		ready: {
 			sayHello: { $ref: 'message' }
 		}
 	},
+
 	plugins: [
-		{ module: 'wire/dom' }
+		{ module: 'wire/debug', trace: true },
+		{ module: 'wire/dom', namespace: 'dom' }
 	]
 });
 ```
@@ -152,7 +165,7 @@ define({
 Using wire.js as an AMD plugin, we can wire the spec:
 
 ```javascript
-require(['wire!hello-wired-spec'], function(context) {
+curl(['wire!hello-wired-spec'], function(context) {
 	console.log(context);
 	// Components are just properties of the wired context
 	console.log(context.helloWired)
@@ -162,7 +175,7 @@ require(['wire!hello-wired-spec'], function(context) {
 which creates the *context*, `context`, that contains fully realized components:
 
 1. `message` - a String
-2. `helloWired` - an object created from the AMD module `hello-wired`, whose constructor was passed a DOM node by the `wire/dom` plugin's DOM [reference resolver](#references), and whose `init()` function has been called and passed the `message` String.
+2. `helloWired` - an object created from the AMD module `app/HelloWired`, whose constructor was passed a DOM node by the `wire/dom` plugin's DOM [reference resolver](#references), and whose `init()` function has been called and passed the `message` String.
 3. `plugins` - an Array containing a single wire.js plugin, `wire/dom`.
 
 The `wired` context has properties for the components from the wiring spec.
@@ -175,7 +188,7 @@ Any context can be used to create a child by calling `context.wire(childSpec)`. 
 
 ```javascript
 // First, create the hello-wire context, same as above.
-require(['wire!hello-wired-spec'], function(context) {
+curl(['wire!hello-wired-spec'], function(context) {
 	console.log(context);
 
 	// Use the context to wire a child
@@ -238,7 +251,37 @@ Plugins may have options, which can be included as properties.  For example, to 
 
 ### Plugin namespaces
 
-By default, all the factories and facets provided by each plugin are available *un-namespaced* within the current wire spec.
+By default, all the factories and facets provided by each plugin are available *un-namespaced* within the current wire spec.  For clarity, and to avoid potential naming conflicts between plugins, you can opt to provide a namespace for some or all plugins in your wire specs, using the `namespace` option.
+
+When namespaced, all of the [factories](#factories), [facets](#facets), and [reference resolvers](#references) provided by the plugin must be prefixed with the namespace.
+
+The [Hello Wire example from above](#context-example) assigns the namespace `dom` to the `wire/dom` plugin, and thus uses the plugin's `first!` resolver with the namespace prefix: `dom:first!`
+
+```javascript
+define({
+	message: 'I haz been wired',
+
+	// Create an instance of the hello-wired module.
+	helloWired: {
+
+		create: {
+			module: 'app/HelloWire',
+			// Use the first! resolver with namespace prefix
+			args: { $ref: 'dom:first!.hello' }
+		},
+
+		ready: {
+			sayHello: { $ref: 'message' }
+		}
+	},
+
+	plugins: [
+		{ module: 'wire/debug', trace: true },
+		// Assign the namespace `dom` to the wire/dom plugin
+		{ module: 'wire/dom', namespace: 'dom' }
+	]
+});
+```
 
 ## Components
 
