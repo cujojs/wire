@@ -13,24 +13,21 @@
  *
  * @version 0.9.1
  */
-(function(global, define){ 'use strict';
-define(['require', 'when', './lib/context'], function(require, when, createContext) {
+(function(rootSpec, define){ 'use strict';
+define(function(require) {
 
-	var rootSpec, rootContext, rootOptions;
+	var createContext, rootContext, rootOptions;
 
 	wire.version = '0.9.1';
 
-	rootSpec = global['wire'] || {};
+	createContext = require('./lib/context');
+
 	rootOptions = { require: require };
 
-	//
-	// Module API
-	//
-
 	/**
-	 * The top-level wire function that wires contexts as direct children
-	 * of the (possibly implicit) root context.  It ensures that the root
-	 * context has been wired before wiring children.
+	 * Main Programmtic API.  The top-level wire function that wires contexts
+	 * as direct children of the (possibly implicit) root context.  It ensures
+	 * that the root context has been wired before wiring children.
 	 *
 	 * @public
 	 *
@@ -56,11 +53,9 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 		}
 
 		// Use the rootContext to wire all new contexts.
-		return when(rootContext,
-			function (root) {
-				return root.wire(spec, options);
-			}
-		);
+		return rootContext.then(function (root) {
+			return root.wire(spec, options);
+		});
 	}
 
 	/**
@@ -80,7 +75,7 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 			setTimeout(function() { throw e; }, 0);
 		};
 
-		when(wire(name.split(','), { require: require }), callback, errback);
+		wire(name.split(','), { require: require }).then(callback, errback);
 	};
 
 	/**
@@ -93,14 +88,8 @@ define(['require', 'when', './lib/context'], function(require, when, createConte
 	return wire;
 
 });
-})(this,
-	typeof define == 'function'
-	// AMD
-	? define
-	// CommonJS
-	: function(deps, factory) {
-		module.exports = factory.apply(this, [require].concat(deps.slice(1).map(function(x) {
-			return require(x);
-		})));
-	}
+})(
+	this['wire'] || {},
+	typeof define == 'function' && define.amd
+		? define : function(factory) { module.exports = factory(require); }
 );
