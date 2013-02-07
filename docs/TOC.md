@@ -4,7 +4,7 @@
 	1. [Features](introduction.md#features)
 	1. [Examples](introduction.md#example-apps)
 1. [Getting wire.js](get.md)
-1. [Concepts](concepts.md)
+1. [Understanding the Concepts](concepts.md)
 	1. [Inversion of Control](concepts.md#inversion-of-control)
 	1. [Dependency Inversion](concepts.md#dependency-inversion)
 	1. [Application Composition](concepts.md#application-composition)
