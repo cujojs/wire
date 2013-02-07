@@ -27,39 +27,43 @@ wire/dom relies on `querySelectorAll` for some features.  Therefore, some featur
 
 The wire/*/dom plugins expose a couple of [reference resolvers](concepts.md#references) for obtaining elements in the document.
 
-### `dom!`
+### `id!` (`dom!`)
 
-The `dom!` resolver is wire's equivalent to `document.getElementById()`.  Use it to grab a reference to an element by its id attribute.  For instance, if your application's main container element has an id of "main", you would access it like this:
+The `id!` resolver is wire's equivalent to `document.getElementById()`.  Use it to grab a reference to an element by its id attribute.  For instance, if your application's main container element has an id of "main", you would access it like this:
 
 ```js
-mainContainer: { $ref: 'dom!main' }
+mainContainer: { $ref: 'id!main' }
 ```
 
-### `dom.all!` (`dom.query!`)
+`dom!` is an alias for `id!`
 
-The `dom.all!` resolver is wire's way to find nodes by CSS selector.  It's just like `document.querySelectorAll()` -- or `$()` if you're familiar with jQuery.
+### `all!` (`dom.all!`, `dom.query!`)
+
+The `all!` resolver is wire's way to find nodes by CSS selector.  It's just like `document.querySelectorAll()` -- or `$()` if you're familiar with jQuery.
 
 If you'd like to gather a list of all buttons with a CSS class of "clickme" in combination with all checkboxes, you could do it like this:
 
 ```js
-myClickables: { $ref: 'dom.all!button.clickme, input[type=checkbox]' }
+myClickables: { $ref: 'all!button.clickme, input[type=checkbox]' }
 ```
 
-`dom.query!` is an alias for `dom.all!`.
+`dom.all!` and `dom.query!` are both aliases for `all!`.
 
-> Note: There's no guarantee that the list of elements returned from `dom.all!` will be a NodeList or an array.  It could be either, depending on the wire/*/dom plugin used or the browser.  You should probably assume that the list returned is array-like and convert it to an array like this:
+> Note: There's no guarantee that the list of elements returned from `all!` will be a NodeList or an array.  It could be either, depending on the wire/*/dom plugin used or the browser.  You should probably assume that the list returned is array-like and convert it to an array like this:
 
 ```js
 var nodeArray = Array.prototype.slice.call(nodeList);
 ```
 
-### `dom.first!`
+### `first!` (`dom.first!`)
 
-Just as `dom.all!` is wire's `document.querySelectorAll()`, `dom.first!` is wire's `document.querySelector()`.  `dom.first!` gets the *first* element that satisfies the CSS query.  Use it like this:
+Just as `all!` is wire's `document.querySelectorAll()`, `first!` is wire's `document.querySelector()`.  `first!` gets the *first* element that satisfies the CSS query.  Use it like this:
 
 ```js
-deepNodeInMyView: { $ref: 'dom.first!.my-view form.ship-to label.first-name' }
+deepNodeInMyView: { $ref: 'first!.my-view form.ship-to label.first-name' }
 ```
+
+`dom.first!` is an alias for `first!`
 
 ### `element` factory
 
@@ -68,10 +72,10 @@ The `dom!` reference resolver is the preferred way to grab a reference to a sing
 ```js
 {
 	moveableList: {
-		element: { $ref: 'dom.first!.move-me' },
+		element: { $ref: 'first!.move-me' },
 		insert: { last: 'newParent' },
 	},
-	newParent: { $ref: 'dom.first!.new-parent' }
+	newParent: { $ref: 'first!.new-parent' }
 }
 ```
 
@@ -80,7 +84,7 @@ The `dom!` reference resolver is the preferred way to grab a reference to a sing
 The clone [factory](concepts.md#factories) is designed to clone Javascript object, but also works with DOM nodes. It's as simple as this:
 
 ```js
-clonedButton: { clone: { $ref: 'dom!orig-button' } }
+clonedButton: { clone: { $ref: 'id!orig-button' } }
 ```
 
 # Inserting DOM nodes
@@ -102,11 +106,11 @@ A common use case for `insert` is moving a node:
 ```js
 {
 	movedElement: {
-		element: { $ref: 'dom.first!.my-node' },
+		element: { $ref: 'first!.my-node' },
 		// this is just shortcut notation. see the next example
 		insert: { after: 'specialPlace' }
 	},
-	specialPlace: { $ref: 'dom.first!.my-special-place' }
+	specialPlace: { $ref: 'first!.my-special-place' }
 }
 ```
 
@@ -115,21 +119,21 @@ Here's the same example using an reference resolver:
 ```js
 {
 	movedElement: {
-		element: { $ref: 'dom.first!.my-node' },
+		element: { $ref: 'first!.my-node' },
 		// this is just shortcut notation. see the next example
 		insert: { after: { $ref: 'specialPlace' } }
 	},
-	specialPlace: { $ref: 'dom.first!.my-special-place' }
+	specialPlace: { $ref: 'first!.my-special-place' }
 }
 ```
 
-Again, using an inline `dom.first!` reference resolver:
+Again, using an inline `first!` reference resolver:
 
 ```js
 {
 	movedElement: {
-		element: { $ref: 'dom.first!.my-node' },
-		insert: { after: { $ref: 'dom.first!.my-special-place' } }
+		element: { $ref: 'first!.my-node' },
+		insert: { after: { $ref: 'first!.my-special-place' } }
 	}
 }
 ```
@@ -139,8 +143,8 @@ The `insert` facet can also be used to insert a DOM node into multiple places at
 ```js
 {
 	clonedElement: {
-		element: { $ref: 'dom.first!.adoptee' },
-		insert: { first: { $ref: 'dom.all!.adopter' } }
+		element: { $ref: 'first!.adoptee' },
+		insert: { first: { $ref: 'all!.adopter' } }
 	}
 }
 ```
@@ -273,7 +277,7 @@ If you have existing templates that use other template engines, such as [mustach
 
 # Notes on DOMReady
 
-When you use wire to reference DOM Nodes via any of the DOM-related plugins (e.g. wire/dom, wire/dom, wire/sizzle, etc.), wire will only resolve the DOM Node reference after the DOM is ready.  You don't need to worry about DOM Ready--simply reference DOM Nodes or do DOM queries (e.g. via `dom!`, `dom.first!`, etc.), and wire will do the right thing.
+When you use wire to reference DOM Nodes via any of the DOM-related plugins (e.g. wire/dom, wire/dom, wire/sizzle, etc.), wire will only resolve the DOM Node reference after the DOM is ready.  You don't need to worry about DOM Ready--simply reference DOM Nodes or do DOM queries (e.g. via `id!`, `first!`, etc.), and wire will do the right thing.
 
 To achieve this, wire relies on its AMD environment to provide a `domReady!` plugin.  Alternatively, wire will detect a global `require.ready` function for backward compatibility with some loaders (e.g. dojo and older versions of RequireJS).
 

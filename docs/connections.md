@@ -97,7 +97,7 @@ define({
 	],
 
 	// Get a reference to the first node with the class 'some-class'
-	domNode: { $ref: 'dom.first!.some-class' },
+	domNode: { $ref: 'first!.some-class' },
 
 	component1: {
 		create: // ...
@@ -362,7 +362,7 @@ Imagine a simple shopping cart controller that has an `addItem` method that shou
 // wire spec
 // A DOM container in which we'll attach events.
 // See "on" in controller
-itemList: { $ref: 'dom.first!.item-list'},
+itemList: { $ref: 'first!.item-list'},
 
 // A function that takes a DOM event and returns the
 // item to add to the shopping cart. This encapsulates
@@ -443,7 +443,7 @@ Finally, we can use a function pipeline to transform the DOM event into an item,
 
 This removes any knowledge of the DOM event and DOM structure from the Controller.  It only needs to know how to add the item.
 
-    itemList: { $ref: 'dom.first!.item-list'},
+    itemList: { $ref: 'first!.item-list'},
 
     findItem: { module: 'myApp/data/findItemFromEvent' }
 

@@ -100,7 +100,7 @@ define({
 
 	plugins: [
 		{ module: 'wire/debug', trace: true },
-		{ module: 'wire/dom', namespace: 'dom' }
+		{ module: 'wire/dom', $ns: 'dom' }
 	]
 });
 ```
@@ -128,7 +128,7 @@ The second references the `message` String (the first item in the wire spec):
 
 ### Wiring the spec
 
-When you feed a spec to wire.js, it will create a [context](#contexts) containing fully realized versions of the components in the spec.  In the Hello Wire case, the context will contain the message String, an *instance* of the `HelloWired` object from the `hello-wired` AMD module, and an Array with one element--the `wire/dom` plugin AMD module.
+When you feed a spec to wire.js, it will create a [context](#contexts) containing fully realized versions of the components in the spec.  In the Hello Wire case, the context will contain the message String, an *instance* of the `HelloWired` object from the `app/HelloWire` AMD module, and an Array with one element--the `wire/dom` plugin AMD module.
 
 ## Contexts
 
@@ -157,7 +157,7 @@ define({
 
 	plugins: [
 		{ module: 'wire/debug', trace: true },
-		{ module: 'wire/dom', namespace: 'dom' }
+		{ module: 'wire/dom', $ns: 'dom' }
 	]
 });
 ```
@@ -251,7 +251,7 @@ Plugins may have options, which can be included as properties.  For example, to 
 
 ### Plugin namespaces
 
-By default, all the factories and facets provided by each plugin are available *un-namespaced* within the current wire spec.  For clarity, and to avoid potential naming conflicts between plugins, you can opt to provide a namespace for some or all plugins in your wire specs, using the `namespace` option.
+By default, all the factories and facets provided by each plugin are available *un-namespaced* within the current wire spec.  For clarity, and to avoid potential naming conflicts between plugins, you can *optionally* provide a namespace for some or all plugins in your wire specs, using the `$ns` option.
 
 When namespaced, all of the [factories](#factories), [facets](#facets), and [reference resolvers](#references) provided by the plugin must be prefixed with the namespace.
 
@@ -278,7 +278,7 @@ define({
 	plugins: [
 		{ module: 'wire/debug', trace: true },
 		// Assign the namespace `dom` to the wire/dom plugin
-		{ module: 'wire/dom', namespace: 'dom' }
+		{ module: 'wire/dom', $ns: 'dom' }
 	]
 });
 ```

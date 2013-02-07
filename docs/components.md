@@ -95,7 +95,7 @@ The module factory loads an AMD module, *but does not call it*.  The module is u
 
 ### Syntax
 ```javascript
-myComponent: {	
+myComponent: {
 	module: 'my/app/ModuleA'
 }
 ```
@@ -107,15 +107,15 @@ The create factory loads an AMD module and uses it to create a component instanc
 ### Full Syntax
 
 ```javascript
-myComponent: {	
+myComponent: {
 	create: {
 		// Load my/app/ModuleA and call it as a constructor or function
 		module: 'my/app/ModuleA',
-	
+
 		// Optional: Pass these args when calling my/app/ModuleA
 		// If not supplied, module will be called with no args
 		args: [arg1, arg2, arg3...],
-	
+
 		// Optional: You'll probably NEVER need this, srsly.
 		// Force calling the module as a constructor using new.
 		// See isConstructor Option Notes section below.
@@ -127,7 +127,7 @@ myComponent: {
 ### Short Syntax
 ```javascript
 // This shorter syntax loads my/app/ModuleA and calls it with no args
-myComponent: {	
+myComponent: {
 	create: 'my/app/ModuleA'
 }
 ```
@@ -150,14 +150,14 @@ define('my/app/ModuleWithConstructor', function() {
 	function ThisIsAConstructor() {
 		this.name = "Bob";
 	}
-	
+
 	//
 	// Defining an empty prototype or no prototype at all will have the
 	// same outcome.  In either case, isConstructor: true is the answer.
 	//
 	// ThisIsAConstructor.prototype = {};
 	//
-	
+
 	return ThisIsAConstructor;
 });
 ```
@@ -233,7 +233,7 @@ childContext: {
 
 		// Note that defer and waitParent are mutually exclusive.
 		// If both are set to true, defer will win.
-		
+
 		// Wire the child immediately
 		defer: false /* default is false */
 
@@ -288,7 +288,7 @@ For example, you might choose to create a wire spec for the user preferences are
 myController: {
 	// Load my/Controller and create an instance
 	create: 'my/Controller',
-	
+
 	// Inject properties
 	properties: {
 		startPrefs: {
@@ -316,26 +316,26 @@ First, let's create an AMD module for our controller.  Let's assume it's `_handl
 
 ```javascript
 define(/* 'my/Controller' */, [], function() {
-	
+
 	function noop() {} // do-nothing function, see below
-	
+
 	// Simple constructor
 	function MyController() {}
-	
+
 	MyController.prototype = {
-		
+
 		// Button or menu item handler that will be called when
 		// the user clicks or selects User Prefs.
 		_handlePrefsOptionSelected: function(e) {
-			
+
 			// Hang onto a this ref, since we'll be nesting functions
 			var self = this;
-			
+
 			// _showPrefs will have been injected, so we call it
 			// to wire the prefs context.  This can bring the entire
 			// prefs area of the app into existence.
 			self._showPrefs().then(function(prefsContext) {
-				
+
 				// And set our controller's _hidePrefs method
 				// to destroy the prefsContext, which will cleanup
 				// everything that was created when it was wired.
@@ -344,25 +344,25 @@ define(/* 'my/Controller' */, [], function() {
 					// Reset _hidePrefs to a noop in case someone
 					// calls it.
 					self._hidePrefs = noop;
-					
+
 					// Destroy the prefsContext
-					prefsContext.destroy();					
+					prefsContext.destroy();
 				}
 			});
 		},
-		
+
 		// Do-nothing show/hide methods initially
 		// _showPrefs will be overwritten with an injected wire function
 		// _hidePrefs is overridden with a function to destroy the
 		// wired prefs context
 		_showPrefs: noop,
 		_hidePrefs: noop,
-		
+
 		// ... Other controller methods, etc.
 	};
-	
+
 	return MyController;
-	
+
 });
 ```
 
@@ -371,18 +371,18 @@ Now, let's create a [wire spec](concepts.md#wire-specs) that will create an inst
 ```javascript
 // Create our controller
 myController: {
-	
+
 	// Shortcut create syntax
 	create: 'my/Controller',
-	
+
 	// Set some properties, including the _showPrefs function
 	properties: {
-		
+
 		// Whoah! Use the wire factory with the defer option to inject
 		// a function that will launch the User Prefs area using
 		// another wire spec!
 		_showPrefs: { wire: { spec: 'my/specs/prefs-spec', defer: true } }
-		
+
 		// ... other properties
 	}
 }
