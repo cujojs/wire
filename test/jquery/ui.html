@@ -1,0 +1,176 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>jQuery UI plugin test</title>
+
+    <!--<script src="../../util/doh/runner.js"></script>-->
+    <script src="../test-config.js"></script>
+
+    <script type="text/javascript">
+
+	require(['wire', 'when', 'wire/jquery/ui'], function(wire, when, plugin) {
+
+		var wired, undef;
+
+		wired = wire({
+			plugins: [
+//					{ module: 'wire/debug' },
+				{ module: 'wire/jquery/ui' },
+				{ module: 'wire/jquery/dom' }
+			],
+
+			node: { $ref: 'dom!result' }
+
+		});
+
+		wired.then(
+			function(context) {
+
+				doh.register('basic', [
+
+					function module () {
+						var proxier;
+
+						doh.assertTrue(plugin, 'should create plugin');
+						if (!plugin) return;
+
+						doh.assertTrue(typeof plugin['wire$plugin'] == 'function', 'should create "wire$plugin" function');
+						if (!plugin['wire$plugin']) return;
+
+						doh.assertTrue(!!plugin['wire$plugin']().factories, 'should create an object with a "factories" object');
+						doh.assertTrue(!!plugin['wire$plugin']().proxies, 'should create an object with a "proxies" array');
+
+						proxier = plugin['wire$plugin']().proxies[0];
+						doh.assertTrue(typeof proxier == 'function', 'should create proxy function');
+
+						doh.assertTrue(typeof plugin['wire$plugin']().factories.widget == 'function', 'should create factory function');
+
+					},
+
+					function proxier () {
+						var proxier, stub, proxy, obj;
+						proxier = plugin['wire$plugin']().proxies[0];
+						stub = {
+							target: new StubWidget('dialog')
+						};
+						proxy = proxier(stub);
+						obj = {};
+						// this is a lame way to test that we have a proxy
+						doh.assertTrue(proxy != stub, 'should create a proxy for a widget');
+						proxy = proxier(obj);
+						doh.assertTrue(proxy == obj, 'should pass through a non-widget object');
+
+					}
+				]);
+
+				doh.register('factory', [
+					function factory (done) {
+						var factory, spec, promises, dfd, reasons, called;
+
+						// doh sucks
+						reasons = [];
+
+						// create a spy for $.ui.dialog
+						if (!$.ui) $.ui = {};
+						$.ui.dialog = $.fn.dialog = function () { called++; };
+
+						factory = plugin['wire$plugin']().factories.widget;
+						promises = [];
+						called = 0;
+
+						// test for fail if type is missing
+						spec = {
+							options: {
+								type: null
+							}
+						};
+						dfd = when.defer();
+						factory(dfd, spec, wire);
+						promises.push(dfd.promise.then(function () {
+							reasons.push('should fail if type is not specified.');
+						}));
+
+						// test assertion for $.ui[type] when widget type isn't available
+						spec = {
+							options: {
+								type: 'not-a-widget'
+							}
+						};
+						dfd = when.defer();
+						factory(dfd, spec, wire);
+						promises.push(dfd.promise.then(function () {
+							reasons.push('should fail if type doesn\'t match a jquery widget');
+						}, function (ex) {
+							if (!/constructor/.test(ex.message)) reasons.push('should fail with message about constructor');
+						}));
+
+						// test assertion for missing node
+						spec = {
+							options: {
+								//node: document.getElementById('result'),
+								type: 'dialog'
+							}
+						};
+						dfd = when.defer();
+						factory(dfd, spec, wire);
+						promises.push(dfd.promise.then(function () {
+							reasons.push('should fail if type doesn\'t match a jquery widget');
+						}, function (ex) {
+							if (!/node/.test(ex.message)) reasons.push('should fail with message about node');
+						}));
+
+						// test that dialog constructor is called
+						spec = {
+							options: {
+								node: document.getElementById('result'),
+								type: 'dialog'
+							}
+						};
+						dfd = when.defer();
+						factory(dfd, spec, wire);
+						promises.push(dfd.promise.then(function (ex) {
+							if (called != 1) reasons.push('should call dialog constructor once');
+						}, function (ex) {
+							reasons.push('failed' + ex);
+						}));
+
+						// collect all promises
+						when.all(promises).always(function () {
+							// doh sucks
+							if (reasons.length) console.log('FAIL: ' + reasons);
+							done(false);
+						});
+					}
+				]);
+//				// TODO: test the proxy, too
+//				doh.register('proxy', [
+//					function blah () {
+//						doh.assertTrue(false, 'not implemented');
+//					}
+//				]);
+				doh.run();
+
+			},
+			function(e) {
+				throw e;
+			}
+		);
+
+
+	});
+
+	function StubWidget (name) {
+		return {
+			data: function () { return name; }
+		}
+	}
+
+    </script>
+</head>
+<body>
+<div>
+    <p id="result" class="orig1"></p>
+</div>
+</body>
+</html>
