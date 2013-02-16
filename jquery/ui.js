@@ -26,38 +26,36 @@ define(['when', 'jquery'], function (when, $) {
 
 		var type;
 
-		try {
+		type = spec.options.type;
 
-			type = spec.options.type;
+		if (!type) throw new Error('widget factory requires a "type" property.');
 
-			if (!type) throw new Error('widget factory requires a "type" property.');
-
-			if (typeof $.ui[type] != 'function') {
-				throw new Error('widget factory could not find a jQuery UI Widget constructor for ' + type);
-			}
-
-			when.all([wire(spec.options.node), wire(spec.options.options || {})], function (wired) {
-				var $el, options;
-
-				if (!isNode(wired[0]) && !isjQWrapped(wired[0])) throw new Error('widget factory could not resolve "node" property: ' + spec.options.node);
-
-				$el = $(wired[0]);
-				options = wired[1];
-
-				$el.data(typeDataProp, type);
-
-				return $el[type](options);
-
-			}).then(resolver.resolve, resolver.reject);
-
+		// jQuery UI widgets place things at $[type] $.ui[type] and $.fn[type].
+		// however, wijmo widgets only appear at $.fn[type].
+		if (typeof $.fn[type] != 'function') {
+			throw new Error('widget factory could not find a jQuery UI Widget constructor for ' + type);
 		}
-		catch (ex) {
-			resolver.reject(ex);
-		}
+
+		when.all([wire(spec.options.node), wire(spec.options.options || {})], function (wired) {
+			var $el, options;
+
+			if (!isNode(wired[0]) && !isjQWrapped(wired[0])) throw new Error('widget factory could not resolve "node" property: ' + spec.options.node);
+
+			$el = $(wired[0]);
+			options = wired[1];
+
+			$el.data(typeDataProp, type);
+
+			return $el[type](options);
+
+		}).then(resolver.resolve, resolver.reject);
 
 	}
 
-	function WidgetProxy () {}
+	function WidgetProxy (metadata, target) {
+		this.metadata = metadata;
+		this.target = target;
+	}
 
 	WidgetProxy.prototype = {
 		get: function (name) {
@@ -103,6 +101,12 @@ define(['when', 'jquery'], function (when, $) {
 			return $el[type].apply($el, margs);
 		},
 
+		init: function () { return this; },
+
+		startup: function () { return this; },
+
+		shutdown: function () { return this; },
+
 		destroy: function () {
 			var $el = this.target;
 			$el.destroy();
@@ -118,7 +122,7 @@ define(['when', 'jquery'], function (when, $) {
 
 	function hasOption ($el, type, name) {
 		// thankfully, all options should be pre-defined in a jquery ui widget
-		var options = $el[type]('options');
+		var options = $el[type]('option');
 		return options && name in options;
 	}
 
@@ -129,7 +133,7 @@ define(['when', 'jquery'], function (when, $) {
 			return proxy;
 		}
 		else {
-			return new WidgetProxy();
+			return new WidgetProxy(proxy.metadata, proxy.target);
 		}
 	}
 

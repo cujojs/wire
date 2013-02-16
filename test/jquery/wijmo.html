@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>wijmo functional test</title>
+
+<!--
+NOTE: this file does not show best practices!
+Several shortcuts were made to work with the test-config.js test setup.
+-->
+
+<!--jQuery References-->
+<script src="http://ajax.aspnetcdn.com/ajax/jquery/jquery-1.7.1.min.js" type="text/javascript"></script>
+<script src="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.17/jquery-ui.min.js" type="text/javascript"></script>
+
+<!--Theme-->
+<link href="http://cdn.wijmo.com/themes/rocket/jquery-wijmo.css" rel="stylesheet" type="text/css" title="rocket-jqueryui" />
+
+<!--Wijmo Widgets CSS-->
+<link href="http://cdn.wijmo.com/jquery.wijmo-complete.all.2.0.0.min.css" rel="stylesheet" type="text/css" />
+
+<!--Wijmo Widgets JavaScript-->
+<script src="http://cdn.wijmo.com/jquery.wijmo-open.all.2.0.0.min.js" type="text/javascript"></script>
+<script src="http://cdn.wijmo.com/jquery.wijmo-complete.all.2.0.0.min.js" type="text/javascript"></script>
+
+<script src="../test-config.js"></script>
+
+<script>
+
+// just use the jquery off the CDN from the script element above
+define('jquery', function () { return jQuery; });
+
+require(['wire'], function (wire) {
+	wire({
+
+		wizard: {
+			widget: {
+				type: 'wijwizard',
+				node: { $ref: 'dom!pages' },
+				options: {
+					navButtons: 'none'
+				}
+			}
+		},
+
+		pager: {
+			widget: {
+				type: 'wijpager',
+				node: { $ref: 'dom!pager' },
+				options: {
+					pageCount: 3,
+					pageIndex: 0,
+					mode: 'numeric',
+					pageIndexChanged: { compose: 'logger' }
+//					pageIndexChanged: {
+//						compose: 'pageIndex | wizard.pageIndex'
+//					}
+				}
+			},
+			on: {
+				// TODO: why doesn't this work? seems like a wire/jquery/on issue
+				wijpagerpageindexchanged: { compose: 'logger' }
+			}
+		},
+
+		logger: console.log.bind(console),
+
+		plugins: [
+			//{ module: 'wire/debug' },
+			{ module: 'wire/jquery/ui' },
+			//{ module: 'wire/jquery/on' },
+			{ module: 'wire/jquery/dom' }
+		]
+	}).then(function (context) {
+		console.log(context);
+	});
+});
+
+</script>
+
+</head>
+<body>
+
+<div id="pages">
+	<ol>
+		<li><h1>Header 1</h1></li>
+		<li><h1>Header 2</h1></li>
+		<li><h1>Header 3</h1></li>
+	</ol>
+	<div>Page 1</div>
+	<div>Page 2</div>
+	<div>Page 3</div>
+</div>
+
+<div id="pager">
+</div>
+
+</body>
+</html>
