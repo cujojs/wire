@@ -11,6 +11,28 @@ sentinel = {};
 
 buster.testCase('context', {
 
+	'array of specs': {
+		'should be merged': function(done) {
+			createContext([{ a: 1 }, { b: 2 }], null, { require: require }).then(
+				function(context) {
+					assert.equals(context.a, 1);
+					assert.equals(context.b, 2);
+				},
+				fail
+			).then(done, done);
+		},
+
+		'should allow overriding': function(done) {
+			createContext([{ a: 1 }, { a: 2 }], null, { require: require }).then(
+				function(context) {
+					assert.equals(context.a, 2);
+				},
+				fail
+			).then(done, done);
+
+		}
+	},
+
 	'initializers': {
 		'should execute when context is created': function(done) {
 			var executed = false;
