@@ -10,9 +10,9 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
-define(['when', 'jquery'], function (when, $) {
+define(['when', 'jquery', '../lib/object'], function (when, $, object) {
 
-	var undef, typeDataProp;
+	var typeDataProp, widgetProxyMixin, undef;
 
 	typeDataProp = 'wire$type';
 
@@ -24,7 +24,7 @@ define(['when', 'jquery'], function (when, $) {
 	 */
 	function widgetFactory (resolver, spec, wire) {
 
-		var type;
+		var type, widget;
 
 		type = spec.options.type;
 
@@ -36,28 +36,25 @@ define(['when', 'jquery'], function (when, $) {
 			throw new Error('widget factory could not find a jQuery UI Widget constructor for ' + type);
 		}
 
-		when.all([wire(spec.options.node), wire(spec.options.options || {})], function (wired) {
-			var $el, options;
+		widget = when.join(wire(spec.options.node), wire(spec.options.options || {}))
+			.spread(createWidget);
 
-			if (!isNode(wired[0]) && !isjQWrapped(wired[0])) throw new Error('widget factory could not resolve "node" property: ' + spec.options.node);
+		resolver.resolve(widget);
 
-			$el = $(wired[0]);
-			options = wired[1];
+		function createWidget(el, options) {
+			var $el;
 
+			if (!isNode(el) && !isjQWrapped(el)) throw new Error('widget factory could not resolve "node" property: ' + spec.options.node);
+
+			$el = $(el);
 			$el.data(typeDataProp, type);
 
 			return $el[type](options);
-
-		}).then(resolver.resolve, resolver.reject);
+		}
 
 	}
 
-	function WidgetProxy (metadata, target) {
-		this.metadata = metadata;
-		this.target = target;
-	}
-
-	WidgetProxy.prototype = {
+	widgetProxyMixin = {
 		get: function (name) {
 			var $el = this.target, type = $el.data(typeDataProp), value;
 
@@ -101,12 +98,6 @@ define(['when', 'jquery'], function (when, $) {
 			return $el[type].apply($el, margs);
 		},
 
-		init: function () { return this; },
-
-		startup: function () { return this; },
-
-		shutdown: function () { return this; },
-
 		destroy: function () {
 			var $el = this.target;
 			$el.destroy();
@@ -127,13 +118,8 @@ define(['when', 'jquery'], function (when, $) {
 	}
 
 	function proxyWidget (proxy) {
-		var object = proxy.target;
-
-		if (proxy instanceof WidgetProxy || !isWidget(object)) {
-			return proxy;
-		}
-		else {
-			return new WidgetProxy(proxy.metadata, proxy.target);
+		if(isWidget(proxy.target)) {
+			object.mixin(proxy, widgetProxyMixin);
 		}
 	}
 
