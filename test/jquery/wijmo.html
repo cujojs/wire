@@ -49,8 +49,8 @@ require(['wire'], function (wire) {
 				options: {
 					pageCount: 3, // wizard.pageCount
 					pageIndex: 0, // wizard.activePageIndex
-					mode: 'numeric',
-					pageIndexChanged: { compose: 'logger' }
+					mode: 'numeric'
+					//pageIndexChanged: { compose: 'logger.log' }
 					// TODO: something like this would be nice. we would need composable getters and setters
 					//pageIndexChanged: {
 					//	compose: 'pageIndex | wizard.pageIndex'
@@ -58,15 +58,30 @@ require(['wire'], function (wire) {
 				}
 			},
 			on: {
-				// TODO: why doesn't this work? seems like a wire/jquery/on issue
-				wijpagerpageindexchanged: { compose: 'logger' }
+				wijpagerpageindexchanged: 'logger.log'
 			}
 		},
 
-		logger: console.log.bind(console),
+		mediator: {
+			properties: {
+				pager: { $ref: 'pager' }
+			},
+			ready: 'start',
+			literal: {
+				start: function () {
+					//$('#pager').on('wijpagerpageindexchanged', function () { console.log('foolery'); });
+				}
+			}
+		},
+		
+		logger: {
+			literal: {
+				log: console.log.bind(console)
+			}
+		},
 
 		plugins: [
-			//{ module: 'wire/debug' },
+			{ module: 'wire/debug' },
 			{ module: 'wire/jquery/ui' },
 			{ module: 'wire/jquery/on' },
 			{ module: 'wire/jquery/dom' }

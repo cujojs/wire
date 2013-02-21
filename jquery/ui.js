@@ -10,7 +10,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
-define(['when', 'jquery', '../lib/object'], function (when, $, object) {
+define(['when', 'jquery', '../lib/proxy'], function (when, $, proxy) {
 
 	var typeDataProp, widgetProxyMixin, undef;
 
@@ -93,7 +93,11 @@ define(['when', 'jquery', '../lib/object'], function (when, $, object) {
 		invoke: function (method, args) {
 			var $el = this.target, type = $el.data(typeDataProp), margs;
 
-			margs = args && args.length ? [method].concat(args) : [method];
+			margs = [method];
+			if (args && args.length) {
+				// using margs's slice to ensure args is an array (instead of Arguments)
+				margs = margs.concat(margs.slice.apply(args));
+			}
 
 			return $el[type].apply($el, margs);
 		},
@@ -119,7 +123,7 @@ define(['when', 'jquery', '../lib/object'], function (when, $, object) {
 
 	function proxyWidget (proxy) {
 		if(isWidget(proxy.target)) {
-			object.mixin(proxy, widgetProxyMixin);
+			proxy.extend(proxy, widgetProxyMixin);
 		}
 	}
 
