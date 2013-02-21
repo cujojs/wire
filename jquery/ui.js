@@ -10,7 +10,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
-define(['when', 'jquery', '../lib/proxy'], function (when, $, proxy) {
+define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
 
 	var typeDataProp, widgetProxyMixin, undef;
 
@@ -123,7 +123,7 @@ define(['when', 'jquery', '../lib/proxy'], function (when, $, proxy) {
 
 	function proxyWidget (proxy) {
 		if(isWidget(proxy.target)) {
-			proxy.extend(proxy, widgetProxyMixin);
+			wireProxy.extend(proxy, widgetProxyMixin);
 		}
 	}
 
