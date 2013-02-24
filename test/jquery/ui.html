@@ -55,11 +55,11 @@
 							target: new StubWidget('dialog')
 						};
 						proxy = proxier(stub);
-						obj = {};
+						obj = { target: {} };
 						// this is a lame way to test that we have a proxy
 						doh.assertTrue(proxy != stub, 'should create a proxy for a widget');
 						proxy = proxier(obj);
-						doh.assertTrue(proxy == obj, 'should pass through a non-widget object');
+						doh.assertTrue(proxy == void 0, 'should pass through a non-widget object');
 
 					}
 				]);
@@ -73,6 +73,8 @@
 
 						// create a spy for $.ui.dialog
 						if (!$.ui) $.ui = {};
+						if (!$.Widget) $.Widget = function () {};
+						$.Widget.prototype = { _setOption: function () {} };
 						$.ui.dialog = $.fn.dialog = function () { called++; };
 
 						factory = plugin['wire$plugin']().factories.widget;
@@ -86,10 +88,11 @@
 							}
 						};
 						dfd = when.defer();
-						factory(dfd, spec, wire);
-						promises.push(dfd.promise.then(function () {
-							reasons.push('should fail if type is not specified.');
-						}));
+						try {
+							factory(dfd, spec, wire);
+							doh.assertTrue(false, 'should fail if type is not specified.');
+						}
+						catch (ex) {};
 
 						// test assertion for $.ui[type] when widget type isn't available
 						spec = {
@@ -98,12 +101,13 @@
 							}
 						};
 						dfd = when.defer();
-						factory(dfd, spec, wire);
-						promises.push(dfd.promise.then(function () {
-							reasons.push('should fail if type doesn\'t match a jquery widget');
-						}, function (ex) {
-							if (!/constructor/.test(ex.message)) reasons.push('should fail with message about constructor');
-						}));
+						try {
+							factory(dfd, spec, wire);
+							doh.assertTrue(false, 'should fail if type doesn\'t match a jquery widget');
+						}
+						catch (ex) {
+							if (!/constructor/.test(ex.message)) doh.assertTrue(false, 'should fail with message about constructor');
+						}
 
 						// test assertion for missing node
 						spec = {
@@ -113,12 +117,12 @@
 							}
 						};
 						dfd = when.defer();
-						factory(dfd, spec, wire);
-						promises.push(dfd.promise.then(function () {
-							reasons.push('should fail if type doesn\'t match a jquery widget');
-						}, function (ex) {
-							if (!/node/.test(ex.message)) reasons.push('should fail with message about node');
-						}));
+						try {
+							factory(dfd, spec, wire);
+						}
+						catch (ex) {
+							if (!/node/.test(ex.message)) doh.assertTrue(false, 'should fail with message about node');
+						}
 
 						// test that dialog constructor is called
 						spec = {

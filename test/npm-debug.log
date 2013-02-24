@@ -1,0 +1,57 @@
+info it worked if it ends with ok
+verbose cli [ 'node', '/usr/local/bin/npm', 'link', 'buster' ]
+info using npm@1.1.0-2
+info using node@v0.6.7
+verbose /usr/local/bin/node node symlink
+verbose config file /Users/jhann/.npmrc
+verbose config file /usr/local/etc/npmrc
+verbose config file /usr/local/lib/node_modules/npm/npmrc
+info unbuild /Users/jhann/Projects/wire/node_modules/buster
+verbose link symlinking /usr/local/lib/node_modules/buster to /Users/jhann/Projects/wire/node_modules/buster
+verbose mkdir (expected) error ENOENT, no such file or directory '/Users/jhann/Projects/wire/node_modules'
+verbose mkdir done: /Users/jhann/Projects/wire/node_modules 755
+info build /Users/jhann/Projects/wire/node_modules/buster
+verbose caching /Users/jhann/Projects/wire/node_modules/buster/package.json
+verbose loadDefaults buster@0.5.3
+info preinstall buster@0.5.3
+verbose linkStuff [ false, false, false, '/Users/jhann/Projects/wire/node_modules' ]
+info linkStuff buster@0.5.3
+verbose linkBins buster@0.5.3
+verbose bins linking [ { buster: './bin/buster',
+verbose bins linking     'buster-test': './bin/buster-test',
+verbose bins linking     'buster-server': './bin/buster-server',
+verbose bins linking     'buster-autotest': './bin/buster-autotest',
+verbose bins linking     'buster-static': './bin/buster-static' },
+verbose bins linking   '/Users/jhann/Projects/wire/node_modules/.bin',
+verbose bins linking   false ]
+verbose linkMans buster@0.5.3
+verbose rebuildBundles buster@0.5.3
+verbose rebuildBundles [ '.bin',
+verbose rebuildBundles   'buster-assertions',
+verbose rebuildBundles   'buster-autotest',
+verbose rebuildBundles   'buster-core',
+verbose rebuildBundles   'buster-evented-logger',
+verbose rebuildBundles   'buster-format',
+verbose rebuildBundles   'buster-static',
+verbose rebuildBundles   'buster-test',
+verbose rebuildBundles   'buster-test-cli',
+verbose rebuildBundles   'sinon',
+verbose rebuildBundles   'sinon-buster' ]
+verbose mkdir (expected) error ENOENT, no such file or directory '/Users/jhann/Projects/wire/node_modules/.bin'
+verbose mkdir done: /Users/jhann/Projects/wire/node_modules/.bin 755
+ERR! Error: UNKNOWN, unknown error '/Users/jhann/Projects/wire/node_modules/buster/bin/buster'
+ERR! You may report this log at:
+ERR!     <http://github.com/isaacs/npm/issues>
+ERR! or email it to:
+ERR!     <npm-@googlegroups.com>
+ERR! 
+ERR! System Darwin 11.3.0
+ERR! command "node" "/usr/local/bin/npm" "link" "buster"
+ERR! cwd /Users/jhann/Projects/wire/test
+ERR! node -v v0.6.7
+ERR! npm -v 1.1.0-2
+ERR! path /Users/jhann/Projects/wire/node_modules/buster/bin/buster
+ERR! code UNKNOWN
+ERR! message UNKNOWN, unknown error '/Users/jhann/Projects/wire/node_modules/buster/bin/buster'
+ERR! errno {}
+verbose exit [ 1, true ]

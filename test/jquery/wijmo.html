@@ -10,7 +10,7 @@ Several shortcuts were made to work with the test-config.js test setup.
 
 <!--jQuery References-->
 <script src="http://ajax.aspnetcdn.com/ajax/jquery/jquery-1.7.1.min.js" type="text/javascript"></script>
-<script src="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.17/jquery-ui.min.js" type="text/javascript"></script>
+<script src="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.17/jquery-ui.js" type="text/javascript"></script>
 
 <!--Theme-->
 <link href="http://cdn.wijmo.com/themes/rocket/jquery-wijmo.css" rel="stylesheet" type="text/css" title="rocket-jqueryui" />
@@ -50,36 +50,20 @@ require(['wire'], function (wire) {
 					pageCount: 3, // wizard.pageCount
 					pageIndex: 0, // wizard.activePageIndex
 					mode: 'numeric'
-					//pageIndexChanged: { compose: 'mediator.pass' }
-					// TODO: something like this would be nice. we would need composable getters and setters
-					//pageIndexChanged: {
-					//	compose: 'pageIndex | wizard.pageIndex'
-					//}
 				}
 			},
 			on: {
-				wijpagerpageindexchanged: 'mediator.pass'
+				wijpagerpageindexchanged: 'getPageIndex | wizard.setActiveIndex'
 			}
 		},
 
-		mediator: {
-			properties: {
-				pager: { $ref: 'pager' },
-				wizard: { $ref: 'wizard' },
-				pass: function () { 
-					var pageIndex = this.pager.wijpager('option', 'pageIndex');
-					this.wizard.wijwizard({ activeIndex: pageIndex } ); 
-				}
-			},
-			literal: { }
-		},
-		
 		plugins: [
 			{ module: 'wire/debug' },
 			{ module: 'wire/jquery/ui' },
 			{ module: 'wire/jquery/on' },
 			{ module: 'wire/jquery/dom' }
 		]
+		
 	}).then(function (context) {
 		console.log(context);
 	});
