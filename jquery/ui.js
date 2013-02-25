@@ -12,10 +12,12 @@
  */
 define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
 
-	var typeDataProp, observeDataProp, undef;
+	var typeDataProp, observeDataProp, proxyMixin, undef;
 
 	typeDataProp = 'wire$type';
 	observeDataProp = 'wire$observe';
+	
+	proxyMixin = getWidgetProxyMixin();
 
 	return {
 		wire$plugin: function jQueryUIPlugin (ready, destroy, options) {
@@ -73,7 +75,7 @@ define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
 	 */
 	function proxyWidget (proxy) {
 		if (isWidget(proxy.target)) {
-			return wireProxy.extend(proxy, getWidgetProxyMixin());
+			return wireProxy.extend(proxy, proxyMixin);
 		}
 	}
 
