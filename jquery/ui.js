@@ -156,23 +156,6 @@ define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
 				var $w = this.target;
 				// default is to clone deep (when would anybody not want deep?)
 				return $w.clone(!('deep' in options) || options.deep);
-			},
-			
-			observe: function (property, callback) {
-				var $w, observers, callbacks;
-				
-				$w = this.target;
-				
-				// ensure we have an observers set
-				observers = $w.data(observeDataProp);
-				if (!observers) $w.data(observeDataProp, observers = {});
-				
-				// ensure we have a callbacks list
-				callbacks = observers[property];
-				if (!callbacks) callbacks = observers[property] = [];
-				
-				// ensure callback is in the list
-				if (callbacks.indexOf(callback) < 0) callbacks.push(callback);
 			}
 		};
 	}
