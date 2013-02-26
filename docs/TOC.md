@@ -42,3 +42,5 @@
 	1. [Connecting DOM events](dom.md#connecting-dom-events)
 	1. [Rendering DOM elements](dom.md#rendering-dom-elements)
 	1. [Notes on DOMReady](dom.md#notes-on-domready)
+1. Integrating with third-party libraries
+	1. [jQuery](jquery.md)

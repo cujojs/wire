@@ -34,6 +34,14 @@ define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
 
 	/**
 	 * Creates a jQuery UI widget on top of a dom node.
+	 * Since jQuery UI widgets don't really have a normal API, the proxy has to
+	 * hunt around for "properties" and/or "methods" in the proxy.
+	 * jQuery UI widgets don't actually have properties, but they do have options
+	 * and data attributes.  The proxy will get/set these instead.
+	 * In order to allow widgets to be bound to eachother via property changes,
+	 * the proxy adds a feature to parse methods that look like "getXXX" or
+	 * "setXXX" into property getters and setters.  These getters and setters can
+	 * be used in a function pipeline, for instance.
 	 * @param {Deferred} resolver
 	 * @param {Object} spec
 	 * @param {Function} wire
@@ -72,6 +80,7 @@ define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
 	/**
 	 * Extends the base wire proxy if the target is a jQuery UI widget.
 	 * @param {Object} proxy
+	 * @return {Object} proxy
 	 */
 	function proxyWidget (proxy) {
 		if (isWidget(proxy.target)) {
@@ -81,7 +90,8 @@ define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
 
 	/**
 	 * Creates an object to use to extend the base wire proxy.
-	 * @return {Object}
+	 * @private
+	 * @return {Object} an object ot mix into the base proxy.
 	 */
 	function getWidgetProxyMixin () {
 		return {
@@ -166,6 +176,13 @@ define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
 		return options && name in options;
 	}
 	
+	/**
+	 * Creates a getter or setter, if there is a matching "property".
+	 * @private
+	 * @param {Object} proxy
+	 * @param {Object} jQuery-wrapped node of the widget.
+	 * @param {String} name of the "property"
+	 */
 	function createAccessor (proxy, $w, name) {
 		var type, prop;
 		
