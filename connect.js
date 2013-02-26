@@ -94,7 +94,7 @@ function(when, meld, functional, connection) {
                 facets: {
                     connect: {
                         connect: function(resolver, facet, wire) {
-                            when.chain(connectFacet(wire, facet), resolver);
+                            resolver.resolve(connectFacet(wire, facet));
                         }
                     }
                 }
