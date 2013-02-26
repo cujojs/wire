@@ -4,8 +4,8 @@
 <title>wijmo functional test</title>
 
 <!--
-NOTE: this file does not show best practices!
-Several shortcuts were made to work with the test-config.js test setup.
+NOTE: this file does not show best practices for sript loading!
+This is a proof of concept and demo of wijmo widgets in wire.js. 
 -->
 
 <!--jQuery References-->
@@ -32,29 +32,56 @@ define('jquery', function () { return jQuery; });
 require(['wire'], function (wire) {
 	wire({
 
+		// this is a wijmo wizard widget
 		wizard: {
 			widget: {
+				// type of widget
 				type: 'wijwizard',
+				// where to create this widget in the dom
 				node: { $ref: 'dom!pages' },
+				// wizard widget options
 				options: {
 					navButtons: 'none'
 				}
 			}
 		},
 
+		// this is a wijmo pager widget
 		pager: {
 			widget: {
+				// type of widget
 				type: 'wijpager',
+				// where to create it in the dom
 				node: { $ref: 'dom!pager' },
+				// pager widget options
 				options: {
-					pageCount: 3, // wizard.pageCount
-					pageIndex: 0, // wizard.activePageIndex
+					// if there were a wizard option or method that provided pageCount, 
+					// the next line could be wired from the wizard, instead of hard-coded. 
+					// (hint, hint, wijmo!)
+					pageCount: 3,
+					// this is the initial page to show
+					pageIndex: 1,
 					mode: 'numeric'
 				}
 			},
 			on: {
-				wijpagerpageindexchanged: 'getPageIndex | wizard.setActiveIndex'
+				// when page index changes, tell mediator.
+				// this could also be done with the pageIndexchanged option, but is
+				// more compact when using the "on" facet.
+				wijpagerpageindexchanged: 'mediator.pageChanged'
 			}
+		},
+		
+		// a mediator to coordinate changes in widgets. 
+		mediator: {
+			prototype: {
+				// if the page changes, copy it from the pager to the wizard.
+				// we are using automatically-generated setters and getters here.
+				// the wire jQuery UI plugin recognizes getXXX and setXXX patterns.
+				pageChanged: { compose: 'pager.getPageIndex | wizard.setActiveIndex' }
+			},
+			// at startup, set the wizard's page
+			ready: 'pageChanged'
 		},
 
 		plugins: [
