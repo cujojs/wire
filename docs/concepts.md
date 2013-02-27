@@ -324,7 +324,7 @@ When a context is destroyed by calling its `destroy()` method, the components wi
 
 ## Facets
 
-Facets allow you to apply additional configuration or behavior to a component after it has been created by a [factory](#factories).  For example, the `properties` facet sets properties on a component during the [Create lifecycle stage](#component-lifecycles), the `ready` facet invokes initializer methods on a component during the Ready stage, and the `connect` facet (provided by the `wire/connect` plugin) can connect components together allowing them to collaborate.
+Facets allow you to apply additional configuration or behavior to a component after it has been created by a [factory](#factories).  For example, the `properties` facet sets properties on a component during the [Configure lifecycle stage](#component-lifecycles), the `ready` facet invokes initializer methods on a component during the Ready stage, and the `connect` facet (provided by the `wire/connect` plugin) can connect components together allowing them to collaborate.
 
 Wire.js comes with several builtin facets, and plugins can provide additional facets.
 
