@@ -1,39 +1,44 @@
 # jQuery integration
 
-Wire.js, like all cujo.js projects, is designed to integrate with other
-libraries such as jQuery.
+Wire.js, like all cujo.js projects, integrates with other libraries and
+frameworks, such as jQuery.
 
 ## jQuery $(selector)
 
-Wire.js provides support for DOM querying via several methods, including
-jQuery.  For more information about DOM querying, see 
+Wire.js provides support for DOM querying via several plugins, including
+one that uses jQuery's legendary `$(selector)` functionality.  For more 
+information about DOM querying with jQuery, see 
 [Working with the DOM](dom.md). 
 
 ## jQuery .on()
 
-The full power of jQuery's `.on()` method is implemented via the 
-[wire/jquery/on](connections.md#dom-events) plugin.
+The full power of jQuery's `.on()` method is available in wire specs.
+The [wire/jquery/on](connections.md#dom-events) plugin provides "high in the 
+DOM" listening of DOM events.
 
 ## jQuery UI widgets
 
-Wire.js has built-in support for jQuery UI widgets via the wire/jquery/ui 
-plugin.  Other widget libraries that are built on top of jQuery UI, such 
-as wijmo widgets, are likely supported, as well.
+Wire.js has built-in support for [jQuery UI](http://api.jqueryui.com/) widgets
+via the wire/jquery/ui plugin.  Other widget libraries that are built on top of 
+jQuery UI, such as [wijmo](http://wijmo.com/) widgets, are supported, as well.
 
 To create a jQuery UI widget, use the "widget" factory included in the 
-wire/jquery/ui plugin.  The factory requires the widget's constructor ("type")
-and a DOM node.  You may specify options for the widget, as well.
+wire/jquery/ui plugin.  The factory requires that you specify the widget's 
+constructor ("type") and a DOM node.  You may specify options for the widget,
+as well.
 
-Since jQuery UI widgets don't have actual properties or methods, the plugin
-treats the plugin's options as properties.  If an property is specified, the
-corresponding option is used instead.  If no corresponding option exists, the
-plugin assumes the developer wishes to store a property in the widget's data
+jQuery UI widgets don't have properties like normal Javascript objects.  
+Therefore, wire.js's "properties" facet tries to be smart when you refer to a
+property on a widget.  First, it checks to see if there is a function of the
+same name on the widget and, if it finds one, assumes it's an *accessor 
+function*.  For instance, "data", "val", "height", and "width" may be set or
+get via properties.
+
+If there is no accessor function with the given name, the plugin looks in the
+widget's "options" collection.  If an option with the same name exists, the 
+plugin gets or sets that option.  If no option exists with that name, the
+plugin assumes the developer wishes to access an item in the widget's data
 store, instead.
-
-There are a few widget "properties" that are inherited from jQuery's 
-abstraction over the DOM node.  For example, jQuery has built-in methods such
-as `.val()`, `.height()`, and `.width()`.  These may also be treated as
-properties and the plugin will get or set their DOM-specific values.
 
 jQuery UI widgets enjoy a special feature that allows direct connections
 between widgets by linking the widgets via automatically generated getters
@@ -43,7 +48,10 @@ the method is a getter or a setter.
 
 The following code example shows how to create and configure jQuery UI widgets
 (wijmo widgets in this case) as well as how to connect them together via
-automatically generated getters and setters and a mediator.
+automatically generated getters and setters.  This example uses a mediator
+between the two widgets.  The mediator pattern is a recommended "best practice"
+to simplify complex widget relationships, but isn't necessary in this very
+simple example.
 
 ```js
 define({
@@ -96,7 +104,6 @@ define({
 	},
 
 	plugins: [
-		{ module: 'wire/debug' },
 		{ module: 'wire/jquery/ui' },
 		{ module: 'wire/jquery/on' },
 		{ module: 'wire/jquery/dom' }
