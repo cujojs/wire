@@ -516,7 +516,8 @@ define(['meld'], function(meld) {
 						spec:proxy.spec
 					};
 
-					if(typeof component == 'object' && !ownProp(component, 'constructor')) {
+					if(component && typeof component == 'object'
+						&& !ownProp(component, 'constructor')) {
 						makeConstructor(proxy.id, component);
 					}
 
