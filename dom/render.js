@@ -86,7 +86,7 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * Finds the first html element in a string, extracts its tag name,
 	 * and looks up the natural parent element tag name for this element.
 	 * @private
-	 * @param template {String}
+	 * @param {String} template
 	 * @returns {String} the parent tag name, or 'div' if none was found.
 	 */
 	function getParentTagName (template) {
@@ -103,7 +103,7 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * support multiple elements in a template.  Leading and trailing
 	 * text and/or comments are also ignored.
 	 * @private
-	 * @param template {String}
+	 * @param {String} template
 	 * @returns {HTMLElement} the element created from the template
 	 */
 	function createElementFromTemplate (template) {
@@ -161,8 +161,8 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * Replaces a dom node, while preserving important attributes
 	 * of the original.
 	 * @private
-	 * @param oldNode {HTMLElement}
-	 * @param newNode {HTMLElement}
+	 * @param {HTMLElement} oldNode
+	 * @param {HTMLElement} newNode
 	 * @returns {HTMLElement} newNode
 	 */
 	function safeReplaceElement (newNode, oldNode) {
@@ -194,23 +194,23 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * If a token's key is not found in the hashmap, an empty string is
 	 * inserted instead.
 	 * @private
-	 * @param template
-	 * @param hashmap {Object} the names of the properties of this object
+	 * @param {String} template
+	 * @param {Object} hashmap the names of the properties of this object
 	 * are used as keys. The values replace the token in the string.
-	 * @param [missing] {Function} callback that deals with missing properties
+	 * @param {Function} [transform] callback that deals with missing properties
 	 * @returns {String}
 	 */
-	function replaceTokens (template, hashmap, missing) {
+	function replaceTokens (template, hashmap, transform) {
 		if (!hashmap) {
 			return template;
 		}
 
-		if (!missing) {
-			missing = blankIfMissing;
+		if (!transform) {
+			transform = blankIfMissing;
 		}
 
 		return template.replace(parseTemplateRx, function (m, token) {
-			return missing(findProperty(hashmap, token));
+			return transform(findProperty(hashmap, token));
 		});
 	}
 
