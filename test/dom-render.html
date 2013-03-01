@@ -38,8 +38,10 @@
 						module: 'wire/dom/render',
 						args: [
 							{ module: 'template-simple' },
-							{},
-							{ $ref: 'id!node1' }
+							{
+								replace: {},
+								at: { $ref: 'id!node1' }
+							}
 						]
 					}
 				},
@@ -48,8 +50,10 @@
 						module: 'wire/dom/render',
 						args: [
 							{ module: 'template-with-root-attributes' },
-							{},
-							{ $ref: 'id!node2' }
+							{
+								replace: {},
+								at: { $ref: 'id!node2' }
+							}
 						]
 					}
 				},
@@ -58,8 +62,10 @@
 						module: 'wire/dom/render',
 						args: [
 							{ module: 'template-with-children' },
-							{},
-							{ $ref: 'id!node3' }
+							{
+								replace: {},
+								at: { $ref: 'id!node3' }
+							}
 						]
 					}
 				},
@@ -68,8 +74,10 @@
 						module: 'wire/dom/render',
 						args: [
 							{ module: 'template-with-strict-parent' },
-							{},
-							{ $ref: 'id!node4' }
+							{
+								replace: {},
+								at: { $ref: 'id!node4' }
+							}
 						]
 					}
 				},

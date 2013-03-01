@@ -41,19 +41,19 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * Nothing is done with the css parameter at this time.
 	 * @param {String} template html template
 	 * @param {Object} options
-	 * @param {Object} [options.map] string replacements hash
+	 * @param {Object} [options.replace] string replacements hash
 	 * @param {Object} [options.transform] string replacements transform function
-	 * @param {HTMLElement} [options.refNode] node to replace with root node of rendered template
-	 * @param {Object} [options.optCss] unused
+	 * @param {Object} [options.replacer] string replacer function function () {}
+	 * @param {HTMLElement} [options.at] node to replace with root node of rendered template
 	 * @returns {HTMLElement}
 	 */
 	function render (template, options) {
-		var node, transform;
+		var node, replacer;
 
-		transform = options.transform || blankIfMissing;
+		replacer = options.replacer || replaceTokens;
 
 		// replace tokens (before attempting to find top tag name)
-		template = replaceTokens('' + template, options.map, transform);
+		template = replacer('' + template, options);
 
 		if (isPlainTagNameRx.test(template)) {
 			// just 'div' or 'a' or 'tr', for example
@@ -64,8 +64,8 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 			node = createElementFromTemplate(template);
 		}
 
-		if (options.refNode) {
-			node = safeReplaceElement(node, options.refNode);
+		if (options.at) {
+			node = safeReplaceElement(node, options.at);
 		}
 
 		return node;
@@ -195,18 +195,21 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * inserted instead.
 	 * @private
 	 * @param {String} template
-	 * @param {Object} hashmap the names of the properties of this object
-	 * are used as keys. The values replace the token in the string.
-	 * @param {Function} [transform] callback that deals with missing properties
+	 * @param {Object} options
+	 * @param {Object} [options.replace] the names of the properties of this
+	 * object are used as keys. The values replace the token in the string.
+	 * @param {Function} [options.transform] callback that deals with missing
+	 * properties.
 	 * @returns {String}
 	 */
-	function replaceTokens (template, hashmap, transform) {
+	function replaceTokens (template, options) {
+		var hashmap, transform;
+
+		hashmap = options.replace;
+		transform = options.transform || blankIfMissing;
+
 		if (!hashmap) {
 			return template;
-		}
-
-		if (!transform) {
-			transform = blankIfMissing;
 		}
 
 		return template.replace(parseTemplateRx, function (m, token) {
