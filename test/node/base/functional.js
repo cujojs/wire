@@ -179,6 +179,20 @@ buster.testCase('base:functional', {
 					assert.calledOnce(spy);
 				}
 			).then(done, done);
+		},
+
+		'unresolvable ref in pipeline should fail wiring': function(done) {
+			wire({
+				f1: plus,
+				composed: {
+					compose: 'f1 | test!blah'
+				}
+			}).then(
+				fail,
+				function(e) {
+					assert.defined(e);
+				}
+			).then(done, done);
 		}
 
 	},
