@@ -39,17 +39,21 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * Information contained in a hashmap is merged into the template
 	 * via tokens (${name}) before rendering into DOM nodes.
 	 * Nothing is done with the css parameter at this time.
-	 * @param template {String} html template
-	 * @param hashmap {Object} string replacements hash
-	 * @param optRefNode {HTMLElement} node to replace with root node of rendered template
-	 * @param optCss {Object} unused
+	 * @param {String} template html template
+	 * @param {Object} options
+	 * @param {Object} [options.map] string replacements hash
+	 * @param {Object} [options.transform] string replacements transform function
+	 * @param {HTMLElement} [options.refNode] node to replace with root node of rendered template
+	 * @param {Object} [options.optCss] unused
 	 * @returns {HTMLElement}
 	 */
-	function render (template, hashmap, optRefNode /*, optCss */) {
-		var node;
+	function render (template, options) {
+		var node, transform;
+
+		transform = options.transform || blankIfMissing;
 
 		// replace tokens (before attempting to find top tag name)
-		template = replaceTokens('' + template, hashmap);
+		template = replaceTokens('' + template, options.map, transform);
 
 		if (isPlainTagNameRx.test(template)) {
 			// just 'div' or 'a' or 'tr', for example
@@ -60,8 +64,8 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 			node = createElementFromTemplate(template);
 		}
 
-		if (optRefNode) {
-			node = safeReplaceElement(node, optRefNode);
+		if (options.refNode) {
+			node = safeReplaceElement(node, options.refNode);
 		}
 
 		return node;
@@ -137,15 +141,19 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 
 	/**
 	 * Creates rendered dom trees for the "render" factory.
-	 * @param resolver
-	 * @param componentDef
-	 * @param wire
+	 * @param {Object} resolver
+	 * @param {Object} componentDef
+	 * @param {Function} wire
 	 */
 	function domRenderFactory (resolver, componentDef, wire) {
 		when(wire(componentDef.options), function (options) {
 			var template;
-			template = options.template || options;
-			return render(template, options.replace, options.at, options.css);
+			template = options.template;
+			if (!template) {
+				template = options;
+				options = {};
+			}
+			return render(template, options);
 		}).then(resolver.resolve, resolver.reject);
 	}
 
@@ -196,11 +204,11 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 		if (!hashmap) {
 			return template;
 		}
-		
+
 		if (!missing) {
 			missing = blankIfMissing;
 		}
-		
+
 		return template.replace(parseTemplateRx, function (m, token) {
 			return missing(findProperty(hashmap, token));
 		});
