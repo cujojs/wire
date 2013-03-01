@@ -150,6 +150,35 @@ buster.testCase('base:functional', {
 				},
 				fail
 			).then(done, done);
+		},
+
+		'should support reference resolvers in pipelins': function(done) {
+			var plugin, spy;
+
+			spy = this.stub().returns(plusOne);
+			plugin = {
+				wire$plugin: function() {
+					return { resolvers: {
+						test: function(resolver) {
+							resolver.resolve(spy.apply(null, arguments));
+						}
+					}}
+				}
+			};
+
+			wire({
+				f1: plus,
+				composed: {
+					compose: 'f1 | test!blah'
+				},
+				plugin: {
+					module: plugin
+				}
+			}).then(
+				function() {
+					assert.calledOnce(spy);
+				}
+			).then(done, done);
 		}
 
 	},
