@@ -12,7 +12,7 @@
 
 define(['./render', 'when'], function (render, when) {
 
-	var findReactiveBitsRx, findReactPoints;
+	var findReactiveBitsRx, findReactPoints, listener;
 
 	// finds ${jsonPath} inside attrs and text.
 	// attrName="${jsonPath}" or just ${jsonPath} in text
@@ -28,18 +28,35 @@ define(['./render', 'when'], function (render, when) {
 		? findReactPointsByQsa
 		: findReactPointsByTraversal;
 
-	function reactive (template, options) {
-		var frag, reactMap;
+	listener = document && document.addEventListener
+		? addEventListener
+		: attachEvent;
 
-		// call render() with our replaceTokens
+	/***** copied from cola/dom/guess *****/
+
+	var formValueNodeRx = /^(input|select|textarea)$/i;
+	var formClickableRx = /^(checkbox|radio)/i;
+
+	/***** export *****/
+
+	function reactive (template, options) {
+		var frag, reactMap, reactor;
+
 		if (!options.replacer) options.replacer = replaceTokens;
+		if (!options.listener) options.listener = listener;
+
 		frag = render(template, options);
+		frag.setAttribute('wire-react-root', '');
 		reactMap = mapReactPoints(findReactPoints(frag));
 
-		return {
+		reactor = {
 			node: frag,
-			binder: function (data) {
+			update: function (data) {
+				// save a copy
+				reactor.data = data;
+				// push to DOM
 				Object.keys(data).forEach(function (key) {
+					// TODO: make this work for jsonPath keys
 					if (reactMap[key]) {
 						reactMap[key].accessor(data[key]);
 					}
@@ -47,8 +64,29 @@ define(['./render', 'when'], function (render, when) {
 						// TODO: how does the dev want us to handle missing items?
 					}
 				});
+				return data;
+			},
+			onUpdate: function (data) {
+				// this is just a stub that should get AOP'ed
+				return data;
 			}
 		};
+
+		// create listeners for all react points that have listenable events
+		// and call onUpdate()
+		reactor.unlisten = addListeners(reactMap, function () {
+			var changed;
+			Object.keys(reactMap).reduce(function (data, key) {
+				var newVal;
+				// TODO: make this work for jsonPath keys
+				newVal = reactMap[key].accessor();
+				changed |= newVal != data[key];
+				data[key] = newVal;
+			}, reactor.data);
+			if (changed) reactor.onUpdate(data);
+		});
+
+		return reactor;
 	}
 
 	reactive.wire$plugin = function () {
@@ -63,6 +101,8 @@ define(['./render', 'when'], function (render, when) {
 	};
 
 	return reactive;
+
+	/***** templating *****/
 
 	/**
 	 * Replaces tokens in a string with dom nodes.
@@ -152,6 +192,8 @@ define(['./render', 'when'], function (render, when) {
 		}
 	}
 
+	/***** wire *****/
+
 	function reactorFactory (resolver, componentDef, wire) {
 		when(wire(componentDef.options), function (options) {
 			var template, reactor;
@@ -161,41 +203,61 @@ define(['./render', 'when'], function (render, when) {
 				options = {};
 			}
 			reactor = reactive(template, options);
-			reactor.node.setAttribute('wire-react-root', '');
 			// temporary property, see proxyReactor below
-			reactor.node.WireReact = reactor.binder;
+			reactor.node.WireReact = reactor;
 			return reactor.node;
 		}).then(resolver.resolve, resolver.reject);
 	}
 
 	function proxyReactor (proxy) {
-		var node, binder, origGet, origInvoke;
+		var node, reactor, origGet, origSet, origInvoke, origDestroy;
 
 		node = proxy.target;
 
 		if (isReactiveNode(node)) {
-			// capture binder function. when proxies are created in factory
+			// capture reactor. when proxies are created in factory
 			// this won't be necessary.
-			binder = node.WireReact;
+			reactor = node.WireReact;
 			delete node.WireReact;
 
-			// proxy getter to return binder
+			// proxy getter to return update
 			origGet = proxy.get;
-			proxy.get = function (key, value) {
-				if ('binder' == key) {
-					return binder;
+			proxy.get = function (key) {
+				if ('update' == key) {
+					return reactor.update;
 				}
-				return origGet.apply(this, arguments);
+				else if ('onUpdate' == key) {
+					return reactor.onUpdate;
+				}
+				else return origGet.apply(this, arguments);
+			};
+
+			// proxy setter to set onUpdate
+			origGet = proxy.get;
+			proxy.set = function (key, value) {
+				if ('onUpdate' == key) {
+					return reactor.onUpdate;
+				}
+				else return origGet.apply(this, arguments);
 			};
 
 			// proxy invoke to add an update() method
 			origInvoke = proxy.invoke;
 			proxy.invoke = function (method, args) {
 				if ('update' == method) {
-					return binder.apply(this, args);
+					return reactor.update.apply(this, args);
+				}
+				else if ('onUpdate' == method) {
+					return reactor.onUpdate.apply(this, args);
 				}
 				else return origInvoke.apply(this, arguments);
 			};
+
+			// proxy destroy
+			origDestroy = proxy.destroy;
+			proxy.destroy = function () {
+				return reactor.unlisten();
+			}
 		}
 		return proxy;
 	}
@@ -204,5 +266,71 @@ define(['./render', 'when'], function (render, when) {
 		return node.getAttribute
 			&& node.getAttribute('wire-react-root') != null;
 	}
+
+	/***** event handling *****/
+
+	function addListeners (map, listener) {
+		Object.keys(map).forEach(function (key) {
+			var point, events;
+			point = map[key];
+			events = guessEventsFor(point.node);
+			if (events.length) {
+				point.remove = listenAll(point.node, events, listener);
+			}
+		});
+	}
+
+	function listenAll (node, events, callback) {
+		var unlisteners;
+		unlisteners = events.map(function (event) {
+			return listener(node, event, callback);
+		});
+		return function () {
+			unlisteners.forEach(function (unlisten) {
+				unlisten();
+			});
+		}
+	}
+
+	function addEventListener (node, event, listener, useCapture) {
+		node.addEventListener(event, listener, useCapture);
+		return function () {
+			node.removeEventListener(event, listener, useCapture);
+		}
+	}
+
+	function attachEvent (node, event, listener, useCapture) {
+		node.attachEvent(event, listener);
+		return function () {
+			node.detachEvent(event, listener);
+		}
+	}
+
+	/***** copied from cola/dom/guess *****/
+
+	function isFormValueNode (node) {
+		return formValueNodeRx.test(node.tagName);
+	}
+
+	function isClickableFormNode (node) {
+		return isFormValueNode(node) && formClickableRx.test(node.type);
+	}
+
+	function guessEventsFor (node) {
+		if (Array.isArray(node)) {
+			// get unique list of events
+			return node.reduce(function (events, node) {
+				return events.concat(guessEventsFor(node).filter(function (event) {
+					return event && events.indexOf(event) < 0;
+				}));
+			},[]);
+		}
+		else if (isFormValueNode(node)) {
+			return [isClickableFormNode(node) ? 'click' : 'change', 'focusout'];
+		}
+
+		return [];
+	}
+
 
 });
