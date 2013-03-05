@@ -1,4 +1,4 @@
-(function(buster, delay, proxy) {
+(function(buster, delay, WireProxy) {
 "use strict";
 
 var assert, refute, fail;
@@ -12,7 +12,7 @@ buster.testCase('proxy', {
 		var p, target;
 
 		target = {};
-		p = proxy.create(target);
+		p = WireProxy.create(target);
 
 		assert.same(p.target, target);
 	},
@@ -22,7 +22,7 @@ buster.testCase('proxy', {
 
 		target = {};
 
-		p = proxy.create(target);
+		p = WireProxy.create(target);
 		p.set('test', 1);
 
 		assert.equals(target.test, 1);
@@ -32,7 +32,7 @@ buster.testCase('proxy', {
 		var p, target;
 
 		target = { test: 1 };
-		p = proxy.create(target);
+		p = WireProxy.create(target);
 
 		assert.equals(p.get('test'), 1);
 	},
@@ -42,7 +42,7 @@ buster.testCase('proxy', {
 			var p, target;
 
 			target = { method: this.spy() };
-			p = proxy.create(target);
+			p = WireProxy.create(target);
 
 			p.invoke('method', [1]);
 			assert.calledOnceWith(target.method, 1);
@@ -58,7 +58,7 @@ buster.testCase('proxy', {
 
 			expectedVal = 1;
 			target = {};
-			p = proxy.create(target);
+			p = WireProxy.create(target);
 
 			p.invoke(method, [expectedVal]);
 		}
@@ -67,7 +67,7 @@ buster.testCase('proxy', {
 
 	clone: {
 		'should return primitives': function() {
-			assert.equals(1, proxy.create(1).clone());
+			assert.equals(1, WireProxy.create(1).clone());
 		},
 
 		'should clone Function': function() {
@@ -78,7 +78,7 @@ buster.testCase('proxy', {
 			}
 
 			expected = {};
-			clone = proxy.create(original).clone();
+			clone = WireProxy.create(original).clone();
 
 			refute.same(original, clone);
 			assert.same(clone(), expected);
@@ -89,7 +89,7 @@ buster.testCase('proxy', {
 
 			original = new Date();
 
-			clone = proxy.create(original).clone();
+			clone = WireProxy.create(original).clone();
 
 			refute.same(original, clone);
 			assert.equals(original.getTime(), clone.getTime());
@@ -100,7 +100,7 @@ buster.testCase('proxy', {
 
 			original = /123/;
 
-			clone = proxy.create(original).clone();
+			clone = WireProxy.create(original).clone();
 
 			refute.same(original, clone);
 			assert.equals(original.toString(), clone.toString());
@@ -112,7 +112,7 @@ buster.testCase('proxy', {
 
 				original = { a: 1 };
 
-				p = proxy.create(original);
+				p = WireProxy.create(original);
 				clone = p.clone();
 
 				refute.same(original, clone);
@@ -126,7 +126,7 @@ buster.testCase('proxy', {
 				deepArray = [3];
 				original = { a: deepObject, b: deepArray };
 
-				p = proxy.create(original);
+				p = WireProxy.create(original);
 				clone = p.clone({ deep: true });
 
 				refute.same(deepObject, clone.a);
@@ -144,7 +144,7 @@ buster.testCase('proxy', {
 
 				original = [1, 2, 3];
 
-				p = proxy.create(original);
+				p = WireProxy.create(original);
 				clone = p.clone();
 
 				refute.same(original, clone);
@@ -158,7 +158,7 @@ buster.testCase('proxy', {
 				deepArray = [3];
 				original = [deepObject, deepArray];
 
-				p = proxy.create(original);
+				p = WireProxy.create(original);
 				clone = p.clone({ deep: true });
 
 				refute.same(deepObject, clone[0]);
@@ -175,5 +175,5 @@ buster.testCase('proxy', {
 })(
 	require('buster'),
 	require('when/delay'),
-	require('../../lib/proxy')
+	require('../../lib/WireProxy')
 );

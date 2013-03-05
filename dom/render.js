@@ -42,7 +42,6 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * @param template {String} html template
 	 * @param hashmap {Object} string replacements hash
 	 * @param optRefNode {HTMLElement} node to replace with root node of rendered template
-	 * @param optCss {Object} unused
 	 * @returns {HTMLElement}
 	 */
 	function render (template, hashmap, optRefNode /*, optCss */) {
