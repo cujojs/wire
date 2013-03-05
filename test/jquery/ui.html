@@ -1,0 +1,259 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>jQuery UI plugin test</title>
+
+    <!--<script src="../../util/doh/runner.js"></script>-->
+    <script src="../test-config.js"></script>
+
+    <script type="text/javascript">
+
+	require(['wire', 'when', 'wire/jquery/ui'], function(wire, when, plugin) {
+
+		var wired, undef;
+
+		wired = wire({
+			plugins: [
+//					{ module: 'wire/debug' },
+				{ module: 'wire/jquery/ui' },
+				{ module: 'wire/jquery/dom' }
+			],
+
+			node: { $ref: 'dom!result' }
+
+		});
+
+		wired.then(
+			function(context) {
+
+				doh.register('basic', [
+
+					function module () {
+						var proxier;
+
+						doh.assertTrue(plugin, 'should create plugin');
+						if (!plugin) return;
+
+						doh.assertTrue(typeof plugin['wire$plugin'] == 'function', 'should create "wire$plugin" function');
+						if (!plugin['wire$plugin']) return;
+
+						doh.assertTrue(!!plugin['wire$plugin']().factories, 'should create an object with a "factories" object');
+						doh.assertTrue(!!plugin['wire$plugin']().proxies, 'should create an object with a "proxies" array');
+
+						proxier = plugin['wire$plugin']().proxies[0];
+						doh.assertTrue(typeof proxier == 'function', 'should create proxy function');
+
+						doh.assertTrue(typeof plugin['wire$plugin']().factories.widget == 'function', 'should create factory function');
+
+					},
+
+					function proxier () {
+						var proxier, stub, proxy, obj;
+						proxier = plugin['wire$plugin']().proxies[0];
+						stub = {
+							target: new StubWidget('dialog')
+						};
+						proxy = proxier(stub);
+						obj = { target: {} };
+						// this is a lame way to test that we have a proxy
+						doh.assertTrue(proxy != stub, 'should create a proxy for a widget');
+						proxy = proxier(obj);
+						doh.assertTrue(proxy == void 0, 'should pass through a non-widget object');
+
+					}
+				]);
+
+				doh.register('factory', [
+					function factory (done) {
+						var factory, spec, promises, dfd, reasons, called;
+
+						// collect failure reasons for doh
+						reasons = [];
+
+						// create a spy for $.ui.dialog
+						if (!$.ui) $.ui = {};
+						if (!$.Widget) $.Widget = function () {};
+						$.Widget.prototype = { _setOption: function () {} };
+						$.ui.dialog = $.fn.dialog = function () { called++; };
+
+						factory = plugin['wire$plugin']().factories.widget;
+						promises = [];
+						called = 0;
+
+						// test for fail if type is missing
+						spec = {
+							options: {
+								type: null
+							}
+						};
+						dfd = when.defer();
+						try {
+							factory(dfd, spec, wire);
+							doh.assertTrue(false, 'should fail if type is not specified.');
+						}
+						catch (ex) {};
+
+						// test assertion for $.ui[type] when widget type isn't available
+						spec = {
+							options: {
+								type: 'not-a-widget'
+							}
+						};
+						dfd = when.defer();
+						try {
+							factory(dfd, spec, wire);
+							doh.assertTrue(false, 'should fail if type doesn\'t match a jquery widget');
+						}
+						catch (ex) {
+							if (!/constructor/.test(ex.message)) doh.assertTrue(false, 'should fail with message about constructor');
+						}
+
+						// test assertion for missing node
+						spec = {
+							options: {
+								//node: document.getElementById('result'),
+								type: 'dialog'
+							}
+						};
+						dfd = when.defer();
+						try {
+							factory(dfd, spec, wire);
+						}
+						catch (ex) {
+							if (!/node/.test(ex.message)) doh.assertTrue(false, 'should fail with message about node');
+						}
+
+						// test that dialog constructor is called
+						spec = {
+							options: {
+								node: document.getElementById('result'),
+								type: 'dialog'
+							}
+						};
+						dfd = when.defer();
+						factory(dfd, spec, wire);
+						promises.push(dfd.promise.then(function (ex) {
+							if (called != 1) reasons.push('should call dialog constructor once');
+						}, function (ex) {
+							reasons.push('failed' + ex);
+						}));
+
+						// collect all promises
+						when.all(promises).always(function () {
+							// doh sucks
+							if (reasons.length) console.log('FAIL: ' + reasons);
+							done(false);
+						});
+					}
+				]);
+				// TODO: test the proxy, too
+				doh.register('proxy', [
+					function proxyWidget () {
+						var proxier, stubProxy, origSet, origMethod, widgetProxy;
+						
+						proxier = plugin['wire$plugin']().proxies[0];
+						stubProxy = new StubProxy(new StubWidget('dialog'));
+						origSet = stubProxy.set;
+						origMethod = stubProxy.aMethod;
+						
+						widgetProxy = proxier(stubProxy);
+						
+						doh.assertTrue(widgetProxy.set != origSet, 'should override base proxy\'s set method');
+						doh.assertTrue(widgetProxy.aMethod == origMethod, 'should not override other methods on base proxy');
+						
+					},
+					function proxyMethods () {
+						var proxier, proxy, stubWidget;
+						
+						proxier = plugin['wire$plugin']().proxies[0];
+						stubWidget = new StubWidget('dialog');
+						proxy = proxier(new StubProxy(stubWidget));
+						
+						// test set and get
+						doh.assertEqual(undef, proxy.get('foobar'), 'should return undefined for non-existent property');
+						doh.assertEqual(0, proxy.get('pageIndex'), 'should return existing property');
+						proxy.set('foobar', 42);
+						proxy.set('pageIndex', 2);
+						doh.assertEqual(42, proxy.get('foobar'), 'should get same data property as was set');
+						doh.assertEqual(2, proxy.get('pageIndex'), 'should get same options property as was set');
+						
+						// test auto getters/setters
+						doh.assertEqual(proxy.get('height'), proxy.invoke('getHeight'), 'should auto-create getter');
+						proxy.invoke('setHeight', [27]);
+						doh.assertEqual(27, proxy.get('height'), 'should auto-create setter');
+						
+					}
+				]);
+				doh.run();
+
+			},
+			function(e) {
+				throw e;
+			}
+		);
+
+
+	});
+
+	function StubWidget (name) {
+		var options, data, height;
+		
+		options = {
+			pageIndex: 0
+		};
+		data = {
+			'wire$type': name
+		};
+		height = 12;
+		
+		widget.data = function (key, value) { 
+			if (arguments.length == 0) return data;
+			else if (arguments.length > 1) data[key] = value;
+			if (key in data) return data[key];
+		};
+
+		// jquery has a few built-in getters, like height()
+		widget.height = function (value) { 
+			if (arguments.length) height = value; 
+			return height; 
+		}
+		
+		// oh jquery, why you so recursive?
+		widget[name] = widget;
+
+		return widget;
+
+		function widget (command, name, value) {
+			if (command == 'option') {
+				if (arguments.length == 1) return options;
+				else if (arguments.length > 2) options[name] = value;
+				if (name in options) return options[name];
+			}
+		}
+
+	}
+	
+	function StubProxy (target) {
+		return {
+			target: target,
+			get: function () {},
+			set: function () {},
+			aMethod: function () {},
+			extend: function (proxy, mixin) {
+				for (var p in mixin) {
+					if (mixin.hasOwnProperty(p)) proxy[p] = mixin[p];
+				}
+				return proxy;
+			}
+		};
+	}
+
+    </script>
+</head>
+<body>
+<div>
+    <p id="result" class="orig1"></p>
+</div>
+</body>
+</html>

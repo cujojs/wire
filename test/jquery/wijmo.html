@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>wijmo functional test</title>
+
+<!--
+NOTE: this file does not show best practices for sript loading!
+This is a proof of concept and demo of wijmo widgets in wire.js. 
+-->
+
+<!--jQuery References-->
+<script src="http://ajax.aspnetcdn.com/ajax/jquery/jquery-1.7.1.min.js" type="text/javascript"></script>
+<script src="http://ajax.aspnetcdn.com/ajax/jquery.ui/1.8.17/jquery-ui.js" type="text/javascript"></script>
+
+<!--Theme-->
+<link href="http://cdn.wijmo.com/themes/rocket/jquery-wijmo.css" rel="stylesheet" type="text/css" title="rocket-jqueryui" />
+
+<!--Wijmo Widgets CSS-->
+<link href="http://cdn.wijmo.com/jquery.wijmo-complete.all.2.0.0.min.css" rel="stylesheet" type="text/css" />
+
+<!--Wijmo Widgets JavaScript-->
+<script src="http://cdn.wijmo.com/jquery.wijmo-open.all.2.0.0.min.js" type="text/javascript"></script>
+<script src="http://cdn.wijmo.com/jquery.wijmo-complete.all.2.0.0.min.js" type="text/javascript"></script>
+
+<script src="../test-config.js"></script>
+
+<script>
+
+// just use the jquery off the CDN from the script element above
+define('jquery', function () { return jQuery; });
+
+require(['wire'], function (wire) {
+	wire({
+
+		// this is a wijmo wizard widget
+		wizard: {
+			widget: {
+				// type of widget
+				type: 'wijwizard',
+				// where to create this widget in the dom
+				node: { $ref: 'dom!pages' },
+				// wizard widget options
+				options: {
+					navButtons: 'none'
+				}
+			}
+		},
+
+		// this is a wijmo pager widget
+		pager: {
+			widget: {
+				// type of widget
+				type: 'wijpager',
+				// where to create it in the dom
+				node: { $ref: 'dom!pager' },
+				// pager widget options
+				options: {
+					// if there were a wizard option or method that provided pageCount, 
+					// the next line could be injected from the wizard, instead of hard-coded.
+					// (hint, hint, wijmo!)
+					pageCount: 3,
+					// this is the initial page to show
+					pageIndex: 1,
+					mode: 'numeric'
+				}
+			},
+			on: {
+				// when page index changes, tell mediator.
+				// this could also be done with the pageIndexchanged option, but is
+				// more compact when using the "on" facet.
+				wijpagerpageindexchanged: 'mediator.pageChanged'
+			}
+		},
+		
+		// a mediator to coordinate changes in widgets. 
+		mediator: {
+			prototype: {
+				// if the page changes, copy it from the pager to the wizard.
+				// we are using automatically-generated setters and getters here.
+				// the wire jQuery UI plugin recognizes getXXX and setXXX patterns.
+				pageChanged: { compose: 'pager.getPageIndex | wizard.setActiveIndex' }
+			},
+			// at startup, set the wizard's page
+			ready: 'pageChanged'
+		},
+
+		plugins: [
+			{ module: 'wire/debug' },
+			{ module: 'wire/jquery/ui' },
+			{ module: 'wire/jquery/on' },
+			{ module: 'wire/jquery/dom' }
+		]
+		
+	}).then(function (context) {
+		console.log(context);
+	});
+});
+
+</script>
+
+</head>
+<body>
+
+<div id="pages">
+	<ol>
+		<li><h1>Header 1</h1></li>
+		<li><h1>Header 2</h1></li>
+		<li><h1>Header 3</h1></li>
+	</ol>
+	<div>Page 1</div>
+	<div>Page 2</div>
+	<div>Page 3</div>
+</div>
+
+<div id="pager">
+</div>
+
+</body>
+</html>
