@@ -2,7 +2,7 @@ require(['wire'], function(wire) {
 
 	wire({
 		plugins: [
-			{ module: 'wire/debug' },
+//			{ module: 'wire/debug' },
 			{ module: pluginName }
 		],
 		node1: { $ref: 'all!#node1' },
