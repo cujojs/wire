@@ -49,21 +49,8 @@ function(when, meld, functional, connection) {
 
             var connectHandles = [];
 
-            /**
-             * Create a single connection from source[event] to target[method] so that
-             * when source[event] is invoked, target[method] will be invoked afterward
-             * with the same params.
-             *
-             * @param source source object
-             * @param event source method
-             * @param handler {Function} function to invoke
-             */
-            function doConnectOne(source, event, handler) {
-                return meld.on(source, event, handler);
-            }
-
-			function handleConnection(source, eventName, handler) {
-				connectHandles.push(doConnectOne(source, eventName, handler));
+			function handleConnection(instance, methodName, handler) {
+				connectHandles.push(meld.on(instance, methodName, handler));
 			}
 
             function doConnect(proxy, connect, options, wire) {
@@ -71,15 +58,12 @@ function(when, meld, functional, connection) {
             }
 
             function connectFacet(wire, facet) {
-                var connect, promises, connects;
+                var promises, connects;
 
 				connects = facet.options;
-
-                promises = [];
-
-                for(connect in connects) {
-                    promises.push(doConnect(facet, connect, connects[connect], wire));
-                }
+				promises = Object.keys(connects).map(function(key) {
+					return doConnect(facet, key, connects[key], wire);
+				});
 
                 return when.all(promises);
             }
@@ -92,6 +76,8 @@ function(when, meld, functional, connection) {
 
             return {
                 facets: {
+					// A facet named "connect" that runs during the connect
+					// lifecycle phase
                     connect: {
                         connect: function(resolver, facet, wire) {
                             resolver.resolve(connectFacet(wire, facet));
