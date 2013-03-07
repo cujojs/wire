@@ -43,49 +43,37 @@ define(function (require) {
 
 	function createReactPoints (nodes) {
 		return nodes.reduce(function (list, node) {
-			var reactAttr, points;
+			var reactAttr, pointDefs;
 
 			reactAttr = node.getAttribute('data-wire-reactpoint');
-			points = reactAttr.split(';');
+			pointDefs = reactAttr.split(';');
 
-			points.forEach(function (point) {
-				var parts, path, attr, parsed, accessor;
-				parts = point.split(':', 2);
+			pointDefs.forEach(function (def) {
+				var parts, path, attr, parsed, point, updater;
+				parts = def.split(':', 2);
 				attr = parts[0];
 				parsed = templates.parse(parts[1]);
 
-				if (parsed.length > 0) {
-					// template
-					list.push({
-						node: node,
-						attr: attr,
-						updater: createCompositeUpdater(parsed)
-					});
+				if ('text' == attr) {
+					// elements that have a "text:" data-wire-reactpoint.
+					// switch element with a text node
+					node = replaceWithTextNode(node);
+				}
+
+				point = {
+					path: path,
+					node: node,
+					attr: attr
+				};
+				list.push(point);
+
+				if (parsed.length > 1) {
+					point.updater = createCompositeUpdater(parsed);
 				}
 				else {
-
-					path = parsed[1];
-
-					if ('text' == attr) {
-						// elements that have a "text:" data-wire-reactpoint.
-						// switch element with a text node
-						node = replaceWithTextNode(node);
-						accessor = createTextNodeAccessor(node);
-					}
-					else if (attr in node) {
-						accessor = createPropAccessor(node, attr);
-					}
-					else {
-						accessor = createAttrAccessor(node, attr);
-					}
-
-					list.push({
-						path: path,
-						node: node,
-						attr: attr,
-						accessor: accessor
-					});
-
+					path = parsed[0].token;
+					point.updater = createUpdater(node, attr, path);
+					point.getter = createGetter(node, attr);
 				}
 			});
 
@@ -94,31 +82,37 @@ define(function (require) {
 	}
 
 	function createCompositeUpdater (parsed) {
-		return function (stringify, data) {
-			if (arguments.length < 1) throw new Error('cannot get composite value from template.');
+		return function (stringify) {
 			return templates.exec(parsed, stringify);
 		};
 	}
 
-	function createTextNodeAccessor (node) {
-		return function (value) {
-			if (arguments.length > 0) node.data = value;
+	function createUpdater (node, attr, key) {
+		if ('text' == attr) return function (stringify) {
+			node.data = stringify(key);
+		};
+		else if ('html' == attr) return function (stringify) {
+			node.innerHTML = stringify(key);
+		};
+		else return function (stringify) {
+			var value = stringify(key);
+			if (attr in node) node[attr] = value;
+			else node.setAttribute(attr, value);
+		};
+	}
+
+	function createGetter (node, attr) {
+		if ('text' == attr) return function () {
 			return node.data;
 		};
-	}
-
-	function createPropAccessor (node, attr) {
-		return function (value) {
-			if (arguments.length > 0) node[attr] = value;
-			return node[attr];
+		else if ('html' == attr) return function () {
+			return node.innerHTML = value;
 		};
-	}
-
-	function createAttrAccessor (node, attr) {
-		return function (value) {
-			if (arguments.length > 0) node.setAttribute(attr);
-			return node.getAttribute(attr);
-		}
+		else return function () {
+			if (attr in node) node[attr] = value;
+			else node.setAttribute(attr, value);
+			return value;
+		};
 	}
 
 	function replaceWithTextNode (node) {

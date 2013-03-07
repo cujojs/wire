@@ -31,6 +31,7 @@ define(function (require) {
 	function createReactive (template, options) {
 		var frag, points, reactive;
 
+		if (!options) options = {};
 		if (!options.replacer) options.replacer = tokensToAttrs;
 		if (!options.addEventListener) options.addEventListener = addEventListener;
 
@@ -46,16 +47,11 @@ define(function (require) {
 				// push to DOM
 				points.forEach(function (point) {
 					if (point.updater) {
-						point.updater(data);
-					}
-					else if (point.accessor) {
-						// TODO: make this work for jsonPath keys
-						if (point.path in data) {
-							point.accessor(data[point.path]);
-						}
-						else {
-							// TODO: how does the dev want us to handle missing items?
-						}
+						point.updater(function (path) {
+							// TODO: make this work for jsonPath keys
+							// TODO: deal with missing data
+							return data[path];
+						});
 					}
 				});
 				return data;
@@ -73,7 +69,7 @@ define(function (require) {
 			Object.keys(points).reduce(function (data, key) {
 				var newVal;
 				// TODO: make this work for jsonPath keys
-				newVal = points[key].accessor();
+				newVal = points[key].getter();
 				changed |= newVal != data[key];
 				data[key] = newVal;
 			}, reactive.data);
@@ -89,7 +85,7 @@ define(function (require) {
 				reactive: reactiveFactory
 			},
 			proxies: [
-				proxyReactor
+				proxyReactive
 			]
 		}
 	};
@@ -115,19 +111,19 @@ define(function (require) {
 
 			reactive = createReactive(template, options);
 
-			// temporary property, see proxyReactor below
+			// temporary property, see proxyReactive below
 			reactive.node.wire$react = reactive;
 			return reactive.node;
 		}).then(resolver.resolve, resolver.reject);
 	}
 
-	function proxyReactor (proxy) {
+	function proxyReactive (proxy) {
 		var node, reactive, origGet, origSet, origInvoke, origDestroy;
 
 		node = proxy.target;
 
 		if (isReactiveNode(node)) {
-			// capture reactive. when proxies are created in factory
+			// capture reactive object. when proxies are created in factory
 			// this won't be necessary.
 			reactive = node.wire$react;
 			delete node.wire$react;
@@ -150,7 +146,7 @@ define(function (require) {
 				if ('onUpdate' == key) {
 					return reactive.onUpdate;
 				}
-				else return origGet.apply(this, arguments);
+				else return origSet.apply(this, arguments);
 			};
 
 			// proxy invoke to add an update() method
@@ -168,10 +164,12 @@ define(function (require) {
 			// proxy destroy
 			origDestroy = proxy.destroy;
 			proxy.destroy = function () {
-				return reactive.unlisten();
-			}
+				reactive.unlisten();
+				return origDestroy.apply(this, arguments);
+			};
+
+			return proxy;
 		}
-		return proxy;
 	}
 
 	function isReactiveNode (node) {
