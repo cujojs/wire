@@ -48,7 +48,7 @@ define(function (require) {
 				if (attrOut) {
 					// grab any trailing attribute characters
 					if (hasReactiveAttr && pos > end) {
-						reactiveAttrs[inAttr].push(template.slice(end, pos - 1));
+						reactiveAttrs[inAttr].push(template.slice(end, pos));
 					}
 					inAttr = false;
 				}
@@ -58,7 +58,7 @@ define(function (require) {
 					hasReactiveAttr = true;
 					// grab any leading attribute characters
 					if (pos > end) {
-						reactiveAttrs[inAttr].push(template.slice(end, pos - 1));
+						reactiveAttrs[inAttr].push(template.slice(end, pos));
 					}
 					reactiveAttrs[inAttr].push(
 						tokenD ? dollarBraceToken(token) : doubleBraceToken(token)

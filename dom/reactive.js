@@ -35,23 +35,26 @@ define(function (require) {
 		if (!options.replacer) options.replacer = tokensToAttrs;
 		if (!options.addEventListener) options.addEventListener = addEventListener;
 
+		// TODO: make this work for jsonPath keys
+		// TODO: deal with missing data
+		options.stringify = function (key) { return reactive.data[key]; };
+
 		frag = render(template, options);
-		frag.setAttribute('wire-react-root', '');
+		//frag.setAttribute('wire-react-root', '');
 		points = attrsToAccessors(frag, options);
 
 		reactive = {
 			node: frag,
 			update: function (data) {
-				// save a copy
+				// save a copy for onUpdate
 				reactive.data = data;
 				// push to DOM
 				points.forEach(function (point) {
-					if (point.updater) {
-						point.updater(function (path) {
-							// TODO: make this work for jsonPath keys
-							// TODO: deal with missing data
-							return data[path];
-						});
+					// TODO: devise a configurable way to know when to call updater
+					if (!('path' in point) || data[point.path] !== undefined) {
+						if (point.updater) {
+							point.updater();
+						}
 					}
 				});
 				return data;
@@ -66,14 +69,19 @@ define(function (require) {
 		// and call onUpdate()
 		reactive.unlisten = addListeners(points, function () {
 			var changed;
-			Object.keys(points).reduce(function (data, key) {
+			points.reduce(function (data, point) {
 				var newVal;
 				// TODO: make this work for jsonPath keys
-				newVal = points[key].getter();
-				changed |= newVal != data[key];
-				data[key] = newVal;
+				if (point.getter) {
+					newVal = point.getter();
+					if (newVal != data[point.path]) {
+						changed = true;
+						data[point.path] = newVal;
+					}
+				}
+				return data;
 			}, reactive.data);
-			if (changed) reactive.onUpdate(data);
+			if (changed) reactive.onUpdate(reactive.data);
 		}, options.addEventListener);
 
 		return reactive;

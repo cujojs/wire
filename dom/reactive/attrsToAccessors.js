@@ -19,7 +19,7 @@ define(function (require) {
 
 	function attrsToAccessors (root, options) {
 		if (!options.querySelectorAll) options.querySelectorAll = querySelectorAll;
-		return createReactPoints(findReactPoints(root, options));
+		return createReactPoints(findReactPoints(root, options), options);
 	}
 
 	return attrsToAccessors;
@@ -41,15 +41,22 @@ define(function (require) {
 
 	// data-wire-reactpoint="attr1:template1;attr2:template2"
 
-	function createReactPoints (nodes) {
+	function createReactPoints (nodes, options) {
+		var stringify;
+
+		stringify = options.stringify;
+
+		if (!stringify) throw new Error('options.stringify not specified.');
+
 		return nodes.reduce(function (list, node) {
 			var reactAttr, pointDefs;
 
 			reactAttr = node.getAttribute('data-wire-reactpoint');
+			if (!options.debug) node.removeAttribute('data-wire-reactpoint');
 			pointDefs = reactAttr.split(';');
 
 			pointDefs.forEach(function (def) {
-				var parts, path, attr, parsed, point, updater;
+				var parts, attr, parsed, point, updater;
 				parts = def.split(':', 2);
 				attr = parts[0];
 				parsed = templates.parse(parts[1]);
@@ -61,18 +68,17 @@ define(function (require) {
 				}
 
 				point = {
-					path: path,
 					node: node,
 					attr: attr
 				};
 				list.push(point);
 
 				if (parsed.length > 1) {
-					point.updater = createCompositeUpdater(parsed);
+					point.updater = createUpdater(node, attr, undefined, createTemplateStringifier(parsed, stringify));
 				}
 				else {
-					path = parsed[0].token;
-					point.updater = createUpdater(node, attr, path);
+					point.path = parsed[0].token;
+					point.updater = createUpdater(node, attr, point.path, stringify);
 					point.getter = createGetter(node, attr);
 				}
 			});
@@ -81,23 +87,28 @@ define(function (require) {
 		}, []);
 	}
 
-	function createCompositeUpdater (parsed) {
-		return function (stringify) {
+	function createTemplateStringifier (parsed, stringify) {
+		return function () {
 			return templates.exec(parsed, stringify);
 		};
 	}
 
-	function createUpdater (node, attr, key) {
-		if ('text' == attr) return function (stringify) {
-			node.data = stringify(key);
+	function createUpdater (node, attr, key, stringify) {
+		if ('text' == attr) return function () {
+			var value = stringify(key);
+			node.data = value;
+			return value;
 		};
-		else if ('html' == attr) return function (stringify) {
-			node.innerHTML = stringify(key);
+		else if ('html' == attr) return function () {
+			var value = stringify(key);
+			node.innerHTML = value;
+			return value;
 		};
-		else return function (stringify) {
+		else return function () {
 			var value = stringify(key);
 			if (attr in node) node[attr] = value;
 			else node.setAttribute(attr, value);
+			return value;
 		};
 	}
 
@@ -109,9 +120,8 @@ define(function (require) {
 			return node.innerHTML = value;
 		};
 		else return function () {
-			if (attr in node) node[attr] = value;
-			else node.setAttribute(attr, value);
-			return value;
+			if (attr in node) return node[attr];
+			else return node.getAttribute(attr);
 		};
 	}
 

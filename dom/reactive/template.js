@@ -73,7 +73,7 @@ define(function () {
 
 			// capture any characters before token
 			if (pos > end) {
-				parts.push({ literal: template.slice(end, pos - 1) });
+				parts.push({ literal: template.slice(end, pos) });
 			}
 
 			if (!token) throw new Error('blank token found in ' + template);
