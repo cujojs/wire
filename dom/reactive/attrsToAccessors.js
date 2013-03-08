@@ -74,11 +74,13 @@ define(function (require) {
 				list.push(point);
 
 				if (parsed.length > 1) {
+					// templated attribute
 					point.updater = createUpdater(node, attr, undefined, createTemplateStringifier(parsed, stringify));
 				}
 				else {
-					point.path = parsed[0].token;
-					point.updater = createUpdater(node, attr, point.path, stringify);
+					//single attribute
+					point.key = parsed[0].token;
+					point.updater = createUpdater(node, attr, point.key, stringify);
 					point.getter = createGetter(node, attr);
 				}
 			});

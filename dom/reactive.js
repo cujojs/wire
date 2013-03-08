@@ -51,7 +51,7 @@ define(function (require) {
 				// push to DOM
 				points.forEach(function (point) {
 					// TODO: devise a configurable way to know when to call updater
-					if (!('path' in point) || data[point.path] !== undefined) {
+					if (!('key' in point) || data[point.key] !== undefined) {
 						if (point.updater) {
 							point.updater();
 						}
@@ -74,9 +74,9 @@ define(function (require) {
 				// TODO: make this work for jsonPath keys
 				if (point.getter) {
 					newVal = point.getter();
-					if (newVal != data[point.path]) {
+					if (newVal != data[point.key]) {
 						changed = true;
-						data[point.path] = newVal;
+						data[point.key] = newVal;
 					}
 				}
 				return data;
