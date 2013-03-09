@@ -12,13 +12,13 @@
 (function (define) {
 define(function (require) {
 
-	var templates, dollarBraceToken, doubleBraceToken,
+	var simpleTemplate, dollarBraceToken, doubleBraceToken,
 		htmlIdentifierRx, tokenRx, tagInRx, tagOutRx, attrInRx, attrOutRx,
 		parseReactiveHtmlRx;
 
-	templates = require('./template');
-	dollarBraceToken = templates.tokenizers.dollarBrace;
-	doubleBraceToken = templates.tokenizers.doubleBrace;
+	simpleTemplate = require('./simpleTemplate');
+	dollarBraceToken = simpleTemplate.tokenizers.dollarBrace;
+	doubleBraceToken = simpleTemplate.tokenizers.doubleBrace;
 
 	htmlIdentifierRx = '[_$a-zA-Z][_$a-zA-Z0-9]*';
 	tokenRx = '\\$\\{([^}]*)\\}|\\{\\{([^}]*)\\}\\}';

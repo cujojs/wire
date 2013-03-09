@@ -12,9 +12,9 @@
 (function (define) {
 define(function (require) {
 
-	var parseTemplateRx, undef;
+	var parse, undef;
 
-	parseTemplateRx =/\$\{([^}]*)\}|\{\{([^}]*)\}\}/g;
+	parse = require('./simpleTemplate');
 
 	/**
 	 * Replaces simple tokens in a string.  Tokens are in the format ${key}.
@@ -33,23 +33,27 @@ define(function (require) {
 	 * @returns {String}
 	 */
 	function tokensToString (template, options) {
-		var stringify, transform;
+		var stringify, transform, output;
 
 		stringify = options.stringify || findProperty;
 		transform = options.transform || blankIfMissing;
 
 		template = String(template);
+		output = '';
 
-		return template.replace(parseTemplateRx, function (m, tokenD, tokenM) {
-			var token = tokenD || tokenM;
-			if (token === '') blankErr();
-			return transform(stringify(token));
-		});
+		parse(
+			template,
+			function (text) { output += text; },
+			function (key) { output += transform(stringify(key)); }
+		);
+
+		return output;
+
 	}
 
 	return tokensToString;
 
-	function blankIfMissing (val) { return val == undef ? '' : val; }
+	function blankIfMissing (val) { return val === undef ? '' : val; }
 
 	function findProperty (obj, propPath) {
 		var props, prop;
@@ -58,10 +62,6 @@ define(function (require) {
 			obj = obj[prop];
 		}
 		return obj;
-	}
-
-	function blankErr () {
-		throw new Error('blank token not allowed in template.');
 	}
 
 });

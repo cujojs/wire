@@ -13,9 +13,9 @@
 (function (define) {
 define(function (require) {
 
-	var templates;
+	var simpleTemplate;
 
-	templates = require('./template');
+	simpleTemplate = require('./simpleTemplate');
 
 	function attrsToAccessors (root, options) {
 		if (!options.querySelectorAll) options.querySelectorAll = querySelectorAll;
@@ -59,7 +59,7 @@ define(function (require) {
 				var parts, attr, compiled, point, updater;
 				parts = def.split(':', 2);
 				attr = parts[0];
-				compiled = templates.compile(parts[1]);
+				compiled = simpleTemplate.compile(parts[1]);
 
 				if ('text' == attr) {
 					// elements that have a "text:" data-wire-reactpoint.
@@ -91,7 +91,7 @@ define(function (require) {
 
 	function createTemplateStringifier (compiled, stringify) {
 		return function () {
-			return templates.exec(compiled, stringify);
+			return simpleTemplate.exec(compiled, stringify);
 		};
 	}
 
