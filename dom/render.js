@@ -11,9 +11,9 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['./../lib/dom/base', 'when'], function (base, when) {
+define(['./../lib/dom/base', './reactive/tokenToString', 'when'], function (base, tokenToString, when) {
 
-	var parentTypes, parseTemplateRx, getFirstTagNameRx, isPlainTagNameRx,
+	var parentTypes, getFirstTagNameRx, isPlainTagNameRx,
 		undef;
 
 	// elements that could be used as root nodes and their natural parent type
@@ -30,7 +30,6 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 		'option': 'select'
 	};
 
-	parseTemplateRx = /\$\{([^}]*)\}/g;
 	getFirstTagNameRx = /<\s*(\w+)/;
 	isPlainTagNameRx = /^[A-Za-z]\w*$/;
 
@@ -50,7 +49,7 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	function render (template, options) {
 		var node, replacer;
 
-		replacer = options.replacer || replaceTokens;
+		replacer = options.replacer || tokenToString;
 
 		// replace tokens (before attempting to find top tag name)
 		template = replacer('' + template, options);
@@ -81,6 +80,8 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 			]
 		};
 	};
+
+	return render;
 
 	/**
 	 * Finds the first html element in a string, extracts its tag name,
@@ -187,47 +188,5 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 		}
 		return newNode;
 	}
-
-	/**
-	 * Replaces simple tokens in a string.  Tokens are in the format ${key}.
-	 * Tokens are replaced by values looked up in an associated hashmap.
-	 * If a token's key is not found in the hashmap, an empty string is
-	 * inserted instead.
-	 * @private
-	 * @param {String} template
-	 * @param {Object} options
-	 * @param {Object} [options.replace] the names of the properties of this
-	 * object are used as keys. The values replace the token in the string.
-	 * @param {Function} [options.transform] callback that deals with missing
-	 * properties.
-	 * @returns {String}
-	 */
-	function replaceTokens (template, options) {
-		var hashmap, transform;
-
-		hashmap = options.replace;
-		transform = options.transform || blankIfMissing;
-
-		if (!hashmap) {
-			return template;
-		}
-
-		return template.replace(parseTemplateRx, function (m, token) {
-			return transform(findProperty(hashmap, token));
-		});
-	}
-
-	function findProperty (obj, propPath) {
-		var props, prop;
-		props = propPath.split('.');
-		while (obj && (prop = props.shift())) {
-			obj = obj[prop];
-		}
-		return obj;
-	}
-
-	function blankIfMissing (val) { return val == undef ? '' : val; }
-
-	return render;
 
 });
