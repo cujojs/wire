@@ -14,7 +14,7 @@ define(function (require) {
 
 	var parse, undef;
 
-	parse = require('./simpleTemplate');
+	parse = require('./simpleTemplate').parse;
 
 	/**
 	 * Replaces simple tokens in a string.  Tokens are in the format ${key}.

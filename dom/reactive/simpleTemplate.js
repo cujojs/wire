@@ -49,7 +49,7 @@ define(function () {
 		return compiled.map(function (part) {
 			return part.literal
 				? part.literal
-				: stringify(part.token);
+				: stringify(part.key);
 		}).join('');
 	}
 

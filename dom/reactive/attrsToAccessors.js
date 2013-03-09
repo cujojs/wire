@@ -79,7 +79,7 @@ define(function (require) {
 				}
 				else {
 					//single attribute
-					point.key = compiled[0].token;
+					point.key = compiled[0].key;
 					point.updater = createUpdater(node, attr, point.key, stringify);
 					point.getter = createGetter(node, attr);
 				}
