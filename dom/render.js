@@ -11,7 +11,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['./../lib/dom/base', './reactive/tokenToString', 'when'], function (base, tokenToString, when) {
+define(['./../lib/dom/base', './reactive/tokensToString', 'when'], function (base, tokenToString, when) {
 
 	var parentTypes, getFirstTagNameRx, isPlainTagNameRx,
 		undef;

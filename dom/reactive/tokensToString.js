@@ -29,13 +29,14 @@ define(function (require) {
 	 * @param {Function} [options.transform] callback that deals with missing
 	 * properties.
 	 * @param {Function} [options.stringify] callback that stringifies a token.
-	 *   If omitted, uses jsonPath-like property navigation.
+	 *   If omitted, uses jsonPath-like property navigation to look up
+	 *   properties on options.replace.
 	 * @returns {String}
 	 */
 	function tokensToString (template, options) {
 		var stringify, transform, output;
 
-		stringify = options.stringify || findProperty;
+		stringify = options.stringify || stringifier;
 		transform = options.transform || blankIfMissing;
 
 		template = String(template);
@@ -49,6 +50,9 @@ define(function (require) {
 
 		return output;
 
+		function stringifier (key) {
+			return findProperty(options.replace, key);
+		}
 	}
 
 	return tokensToString;
