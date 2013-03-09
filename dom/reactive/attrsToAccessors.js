@@ -56,10 +56,10 @@ define(function (require) {
 			pointDefs = reactAttr.split(';');
 
 			pointDefs.forEach(function (def) {
-				var parts, attr, parsed, point, updater;
+				var parts, attr, compiled, point, updater;
 				parts = def.split(':', 2);
 				attr = parts[0];
-				parsed = templates.parse(parts[1]);
+				compiled = templates.compile(parts[1]);
 
 				if ('text' == attr) {
 					// elements that have a "text:" data-wire-reactpoint.
@@ -73,13 +73,13 @@ define(function (require) {
 				};
 				list.push(point);
 
-				if (parsed.length > 1) {
+				if (compiled.length > 1) {
 					// templated attribute
-					point.updater = createUpdater(node, attr, undefined, createTemplateStringifier(parsed, stringify));
+					point.updater = createUpdater(node, attr, undefined, createTemplateStringifier(compiled, stringify));
 				}
 				else {
 					//single attribute
-					point.key = parsed[0].token;
+					point.key = compiled[0].token;
 					point.updater = createUpdater(node, attr, point.key, stringify);
 					point.getter = createGetter(node, attr);
 				}
@@ -89,9 +89,9 @@ define(function (require) {
 		}, []);
 	}
 
-	function createTemplateStringifier (parsed, stringify) {
+	function createTemplateStringifier (compiled, stringify) {
 		return function () {
-			return templates.exec(parsed, stringify);
+			return templates.exec(compiled, stringify);
 		};
 	}
 
