@@ -12,11 +12,13 @@
 (function (define) {
 define(function (require) {
 
-	var templates,
+	var templates, dollarBraceToken, doubleBraceToken,
 		htmlIdentifierRx, tokenRx, tagInRx, tagOutRx, attrInRx, attrOutRx,
 		parseReactiveHtmlRx;
 
 	templates = require('./template');
+	dollarBraceToken = templates.tokenizers.dollarBrace;
+	doubleBraceToken = templates.tokenizers.doubleBrace;
 
 	htmlIdentifierRx = '[_$a-zA-Z][_$a-zA-Z0-9]*';
 	tokenRx = '\\$\\{([^}]*)\\}|\\{\\{([^}]*)\\}\\}';
@@ -31,7 +33,7 @@ define(function (require) {
 		'g'
 	);
 
-	return function (template) {
+	return function (template, options) {
 		var inTag, inAttr, end, hasReactiveAttr, reactiveAttrs;
 
 		template = String(template);
@@ -124,13 +126,6 @@ define(function (require) {
 		return '<span data-wire-reactpoint="' + parts.join(':') + '"></span>';
 	}
 
-	function dollarBraceToken (token) {
-		return '${' + token + '}';
-	}
-
-	function doubleBraceToken (token) {
-		return '{{' + token + '}}';
-	}
 });
 }(
 	typeof define == 'function' && define.amd
