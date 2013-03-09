@@ -10,11 +10,17 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
+(function (define) {
+define(function (require) {
 
-define(['./../lib/dom/base', './reactive/tokensToString', 'when'], function (base, tokenToString, when) {
-
-	var parentTypes, getFirstTagNameRx, isPlainTagNameRx,
+	var base, tokensToString, stringifyJsonPath, when,
+		parentTypes, getFirstTagNameRx, isPlainTagNameRx,
 		undef;
+
+	base = require('../lib/dom/base');
+	tokensToString = require('./reactive/tokensToString');
+	stringifyJsonPath = require('./reactive/stringifyJsonPath');
+	when = require('when');
 
 	// elements that could be used as root nodes and their natural parent type
 	parentTypes = {
@@ -36,7 +42,7 @@ define(['./../lib/dom/base', './reactive/tokensToString', 'when'], function (bas
 	/**
 	 * Constructs a DOM node and child nodes from a template string.
 	 * Information contained in a hashmap is merged into the template
-	 * via tokens (${name}) before rendering into DOM nodes.
+	 * via tokens (${key} or {{key}}) before rendering into DOM nodes.
 	 * Nothing is done with the css parameter at this time.
 	 * @param {String} template html template
 	 * @param {Object} options
@@ -47,12 +53,17 @@ define(['./../lib/dom/base', './reactive/tokensToString', 'when'], function (bas
 	 * @returns {HTMLElement}
 	 */
 	function render (template, options) {
-		var node, replacer;
+		var node;
 
-		replacer = options.replacer || tokenToString;
+		if (!options.replacer) {
+			options.replacer = tokensToString;
+			if (!options.stringify) options.stringify = function (key) {
+				stringifyJsonPath(options.replace, key);
+			}
+		}
 
 		// replace tokens (before attempting to find top tag name)
-		template = replacer('' + template, options);
+		template = options.replacer('' + template, options);
 
 		if (isPlainTagNameRx.test(template)) {
 			// just 'div' or 'a' or 'tr', for example
@@ -190,3 +201,8 @@ define(['./../lib/dom/base', './reactive/tokensToString', 'when'], function (bas
 	}
 
 });
+}(
+	typeof define == 'function' && define.amd
+		? define
+		: function (factory) { module.exports = factory(require); }
+));

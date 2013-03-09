@@ -11,11 +11,15 @@
  */
 (function (define) {
 define(function (require) {
-	var render, tokensToAttrs, attrsToAccessors, when;
+	var render, tokensToAttrs, attrsToAccessors, tokensToString,
+		stringifyJsonPath, simpleTemplate, when;
 
 	render = require('./render');
 	tokensToAttrs = require('./reactive/tokensToAttrs');
 	attrsToAccessors = require('./reactive/attrsToAccessors');
+	tokensToString = require('./reactive/tokensToString');
+	stringifyJsonPath = require('./reactive/stringifyJsonPath');
+	simpleTemplate = require('./reactive/simpleTemplate');
 	when = require('when');
 
 	/***** copied from cola/dom/guess *****/
@@ -35,10 +39,17 @@ define(function (require) {
 		if (!options.replacer) options.replacer = tokensToAttrs;
 		if (!options.addEventListener) options.addEventListener = addEventListener;
 
-		// TODO: make this work for jsonPath keys
 		// TODO: deal with missing data
 		options.stringify = function (key) { return reactive.data[key]; };
 
+		if (options.replace) {
+			template = tokensToString(template, {
+				stringify: function (key) {
+					return stringifyJsonPath(options.replace, key);
+				}
+			});
+		}
+		options.replacer = tokensToAttrs;
 		frag = render(template, options);
 		//frag.setAttribute('wire-react-root', '');
 		points = attrsToAccessors(frag, options);

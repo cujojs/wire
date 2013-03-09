@@ -24,19 +24,16 @@ define(function (require) {
 	 * @private
 	 * @param {String} template
 	 * @param {Object} options
-	 * @param {Object} [options.replace] the names of the properties of this
-	 * object are used as keys. The values replace the token in the string.
+	 * @param {Function} options.stringify callback that stringifies a token.
 	 * @param {Function} [options.transform] callback that deals with missing
 	 * properties.
-	 * @param {Function} [options.stringify] callback that stringifies a token.
-	 *   If omitted, uses jsonPath-like property navigation to look up
-	 *   properties on options.replace.
 	 * @returns {String}
 	 */
 	function tokensToString (template, options) {
 		var stringify, transform, output;
 
-		stringify = options.stringify || stringifier;
+		if (!options.stringify) throw new Error('stringify function must be specified');
+		stringify = options.stringify;
 		transform = options.transform || blankIfMissing;
 
 		template = String(template);
@@ -49,24 +46,11 @@ define(function (require) {
 		);
 
 		return output;
-
-		function stringifier (key) {
-			return findProperty(options.replace, key);
-		}
 	}
 
 	return tokensToString;
 
 	function blankIfMissing (val) { return val === undef ? '' : val; }
-
-	function findProperty (obj, propPath) {
-		var props, prop;
-		props = propPath.split('.');
-		while (obj && (prop = props.shift())) {
-			obj = obj[prop];
-		}
-		return obj;
-	}
 
 });
 }(
