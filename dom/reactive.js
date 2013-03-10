@@ -15,11 +15,11 @@ define(function (require) {
 		stringifyJsonPath, simpleTemplate, when;
 
 	render = require('./render');
-	tokensToAttrs = require('./tokensToAttrs');
-	attrsToAccessors = require('./attrsToAccessors');
-	tokensToString = require('./tokensToString');
-	stringifyJsonPath = require('./stringifyJsonPath');
-	simpleTemplate = require('./simpleTemplate');
+	tokensToAttrs = require('../lib/dom/tokensToAttrs');
+	attrsToAccessors = require('../lib/dom/attrsToAccessors');
+	tokensToString = require('../lib/dom/tokensToString');
+	stringifyJsonPath = require('../lib/dom/stringifyJsonPath');
+	simpleTemplate = require('../lib/dom/simpleTemplate');
 	when = require('when');
 
 	/***** copied from cola/dom/guess *****/

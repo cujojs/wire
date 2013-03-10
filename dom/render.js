@@ -18,8 +18,8 @@ define(function (require) {
 		undef;
 
 	base = require('../lib/dom/base');
-	tokensToString = require('./tokensToString');
-	stringifyJsonPath = require('./stringifyJsonPath');
+	tokensToString = require('../lib/dom/tokensToString');
+	stringifyJsonPath = require('../lib/dom/stringifyJsonPath');
 	when = require('when');
 
 	// elements that could be used as root nodes and their natural parent type
