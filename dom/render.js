@@ -18,8 +18,8 @@ define(function (require) {
 		undef;
 
 	base = require('../lib/dom/base');
-	tokensToString = require('./reactive/tokensToString');
-	stringifyJsonPath = require('./reactive/stringifyJsonPath');
+	tokensToString = require('./tokensToString');
+	stringifyJsonPath = require('./stringifyJsonPath');
 	when = require('when');
 
 	// elements that could be used as root nodes and their natural parent type
@@ -58,7 +58,7 @@ define(function (require) {
 		if (!options.replacer) {
 			options.replacer = tokensToString;
 			if (!options.stringify) options.stringify = function (key) {
-				stringifyJsonPath(options.replace, key);
+				return stringifyJsonPath(options.replace, key);
 			}
 		}
 

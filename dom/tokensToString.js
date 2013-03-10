@@ -50,7 +50,9 @@ define(function (require) {
 
 	return tokensToString;
 
-	function blankIfMissing (val) { return val === undef ? '' : val; }
+	function blankIfMissing (val) {
+		return val === undef ? '' : val;
+	}
 
 });
 }(

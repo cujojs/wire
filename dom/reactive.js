@@ -15,11 +15,11 @@ define(function (require) {
 		stringifyJsonPath, simpleTemplate, when;
 
 	render = require('./render');
-	tokensToAttrs = require('./reactive/tokensToAttrs');
-	attrsToAccessors = require('./reactive/attrsToAccessors');
-	tokensToString = require('./reactive/tokensToString');
-	stringifyJsonPath = require('./reactive/stringifyJsonPath');
-	simpleTemplate = require('./reactive/simpleTemplate');
+	tokensToAttrs = require('./tokensToAttrs');
+	attrsToAccessors = require('./attrsToAccessors');
+	tokensToString = require('./tokensToString');
+	stringifyJsonPath = require('./stringifyJsonPath');
+	simpleTemplate = require('./simpleTemplate');
 	when = require('when');
 
 	/***** copied from cola/dom/guess *****/
@@ -30,7 +30,7 @@ define(function (require) {
 	/***** export *****/
 
 	// TODO: create a module that will find event listeners
-	// TODO: convert wire/dom/reactive to just a plugin
+	// TODO: convert wire/dom/reactive and wire/dom/render to just plugins
 
 	function createReactive (template, options) {
 		var frag, points, reactive;
