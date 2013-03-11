@@ -12,7 +12,8 @@
 (function (define) {
 define(function (require) {
 	var render, tokensToAttrs, attrsToAccessors, tokensToString,
-		jsonPath, simpleTemplate, listenForChanges, when;
+		jsonPath, simpleTemplate, listenForChanges, when, rootAttr,
+		undef;
 
 	render = require('./render');
 	tokensToAttrs = require('../lib/dom/tokensToAttrs');
@@ -23,28 +24,32 @@ define(function (require) {
 	listenForChanges = require('../lib/dom/listenForChanges');
 	when = require('when');
 
+	rootAttr = 'data-wire-reactroot';
+
 	function createReactive (template, options) {
 		var frag, points, reactive, updater;
 
 		options = options ? Object.create(options) : {};
 		if (!options.on) options.on = addEventListener;
 
-		// TODO: deal with missing data
-		options.stringify = function (key) {
+		// TODO: deal with missing data?
+		options.transform = function (key, token) {
 			return jsonPath(reactive.data, key);
 		};
 
 		if (options.replace) {
 			template = tokensToString(template, {
-				stringify: function (key) {
-					return jsonPath(options.replace, key);
+				transform: function (key, token) {
+					var val = jsonPath(options.replace, key);
+					if (undef === val) return token;
+					else return val;
 				}
 			});
 		}
 		options.replacer = tokensToAttrs;
 
 		frag = render(template, options);
-		//frag.setAttribute('wire-react-root', '');
+		frag.setAttribute(rootAttr, ''); // used by isReactiveNode
 		points = attrsToAccessors(frag, options);
 		updater = createUpdater(points);
 
@@ -125,7 +130,7 @@ define(function (require) {
 		// easy case: node is a form
 		if ('form' == node.nodeName) return node;
 
-		// look for a form withing this fragment
+		// look for a form within this fragment
 		forms = node.getElementsByTagName('form');
 		if (forms.length > 0) return forms[0];
 
@@ -235,7 +240,7 @@ define(function (require) {
 
 	function isReactiveNode (node) {
 		return node.getAttribute
-			&& node.getAttribute('wire-react-root') != null;
+			&& node.getAttribute(rootAttr) != null;
 	}
 
 });
