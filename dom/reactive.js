@@ -23,16 +23,16 @@ define(function (require) {
 	listenForChanges = require('../lib/dom/listenForChanges');
 	when = require('when');
 
-	// TODO: convert wire/dom/reactive and wire/dom/render to just plugins
-
 	function createReactive (template, options) {
-		var frag, points, reactive;
+		var frag, points, reactive, updater;
 
 		options = options ? Object.create(options) : {};
 		if (!options.on) options.on = addEventListener;
 
 		// TODO: deal with missing data
-		options.stringify = function (key) { return reactive.data[key]; };
+		options.stringify = function (key) {
+			return jsonPath(reactive.data, key);
+		};
 
 		if (options.replace) {
 			template = tokensToString(template, {
@@ -46,35 +46,28 @@ define(function (require) {
 		frag = render(template, options);
 		//frag.setAttribute('wire-react-root', '');
 		points = attrsToAccessors(frag, options);
+		updater = createUpdater(points);
 
 		reactive = {
 			node: frag,
 			update: function (data) {
-				// save a copy for onUpdate
+				// save a copy for updater and any notifiers
 				reactive.data = data;
-				// push to DOM
-				points.forEach(function (point) {
-					// TODO: devise a configurable way to know when to call updater
-					if (!('key' in point) || data[point.key] !== undefined) {
-						if (point.updater) {
-							point.updater();
-						}
-					}
-				});
+				updater();
 				return data;
 			},
 			listen: function (listener, allChanges) {
-				var updater, form;
+				var notifier, form;
 
-				updater = createUpdater(reactive.data, points, listener);
+				notifier = createNotifier(reactive.data, points, listener);
 
 				if (allChanges) {
-					return listenForChanges(options.on, frag, updater);
+					return listenForChanges(options.on, frag, notifier);
 				}
 				else {
 					form = findForm(points);
 					if (!form) throw new Error('cannot listen for updates without a form');
-					return listenToForm(options.on, form, updater);
+					return listenToForm(options.on, form, notifier);
 				}
 			}
 		};
@@ -95,7 +88,19 @@ define(function (require) {
 
 	return createReactive;
 
-	function createUpdater (data, points, listener) {
+	function createUpdater (points) {
+		var updatables;
+		updatables = points.filter(function (point) {
+			return point.updater;
+		});
+		return function () {
+			updatables.forEach(function (point) {
+				point.updater();
+			});
+		};
+	}
+
+	function createNotifier (data, points, listener) {
 		return function () {
 			var changed;
 			points.reduce(function (data, point) {
@@ -136,7 +141,7 @@ define(function (require) {
 		node.addEventListener(event, callback, useCapture);
 		return function () {
 			node.removeEventListener(event, callback, useCapture);
-		}
+		};
 	}
 
 	/***** wire *****/
