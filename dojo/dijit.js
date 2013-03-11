@@ -14,7 +14,7 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser, dijit, Widget) {
+define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget', '../lib/WireProxy'], function(dojo, parser, dijit, Widget, WireProxy) {
     var parsed, isArray, loadTheme, placeAtFacet;
 
     parsed = false;
@@ -47,14 +47,26 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget'], function(dojo, parser,
         return it instanceof Widget;
     }
 
+	var dijitProxy = {
+		get: function(name) {
+			return this.target.get(name);
+		},
+		set: function(name, val) {
+			return this.target.set(name, val);
+		},
+		destroy: function() {
+			return destroyDijit(this.target);
+		},
+		clone: function() {
+			return dojo.clone(this.target);
+		}
+	};
+
     function proxyDijit(proxy) {
 		var object = proxy.target;
 
         if (isDijit(object)) {
-			proxy.get = object.get.bind(object);
-			proxy.set = object.set.bind(object);
-			proxy.destroy = destroyDijit.bind(null, object);
-			proxy.clone = dojo.clone.bind(dojo, object);
+			return WireProxy.extend(proxy, dijitProxy);
         }
     }
 
