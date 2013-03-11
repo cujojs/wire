@@ -13,13 +13,13 @@
 (function (define) {
 define(function (require) {
 
-	var base, tokensToString, stringifyJsonPath, when,
+	var base, tokensToString, jsonPath, when,
 		parentTypes, getFirstTagNameRx, isPlainTagNameRx,
 		undef;
 
 	base = require('../lib/dom/base');
 	tokensToString = require('../lib/dom/tokensToString');
-	stringifyJsonPath = require('../lib/dom/stringifyJsonPath');
+	jsonPath = require('../lib/dom/jsonPath');
 	when = require('when');
 
 	// elements that could be used as root nodes and their natural parent type
@@ -58,7 +58,7 @@ define(function (require) {
 		if (!options.replacer) {
 			options.replacer = tokensToString;
 			if (!options.stringify) options.stringify = function (key) {
-				return stringifyJsonPath(options.replace, key);
+				return jsonPath(options.replace, key);
 			}
 		}
 

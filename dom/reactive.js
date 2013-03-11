@@ -12,32 +12,24 @@
 (function (define) {
 define(function (require) {
 	var render, tokensToAttrs, attrsToAccessors, tokensToString,
-		stringifyJsonPath, simpleTemplate, when;
+		jsonPath, simpleTemplate, listenForChanges, when;
 
 	render = require('./render');
 	tokensToAttrs = require('../lib/dom/tokensToAttrs');
 	attrsToAccessors = require('../lib/dom/attrsToAccessors');
 	tokensToString = require('../lib/dom/tokensToString');
-	stringifyJsonPath = require('../lib/dom/stringifyJsonPath');
+	jsonPath = require('../lib/dom/jsonPath');
 	simpleTemplate = require('../lib/dom/simpleTemplate');
+	listenForChanges = require('../lib/dom/listenForChanges');
 	when = require('when');
 
-	/***** copied from cola/dom/guess *****/
-
-	var formValueNodeRx = /^(input|select|textarea)$/i;
-	var formClickableRx = /^(checkbox|radio)/i;
-
-	/***** export *****/
-
-	// TODO: create a module that will find event listeners
 	// TODO: convert wire/dom/reactive and wire/dom/render to just plugins
 
 	function createReactive (template, options) {
 		var frag, points, reactive;
 
-		if (!options) options = {};
-		if (!options.replacer) options.replacer = tokensToAttrs;
-		if (!options.addEventListener) options.addEventListener = addEventListener;
+		options = options ? Object.create(options) : {};
+		if (!options.on) options.on = addEventListener;
 
 		// TODO: deal with missing data
 		options.stringify = function (key) { return reactive.data[key]; };
@@ -45,11 +37,12 @@ define(function (require) {
 		if (options.replace) {
 			template = tokensToString(template, {
 				stringify: function (key) {
-					return stringifyJsonPath(options.replace, key);
+					return jsonPath(options.replace, key);
 				}
 			});
 		}
 		options.replacer = tokensToAttrs;
+
 		frag = render(template, options);
 		//frag.setAttribute('wire-react-root', '');
 		points = attrsToAccessors(frag, options);
@@ -70,30 +63,21 @@ define(function (require) {
 				});
 				return data;
 			},
-			onUpdate: function (data) {
-				// this is just a stub that should get AOP'ed
-				return data;
+			listen: function (listener, allChanges) {
+				var updater, form;
+
+				updater = createUpdater(reactive.data, points, listener);
+
+				if (allChanges) {
+					return listenForChanges(options.on, frag, updater);
+				}
+				else {
+					form = findForm(points);
+					if (!form) throw new Error('cannot listen for updates without a form');
+					return listenToForm(options.on, form, updater);
+				}
 			}
 		};
-
-		// create listeners for all react points that have listenable events
-		// and call onUpdate()
-		reactive.unlisten = addListeners(points, function () {
-			var changed;
-			points.reduce(function (data, point) {
-				var newVal;
-				// TODO: make this work for jsonPath keys
-				if (point.getter) {
-					newVal = point.getter();
-					if (newVal != data[point.key]) {
-						changed = true;
-						data[point.key] = newVal;
-					}
-				}
-				return data;
-			}, reactive.data);
-			if (changed) reactive.onUpdate(reactive.data);
-		}, options.addEventListener);
 
 		return reactive;
 	}
@@ -110,6 +94,50 @@ define(function (require) {
 	};
 
 	return createReactive;
+
+	function createUpdater (data, points, listener) {
+		return function () {
+			var changed;
+			points.reduce(function (data, point) {
+				var newVal, oldVal;
+				if (point.getter) {
+					newVal = point.getter();
+					oldVal = jsonPath(data, point.key);
+					if (newVal != oldVal) {
+						changed = true;
+						jsonPath(data, point.key, newVal);
+					}
+				}
+				return data;
+			}, data);
+			if (changed) listener(data);
+		}
+	}
+
+	function findForm (points) {
+		var form;
+		points.some(function (point) {
+			return point.node && point.node.form;
+		});
+		return form;
+	}
+
+	function listenToForm (on, form, listener) {
+		var unlisten1, unlisten2;
+		unlisten1 = on(form, 'submit', listener);
+		unlisten2 = on(form, 'reset' ,listener);
+		return function unlisten () {
+			unlisten1();
+			unlisten2();
+		};
+	}
+
+	function addEventListener (node, event, callback, useCapture) {
+		node.addEventListener(event, callback, useCapture);
+		return function () {
+			node.removeEventListener(event, callback, useCapture);
+		}
+	}
 
 	/***** wire *****/
 
@@ -195,65 +223,6 @@ define(function (require) {
 		return node.getAttribute
 			&& node.getAttribute('wire-react-root') != null;
 	}
-
-	/***** event handling *****/
-
-	function addListeners (map, callback, listener) {
-		Object.keys(map).forEach(function (key) {
-			var point, events;
-			point = map[key];
-			events = guessEventsFor(point.node);
-			if (events.length) {
-				point.remove = listenAll(point.node, events, callback, listener);
-			}
-		});
-	}
-
-	function listenAll (node, events, callback, listener) {
-		var unlisteners;
-		unlisteners = events.map(function (event) {
-			return listener(node, event, callback);
-		});
-		return function () {
-			unlisteners.forEach(function (unlisten) {
-				unlisten();
-			});
-		}
-	}
-
-	function addEventListener (node, event, callback, useCapture) {
-		node.addEventListener(event, callback, useCapture);
-		return function () {
-			node.removeEventListener(event, callback, useCapture);
-		}
-	}
-
-	/***** copied from cola/dom/guess *****/
-
-	function isFormValueNode (node) {
-		return formValueNodeRx.test(node.tagName);
-	}
-
-	function isClickableFormNode (node) {
-		return isFormValueNode(node) && formClickableRx.test(node.type);
-	}
-
-	function guessEventsFor (node) {
-		if (Array.isArray(node)) {
-			// get unique list of events
-			return node.reduce(function (events, node) {
-				return events.concat(guessEventsFor(node).filter(function (event) {
-					return event && events.indexOf(event) < 0;
-				}));
-			},[]);
-		}
-		else if (isFormValueNode(node)) {
-			return [isClickableFormNode(node) ? 'click' : 'change', 'focusout'];
-		}
-
-		return [];
-	}
-
 
 });
 }(
