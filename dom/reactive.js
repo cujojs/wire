@@ -65,7 +65,7 @@ define(function (require) {
 					return listenForChanges(options.on, frag, notifier);
 				}
 				else {
-					form = findForm(points);
+					form = findForm(frag, points);
 					if (!form) throw new Error('cannot listen for updates without a form');
 					return listenToForm(options.on, form, notifier);
 				}
@@ -119,10 +119,19 @@ define(function (require) {
 		}
 	}
 
-	function findForm (points) {
-		var form;
+	function findForm (node, points) {
+		var forms, form;
+
+		// easy case: node is a form
+		if ('form' == node.nodeName) return node;
+
+		// look for a form withing this fragment
+		forms = node.getElementsByTagName('form');
+		if (forms.length > 0) return forms[0];
+
+		// see if any of our reactpoints are in a form
 		points.some(function (point) {
-			return point.node && point.node.form;
+			return form = point.node && point.node.form;
 		});
 		return form;
 	}
