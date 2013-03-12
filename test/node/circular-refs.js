@@ -20,6 +20,7 @@ buster.testCase('circular-refs', {
 					},
 					shouldNotResolve: {
 						'initialize:after': function(resolver, facet, wire) {
+							console.log('initialize:after', facet.id);
 							resolver.resolve(wire.resolveRef(facet.options));
 						}
 					}

@@ -52,7 +52,7 @@ buster.testCase('context', {
 	},
 
 	'destroyers': {
-		'should execute when context is destroyed': function(done) {
+		'//should execute when context is destroyed': function(done) {
 			var executed = false;
 			createContext({}, null, {
 				require: require,
@@ -74,7 +74,7 @@ buster.testCase('context', {
 	},
 
 	'initializers and destroyers': {
-		'should execute in correct order': function(done) {
+		'//should execute in correct order': function(done) {
 		var init, destroy;
 			createContext({}, null, {
 				require: require,
