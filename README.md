@@ -14,6 +14,10 @@ To find out more, read the [full introduction](docs/introduction.md), more about
 
 # What's new
 
+### 0.9.2
+
+* IE-specific fix for `wire/debug`'s `trace` option.  See [#78](https://github.com/cujojs/wire/issues/78)
+
 ### 0.9.1
 
 * Fix for compose factory. See [#69](https://github.com/cujojs/wire/issues/69)

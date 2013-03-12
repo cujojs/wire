@@ -204,6 +204,13 @@ define(['meld'], function(meld) {
 			: it && typeof it === "object" && typeof it.nodeType === "number" && typeof it.nodeName==="string";
 	}
 
+	function isObject(it) {
+		// In IE7 tos.call(null) is '[object Object]'
+		// so we need to check to see if 'it' is
+		// even set
+		return it && Object.prototype.toString.call(it) == '[object Object]';
+	}
+
 	/**
 	 * Function that applies tracing AOP to components being wired
 	 * @function
@@ -288,7 +295,7 @@ define(['meld'], function(meld) {
 			traceStep = options.trace.step || defaultStep;
 
 			function isTraceable(target, prop) {
-				return typeof target[prop] === 'function'
+				return isObject(target) && typeof target[prop] === 'function'
 					&& prop !== 'wire$plugin'
 					&& tracePointcut.test(prop);
 			}
