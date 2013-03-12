@@ -189,27 +189,14 @@ define(function(require) {
         /**
          * Creates wire/aop plugin instances.
          *
-         * @param ready {Promise} promise that will be resolved when the context has been wired,
-         *  rejected if there is an error during the wiring process, and will receive progress
-         *  events for object creation, property setting, and initialization.
-         * @param destroyed {Promise} promise that will be resolved when the context has been destroyed,
-         *  rejected if there is an error while destroying the context, and will receive progress
-         *  events for objects being destroyed.
-         * @param options {Object}
+         * @param options {Object} options passed to the plugin
          */
-        wire$plugin: function(ready, destroyed, options) {
+        wire$plugin: function(options) {
 
             // Track aspects so they can be removed when the context is destroyed
             var woven, plugin, i, len, adviceType;
 
 			woven = [];
-
-            // Remove all aspects that we added in this context
-            when(destroyed, function() {
-                for(var i = woven.length - 1; i >= 0; --i) {
-                    woven[i].remove();
-                }
-            });
 
             /**
              * Function to add an aspect and remember it in the current context
@@ -234,6 +221,14 @@ define(function(require) {
 
             // Plugin
             plugin = {
+				context: {
+					destroy: function(resolver) {
+						woven.forEach(function(aspect) {
+							aspect.remove();
+						});
+						resolver.resolve();
+					}
+				},
                 facets: {
                     decorate:       makeFacet('configure:after', decorateFacet),
 					afterFulfilling: makeFacet(adviceStep, makeAdviceFacet(addAfterFulfillingAdvice, woven)),

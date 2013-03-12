@@ -45,7 +45,7 @@ define(['when', 'meld', './lib/functional', './lib/connection'],
 function(when, meld, functional, connection) {
 
 	return {
-        wire$plugin: function eventsPlugin(ready, destroyed /*, options */) {
+        wire$plugin: function eventsPlugin(/* options */) {
 
             var connectHandles = [];
 
@@ -68,13 +68,15 @@ function(when, meld, functional, connection) {
                 return when.all(promises);
             }
 
-            destroyed.then(function onContextDestroy() {
-                for (var i = connectHandles.length - 1; i >= 0; i--){
-                    connectHandles[i].remove();
-                }
-            });
-
             return {
+				context: {
+					destroy: function(resolver) {
+						connectHandles.forEach(function(handle) {
+							handle.remove();
+						});
+						resolver.resolve();
+					}
+				},
                 facets: {
 					// A facet named "connect" that runs during the connect
 					// lifecycle phase

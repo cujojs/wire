@@ -10,24 +10,26 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  */
-define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
+define(['when', 'jquery', '../lib/WireProxy'], function (when, $, WireProxy) {
 
-	var typeDataProp, proxyMixin, undef;
+	var typeDataProp, proxyMixin, pluginInstance;
 
 	typeDataProp = 'wire$type';
 
 	proxyMixin = getWidgetProxyMixin();
 
+	pluginInstance = {
+		factories: {
+			widget: widgetFactory
+		},
+		proxies: [
+			proxyWidget
+		]
+	};
+
 	return {
-		wire$plugin: function jQueryUIPlugin (ready, destroy, options) {
-			return {
-				factories: {
-					widget: widgetFactory
-				},
-				proxies: [
-					proxyWidget
-				]
-			};
+		wire$plugin: function jQueryUIPlugin (/* options */) {
+			return pluginInstance;
 		}
 	};
 
@@ -83,7 +85,7 @@ define(['when', 'jquery', '../lib/proxy'], function (when, $, wireProxy) {
 	 */
 	function proxyWidget (proxy) {
 		if (isWidget(proxy.target)) {
-			return wireProxy.extend(proxy, proxyMixin);
+			return WireProxy.extend(proxy, proxyMixin);
 		}
 	}
 

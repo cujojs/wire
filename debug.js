@@ -358,10 +358,11 @@ define(['meld'], function(meld) {
 	}
 
 	return {
-		wire$plugin:function debugPlugin(ready, destroyed, options) {
+		wire$plugin:function debugPlugin(options) {
 
-			var contextTimer, timeout, paths, count, tag, logCreated, logDestroyed, checkPathsTimeout,
-				verbose, filter, plugin, tracer;
+			var contextTimer, timeout, paths, count, tag,
+				logCreated, logDestroyed, checkPathsTimeout,
+				verbose, filter, plugin, context, tracer;
 
 			verbose = options.verbose;
 			contextTimer = createTimer();
@@ -377,31 +378,29 @@ define(['meld'], function(meld) {
 				return time(msg, contextTimer);
 			}
 
-			logger.log(contextTime("Context init"));
+			logger.log(contextTime("Context debug"));
 
-			ready.then(
-				function onContextReady(context) {
-					cancelPathsTimeout();
-					logger.log(contextTime("Context ready"), context);
+			context = {
+				initialize: function(resolver) {
+					logger.log(contextTime("Context init"));
+					resolver.resolve();
 				},
-				function onContextError(err) {
+				ready: function(resolver) {
+					cancelPathsTimeout();
+					logger.log(contextTime("Context ready"));
+					resolver.resolve();
+				},
+				destroy: function(resolver) {
+					tracer.untrace();
+					logger.log(contextTime("Context destroyed"));
+					resolver.resolve();
+				},
+				error: function(err) {
 					cancelPathsTimeout();
 					console.error(contextTime("Context ERROR: ") + err, err);
 					logStack(err);
 				}
-			);
-
-			destroyed.then(
-				function onContextDestroyed() {
-					tracer.untrace();
-					logger.log(contextTime("Context destroyed"));
-				},
-				function onContextDestroyError(err) {
-					tracer.untrace();
-					logger.error(contextTime("Context destroy ERROR") + err, err);
-					logStack(err);
-				}
-			);
+			};
 
 			function makeListener(step, verbose) {
 				return function (promise, proxy /*, wire */) {
@@ -512,6 +511,7 @@ define(['meld'], function(meld) {
 			}
 
 			plugin = {
+				context: context,
 				create:function (promise, proxy) {
 					var path, component;
 

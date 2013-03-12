@@ -13,9 +13,11 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 
-define(['when'], function(when) {
+define(function() {
 
-    /**
+	var pluginInstance;
+
+	/**
      * Reference resolver for "datastore!url" for easy references to
      * legacy dojo/data datastores.
      * 
@@ -43,18 +45,18 @@ define(['when'], function(when) {
 		resolver.resolve(dataStore);
     }
 
-    /**
-     * The plugin instance.  Can be the same for all wiring runs
-     */
-    var plugin = {
-        resolvers: {
-            datastore: dataStoreResolver
-        }
-    };
+	/**
+	 * The plugin instance.  Can be the same for all wiring runs
+	 */
+	pluginInstance = {
+		resolvers: {
+			datastore: dataStoreResolver
+		}
+	};
 
     return {
-        wire$plugin: function datastorePlugin(/* ready, destroyed, options */) {
-            return plugin;
+        wire$plugin: function datastorePlugin(/* options */) {
+            return pluginInstance;
         }
     };
 });
