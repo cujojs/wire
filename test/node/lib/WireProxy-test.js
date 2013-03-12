@@ -175,5 +175,5 @@ buster.testCase('proxy', {
 })(
 	require('buster'),
 	require('when/delay'),
-	require('../../lib/WireProxy')
+	require('../../../lib/WireProxy')
 );
