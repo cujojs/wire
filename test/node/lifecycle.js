@@ -76,7 +76,9 @@
 					foo: 123
 				}
 			}).then(
-				fail,
+				function(x) {
+					console.log(x);
+				},
 				function(e) {
 					assert.match(e.toString(), 'foo');
 				}
