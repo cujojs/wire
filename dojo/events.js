@@ -79,7 +79,7 @@ function(when, connection, events) {
 				facets: {
 					connect: {
 						connect: function(resolver, facet, wire) {
-                            when.chain(connectFacet(wire, facet), resolver);
+                            resolver.resolve(connectFacet(wire, facet));
 						}
 					}
 				}

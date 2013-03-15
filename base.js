@@ -14,11 +14,9 @@
 (function(define) {
 define(['when', './lib/object', './lib/functional', './lib/component', './lib/invoker'], function(when, object, functional, createComponent, createInvoker) {
 
-	var whenAll, chain, obj, undef;
+	var whenAll, obj, undef;
 
 	whenAll = when.all;
-	chain = when.chain;
-
 	obj = {};
 
 	function asArray(it) {
@@ -77,7 +75,7 @@ define(['when', './lib/object', './lib/functional', './lib/component', './lib/in
 	}
 
 	function mixinFacet(resolver, facet, wire) {
-		var target, intros;
+		var target, intros, promise;
 
 		target = facet.target;
 		intros = facet.options;
@@ -86,9 +84,11 @@ define(['when', './lib/object', './lib/functional', './lib/component', './lib/in
 			intros = [intros];
 		}
 
-		chain(when.reduce(intros, function(target, intro) {
+		promise = when.reduce(intros, function(target, intro) {
 			return doMixin(target, intro, wire);
-		}, target), resolver);
+		}, target);
+
+		resolver.resolve(promise);
 	}
 
     /**
@@ -167,7 +167,7 @@ define(['when', './lib/object', './lib/functional', './lib/component', './lib/in
 	}
 
 	function invokerFacet(resolver, facet, wire) {
-		chain(invokeAll(facet, wire), resolver);
+		resolver.resolve(invokeAll(facet, wire));
 	}
 
 	function pojoProxy(object /*, spec */) {
@@ -250,7 +250,7 @@ define(['when', './lib/object', './lib/functional', './lib/component', './lib/in
     }
 
 	function moduleFactory(resolver, spec, wire) {
-		chain(wire.loadModule(spec.module, spec), resolver);
+		resolver.resolve(wire.loadModule(spec.module, spec));
 	}
 
 	function cloneFactory(resolver, spec, wire) {
@@ -299,7 +299,7 @@ define(['when', './lib/object', './lib/functional', './lib/component', './lib/in
 			isConstructor = create.isConstructor;
 		}
 
-		chain(when(promise, handleModule), resolver);
+		resolver.resolve(when(promise, handleModule));
 
 		// Load the module, and use it to create the object
 		function handleModule(module) {
@@ -336,7 +336,7 @@ define(['when', './lib/object', './lib/functional', './lib/component', './lib/in
 			});
 		}
 
-		when.chain(promise, resolver);
+		resolver.resolve(promise);
 	}
 
 	return {

@@ -25,7 +25,7 @@ define(['when'], function(when) {
      * @param wire
      */
     function dataStoreResolver(resolver, name, refObj, wire) {
-        when.chain(wire({
+        var promise = wire({
             create: {
                 module: 'dojo/data/ObjectStore',
                 args: {
@@ -37,7 +37,9 @@ define(['when'], function(when) {
                     }
                 }
             }
-        }), resolver);
+		});
+
+		resolver.resolve(promise);
     }
 
     /**
