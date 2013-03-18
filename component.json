@@ -1,0 +1,8 @@
+{
+	"name": "wire",
+	"version": "0.9.1",
+	"dependencies": {
+		"meld": "~1",
+		"when": "~1"
+	}
+}
