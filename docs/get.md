@@ -28,7 +28,7 @@ Wire.js requires an **AMD compatible loader** and an **ES5 environment** when ru
 Download each of the following and arrange into your project:
 
 1. [wire](https://github.com/cujojs/wire/tags)
-1. [when](https://github.com/cujojs/when/tags) >= 1.5.0
+1. [when](https://github.com/cujojs/when/tags) >= 1.5.0 (including 2.0.x for wire 0.9.3)
 1. [meld](https://github.com/cujojs/meld/tags) >= 1.0.0
 
 # Other libraries
