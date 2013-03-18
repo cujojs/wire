@@ -46,38 +46,31 @@ buster.testCase('lib/ComponentFactory', {
 
 	'getFactory': {
 		'should get factory': function() {
-			var cf, result;
+			var cf = new ComponentFactory({}, {
+				plugins: {
+					factories: { test: sentinel }
+				}
+			});
 
-			result = { factory: sentinel };
-			cf = new ComponentFactory({}, {});
-			cf._findFactory = this.stub().returns(result);
-
-			assert.same(cf.getFactory({}), result);
+			assert.same(cf.getFactory({ test: {} }).factory, sentinel);
 		},
 
-		'should reject when factory not found': function(done) {
-			var cf;
-
-			cf = new ComponentFactory({}, { modulesReady: fulfilled });
-			cf._findFactory = this.stub().returns(null);
-
-			cf.getFactory({}).then(
-				fail,
-				function() {
-					assert(true);
-					done();
+		'should return falsey when factory not found': function() {
+			var cf = new ComponentFactory({}, {
+				plugins: {
+					factories: {}
 				}
-			);
-		}
-	},
+			});
 
-	'_findFactory': {
-		'should find factory and options': function() {
+			refute(cf.getFactory({ test: {} }));
+		},
+
+		'should get factory and options': function() {
 			var cf, found, spec;
 
 			cf = new ComponentFactory({}, { plugins: { factories: { test: sentinel }}});
 			spec = { test: 1 };
-			found = cf._findFactory(spec);
+			found = cf.getFactory(spec);
 
 			assert.same(found.factory, sentinel);
 			assert.same(found.options.spec, spec);
