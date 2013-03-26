@@ -51,7 +51,7 @@ buster.testCase('context', {
 		}
 	},
 
-	'lifecycle': {
+	'component lifecycle': {
 		'destroy': {
 			'tearDown': function() {
 				delete pluginModule.wire$plugin;
@@ -78,6 +78,37 @@ buster.testCase('context', {
 						assert.same(e, sentinel);
 					}
 				).then(done, done);
+			}
+		}
+	},
+
+	'context lifecycle': {
+		'initialize': {
+			'tearDown': function() {
+				delete pluginModule.wire$plugin;
+			},
+
+			'should occur before component creation': function(done) {
+				function createPlugin() {
+					return {
+						context: {
+							initialize: function(resolver) {
+								refute.calledOnce(spy);
+								resolver.resolve();
+							}
+						}
+					};
+				}
+
+				var spy = this.spy();
+				createContext({
+					plugin: { module: { wire$plugin: createPlugin} },
+					a: {
+						create: { module: spy }
+					}
+				}, null, { require: require })
+					.otherwise(fail)
+					.then(done, done);
 			}
 		}
 	}
