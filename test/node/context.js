@@ -77,7 +77,7 @@ buster.testCase('context', {
 					function(e) {
 						assert.same(e, sentinel);
 					}
-				).always(done);
+				).then(done, done);
 			}
 		}
 	}
