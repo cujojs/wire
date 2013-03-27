@@ -46,7 +46,8 @@
 
 			'should be consistent': function(done) {
 				wire({
-					component: { module: './test/node/fixtures/object' },
+					plugins: [{ module: './test/node/fixtures/object' }],
+//					component: { module: './test/node/fixtures/object' },
 					fixture: { literal: {} }
 				}).then(
 					function(context) {
@@ -65,7 +66,7 @@
 						);
 					},
 					fail
-				).always(done);
+				).then(done, done);
 			}
 		},
 
@@ -82,23 +83,7 @@
 				function(e) {
 					assert.match(e.toString(), 'foo');
 				}
-			).always(done);
-		},
-
-		'should allow dual module/plugin to have options': function(done) {
-			plugin.wire$plugin = this.stub().returns({});
-
-			wire({
-				component: {
-					create: './test/node/fixtures/object',
-					foo: 123
-				}
-			}).then(
-				function(c) {
-					assert.calledOnce(c.component.wire$plugin);
-				},
-				fail
-			).always(done);
+			).then(done, done);
 		}
 
 	});

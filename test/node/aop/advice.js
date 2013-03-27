@@ -24,7 +24,7 @@ buster.testCase('wire/aop', {
 			fixture.method = function() {};
 
 			wire({
-				aop: { module: '../../../aop' },
+				plugins: [{ module: '../../../aop' }],
 				target: {
 					create: '../fixtures/object',
 					before: {
@@ -60,7 +60,7 @@ buster.testCase('wire/aop', {
 			fixture.method = this.stub().returns(sentinel);
 
 			wire({
-				aop: { module: '../../../aop' },
+				plugins: [{ module: '../../../aop' }],
 				target: {
 					create: '../fixtures/object',
 					around: {
@@ -90,7 +90,7 @@ buster.testCase('wire/aop', {
 			fixture.method = this.stub().returns(sentinel);
 
 			wire({
-				aop: { module: '../../../aop' },
+				plugins: [{ module: '../../../aop' }],
 				target: {
 					create: '../fixtures/object',
 					afterReturning: {
@@ -119,7 +119,7 @@ buster.testCase('wire/aop', {
 			fixture.method = this.stub().throws(sentinel);
 
 			wire({
-				aop: { module: '../../../aop' },
+				plugins: [{ module: '../../../aop' }],
 				target: {
 					create: '../fixtures/object',
 					afterReturning: {
@@ -152,7 +152,7 @@ buster.testCase('wire/aop', {
 			fixture.method = this.stub().throws(sentinel);
 
 			wire({
-				aop: { module: '../../../aop' },
+				plugins: [{ module: '../../../aop' }],
 				target: {
 					create: '../fixtures/object',
 					afterThrowing: {
@@ -181,7 +181,7 @@ buster.testCase('wire/aop', {
 			fixture.method = this.stub().returns(sentinel);
 
 			wire({
-				aop: { module: '../../../aop' },
+				plugins: [{ module: '../../../aop' }],
 				target: {
 					create: '../fixtures/object',
 					afterThrowing: {
@@ -209,7 +209,7 @@ buster.testCase('wire/aop', {
 			fixture.method = this.stub().returns(sentinel);
 
 			wire({
-				aop: { module: '../../../aop' },
+				plugins: [{ module: '../../../aop' }],
 				target: {
 					create: '../fixtures/object',
 					after: {
@@ -238,7 +238,7 @@ buster.testCase('wire/aop', {
 			fixture.method = this.stub().throws(sentinel);
 
 			wire({
-				aop: { module: '../../../aop' },
+				plugins: [{ module: '../../../aop' }],
 				target: {
 					create: '../fixtures/object',
 					after: {
@@ -279,7 +279,7 @@ buster.testCase('wire/aop', {
 				var spy = this.spy();
 
 				wire({
-					aop: { module: '../../../aop' },
+					plugins: [{ module: '../../../aop' }],
 					target: {
 						create: '../fixtures/object',
 						afterFulfilling: {
@@ -306,7 +306,7 @@ buster.testCase('wire/aop', {
 				var spy = this.spy();
 
 				wire({
-					aop: { module: '../../../aop' },
+					plugins: [{ module: '../../../aop' }],
 					target: {
 						create: '../fixtures/object',
 						afterFulfilling: {
@@ -335,7 +335,7 @@ buster.testCase('wire/aop', {
 				var spy = this.spy();
 
 				wire({
-					aop: { module: '../../../aop' },
+					plugins: [{ module: '../../../aop' }],
 					target: {
 						create: '../fixtures/object',
 						afterRejecting: {
@@ -362,7 +362,7 @@ buster.testCase('wire/aop', {
 				var spy = this.spy();
 
 				wire({
-					aop: { module: '../../../aop' },
+					plugins: [{ module: '../../../aop' }],
 					target: {
 						create: '../fixtures/object',
 						afterRejecting: {
@@ -391,7 +391,7 @@ buster.testCase('wire/aop', {
 				var spy = this.spy();
 
 				wire({
-					aop: { module: '../../../aop' },
+					plugins: [{ module: '../../../aop' }],
 					target: {
 						create: '../fixtures/object',
 						after: {
@@ -418,7 +418,7 @@ buster.testCase('wire/aop', {
 				var spy = this.spy();
 
 				wire({
-					aop: { module: '../../../aop' },
+					plugins: [{ module: '../../../aop' }],
 					target: {
 						create: '../fixtures/object',
 						after: {

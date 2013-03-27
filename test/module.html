@@ -35,7 +35,7 @@
 								f: function() {}
 							}
 						},
-						connect: { module: 'wire/connect' }
+						plugins: [{ module: 'wire/connect' }]
 					}).then(
 							function(context) {
 								context.component2.f();

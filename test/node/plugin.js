@@ -34,7 +34,7 @@ buster.testCase('plugin', {
 
 		'should initialize': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object' },
+				plugins: [{ module: './test/node/fixtures/object' }],
 				fixture: { literal: {} }
 			}).then(
 				function(context) {
@@ -56,7 +56,7 @@ buster.testCase('plugin', {
 
 		'should initialize': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object' },
+				plugins: [{ module: './test/node/fixtures/object' }],
 				fixture: { literal: {} }
 			}).then(
 				function(context) {
@@ -92,7 +92,7 @@ buster.testCase('plugin', {
 
 		'should be in global namespace when not specified': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object' },
+				plugins: [{ module: './test/node/fixtures/object' }],
 				fixture: {
 					literal: {},
 					test: {}
@@ -107,7 +107,7 @@ buster.testCase('plugin', {
 
 		'should not be in global namespace when namespace provided': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object', $ns: 'namespace' },
+				plugins: [{ module: './test/node/fixtures/object', $ns: 'namespace' }],
 				fixture: {
 					literal: {},
 					test: {}
@@ -122,7 +122,7 @@ buster.testCase('plugin', {
 
 		'should be in provided namespace': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object', $ns: 'namespace' },
+				plugins: [{ module: './test/node/fixtures/object', $ns: 'namespace' }],
 				fixture: {
 					literal: {},
 					'namespace:test': {}
@@ -137,8 +137,10 @@ buster.testCase('plugin', {
 
 		'should fail wiring if non-unique': function(done) {
 			wire({
-				plugin1: { module: './test/node/fixtures/object', $ns: 'namespace' },
-				plugin2: { module: './test/node/fixtures/object2', $ns: 'namespace' }
+				plugins: [
+					{ module: './test/node/fixtures/object', $ns: 'namespace' },
+					{ module: './test/node/fixtures/object2', $ns: 'namespace' }
+				]
 			}).then(
 				fail,
 				function(e) {

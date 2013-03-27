@@ -68,7 +68,7 @@ buster.testCase('context', {
 
 				createContext({
 					a: { literal: { name: 'a' } },
-					plugin: { module: './fixtures/object' }
+					plugins: [{ module: './fixtures/object' }]
 				}, null, { require: require }
 				).then(function(context) {
 					return context.destroy();

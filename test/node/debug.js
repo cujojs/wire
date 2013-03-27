@@ -23,7 +23,7 @@ buster.testCase('wire/debug', {
 
 	'should set constructor on constructor-less object components': function(done) {
 		wire({
-			debug: { module: './debug' },
+			plugins: [{ module: './debug' }],
 			myComponent: {
 				create: './test/node/fixtures/object'
 			}
@@ -35,7 +35,7 @@ buster.testCase('wire/debug', {
 
 	'should set not constructor on components that already have one': function(done) {
 		wire({
-			debug: { module: './debug' },
+			plugins: [{ module: './debug' }],
 			myComponent: {
 				create: './test/node/fixtures/constructor'
 			}
@@ -47,7 +47,7 @@ buster.testCase('wire/debug', {
 
 	'should not set constructor on non-object components': function(done) {
 		wire({
-			debug: { module: './debug' },
+			plugins: [{ module: './debug' }],
 			myComponent: 'just a string'
 		}).then(function(context) {
 			refute.equals(context.myComponent.constructor.name, 'myComponent');

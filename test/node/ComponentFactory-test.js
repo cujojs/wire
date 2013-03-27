@@ -1,4 +1,4 @@
-var buster, assert, refute, fail, ComponentFactory, sentinel, fulfilled;
+var buster, assert, refute, fail, ComponentFactory, sentinel;
 
 buster = require('buster');
 assert = buster.assert;
@@ -9,12 +9,6 @@ ComponentFactory = require('../../lib/ComponentFactory');
 
 sentinel = {};
 
-fulfilled = {
-	then: function(onFulfilled) {
-		onFulfilled();
-	}
-};
-
 buster.testCase('lib/ComponentFactory', {
 
 	'createInstance': {
@@ -22,7 +16,6 @@ buster.testCase('lib/ComponentFactory', {
 			var cf, factory, options;
 
 			cf = new ComponentFactory({}, {
-				modulesReady: fulfilled,
 				pluginApi: { contextualize: this.stub().returns({}) }
 			});
 
