@@ -44,50 +44,48 @@
 define(['when', 'meld', './lib/functional', './lib/connection'],
 function(when, meld, functional, connection) {
 
-	return {
-        wire$plugin: function eventsPlugin(/* options */) {
+	return function eventsPlugin(/* options */) {
 
-            var connectHandles = [];
+		var connectHandles = [];
 
-			function handleConnection(instance, methodName, handler) {
-				connectHandles.push(meld.on(instance, methodName, handler));
-			}
+		function handleConnection(instance, methodName, handler) {
+			connectHandles.push(meld.on(instance, methodName, handler));
+		}
 
-            function doConnect(proxy, connect, options, wire) {
-				return connection.parse(proxy, connect, options, wire, handleConnection);
-            }
+		function doConnect(proxy, connect, options, wire) {
+			return connection.parse(proxy, connect, options, wire, handleConnection);
+		}
 
-            function connectFacet(wire, facet) {
-                var promises, connects;
+		function connectFacet(wire, facet) {
+			var promises, connects;
 
-				connects = facet.options;
-				promises = Object.keys(connects).map(function(key) {
-					return doConnect(facet, key, connects[key], wire);
-				});
+			connects = facet.options;
+			promises = Object.keys(connects).map(function(key) {
+				return doConnect(facet, key, connects[key], wire);
+			});
 
-                return when.all(promises);
-            }
+			return when.all(promises);
+		}
 
-            return {
-				context: {
-					destroy: function(resolver) {
-						connectHandles.forEach(function(handle) {
-							handle.remove();
-						});
-						resolver.resolve();
+		return {
+			context: {
+				destroy: function(resolver) {
+					connectHandles.forEach(function(handle) {
+						handle.remove();
+					});
+					resolver.resolve();
+				}
+			},
+			facets: {
+				// A facet named "connect" that runs during the connect
+				// lifecycle phase
+				connect: {
+					connect: function(resolver, facet, wire) {
+						resolver.resolve(connectFacet(wire, facet));
 					}
-				},
-                facets: {
-					// A facet named "connect" that runs during the connect
-					// lifecycle phase
-                    connect: {
-                        connect: function(resolver, facet, wire) {
-                            resolver.resolve(connectFacet(wire, facet));
-                        }
-                    }
-                }
-            };
-        }
+				}
+			}
+		};
     };
 });
 })(typeof define == 'function'

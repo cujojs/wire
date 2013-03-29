@@ -21,21 +21,7 @@
 	// create with raw constructors/functions
 	doh.registerUrl('plain-constructors', '../../required-modules.html' + hash);
 
-	// wire resolver
-	doh.registerUrl('wire-resolver', '../../wire-resolver1.html' + hash);
-	doh.registerUrl('wire-factory', '../../wire-factory1.html' + hash);
-
-	// Facets
-
-	// Base
-	doh.registerUrl('init-facet', '../../init.html' + hash);
-	doh.registerUrl('ready-facet', '../../ready.html' + hash);
-	doh.registerUrl('destroy-facet', '../../destroy.html' + hash);
-
 	// Factories
-
-	// literal
-	doh.registerUrl('literal-factory', '../../literal.html' + hash);
 
 	// wire/dom
 	doh.registerUrl('dom-resolver', '../../dom.html' + hash);

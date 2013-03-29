@@ -1,4 +1,4 @@
-(function(buster, createContext, pluginModule) {
+(function(buster, createContext) {
 "use strict";
 
 var assert, refute, fail, sentinel;
@@ -53,14 +53,10 @@ buster.testCase('context', {
 
 	'lifecycle': {
 		'destroy': {
-			'tearDown': function() {
-				delete pluginModule.wire$plugin;
-			},
-
 			'should propagate errors if component destroy fails': function(done) {
-				pluginModule.wire$plugin = function() {
+				function plugin() {
 					return { proxies: [proxy] };
-				};
+				}
 
 				function proxy(p) {
 					p.destroy = function() { throw sentinel; };
@@ -68,7 +64,7 @@ buster.testCase('context', {
 
 				createContext({
 					a: { literal: { name: 'a' } },
-					plugin: { module: './fixtures/object' }
+					plugins: [plugin]
 				}, null, { require: require }
 				).then(function(context) {
 					return context.destroy();
@@ -77,7 +73,7 @@ buster.testCase('context', {
 					function(e) {
 						assert.same(e, sentinel);
 					}
-				).always(done);
+				).then(done, done);
 			}
 		}
 	}
@@ -85,6 +81,5 @@ buster.testCase('context', {
 
 })(
 	require('buster'),
-	require('../../lib/context'),
-	require('./fixtures/object')
+	require('../../lib/context')
 );

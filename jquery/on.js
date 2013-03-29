@@ -46,7 +46,7 @@ define(['../lib/plugin-base/on', 'jquery'], function(createOnPlugin, jquery) {
 
 	on.wire$plugin = createOnPlugin({
 		on: on
-	}).wire$plugin;
+	});
 
 	return on;
 

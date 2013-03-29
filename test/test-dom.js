@@ -189,7 +189,7 @@ require(['wire'], function(wire) {
 					var dohd = new doh.Deferred();
 
 					wire({
-						dom: { module: pluginName, at: 'first!#at-tests .root' },
+						plugins: [{ module: pluginName, at: 'first!#at-tests .root' }],
 						node: { $ref: 'first!.at-test' }
 					}).then(
 						function(context) {
@@ -205,7 +205,7 @@ require(['wire'], function(wire) {
 					var dohd = new doh.Deferred();
 
 					wire({
-						dom: { module: pluginName, at: 'first!#at-tests .root' },
+						plugins: [{ module: pluginName, at: 'first!#at-tests .root' }],
 						nodes: { $ref: 'all!.test', at: 'first!body' }
 					}).then(
 						function(context) {

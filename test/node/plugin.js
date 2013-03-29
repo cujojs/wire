@@ -16,25 +16,29 @@ plugin = {
 	}
 };
 
-buster.testCase('plugin', {
-	tearDown: function() {
-		// Remove the plugin
-		// Since this is a cached plugin
-		delete pluginModule.wire$plugin;
-		delete pluginModule2.wire$plugin;
-	},
+function fakePlugin() {
+	return {
+		facets: {
+			test: {
+				ready: function(resolver, proxy) {
+					proxy.target.success = true;
+					resolver.resolve();
+				}
+			}
+		}
+	};
+}
 
+buster.testCase('plugin', {
 	'sync-init': {
-		setUp: function() {
-			// Setup a plugin that will record lifecycle steps
-			pluginModule.wire$plugin = function() {
-				return plugin;
-			};
-		},
 
 		'should initialize': function(done) {
+			function pluginFactory() {
+				return plugin;
+			}
+
 			wire({
-				plugin: { module: './test/node/fixtures/object' },
+				plugins: [pluginFactory],
 				fixture: { literal: {} }
 			}).then(
 				function(context) {
@@ -47,16 +51,13 @@ buster.testCase('plugin', {
 	},
 
 	'async-init': {
-		setUp: function() {
-			// Setup a plugin that will record lifecycle steps
-			pluginModule.wire$plugin = function() {
-				return delay(plugin, 0);
-			};
-		},
-
 		'should initialize': function(done) {
+			function pluginFactory() {
+				return delay(plugin, 0);
+			}
+
 			wire({
-				plugin: { module: './test/node/fixtures/object' },
+				plugins: [pluginFactory],
 				fixture: { literal: {} }
 			}).then(
 				function(context) {
@@ -68,31 +69,10 @@ buster.testCase('plugin', {
 	},
 
 	'namespace': {
-		setUp: function() {
-
-			makePlugin(pluginModule);
-			makePlugin(pluginModule2);
-
-			function makePlugin(plugin) {
-				// Setup a plugin that will record lifecycle steps
-				plugin.wire$plugin = function() {
-					return {
-						facets: {
-							test: {
-								ready: function(resolver, proxy) {
-									proxy.target.success = true;
-									resolver.resolve();
-								}
-							}
-						}
-					};
-				};
-			}
-		},
 
 		'should be in global namespace when not specified': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object' },
+				plugins: [fakePlugin],
 				fixture: {
 					literal: {},
 					test: {}
@@ -107,7 +87,7 @@ buster.testCase('plugin', {
 
 		'should not be in global namespace when namespace provided': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object', $ns: 'namespace' },
+				plugins: { testNamespace: fakePlugin },
 				fixture: {
 					literal: {},
 					test: {}
@@ -122,10 +102,10 @@ buster.testCase('plugin', {
 
 		'should be in provided namespace': function(done) {
 			wire({
-				plugin: { module: './test/node/fixtures/object', $ns: 'namespace' },
+				plugins: { testNamespace: fakePlugin },
 				fixture: {
 					literal: {},
-					'namespace:test': {}
+					'testNamespace:test': {}
 				}
 			}).then(
 				function(context) {
@@ -137,8 +117,10 @@ buster.testCase('plugin', {
 
 		'should fail wiring if non-unique': function(done) {
 			wire({
-				plugin1: { module: './test/node/fixtures/object', $ns: 'namespace' },
-				plugin2: { module: './test/node/fixtures/object2', $ns: 'namespace' }
+				plugins: [
+					{ wire$plugin: fakePlugin, $ns: 'namespace' },
+					{ wire$plugin: function() { return fakePlugin(); }, $ns: 'namespace' }
+				]
 			}).then(
 				fail,
 				function(e) {
