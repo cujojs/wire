@@ -13,6 +13,32 @@ fixture = require('./fixtures/object');
 
 buster.testCase('aop', {
 
+	'decorate': {
+		'should decorate in order': function(done) {
+			function decorator(target, value) {
+				target.value += value;
+			}
+
+			wire({
+				plugins: [aopPlugin],
+				mydecorator1: decorator,
+				mydecorator2: decorator,
+				test: {
+					literal: { value: 'a' },
+					decorate: {
+						mydecorator2: ['b'],
+						mydecorator1: ['c']
+					}
+				}
+			}).then(
+				function(context) {
+					assert.equals(context.test.value, 'abc');
+				},
+				fail
+			).then(done, done);
+		}
+	},
+
 	'advice': {
 
 		'before': {

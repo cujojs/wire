@@ -50,6 +50,43 @@ buster.testCase('lib/plugin/basePlugin', {
 		}
 	},
 
+	'mixin facet': {
+		'should mixin': function(done) {
+			createContext({
+				target: {
+					literal: { a: 0 },
+					mixin: [{ $ref: 'mixin1' }]
+				},
+				mixin1: {
+					b: 1
+				}
+			}).then(
+				function(context) {
+					assert.equals(context.target.a, 0);
+					assert.equals(context.target.b, 1);
+				},
+				fail
+			).then(done, done);
+		},
+
+		'should allow mixins to override': function(done) {
+			createContext({
+				target: {
+					literal: { a: 0 },
+					mixin: [{ $ref: 'mixin1' }]
+				},
+				mixin1: {
+					a: 1
+				}
+			}).then(
+				function(context) {
+					assert.equals(context.target.a, 1);
+				},
+				fail
+			).then(done, done);
+		}
+	},
+
 	'create factory': {
 		'should call non-constructor functions': function(done) {
 			var spy = this.spy();
