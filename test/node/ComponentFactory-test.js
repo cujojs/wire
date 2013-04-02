@@ -11,7 +11,7 @@ sentinel = {};
 
 buster.testCase('lib/ComponentFactory', {
 
-	'createInstance': {
+	"create": {
 		'should call factory': function(done) {
 			var cf, factory, options;
 
@@ -19,7 +19,7 @@ buster.testCase('lib/ComponentFactory', {
 				pluginApi: { contextualize: this.stub().returns({}) }
 			});
 
-			cf.addInstance = this.spy(function(instance) {
+			cf.processComponent = this.spy(function(component, instance) {
 				return instance;
 			});
 
@@ -29,7 +29,7 @@ buster.testCase('lib/ComponentFactory', {
 			options = {};
 			cf.getFactory = this.stub().returns({ factory: factory, options: options });
 
-			cf.createInstance({}).then(
+			cf.create({}).then(
 				function(instance) {
 					assert.same(instance, sentinel);
 				}
