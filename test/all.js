@@ -18,9 +18,6 @@
 	// wire/dom/render
 	doh.registerUrl('dom-render', '../../dom-render.html' + hash);
 
-	// wire/aop
-	doh.registerUrl('aop-weaving', '../../wire/aop/weave1.html' + hash);
-
 	// wire/on
 	doh.registerUrl('wire/on', '../../on.html' + hash);
 

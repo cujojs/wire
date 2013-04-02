@@ -1,7 +1,7 @@
 (function(buster, wire, aopPlugin, when) {
 "use strict";
 
-var assert, refute, fail, sentinel, other, fixture;
+var assert, refute, fail, sentinel, other;
 
 assert = buster.assert;
 refute = buster.refute;
@@ -9,7 +9,6 @@ fail = buster.assertions.fail;
 
 sentinel = {};
 other = {};
-fixture = require('./fixtures/object');
 
 buster.testCase('aop', {
 
@@ -467,6 +466,69 @@ buster.testCase('aop', {
 					).then(done, done);
 				}
 			}
+		}
+	},
+
+	'weaving': {
+		'should weave aspects': function(done) {
+			function aspect() {
+				return {
+					pointcut:       /^doSomething$/,
+					before:         function() { return 1; },
+					afterReturning: function() { return 1; },
+					afterThrowing:  function() { return 1; },
+					around: function(joinpoint) {
+						try {
+							joinpoint.proceed();
+							return 1;
+						} catch(e) {
+							return 2;
+						}
+					}
+				};
+			}
+
+			function Target() {}
+			Target.prototype = {
+				doSomething: function() { return 0 },
+				doSomethingElse: function() { throw new Error(); },
+				doOneMoreThing: function() { return 0; }
+			};
+
+			wire({
+				plugins: [
+					{
+						wire$plugin: aopPlugin,
+						aspects: [
+							'testAspect', // points to testAspect directly
+							{
+								// Override pointcut, but use testAspect advices
+								pointcut: ['doSomethingElse'],
+								advice: 'testAspect'
+							}
+						]
+					}
+				],
+				testAspect: { create: aspect },
+				thing1: { create: Target },
+				thing2: { create: Target }
+			}).then(
+				function(context) {
+					var t1, t2;
+
+					t1 = context.thing1;
+					t2 = context.thing2;
+
+					assert.equals(t1.doSomething(), 1);
+					assert.equals(t2.doSomething(), 1);
+
+					assert.equals(t1.doSomethingElse(), 2);
+					assert.equals(t2.doSomethingElse(), 2);
+
+					assert.equals(t1.doOneMoreThing(), 0);
+					assert.equals(t2.doOneMoreThing(), 0);
+				}
+			).then(done, done);
 		}
 	}
 });
