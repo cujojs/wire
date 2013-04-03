@@ -30,6 +30,11 @@ buster.testCase('lib/object', {
 		'from should override to': function() {
 			var result = object.mixin({ a: other }, { a: sentinel });
 			assert.same(result.a, sentinel);
+		},
+
+		'should handle falsey from': function() {
+			var result = object.mixin({ a: sentinel }, null);
+			assert.equals(result, { a: sentinel });
 		}
 	}
 
