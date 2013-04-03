@@ -9,6 +9,66 @@ fail = buster.assertions.fail;
 
 buster.testCase('refs', {
 
+	'should have visibility to enclosing scope': function() {
+		return wire({
+			x: 1,
+			nest: {
+				y: { $ref: 'x' }
+			}
+		}).then(
+			function(context) {
+				assert.equals(context.nest.y, 1);
+			},
+			function() { throw new Error('child should have resolved parent ref'); }
+		);
+	},
+
+	'should have visibility to enclosing scope when shadowed': function() {
+		return wire({
+			x: 1,
+			nest: {
+				x: { $ref: 'x' }
+			}
+		}).then(
+			function(context) {
+				assert(context.nest.hasOwnProperty('x'));
+				assert.equals(context.nest.x, 1);
+			},
+			function() { throw new Error('child should have resolved parent ref'); }
+		);
+	},
+
+	'should have visibility to parent': function() {
+		return wire({
+			testInParent: 1
+		}).then(function(context) {
+				return context.wire({
+					test: { $ref: 'testInParent' }
+				});
+			}).then(
+			function(child) {
+				assert.equals(child.test, 1);
+			},
+			function() { throw new Error('child should have resolved parent ref'); }
+		);
+	},
+
+	'should have visibility to parent when shadowed': function() {
+		return wire({
+			test: 1
+		}).then(function(context) {
+			return context.wire({
+				test: { $ref: 'test' }
+			});
+		}).then(
+			function(child) {
+				assert(child.hasOwnProperty('test'));
+				assert.equals(child.test, 1);
+			},
+			function() { throw new Error('child should have resolved parent ref'); }
+		);
+	},
+
 	'should fail wiring when empty': function() {
 		return wire({
 			test: { $ref: '' }
