@@ -169,9 +169,9 @@ buster.testCase('lib/plugin/wirePlugin', {
 					}
 				}).then(
 					function(context) {
+						assert.isFunction(context.child.promise.then);
 
-						assert.isFunction(context.child.then);
-						return context.child.then(function(childContext) {
+						return context.child.promise.then(function(childContext) {
 							assert(childContext.success);
 
 							return childContext.destroy();
@@ -192,17 +192,15 @@ buster.testCase('lib/plugin/wirePlugin', {
 					}
 				}).then(
 					function(context) {
+						assert.isFunction(context.parent.child.promise.then);
 
-						assert.isFunction(context.parent.child.value.then);
-
-						context.parent.child.value.then(function(childContext) {
+						context.parent.child.promise.then(function(childContext) {
 							assert(childContext.success);
 
 							return childContext.destroy();
 						});
 					}
 				).otherwise(fail).then(done, done);
-
 			}
 		}
 	}

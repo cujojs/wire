@@ -15,9 +15,7 @@ buster.testCase('lib/ComponentFactory', {
 		'should call factory': function(done) {
 			var cf, factory, options;
 
-			cf = new ComponentFactory({}, {
-				pluginApi: { contextualize: this.stub().returns({}) }
-			});
+			cf = new ComponentFactory({}, {}, { contextualize: this.stub().returns({}) });
 
 			cf.processComponent = this.spy(function(component, instance) {
 				return instance;
@@ -39,11 +37,7 @@ buster.testCase('lib/ComponentFactory', {
 
 	'getFactory': {
 		'should get factory': function() {
-			var cf = new ComponentFactory({}, {
-				plugins: {
-					factories: { test: sentinel }
-				}
-			});
+			var cf = new ComponentFactory({}, { factories: { test: sentinel } });
 
 			assert.same(cf.getFactory({ test: {} }).factory, sentinel);
 		},
@@ -61,7 +55,7 @@ buster.testCase('lib/ComponentFactory', {
 		'should get factory and options': function() {
 			var cf, found, spec;
 
-			cf = new ComponentFactory({}, { plugins: { factories: { test: sentinel }}});
+			cf = new ComponentFactory({}, { factories: { test: sentinel }});
 			spec = { test: 1 };
 			found = cf.getFactory(spec);
 

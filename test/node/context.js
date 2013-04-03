@@ -97,6 +97,112 @@ buster.testCase('context', {
 				}
 			}
 		}
+	},
+
+	'plugin api': {
+		'addInstance': {
+			'should add instance by name': function(done) {
+				function plugin() {
+					return {
+						context: {
+							initialize: function(resolver, wire) {
+								wire.addInstance(sentinel, 'instance');
+								resolver.resolve();
+							}
+						}
+					}
+				}
+
+				createContext({
+					plugins: [plugin],
+					test: { $ref: 'instance' }
+				}).then(
+					function(context) {
+						assert.same(context.test, sentinel);
+					},
+					fail
+				).then(done, done);
+			},
+
+			'should not process instance lifecycle': function(done) {
+				var spy = this.spy(function(resolver) {
+					resolver.resolve();
+				});
+
+				function plugin() {
+					return {
+						context: {
+							initialize: function(resolver, wire) {
+								wire.addInstance(sentinel, 'instance');
+								resolver.resolve();
+							}
+						},
+						initialize: spy
+					}
+				}
+
+				createContext({
+					plugins: [plugin]
+				}).then(
+					function() {
+						refute.called(spy);
+					},
+					fail
+				).then(done, done);
+			}
+		},
+
+		'addComponent': {
+			'should add instance by name': function(done) {
+				function plugin() {
+					return {
+						context: {
+							initialize: function(resolver, wire) {
+								wire.addComponent(1, 'instance');
+								resolver.resolve();
+							}
+						}
+					}
+				}
+
+				createContext({
+					plugins: [plugin],
+					test: { $ref: 'instance' }
+				}).then(
+					function(context) {
+						assert.equals(context.test, 1);
+					},
+					fail
+				).then(done, done);
+			},
+
+			'should process component lifecycle': function(done) {
+				var spy = this.spy(function(resolver) {
+					resolver.resolve();
+				});
+
+				function plugin() {
+					return {
+						context: {
+							initialize: function(resolver, wire) {
+								wire.addComponent({}, 'instance');
+								resolver.resolve();
+							}
+						},
+						initialize: spy
+					}
+				}
+
+				createContext({
+					plugins: [plugin]
+				}).then(
+					function() {
+						assert.called(spy);
+					},
+					fail
+				).then(done, done);
+			}
+		}
 	}
 });
 
