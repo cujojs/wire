@@ -41,9 +41,9 @@ buster.testCase('context', {
 			var executed = false;
 			context({}, null, {
 				require: require,
-				contextHandlers: {
-					init: function() { executed = true; }
-				}
+				initializers: [
+					function() { executed = true; }
+				]
 			}).then(
 				function() {
 					assert(executed);
