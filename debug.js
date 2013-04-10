@@ -394,10 +394,11 @@ define(['meld'], function(meld) {
 				logger.log(contextTime("Context destroyed"));
 				resolver.resolve();
 			},
-			error: function(err) {
+			error: function(resolver, api, err) {
 				cancelPathsTimeout();
 				console.error(contextTime("Context ERROR: ") + err, err);
 				logStack(err);
+				resolver.reject(err);
 			}
 		};
 
