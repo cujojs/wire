@@ -13,12 +13,12 @@ other = {};
 buster.testCase('aop', {
 
 	'decorate': {
-		'should decorate in order': function(done) {
+		'should decorate in order': function() {
 			function decorator(target, value) {
 				target.value += value;
 			}
 
-			wire({
+			return wire({
 				plugins: [aopPlugin],
 				mydecorator1: decorator,
 				mydecorator2: decorator,
@@ -34,17 +34,17 @@ buster.testCase('aop', {
 					assert.equals(context.test.value, 'abc');
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	},
 
 	'advice': {
 
 		'before': {
-			'should execute function before method': function(done) {
+			'should execute function before method': function() {
 				var spy = this.spy();
 
-				wire({
+				return wire({
 					plugins: [aopPlugin],
 					target: {
 						literal: {
@@ -63,13 +63,13 @@ buster.testCase('aop', {
 						assert.calledOnceWith(spy, sentinel);
 					},
 					fail
-				).then(done, done);
+				);
 			},
 
-			'should fail when self advised method is missing': function(done) {
+			'should fail when self advised method is missing': function() {
 				var spy = this.spy();
 
-				wire({
+				return wire({
 					plugins: [aopPlugin],
 					target: {
 						literal: {},
@@ -85,13 +85,13 @@ buster.testCase('aop', {
 					function(e) {
 						assert(e);
 					}
-				).then(done, done);
+				);
 			},
 
-			'should fail when other advised method is missing': function(done) {
+			'should fail when other advised method is missing': function() {
 				var spy = this.spy();
 
-				wire({
+				return wire({
 					plugins: [aopPlugin],
 					target: {
 						literal: {},
@@ -107,7 +107,7 @@ buster.testCase('aop', {
 					function(e) {
 						assert(e);
 					}
-				).then(done, done);
+				);
 			}
 		},
 
