@@ -64,6 +64,50 @@ buster.testCase('aop', {
 					},
 					fail
 				).then(done, done);
+			},
+
+			'should fail when self advised method is missing': function(done) {
+				var spy = this.spy();
+
+				wire({
+					plugins: [aopPlugin],
+					target: {
+						literal: {},
+						before: {
+							method: 'handler.test'
+						}
+					},
+					handler: {
+						test: spy
+					}
+				}).then(
+					fail,
+					function(e) {
+						assert(e);
+					}
+				).then(done, done);
+			},
+
+			'should fail when other advised method is missing': function(done) {
+				var spy = this.spy();
+
+				wire({
+					plugins: [aopPlugin],
+					target: {
+						literal: {},
+						before: {
+							'handler.test': 'method'
+						}
+					},
+					handler: {
+						test: spy
+					}
+				}).then(
+					fail,
+					function(e) {
+						assert(e);
+					}
+				).then(done, done);
 			}
 		},
 

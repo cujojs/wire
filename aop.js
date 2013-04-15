@@ -70,10 +70,17 @@ define(function(require) {
 	function addSingleAdvice(addAdviceFunc, advices, proxy, advice, options, wire) {
 
 		function handleAopConnection(srcObject, srcMethod, adviceHandler) {
+			checkAdvisable(srcObject, srcMethod);
 			advices.push(addAdviceFunc(srcObject, srcMethod, adviceHandler));
 		}
 
 		return connection.parse(proxy, advice, options, wire, handleAopConnection);
+	}
+
+	function checkAdvisable(source, method) {
+		if (!(typeof method == 'function' || typeof source[method] == 'function')) {
+			throw new TypeError('Cannot add advice to non-method: ' + method);
+		}
 	}
 
 	function makeSingleAdviceAdd(adviceType) {
