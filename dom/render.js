@@ -57,8 +57,10 @@ define(function (require) {
 
 		if (!options.replacer) {
 			options.replacer = tokensToString;
-			if (!options.stringify) options.stringify = function (key) {
-				return jsonPath(options.replace, key);
+			if (!options.transform) options.transform = function (key) {
+				var val = jsonPath(options.replace, key);
+				// TODO: allow dev to override ifMissing behavior
+				return undef === val ? '' : val;
 			}
 		}
 

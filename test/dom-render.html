@@ -1,12 +1,12 @@
 <!DOCTYPE HTML>
 <html lang="en-US">
 <head>
-    <meta charset="UTF-8">
-    <title>dom/render plugin test</title>
+	<meta charset="UTF-8">
+	<title>dom/render plugin test</title>
 
-    <script src="test-config.js"></script>
+	<script src="test-config.js"></script>
 
-    <script type="text/javascript">
+	<script type="text/javascript">
 
 		var simpleText = 'this is a simple template',
 			replace = {
@@ -23,16 +23,48 @@
 		define('template-from-plugin', '<div>top-level element from plugin<code>child element</code> with replace foo=${foo}</div>');
 		define('template-with-multi-level-replace', '<div class="${data.class}">${data.content}</div>');
 
-        require(['wire'], function(wire) {
+		define('reactive-template',
+			'<div class="{{data.class}} scott-rocks ${data.state2}"><input type="checkbox" checked="${data.checked}"/> ${i18n.content} {{foo}}</div>'
+		);
+
+		require(['wire'], function(wire) {
 
 			var wired, dfds = [], undef;
 
 			wired = wire({
 				plugins: [
-//					{ module: 'wire/debug' },
+					//{ module: 'wire/debug' },
 					{ module: 'wire/dom' },
+					{ module: 'wire/on' },
 					{ module: 'wire/dom/render' }
 				],
+
+				testme: {
+					create: {
+						module: 'wire/dom/reactive',
+						args: [
+							{ module: 'reactive-template' },
+							{
+								replace: {
+									i18n: { content: 'it works' },
+									foo: 'foobar'
+								},
+								at: { $ref: 'dom!testme' },
+								preserveAttrs: true
+							}
+						]
+					},
+					ready: {
+						update: {
+							data: {
+								"class": 'class1 class2',
+								checked: true,
+								state2: "hidden"
+							}
+						}
+					}
+				},
+
 				node1: {
 					create: {
 						module: 'wire/dom/render',
@@ -119,65 +151,65 @@
 				}
 			});
 
-            doh.register('template-simple', [
-                function hasTextContent(doh) {
-                    var dohd = new doh.Deferred();
+			doh.register('template-simple', [
+				function hasTextContent(doh) {
+					var dohd = new doh.Deferred();
 					dfds.push(dohd);
-                    wired.then(
-                        function(context) {
+					wired.then(
+						function(context) {
 							dohd.callback(simpleText == context.node1.innerHTML);
-                        },
-                        function(e) {
-                            dohd.errback(e);
-                        }
-                    );
-                    return dohd;
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
 				}
 			]);
 
-            doh.register('template-with-strict-parent', [
-                function allowsStrictParent(doh) {
-                    var dohd = new doh.Deferred();
+			doh.register('template-with-strict-parent', [
+				function allowsStrictParent(doh) {
+					var dohd = new doh.Deferred();
 					dfds.push(dohd);
-                    wired.then(
-                        function(context) {
+					wired.then(
+						function(context) {
 							// test doesn't need to do much. either we get here or we don't!
 							dohd.callback('LI' == context.node4.tagName);
-                        },
-                        function(e) {
-                            dohd.errback(e);
-                        }
-                    );
-                    return dohd;
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
 				}
 			]);
 
-            doh.register('template-with-root-attributes', [
-                function hasAttributeFromTemplate(doh) {
-                    var dohd = new doh.Deferred();
+			doh.register('template-with-root-attributes', [
+				function hasAttributeFromTemplate(doh) {
+					var dohd = new doh.Deferred();
 					dfds.push(dohd);
-                    wired.then(
-                        function(context) {
+					wired.then(
+						function(context) {
 							dohd.callback('true' == context.node2.getAttribute('aria-haspopup'));
-                        },
-                        function(e) {
-                            dohd.errback(e);
-                        }
-                    );
-                    return dohd;
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
 				},
-                function hasAttributeFromRefNode(doh) {
-                    var dohd = new doh.Deferred();
+				function hasAttributeFromRefNode(doh) {
+					var dohd = new doh.Deferred();
 					dfds.push(dohd);
-                    wired.then(
-                        function(context) {
+					wired.then(
+						function(context) {
 							dohd.callback('node2' == context.node2.id);
-                        },
-                        function(e) {
-                            dohd.errback(e);
-                        }
-                    );
-                    return dohd;
+						},
+						function(e) {
+							dohd.errback(e);
+						}
+					);
+					return dohd;
 				},
 				function hasCombinedClasses(doh) {
 					var dohd = new doh.Deferred();
@@ -192,7 +224,7 @@
 					);
 					return dohd;
 				}
-            ]);
+			]);
 
 			doh.register('template-with-children', [
 				function hasChildren(doh) {
@@ -296,7 +328,7 @@
 				doh.run();
 			});
 
-        });
+		});
 
 		function hasSameItems(arr1, arr2) {
 			var i, sorted
@@ -315,16 +347,17 @@
 			return false;
 		}
 
-    </script>
+	</script>
 </head>
 <body>
 <div>
-    <p id="node1" class="orig1"></p>
-    <p id="node2" class="orig2"></p>
-    <p id="node3" class="orig3"></p>
-    <ol id="node4" class="orig4"></ol>
+	<p id="node1" class="orig1"></p>
+	<p id="node2" class="orig2"></p>
+	<p id="node3" class="orig3"></p>
+	<ol id="node4" class="orig4"></ol>
 	<p id="node5" class="orig5"></p>
 	<p id="node6" class="orig6"></p>
+	<p id="testme" class=""></p>
 </div>
 </body>
 </html>

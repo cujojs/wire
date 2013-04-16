@@ -12,8 +12,8 @@
 (function (define) {
 define(function (require) {
 	var render, tokensToAttrs, attrsToAccessors, tokensToString,
-		jsonPath, simpleTemplate, listenForChanges, when, rootAttr,
-		undef;
+		jsonPath, simpleTemplate, listenForChanges, when,
+		rootAttr, reactiveEvents, undef;
 
 	render = require('./render');
 	tokensToAttrs = require('../lib/dom/tokensToAttrs');
@@ -25,6 +25,7 @@ define(function (require) {
 	when = require('when');
 
 	rootAttr = 'data-wire-reactroot';
+	reactiveEvents = { 'onUpdate': false, 'onChange': true };
 
 	function createReactive (template, options) {
 		var frag, points, reactive, updater;
@@ -32,25 +33,32 @@ define(function (require) {
 		options = options ? Object.create(options) : {};
 		if (!options.on) options.on = addEventListener;
 
-		// TODO: deal with missing data?
+		// set the transform function. converts tokens to data via jsonPath
 		options.transform = function (key, token) {
+			// TODO: let dev decide how to deal with missing data
 			return jsonPath(reactive.data, key);
 		};
+		options.replacer = tokensToAttrs;
 
+		// replace any static tokens
 		if (options.replace) {
 			template = tokensToString(template, {
 				transform: function (key, token) {
 					var val = jsonPath(options.replace, key);
-					if (undef === val) return token;
-					else return val;
+					return undef === val ? token : val;
 				}
 			});
 		}
-		options.replacer = tokensToAttrs;
 
+		// render to DOM
 		frag = render(template, options);
 		frag.setAttribute(rootAttr, ''); // used by isReactiveNode
+
+		// convert the data-wire-react HTML attributes to react points
+		// (aka "accessors")
 		points = attrsToAccessors(frag, options);
+
+		// create a function that will update all react points
 		updater = createUpdater(points);
 
 		reactive = {
@@ -184,7 +192,8 @@ define(function (require) {
 	}
 
 	function proxyReactive (proxy) {
-		var node, reactive, origGet, origSet, origInvoke, origDestroy;
+		var node, reactive, removers,
+			origGet, origSet, origInvoke, origDestroy;
 
 		node = proxy.target;
 
@@ -194,47 +203,71 @@ define(function (require) {
 			reactive = node.wire$react;
 			delete node.wire$react;
 
-			// proxy getter to return update
+			removers = {};
+
+			// grab originals
 			origGet = proxy.get;
+			origSet = proxy.set;
+			origInvoke = proxy.invoke;
+			origDestroy = proxy.destroy;
+
 			proxy.get = function (key) {
 				if ('update' == key) {
 					return reactive.update;
 				}
-				else if ('onUpdate' == key) {
-					return reactive.onUpdate;
+				else if (key in reactiveEvents) {
+					return getEventHandler(key);
 				}
 				else return origGet.apply(this, arguments);
 			};
 
-			// proxy setter to set onUpdate
-			origSet = proxy.get;
 			proxy.set = function (key, value) {
-				if ('onUpdate' == key) {
-					return reactive.onUpdate;
+				if ('update' == key) {
+					return reactive.update = value;
+				}
+				else if (key in reactiveEvents) {
+					removeEventHandler(key);
+					return getEventHandler(key);
 				}
 				else return origSet.apply(this, arguments);
 			};
 
-			// proxy invoke to add an update() method
-			origInvoke = proxy.invoke;
 			proxy.invoke = function (method, args) {
 				if ('update' == method) {
 					return reactive.update.apply(this, args);
 				}
-				else if ('onUpdate' == method) {
-					return reactive.onUpdate.apply(this, args);
+				else if (method in reactiveEvents) {
+					return getEventHandler(method).apply(this, args);
 				}
 				else return origInvoke.apply(this, arguments);
 			};
 
-			// proxy destroy
-			origDestroy = proxy.destroy;
 			proxy.destroy = function () {
 				reactive.unlisten();
+				removeEventHandler('onUpdate');
+				removeEventHandler('onChange');
 				return origDestroy.apply(this, arguments);
 			};
 
 			return proxy;
+		}
+
+		function getEventHandler (name) {
+			// create a reactive listener, if needed
+			if (!reactive[name]) {
+				// create a stub
+				reactive[name] = function (data) { return data; };
+				// create a listener
+				removers[name] = reactive.listen(
+					function (data) { return reactive[name](data); },
+					reactiveEvents[name] // boolean
+				);
+			}
+		}
+
+		function removeEventHandler (name) {
+			if (removers[name]) removers[name]();
+			delete removers[name];
 		}
 	}
 
