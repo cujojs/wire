@@ -33,8 +33,8 @@ define(function(require) {
 		return autowirePlugin;
 	};
 
-	function defaultAllow() {
-		return true;
+	function defaultNameMapper(t, p) {
+		return /^[$]\S+/.test(p) ? p.slice(1) : null;
 	}
 
 	function failIfMissing(e) {
@@ -44,7 +44,7 @@ define(function(require) {
 	function noop() {}
 
 	function autowireProperties(resolveRef, options, proxy) {
-		var target, promises, prop, allow, handleMissing;
+		var target, promises, prop, name, mapName, handleMissing;
 
 		target = proxy.target;
 		if(isNode(target)) {
@@ -52,12 +52,13 @@ define(function(require) {
 		}
 
 		promises = [];
-		allow = options.filter || defaultAllow;
+		mapName = options.mapName || defaultNameMapper;
 		handleMissing = options.fail ? failIfMissing : noop;
 
 		for(prop in target) {
-			if(allow(target, proxy.get(prop))) {
-				promises.push(when.join(prop, resolveRef(prop))
+			name = mapName(target, prop);
+			if(name) {
+				promises.push(when.join(prop, resolveRef(name))
 					.spread(function(prop, val) {
 						proxy.set(prop, val);
 					})
@@ -70,7 +71,7 @@ define(function(require) {
 	}
 
 	function autowireParameters(resolveRef, options, proxy) {
-		var target, promises, prop, allow;
+		var target, promises, prop;
 
 		target = proxy.target;
 		if(isNode(target)) {
@@ -78,13 +79,9 @@ define(function(require) {
 		}
 
 		promises = [];
-		allow = options.filter || defaultAllow;
 
-		function allowMethod(target, prop) {
-			return typeof proxy.get(prop) === 'function' && allow(target, prop);
-		}
 		for(prop in target) {
-			if(allowMethod(target, prop)) {
+			if (typeof proxy.get(prop) === 'function') {
 				promises.push(autowireMethodParams(resolveRef, options, proxy, prop));
 			}
 		}
@@ -93,40 +90,61 @@ define(function(require) {
 	}
 
 	function autowireMethodParams(resolveRef, options, proxy, methodName) {
-		var target, method, promise, names, injectedArgs, allow, handleMissing;
+		var target, method, promise, names, injectedArgs, mapName, handleMissing;
 
 		target = proxy.target;
 		method = proxy.get(methodName);
+
 		if(method._advisor) {
 			method = method._advisor.orig;
 		}
+
 		names = parseParams(method);
-		injectedArgs = [];
-		allow = options.filterParams || defaultAllow;
+		mapName = options.mapName || defaultNameMapper;
 		handleMissing = options.fail ? failIfMissing : noop;
 
-		names = names.filter(allow.bind(null, target));
-		if(names.length) {
-			names = names.map(function(name, i) {
-				return resolveRef(name).then(function(val) {
-					injectedArgs.push({ index: i, value: val });
-				}).otherwise(handleMissing);
-			});
+		injectedArgs = collectArgs(target, names, mapName, resolveRef, handleMissing);
 
-			promise = when.all(names).then(function() {
-				meld.around(target, methodName, function(joinpoint) {
-					var args = joinpoint.args.slice();
-
-					injectedArgs.forEach(function(arg) {
-						args.splice(arg.index, 0, arg.value);
-					});
-
-					return joinpoint.proceedApply(args);
-				});
+		if(injectedArgs.length) {
+			promise = when.all(injectedArgs).then(function(injectedArgs) {
+				addParamInjectionAdvice(target, methodName, injectedArgs);
 			});
 		}
 
 		return promise;
+	}
+
+	function collectArgs(target, names, mapName, resolveRef, handleMissing) {
+		return names.reduce(function (filtered, name, i) {
+			var mapped, arg;
+
+			mapped = mapName(target, name);
+			if (mapped) {
+				arg = { index: i };
+				filtered.push(resolveRef(mapped).then(function (val) {
+					arg.value = val;
+					return arg;
+				}).otherwise(handleMissing));
+			}
+			return filtered;
+		}, []);
+	}
+
+	function addParamInjectionAdvice(target, methodName, injectedArgs) {
+		meld.around(target, methodName, function (joinpoint) {
+			var args = joinpoint.args.slice();
+
+			injectedArgs.forEach(function (arg) {
+				if (arg.index in args) {
+					args.splice(arg.index, 0, arg.value);
+				} else {
+					args[arg.index] = arg.value;
+				}
+				console.log(arg, args);
+			});
+
+			return joinpoint.proceedApply(args);
+		});
 	}
 
 	function parseParams(f) {
