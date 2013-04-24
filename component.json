@@ -11,6 +11,7 @@
 		"curl": "~0",
 		"requirejs": "~2",
 		"requirejs-domready": "~2",
+		"sizzle": "~1",
 		"jquery": "~1",
 		"dojo": "~1",
 		"dijit": "~1"
