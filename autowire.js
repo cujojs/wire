@@ -48,7 +48,7 @@ define(function(require) {
 
 		target = proxy.target;
 		if(isNode(target)) {
-			return;
+			return when.resolve();
 		}
 
 		promises = [];
@@ -75,7 +75,7 @@ define(function(require) {
 
 		target = proxy.target;
 		if(isNode(target)) {
-			return;
+			return when.resolve();
 		}
 
 		promises = [];
@@ -107,6 +107,7 @@ define(function(require) {
 
 		if(injectedArgs.length) {
 			promise = when.all(injectedArgs).then(function(injectedArgs) {
+				injectedArgs = injectedArgs.filter(function(a) { return !!a; });
 				addParamInjectionAdvice(target, methodName, injectedArgs);
 			});
 		}
@@ -140,7 +141,6 @@ define(function(require) {
 				} else {
 					args[arg.index] = arg.value;
 				}
-				console.log(arg, args);
 			});
 
 			return joinpoint.proceedApply(args);
