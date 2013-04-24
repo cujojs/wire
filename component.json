@@ -14,6 +14,7 @@
 		"sizzle": "~1",
 		"jquery": "~1",
 		"dojo": "~1",
-		"dijit": "~1"
+		"dijit": "~1",
+		"doh": "cujojs/util#1.7.0cujojs"
 	}
 }
