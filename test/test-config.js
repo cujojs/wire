@@ -25,13 +25,11 @@
 
 	loaders = {
 		curl: {
-			script: 'test/curl/src/curl',
+			script: 'components/curl/src/curl',
 			mixin: {
 				apiName: 'require',
-				pluginPath: 'curl/plugin',
 				paths: {
-					'jquery': 'test/lib/jquery'
-//                    'wire/domReady': 'test/curl/src/curl/domReady'
+					jquery: 'components/jquery/jquery'
 				},
 				preloads: [
 					'poly/all',
@@ -40,15 +38,11 @@
 			}
 		},
 		requirejs: {
-			script: 'test/requirejs/require',
+			script: 'components/requirejs/require',
 			mixin: {
 				paths: {
-					'jquery': 'test/lib/jquery',
-//                    'wire/domReady': 'test/requirejs-domReady/domReady',
-					domReady: 'test/requirejs-domReady/domReady'
-				},
-				config: {
-					when: { paranoid: false }
+					jquery: 'components/jquery/jquery',
+					domReady: 'components/requirejs-domready/domReady'
 				}
 			}
 		}
@@ -97,16 +91,15 @@
 		loaderConfig[m] = loader.mixin[m];
 	}
 
-	addPackage({ name: 'dojo', location: 'test/lib/dojo18/dojo' });
-//	addPackage({ name: 'dijit', location: 'test/lib/dojo17/dijit', main: 'main' });
-//	addPackage({ name: 'dojo', location: 'test/lib/dojo16/dojo', main: 'lib/main-browser' });
-//    addPackage({ name: 'dijit', location: 'test/lib/dojo16/dijit', main: 'lib/main' });
-	addPackage({ name: 'sizzle', location: 'support/sizzle' });
-	addPackage({ name: 'meld', location: 'support/meld' });
-	addPackage({ name: 'when', location: 'support/when' });
-	addPackage({ name: 'poly', location: 'support/poly' });
 	// This is needed because we're running unit tests from *within* the wire dir
 	addPackage({ name: 'wire', location: '.' });
+	addPackage({ name: 'meld', location: 'components/meld' });
+	addPackage({ name: 'when', location: 'components/when' });
+	addPackage({ name: 'poly', location: 'components/poly' });
+	addPackage({ name: 'sizzle', location: 'components/sizzle' });
+	addPackage({ name: 'dojo', location: 'components/dojo', main: 'main' });
+	addPackage({ name: 'dijit', location: 'components/dijit' });
+	addPackage({ name: 'jquery', location: 'components/jquery', main: 'jquery' });
 
 	// Other loaders may not need this
 	loaderConfig.paths[loaderName] = loaderPath;
