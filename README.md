@@ -14,6 +14,10 @@ To find out more, read the [full introduction](docs/introduction.md), more about
 
 # What's new
 
+### 0.9.4
+
+* Fix for [render factory](docs/dom.md#rendering-dom-elements) in IE8.
+
 ### 0.9.3
 
 * Compatibility with when.js 1.5.0 - 2.0.x.  If you use when >= 2.0.0, you *MUST* update to wire 0.9.3.  There are no other changes in 0.9.3.
