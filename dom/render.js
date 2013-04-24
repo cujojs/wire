@@ -103,7 +103,7 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * @returns {HTMLElement} the element created from the template
 	 */
 	function createElementFromTemplate (template) {
-		var parentTagName, parent, first, child;
+		var parentTagName, parent, first, child, iterChild;
 
 		parentTagName = getParentTagName(template);
 		parent = document.createElement(parentTagName);
@@ -119,12 +119,13 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 
 		// old dom API
 		if (!first) {
-			child = parent.firstChild;
-			while (child) {
-				if (child.nodeType == 1) {
-					if (!first) first = child;
+			iterChild = parent.firstChild;
+			while (iterChild) {
+				if (iterChild.nodeType == 1) {
+					if (!first) first = iterChild;
 				}
-				child = child.nextSibling;
+				child = iterChild;
+				iterChild = iterChild.nextSibling;
 			}
 		}
 
