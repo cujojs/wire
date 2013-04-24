@@ -47,6 +47,10 @@ define(function(require) {
 		var target, promises, prop, allow, handleMissing;
 
 		target = proxy.target;
+		if(isNode(target)) {
+			return;
+		}
+
 		promises = [];
 		allow = options.filter || defaultAllow;
 		handleMissing = options.fail ? failIfMissing : noop;
@@ -69,6 +73,10 @@ define(function(require) {
 		var target, promises, prop, allow;
 
 		target = proxy.target;
+		if(isNode(target)) {
+			return;
+		}
+
 		promises = [];
 		allow = options.filter || defaultAllow;
 
@@ -84,11 +92,15 @@ define(function(require) {
 		return when.all(promises);
 	}
 
-	function autowireMethodParams(resolveRef, options, proxy, method) {
-		var target, promise, names, injectedArgs, allow, handleMissing;
+	function autowireMethodParams(resolveRef, options, proxy, methodName) {
+		var target, method, promise, names, injectedArgs, allow, handleMissing;
 
 		target = proxy.target;
-		names = parseParams(proxy.get(method));
+		method = proxy.get(methodName);
+		if(method._advisor) {
+			method = method._advisor.orig;
+		}
+		names = parseParams(method);
 		injectedArgs = [];
 		allow = options.filterParams || defaultAllow;
 		handleMissing = options.fail ? failIfMissing : noop;
@@ -102,7 +114,7 @@ define(function(require) {
 			});
 
 			promise = when.all(names).then(function() {
-				meld.around(target, method, function(joinpoint) {
+				meld.around(target, methodName, function(joinpoint) {
 					var args = joinpoint.args.slice();
 
 					injectedArgs.forEach(function(arg) {
@@ -123,6 +135,18 @@ define(function(require) {
 			return args[1].split(splitRx);
 		}
 		return [];
+	}
+
+	/**
+	 * Returns true if it is a Node
+	 * Adapted from: http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object
+	 * @param it anything
+	 * @return true iff it is a Node
+	 */
+	function isNode(it) {
+		return typeof Node === "object"
+			? it instanceof Node
+			: it && typeof it === "object" && typeof it.nodeType === "number" && typeof it.nodeName==="string";
 	}
 
 });
