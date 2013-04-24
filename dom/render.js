@@ -103,33 +103,38 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * @returns {HTMLElement} the element created from the template
 	 */
 	function createElementFromTemplate (template) {
-		var parentTagName, parent, first, child;
+		var parentTagName, parent, first, tooMany, node;
 
 		parentTagName = getParentTagName(template);
 		parent = document.createElement(parentTagName);
 		parent.innerHTML = template;
 
 		// we just want to return first element (nodelists and fragments
-		// are tricky), so we loop through all top-level children to ensure
-		// we only have one.
+		// are tricky), so we ensure we only have one.
+		// TODO: try using DocumentFragments to allow multiple root elements
 
 		// try html5-ish API
-		first = parent.firstElementChild;
-		child = parent.lastElementChild;
-
-		// old dom API
-		if (!first) {
-			child = parent.firstChild;
-			while (child) {
-				if (child.nodeType == 1) {
-					if (!first) first = child;
+		if ('firstElementChild' in parent) {
+			first = parent.firstElementChild;
+			tooMany = first != parent.lastElementChild;
+		}
+		else {
+			// loop through nodes looking for elements
+			node = parent.firstChild;
+			while (node && !tooMany) {
+				if (node.nodeType == 1 /* 1 == element */) {
+					if (!first) first = node;
+					else tooMany = true;
 				}
-				child = child.nextSibling;
+				node = node.nextSibling;
 			}
 		}
 
-		if (first != child) {
-			throw new Error('render: only one element per template is supported.');
+		if (!first) {
+			throw new Error('render: no element found in template.');
+		}
+		else if (tooMany) {
+			throw new Error('render: only one root element per template is supported.');
 		}
 
 		return first;
@@ -193,8 +198,14 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	 * @returns {String}
 	 */
 	function replaceTokens (template, hashmap, missing) {
-		if (!hashmap) return template;
-		if (!missing) missing = blankIfMissing;
+		if (!hashmap) {
+			return template;
+		}
+
+		if (!missing) {
+			missing = blankIfMissing;
+		}
+
 		return template.replace(parseTemplateRx, function (m, token) {
 			return missing(findProperty(hashmap, token));
 		});
