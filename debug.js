@@ -415,7 +415,7 @@ define(['meld'], function(meld) {
 				if (verbose && filter(path)) {
 					var message = time(step + ' ' + (path || proxy.id || ''), contextTimer);
 					if (proxy.target) {
-						logger.log(message, proxy.target, proxy.spec);
+						logger.log(message, proxy.target, proxy.metadata);
 					} else {
 						logger.log(message, proxy);
 					}
@@ -457,7 +457,7 @@ define(['meld'], function(meld) {
 					msg = p + ': ' + component.status;
 
 					(component.status == 'ready' ? ready : notReady).push(
-						{ msg: msg, spec: component.spec }
+						{ msg: msg, metadata: component.metadata }
 					);
 				}
 
@@ -466,7 +466,7 @@ define(['meld'], function(meld) {
 					logger.log('Components that DID NOT finish wiring');
 					for(p = notReady.length-1; p >= 0; --p) {
 						component = notReady[p];
-						logger.error(component.msg, component.spec);
+						logger.error(component.msg, component.metadata);
 					}
 				}
 
@@ -475,7 +475,7 @@ define(['meld'], function(meld) {
 					logger.log('Components that finished wiring');
 					for(p = ready.length-1; p >= 0; --p) {
 						component = ready[p];
-						logger.log(component.msg, component.spec);
+						logger.log(component.msg, component.metadata);
 					}
 				}
 			} else {
@@ -520,7 +520,7 @@ define(['meld'], function(meld) {
 
 				count++;
 				paths[path || ('(unnamed-' + count + ')')] = {
-					spec:proxy.spec
+					metadata: proxy.metadata
 				};
 
 				if(component && typeof component == 'object'
