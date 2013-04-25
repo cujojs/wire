@@ -53,6 +53,33 @@ buster.testCase('context', {
 		}
 	},
 
+	'events': {
+		'error': {
+			'should receive error arg': function() {
+				var plugin, err;
+
+				plugin = {
+					context: {
+						error: function(resolver, api, e) {
+							err = e;
+							resolver.resolve();
+						}
+					}
+				};
+
+				return createContext({
+					x: { create: function() { throw sentinel; } },
+					$plugins:[function() { return plugin; }]
+				}).then(
+					fail,
+					function() {
+						assert.same(err, sentinel);
+					}
+				);
+			}
+		}
+	},
+
 	'lifecycle': {
 		'destroy': {
 			'should propagate errors if component destroy fails': function(done) {
