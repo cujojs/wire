@@ -69,6 +69,7 @@ define(function() {
 			dependencies = [];
 
 			addDependency(wireId);
+			scanPlugins(spec);
 			scanObj(spec);
 			generateDefine(specId, dependencies);
 
@@ -102,9 +103,29 @@ define(function() {
 				}
 			}
 
+			function scanPlugins(spec) {
+				var plugins = spec.$plugins || spec.plugins;
+				if(Array.isArray(plugins)) {
+					plugins.forEach(addPlugin);
+				} else {
+					Object.keys(plugins).forEach(function(key) {
+						addPlugin(plugins[key]);
+					});
+				}
+			}
+
+			function addPlugin(plugin) {
+				if(typeof plugin === 'string') {
+					addDependency(plugin);
+				} else if(typeof plugin === 'object' || plugin.module) {
+					addDependency(plugin.module);
+				}
+			}
+
 			function addDependency(moduleId) {
 				if(!(moduleId in seenModules)) {
 					dependencies.push(moduleId);
+					seenModules[moduleId] = moduleId;
 				}
 			}
 		}
