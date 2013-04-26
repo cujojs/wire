@@ -60,6 +60,16 @@ buster.testCase('lib/plugin/wirePlugin', {
 			).then(done, done);
 		},
 
+		'should accept a spec module id': function() {
+			return createContext({
+				child: {
+					wire: '../../fixtures/object'
+				}
+			}).then(function(context) {
+				assert.isFunction(context.wire);
+			})
+		},
+
 		'provide': {
 			'should alias component names into child': function(done) {
 				createContext({

@@ -105,9 +105,10 @@ define(function() {
 
 			function scanPlugins(spec) {
 				var plugins = spec.$plugins || spec.plugins;
+
 				if(Array.isArray(plugins)) {
 					plugins.forEach(addPlugin);
-				} else {
+				} else if(typeof plugins === 'object') {
 					Object.keys(plugins).forEach(function(key) {
 						addPlugin(plugins[key]);
 					});

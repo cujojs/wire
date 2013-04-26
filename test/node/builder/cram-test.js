@@ -93,8 +93,8 @@ buster.testCase('wire/builder/cram', {
 	'with a comma-separated list of specs': {
 		'should generate a define for each': function(done) {
 			var specs = {
-				'atest.js': { a: { module: 'a' } },
-				'btest.js': { b: { module: 'b' } }
+				'atest': { a: { module: 'a' } },
+				'btest': { b: { module: 'b' } }
 			};
 
 			function req(moduleId, cb) {
@@ -117,8 +117,8 @@ buster.testCase('wire/builder/cram', {
 
 		'should generate defines with original content for each': function(done) {
 			var specs = {
-				'atest.js': { a: { module: 'a' } },
-				'btest.js': { b: { module: 'b' } }
+				'atest': { a: { module: 'a' } },
+				'btest': { b: { module: 'b' } }
 			};
 
 			function req(moduleId, cb) {
