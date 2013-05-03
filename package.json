@@ -53,6 +53,6 @@
 	},
 	"scripts": {
 		"test": "buster test -e node",
-		"postinstall": "bower install"
+		"postinstall": "bower install && git submodule update --init"
 	}
 }
