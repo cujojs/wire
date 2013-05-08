@@ -1,6 +1,5 @@
 node_modules/
 components/
 experiments/
-.npmignore
-*~
 .idea/
+*~
