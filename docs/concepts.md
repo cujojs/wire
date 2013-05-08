@@ -98,7 +98,7 @@ define({
 		}
 	},
 
-	plugins: [
+	$plugins: [
 		{ module: 'wire/debug', trace: true },
 		{ module: 'wire/dom', $ns: 'dom' }
 	]
@@ -155,7 +155,7 @@ define({
 		}
 	},
 
-	plugins: [
+	$plugins: [
 		{ module: 'wire/debug', trace: true },
 		{ module: 'wire/dom', $ns: 'dom' }
 	]
@@ -228,7 +228,7 @@ Wire.js's core DSL is very small, but can be extended by plugins.  For example, 
 Including plugins in a [wire spec](#wire-specs) is simple.  Wire scans modules for plugins, so you can simply include them in your spec using the [module factory](components.md#module).  Although it's not necessary, a good convention is to group plugins together in a plugins array:
 
 ```js
-plugins: [
+$plugins: [
 	{ module: 'wire/debug' },
 	{ module: 'wire/dom' },
 	{ module: 'wire/dom/render' },
@@ -241,7 +241,7 @@ plugins: [
 Plugins may have options, which can be included as properties.  For example, to turn on the `wire/debug` plugin's `trace` option:
 
 ```js
-	plugins: [
+	$plugins: [
 		{ module: 'wire/debug', trace: true },
 		{ module: 'wire/dom' },
 		{ module: 'wire/dom/render' },
@@ -275,7 +275,7 @@ define({
 		}
 	},
 
-	plugins: [
+	$plugins: [
 		{ module: 'wire/debug', trace: true },
 		// Assign the namespace `dom` to the wire/dom plugin
 		{ module: 'wire/dom', $ns: 'dom' }

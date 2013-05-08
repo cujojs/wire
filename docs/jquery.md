@@ -46,7 +46,7 @@ define({
 			}
 		}
 	},
-	plugins: [
+	$plugins: [
 		{ module: 'wire/jquery/ui' },
 		{ module: 'wire/jquery/dom' }
 	]
@@ -155,7 +155,7 @@ define({
 		ready: 'pageChanged'
 	},
 
-	plugins: [
+	$plugins: [
 		{ module: 'wire/jquery/ui' },
 		{ module: 'wire/jquery/on' },
 		{ module: 'wire/jquery/dom' }
