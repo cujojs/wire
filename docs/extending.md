@@ -2,9 +2,44 @@
 
 Wire.js can be extended via plugins.  Plugins can extend the DSL syntax with factories, facets, and reference resolvers, listen for component lifecycle events, provide proxy adapters that allow other plugins to interact with new types of components.
 
-## Using plugins
+# Using plugins
 
-## Authoring plugins
+Using plugins is easy: simply include each plugin's module id in the `$plugins` array in your wire spec:
+
+```js
+define({
+	// Wire spec
+
+	// other components here
+
+	// Include the wire/dom and wire/on plugins, and perhaps your own
+	// custom plugin
+	$plugins: ['wire/dom', 'wire/on', 'my/custom/wirePlugin']
+});
+```
+
+## Plugin options
+
+Some plugins accept options.  You can supply options by using an object literal in the `$plugins` array instead of a module id string:
+
+```js
+define({
+	// Wire spec
+
+	// other components here
+
+	// Use an object literal to pass options to plugins.  You can mix
+	// object literals and strings in $plugins.
+	$plugins: [
+		{ module: 'wire/debug', trace: true }
+		'wire/dom',
+		'wire/on',
+		{ module: 'my/custom/wirePlugin', myPluginOption1: /* value */, myPluginOption2: /* value */
+	]
+});
+```
+
+# Authoring plugins
 
 ## Plugin factory function
 
@@ -29,11 +64,11 @@ define(function() {
 });
 ```
 
-The plugin factory function should return a plugin instance.  Wire will invoke the plugin factory function to create a plugin instance before wiring the wire spec where the plugin is used.
+The plugin factory function can accept an options object, and must return a plugin instance.  Wire will invoke the plugin factory function to create a plugin instance before wiring the wire spec where the plugin is used.  The options object will contain [options specified in the wire spec](#plugin-options) where the plugin is used.
 
-### Plugin instance
+## Plugin instance
 
-The plugin instance returned can provide lifecycle listeners, [[Factories]], [[Facets]], reference resolvers and [[Reference|References]] resolvers.  A plugin can define as many or as few of these things as needed.
+The plugin instance returned by the plugin factory function can provide lifecycle listeners, [factories](concepts.md#factories), [facets](concepts.md#facets), [reference resolvers](concepts.md#references), [proxies](concepts.md#proxies) and listeners for various points in [context](concepts.md#contexts) and [component lifecycles](concepts.md#component-lifecycle).  A plugin can define as many or as few of these things as needed.
 
 Here is the full format for everything a plugin instance can define:
 
@@ -48,6 +83,7 @@ wire$plugin: function(ready, destroyed, options) {
 			initialize: function(resolver, wire) {},
 			startup:    function(resolver, wire) {},
 			ready:      function(resolver, wire) {},
+
 			shutdown:   function(resolver, wire) {},
 			destroy:    function(resolver, wire) {},
 
@@ -114,9 +150,11 @@ wire$plugin: function(ready, destroyed, options) {
 }
 ```
 
-### Plugin API
+## Plugin API
 
-#### `wire`
+### `resolver`
+
+### `wire`
 
 #### `wire.resolveRef`
 
@@ -131,3 +169,17 @@ wire$plugin: function(ready, destroyed, options) {
 #### `wire.addComponent`
 
 #### `wire.resolver`
+
+### Reference resolver parameters
+
+#### `refName`
+
+#### `refObj`
+
+### Factory parameters
+
+#### `componentDef`
+
+### Facet parameters
+
+#### `proxy`
