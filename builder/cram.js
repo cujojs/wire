@@ -11,11 +11,16 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function(define) {
-define(function() {
+define(function(require) {
 
-	var defaultModuleRegex, replaceIdsRegex, removeCommentsRx;
+	var when, unfold, defaultModuleRegex, specRegex, replaceIdsRegex, removeCommentsRx;
+
+	when = require('when');
+	unfold = require('when/unfold');
+
 	// default dependency regex
 	defaultModuleRegex = /\.(module|create)$/;
+	specRegex = /\.(wire\.spec|wire)$/;
 	// adapted from cram's scan function:
 	//replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]+)\]\s*,)?\s*(function)?\s*(?:\(([^)]*)\))?/g;
 	replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]*)\]\s*,)?/;
@@ -32,8 +37,8 @@ define(function() {
 
 	function compile(wireId, resourceId, require, io, config) {
 		// Track all modules seen in wire spec, so we only include them once
-		var specIds, defines, remaining, seenModules, childSpecRegex,
-			moduleRegex, countdown;
+		var specIds, defines, seenModules, childSpecRegex,
+			moduleRegex;
 
 		defines = [];
 		seenModules = {};
@@ -48,17 +53,27 @@ define(function() {
 		// Grab the spec module id, *or comma separated list of spec module ids*
 		// Split in case it's a comma separated list of spec ids
 		specIds = resourceId.split(',');
-		remaining = specIds.length;
 
-		// get all the specs
-		countdown = createCountdown(remaining, processSpec, null, io.error);
-		specIds.forEach(function(id) {
-			require(
-				[id],
-				function (spec) { countdown(spec, id); },
-				io.error
-			);
-		});
+		return unfold(
+			function(specIds) {
+				var id, dfd;
+
+				id = specIds.shift();
+				dfd = when.defer();
+
+				require(
+					[id],
+					function(spec) { dfd.resolve([[spec, id], specIds]); },
+					dfd.reject
+				);
+
+				return dfd.promise;
+			},
+			function(specIds) { return !specIds.length; },
+			// processSpec.apply.bind(processSpec, null),
+			function(params) { return processSpec.apply(null, params); },
+			specIds
+		).then(done, io.error);
 
 		// For each spec id, add the spec itself as a dependency, and then
 		// scan the spec contents to find all modules that it needs (e.g.
@@ -71,7 +86,7 @@ define(function() {
 			addDependency(wireId);
 			scanPlugins(spec);
 			scanObj(spec);
-			generateDefine(specId, dependencies);
+			return generateDefine(specId, dependencies);
 
 			function scanObj(obj, path) {
 				// Scan all keys.  This might be the spec itself, or any sub-object-literal
@@ -86,7 +101,10 @@ define(function() {
 				// 1. If it's a string, and the key is module or create, then assume it
 				//    is a moduleId, and add it as a dependency.
 				// 2. If it's an object or an array, scan it recursively
-				if (isDep(path) && typeof it === 'string') {
+				// 3. If it's a wire spec, add it to the list of spec ids
+				if (isSpec(path) && typeof it === 'string') {
+					specIds.push(it);
+				} else if (isDep(path) && typeof it === 'string') {
 					// Get module def
 					addDependency(it);
 
@@ -118,7 +136,7 @@ define(function() {
 			function addPlugin(plugin) {
 				if(typeof plugin === 'string') {
 					addDependency(plugin);
-				} else if(typeof plugin === 'object' || plugin.module) {
+				} else if(typeof plugin === 'object' && plugin.module) {
 					addDependency(plugin.module);
 				}
 			}
@@ -132,17 +150,19 @@ define(function() {
 		}
 
 		function generateDefine(specId, dependencies) {
-			var buffer;
+			var dfd, buffer;
+
+			dfd = when.defer();
 
 			io.read(ensureExtension(specId, 'js'), function(specText) {
 				buffer = injectIds(specText, specId, dependencies);
 
 				defines.push(buffer);
+				dfd.resolve();
 
-				if(!--remaining) {
-					done();
-				}
-			}, io.error);
+			}, dfd.reject);
+
+			return dfd.promise;
 		}
 
 		function done() {
@@ -152,31 +172,18 @@ define(function() {
 		function isDep(path) {
 			return moduleRegex.test(path);
 		}
+	}
 
-		function createPath(path, name) {
-			return path ? (path + '.' + name) : name
-		}
+	function isSpec(path) {
+		return specRegex.test(path);
+	}
+
+	function createPath(path, name) {
+		return path ? (path + '.' + name) : name
 	}
 
 	function isStrictlyObject(it) {
 		return (it && Object.prototype.toString.call(it) == '[object Object]');
-	}
-
-	function createCountdown(howMany, each, done, fail) {
-		return function() {
-			var result;
-			try {
-				if(--howMany >= 0) result = each.apply(this, arguments);
-				if(howMany == 0 && done) done();
-				return result;
-			} catch(ex) {
-				error(ex);
-			}
-		};
-		function error(ex) {
-			howMany = 0;
-			if(fail) fail(ex);
-		}
 	}
 
 	function ensureExtension(id, ext) {
