@@ -211,4 +211,4 @@ define(function(require) {
 	}
 
 });
-}(typeof define === 'function' ? define : function(factory) { module.exports = factory(); }));
+}(typeof define === 'function' ? define : function(factory) { module.exports = factory(require); }));
