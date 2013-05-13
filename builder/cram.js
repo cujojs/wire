@@ -13,18 +13,20 @@
 (function(define) {
 define(function(require) {
 
-	var when, unfold, defaultModuleRegex, specRegex, replaceIdsRegex, removeCommentsRx;
+	var when, unfold, defaultModuleRegex, defaultSpecRegex, replaceIdsRegex,
+		removeCommentsRx, splitSpecsRegex;
 
 	when = require('when');
 	unfold = require('when/unfold');
 
 	// default dependency regex
 	defaultModuleRegex = /\.(module|create)$/;
-	specRegex = /\.(wire\.spec|wire)$/;
+	defaultSpecRegex = /\.(wire\.spec|wire)$/;
 	// adapted from cram's scan function:
 	//replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]+)\]\s*,)?\s*(function)?\s*(?:\(([^)]*)\))?/g;
 	replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]*)\]\s*,)?/;
 	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?[\n\r]/g;
+	splitSpecsRegex = /\s*,\s*/;
 
 	return {
 		normalize: normalize,
@@ -43,6 +45,7 @@ define(function(require) {
 		defines = [];
 		seenModules = {};
 		moduleRegex = defaultModuleRegex;
+		childSpecRegex = defaultSpecRegex;
 
 		// Get config values
 		if(config) {
@@ -52,41 +55,49 @@ define(function(require) {
 
 		// Grab the spec module id, *or comma separated list of spec module ids*
 		// Split in case it's a comma separated list of spec ids
-		specIds = resourceId.split(',');
+		specIds = resourceId.split(splitSpecsRegex);
 
-		return unfold(
-			function(specIds) {
-				var id, dfd;
-
-				id = specIds.shift();
-				dfd = when.defer();
-
-				require(
-					[id],
-					function(spec) { dfd.resolve([[spec, id], specIds]); },
-					dfd.reject
-				);
-
-				return dfd.promise;
-			},
-			function(specIds) { return !specIds.length; },
-			// processSpec.apply.bind(processSpec, null),
-			function(params) { return processSpec.apply(null, params); },
-			specIds
-		).then(done, io.error);
+		return when.map(specIds, function(specId) {
+			return processSpec(specId);
+		}).then(write, io.error);
 
 		// For each spec id, add the spec itself as a dependency, and then
 		// scan the spec contents to find all modules that it needs (e.g.
 		// "module" and "create")
-		function processSpec(spec, specId) {
-			var dependencies;
+		function processSpec(specId) {
+			var dependencies, ids;
 
 			dependencies = [];
+			ids = [specId];
 
-			addDependency(wireId);
-			scanPlugins(spec);
-			scanObj(spec);
-			return generateDefine(specId, dependencies);
+			addDep(wireId);
+
+			return unfold(fetchNextSpec, endOfList, scanSpec, ids)
+				.then(function() {
+					return generateDefine(specId, dependencies);
+				}
+			);
+
+
+			function fetchNextSpec() {
+				var id, dfd;
+
+				id = ids.shift();
+				dfd = when.defer();
+
+				require(
+					[id],
+					function(spec) { dfd.resolve([spec, ids]); },
+					dfd.reject
+				);
+
+				return dfd.promise;
+			}
+
+			function scanSpec(spec) {
+				scanPlugins(spec);
+				scanObj(spec);
+			}
 
 			function scanObj(obj, path) {
 				// Scan all keys.  This might be the spec itself, or any sub-object-literal
@@ -103,10 +114,11 @@ define(function(require) {
 				// 2. If it's an object or an array, scan it recursively
 				// 3. If it's a wire spec, add it to the list of spec ids
 				if (isSpec(path) && typeof it === 'string') {
-					specIds.push(it);
+					addSpec(it);
+
 				} else if (isDep(path) && typeof it === 'string') {
 					// Get module def
-					addDependency(it);
+					addDep(it);
 
 				} else if (isStrictlyObject(it)) {
 					// Descend into subscope
@@ -135,17 +147,24 @@ define(function(require) {
 
 			function addPlugin(plugin) {
 				if(typeof plugin === 'string') {
-					addDependency(plugin);
+					addDep(plugin);
 				} else if(typeof plugin === 'object' && plugin.module) {
-					addDependency(plugin.module);
+					addDep(plugin.module);
 				}
 			}
 
-			function addDependency(moduleId) {
+			function addDep(moduleId) {
 				if(!(moduleId in seenModules)) {
 					dependencies.push(moduleId);
 					seenModules[moduleId] = moduleId;
 				}
+			}
+
+			function addSpec(specId) {
+				if(!(specId in seenModules)) {
+					ids.push(specId);
+				}
+				addDep(specId);
 			}
 		}
 
@@ -165,17 +184,18 @@ define(function(require) {
 			return dfd.promise;
 		}
 
-		function done() {
-			io.write(defines.join('\n'));
+		function write() {
+			// protect against prior code that may have omitted a semi-colon
+			io.write('\n;' + defines.join('\n'));
 		}
 
 		function isDep(path) {
 			return moduleRegex.test(path);
 		}
-	}
 
-	function isSpec(path) {
-		return specRegex.test(path);
+		function isSpec(path) {
+			return childSpecRegex.test(path);
+		}
 	}
 
 	function createPath(path, name) {
@@ -210,5 +230,9 @@ define(function(require) {
 		return '"' + id + '"';
 	}
 
+	function endOfList(ids) {
+		return !ids.length;
+	}
+
 });
-}(typeof define === 'function' ? define : function(factory) { module.exports = factory(); }));
+}(typeof define === 'function' ? define && define.amd : function(factory) { module.exports = factory(require); }));
