@@ -1,5 +1,5 @@
 (function(buster, context) {
-"use strict";
+'use strict';
 
 var assert, refute, fail, sentinel;
 
@@ -105,7 +105,7 @@ buster.testCase('context', {
 			},
 
 			'child': {
-				'should be destroyed when parent is destroyed': function(done) {
+				'should be destroyed before parent is destroyed': function(done) {
 					createContext({ a: 0 }).then(function(parent) {
 						return parent.wire({ a: 1 }).then(function(child) {
 							return child.wire({ a: 2 }).then(function(grandchild) {
@@ -114,7 +114,16 @@ buster.testCase('context', {
 								assert.equals(child.a, 1);
 								assert.equals(grandchild.a, 2);
 
+								var childDestroyed = false;
+								var origDestroy = grandchild.destroy.bind(grandchild);
+								grandchild.destroy = function() {
+									refute(childDestroyed);
+									assert.equals(grandchild.a, 2);
+									return origDestroy();
+								};
+
 								return child.destroy().then(function() {
+									childDestroyed = true;
 									assert.equals(grandchild.a, 0);
 								});
 
