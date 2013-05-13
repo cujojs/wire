@@ -1,6 +1,6 @@
 # Extending Wire.js
 
-Wire.js can be extended via plugins.  Plugins can extend the DSL syntax with factories, facets, and reference resolvers, listen for component lifecycle events, provide proxy adapters that allow other plugins to interact with new types of components.
+Wire.js can be extended via plugins.  Plugins can extend the DSL syntax with [factories](#factories), [facets](#facets), and [reference resolvers](#references), listen for component lifecycle events, and even provide [proxy adapters](concepts.md#proxies) that allow other plugins to interact with new types of components.
 
 # Using plugins
 
@@ -35,6 +35,40 @@ define({
 		'wire/dom',
 		'wire/on',
 		{ module: 'my/custom/wirePlugin', myPluginOption1: /* value */, myPluginOption2: /* value */
+	]
+});
+```
+
+## Plugin namespaces
+
+By default, all the [factories](#factories), [facets](#facets), and [reference resolvers](#references) provided by each plugin are available *un-namespaced* within the current wire spec.  For clarity, and to avoid potential naming conflicts between plugins, you can *optionally* provide a namespace for some or all plugins in your wire specs, using the `$ns` option.
+
+When namespaced, all of the  provided by the plugin must be prefixed with the namespace.
+
+The [Hello Wire example from the Concepts](concepts.md#context-example) assigns the namespace `dom` to the `wire/dom` plugin, and thus uses the plugin's `first!` resolver with the namespace prefix: `dom:first!`
+
+```javascript
+define({
+	message: 'I haz been wired',
+
+	// Create an instance of the hello-wired module.
+	helloWired: {
+
+		create: {
+			module: 'app/HelloWire',
+			// Use the first! resolver with namespace prefix
+			args: { $ref: 'dom:first!.hello' }
+		},
+
+		ready: {
+			sayHello: { $ref: 'message' }
+		}
+	},
+
+	$plugins: [
+		{ module: 'wire/debug', trace: true },
+		// Assign the namespace `dom` to the wire/dom plugin
+		{ module: 'wire/dom', $ns: 'dom' }
 	]
 });
 ```

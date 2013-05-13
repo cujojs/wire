@@ -111,7 +111,7 @@ This simple wire spec has three top-level components:
 
 * `message` - a String
 * `helloWired` - an AMD module with module id `app/HelloWired`. In this case the module is a constructor function, which wire.js will use to create an object instance.
-* `plugins` - an Array containing one AMD module to load.  This module happens to be a wire.js plugin for referencing DOM nodes--read more on referencing below and in the [References](#references) section.
+* `$plugins` - an Array containing one AMD module to load.  This module happens to be a wire.js plugin for referencing DOM nodes--read more on referencing below and in the [References](#references) section.
 
 ### References
 
@@ -176,7 +176,7 @@ which creates the *context*, `context`, that contains fully realized components:
 
 1. `message` - a String
 2. `helloWired` - an object created from the AMD module `app/HelloWired`, whose constructor was passed a DOM node by the `wire/dom` plugin's DOM [reference resolver](#references), and whose `init()` function has been called and passed the `message` String.
-3. `plugins` - an Array containing a single wire.js plugin, `wire/dom`.
+3. `$plugins` - an Array containing a single wire.js plugin, `wire/dom`.
 
 The `wired` context has properties for the components from the wiring spec.
 
@@ -219,69 +219,39 @@ curl(['wire!hello-wired-spec'], function(context) {
 });
 ```
 
-The `childContext` will have properties for all the components in its parent `context`: `message`, `helloWired`, and `plugins`, but will also have the additional component `anotherComponent`.
+The `childContext` will have properties for all the components in its parent `context`: `message`, `helloWired`, and `$plugins`, but will also have the additional component `anotherComponent`.
 
 ## Plugins
 
 Wire.js's core DSL is very small, but can be extended by plugins.  For example, there is no builtin handling of [DOM Nodes](dom.md#querying-the-dom) or [DOM Events](dom.md#connecting-dom-events).  That functionality is provided the bundled [DOM plugins](dom.md).
 
-Including plugins in a [wire spec](#wire-specs) is simple.  Wire scans modules for plugins, so you can simply include them in your spec using the [module factory](components.md#module).  Although it's not necessary, a good convention is to group plugins together in a plugins array:
+Including plugins in a [wire spec](#wire-specs) is simple: include plugin module IDs in the `$plugins` array:
 
 ```js
 $plugins: [
-	{ module: 'wire/debug' },
-	{ module: 'wire/dom' },
-	{ module: 'wire/dom/render' },
-	{ module: 'wire/aop' }
+	'wire/debug',
+	'wire/dom',
+	'wire/dom/render',
+	'wire/aop'
 ]
 ```
 
+**NOTE:** Versions of wire.js < 0.10 allowed plugins to appear in an array named `plugins` rather than `$plugins`.  The name `plugins` is *deprecated* in 0.10.  Use the newer, preferred name: `$plugins`.
+
 ### Plugin options
 
-Plugins may have options, which can be included as properties.  For example, to turn on the `wire/debug` plugin's `trace` option:
+Plugins may have options which can be included as properties by using an object literal instead of a string module ID.  For example, to turn on the `wire/debug` plugin's `trace` option:
 
 ```js
 	$plugins: [
 		{ module: 'wire/debug', trace: true },
-		{ module: 'wire/dom' },
-		{ module: 'wire/dom/render' },
-		{ module: 'wire/aop' }
+		'wire/dom',
+		'wire/dom/render',
+		'wire/aop'
 	]
 ```
 
-### Plugin namespaces
-
-By default, all the factories and facets provided by each plugin are available *un-namespaced* within the current wire spec.  For clarity, and to avoid potential naming conflicts between plugins, you can *optionally* provide a namespace for some or all plugins in your wire specs, using the `$ns` option.
-
-When namespaced, all of the [factories](#factories), [facets](#facets), and [reference resolvers](#references) provided by the plugin must be prefixed with the namespace.
-
-The [Hello Wire example from above](#context-example) assigns the namespace `dom` to the `wire/dom` plugin, and thus uses the plugin's `first!` resolver with the namespace prefix: `dom:first!`
-
-```javascript
-define({
-	message: 'I haz been wired',
-
-	// Create an instance of the hello-wired module.
-	helloWired: {
-
-		create: {
-			module: 'app/HelloWire',
-			// Use the first! resolver with namespace prefix
-			args: { $ref: 'dom:first!.hello' }
-		},
-
-		ready: {
-			sayHello: { $ref: 'message' }
-		}
-	},
-
-	$plugins: [
-		{ module: 'wire/debug', trace: true },
-		// Assign the namespace `dom` to the wire/dom plugin
-		{ module: 'wire/dom', $ns: 'dom' }
-	]
-});
-```
+For more information about using plugins, see the [Plugins documentation](extending.md).
 
 ## Components
 
