@@ -1,22 +1,22 @@
 # Concepts
 
-1. [General Concepts](#general-concepts)
+1. [General concepts](#general-concepts)
 	1. [Inversion of Control](#inversion-of-control)
 	1. [Dependency Inversion](#dependency-inversion)
-	1. [Application Composition](#application-composition)
-1. [Wire Concepts](#wire-concepts)
+	1. [Application composition](#application-composition)
+1. [Wire concepts](#wire-concepts)
 	1. [Wire specs](#wire-specs)
 	1. [Contexts](#contexts)
 	1. [Plugins](#plugins)
 	1. [Components](#components)
 	1. [Factories](#factories)
 	1. [Proxies](#proxies)
-	1. [Component Lifecycle](#component-lifecycle)
+	1. [Component lifecycle](#component-lifecycle)
 	1. [Facets](#facets)
 	1. [References](#references)
 	1. [Connections](#connections)
 
-# General Concepts
+# General concepts
 
 ## Inversion of Control
 
@@ -26,13 +26,13 @@ That's one of those definitions that's more useful after you already understand 
 
 If you write Javascript in a browser environment, you're already using one form of IOC.  Let's look at a simple example to compare "normal" vs. "inverted" control.
 
-### Normal Control
+### Normal control
 
 Take a simple *program*, like a shell script, that executes sequentially from beginning to end, maybe reading files, transforming the data, and then outputting the transformed data to stdout or another file.  This is the same as the concept of a "main()" in languages like C, C++, Java, etc.
 
 That's a traditional, or "normal", flow of control.  Your code is in control and makes decisions (e.g. via conditionals, loops, etc.) about what code to execute when.
 
-### Inverted Control
+### Inverted control
 
 When you write Javascript in a browser, your code will typically be structured, at some level, as a set of callback functions attached to browser events.  You won't have a "main()", in the traditional sense, but rather, you rely on the browser to invoke your callback functions at the appropriate time.  The browser is in control, and makes decisions about when to give control back to your code by invoking your callback functions.  The browser may even decide *not* to call your callbacks at all, depending on the situation.
 
@@ -50,7 +50,7 @@ This is probably a good time to go read [Martin Fowler's well known article on t
 
 *Side note*: The term IOC Container is usually a bit of a misnomer.  Most IOC Containers focus primarily on providing Dependency Inversion, and so a better name might be "Dependency Inversion Container".  Fowler mentions this as well.
 
-## Application Composition
+## Application composition
 
 Implementing application logic inside components, and composing those components together into a running application are very different activities.  Many times, however, they are done at the same time, in the same code.  That leads to tightly coupled components that can be impossible to unit test and refactor.
 
@@ -65,7 +65,7 @@ wire.js is cujo.js’s application composition layer.  It provides a well-define
 
 Components can be implemented and tested without embedding connection logic and infrastructure.  The composition and application logic can be refactored independently, many times without affecting each other at all.
 
-# Wire Concepts
+# Wire concepts
 
 ## Wire specs
 
@@ -113,9 +113,9 @@ This simple wire spec has three top-level components:
 * `helloWired` - an AMD module with module id `app/HelloWired`. In this case the module is a constructor function, which wire.js will use to create an object instance.
 * `plugins` - an Array containing one AMD module to load.  This module happens to be a wire.js plugin for referencing DOM nodes--read more on referencing below and in the [References](#references) section.
 
-### References
+### Referencing other components
 
-The wire spec also contains two *references* using [JSON Referencing](http://www.sitepen.com/blog/2008/06/17/json-referencing-in-dojo/)*-like* syntax.  The first references a DOM Node by id:
+The wire spec also contains two [references](#references) using simplified JSON Referencing syntax.  The first references a DOM Node by id:
 
 ```javascript
 { $ref: 'dom!hello' }
@@ -289,7 +289,7 @@ One of the main things you'll do when assembling any application, whether you're
 
 Wire.js supports a wide variety of components from simple Javascript types, to object literals and Arrays, to AMD modules.
 
-### Simple Types
+### Simple types
 
 A component can be any native Javascript type: Number, String, Boolean, Date, RegExp (via both new RegExp and literal // syntax), Array, Object literal.
 
@@ -307,7 +307,7 @@ Proxies are closely related to factories.  For each component, wire creates a pr
 
 For example, each proxy implements a simple `get()/set()` API for getting and setting its component's properties.  This allows plugins to set properties on objects where simple property assignment is not sufficient.  For example, Dojo Dijit widgets require calling their `get()` and `set()` methods.
 
-## Component Lifecycle
+## Component lifecycle
 
 Each component in a [wire spec](#wire-specs) has a well-defined *lifecycle* that is managed by wire.js.  When wire.js processes the spec to create a [context](#contexts), each component will pass through the following lifecycle stages:
 
@@ -330,7 +330,7 @@ Wire.js comes with several builtin facets, and plugins can provide additional fa
 
 ## References
 
-References allow you to reference components and other existing resources.  Wire.js uses a [JSON-referencing](http://groups.google.com/group/json-schema/browse_thread/thread/95fb4006f1f92a40)-like syntax for references, but allows for extensions to the referencing syntax via plugins, which can provide Reference Resolvers to do more sophisticated things, such as [referencing DOM nodes](./dom.md#querying-the-dom)
+References allow you to reference components and other existing resources.  Wire.js uses a simplified [JSON Referencing](http://tools.ietf.org/html/draft-pbryan-zyp-json-ref-03) syntax for references, but allows for extensions to the referencing syntax via plugins, which can provide Reference Resolvers to do more sophisticated things, such as [referencing DOM nodes](./dom.md#querying-the-dom)
 
 ### Syntax
 
@@ -352,9 +352,9 @@ For example, the [wire/dom](https://github.com/cujojs/wire/wiki/wire-dom) plugin
 { $ref: 'dom!my-node-id' }
 ```
 
-### Simple Example
+### Simple example
 
-Using references in a [wire spec](#wire-specs) is similar to using variables.  For example, if you have a component named `controller` needs a reference to another component named `view`:
+Using references in a [wire spec](#wire-specs) is similar to using variables.  For example, if you have a component named `controller` that needs a reference to another component named `view`:
 
 ```javascript
 // Create a controller instance
@@ -379,6 +379,28 @@ view: {
 ```
 
 Notice that order doesn't matter.  Even though `view` is referenced before it is declared, the reference will be resolved correctly because wire specs are *declarative*, and wire.js will handle ordering to make sure everything works out.
+
+### Injecting reference resolvers
+
+Many of wire's built-in resolvers can be [injected](#dependency-inversion) as [properties](configure.md#properties) or [constructor args](components.md#create).  This allows you to use the same reference resolution mechanism in your wire specs and your procedural code.  Each of the following built-in resolvers may be injected:
+
+- [on!](connections.md#dom-events)
+- [id!](dom.md#querying-the-dom)
+- [all!](dom.md#querying-the-dom)
+- [first!](dom.md#querying-the-dom)
+- [wire!](wire#injecting-wire)
+
+To inject a reference resolver, omit the reference identifier (the part after the "!") as in this example:
+
+```js
+controller: {
+	create: 'my/Controller',
+	properties: {
+		// inject the "first!" resolver as an abstracted document.querySelector
+		querySelector: { $ref: 'first!' }
+	}
+}
+```
 
 ## Connections
 
