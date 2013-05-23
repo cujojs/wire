@@ -1,6 +1,6 @@
 # jQuery integration
 
-Wire.js, like all cujo.js projects, integrates with other libraries and
+Wire.js, like all cujoJS projects, integrates with other libraries and
 frameworks, such as jQuery.
 
 ## jQuery $(selector)
@@ -166,4 +166,4 @@ define({
 
 Please note that wire.js does not load the jQuery UI scripts.  The module
 loader, such as curl.js or RequireJS, must be configured to load them before
-they are used in a wire spec.  
+they are used in a wire spec.
