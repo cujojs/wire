@@ -392,6 +392,61 @@ myController: {
 
 Now, when the user clicks/selects User Prefs, the controller's `_showPrefs()` method will be called, and will wire the prefsContext into existence.
 
+### Exporting specific components using `$exports`
+
+By default, a component that uses the wire factory will be assigned the entire child context.  Therefore, other components may access or manipulate any part of the child context if they have a [reference](concepts.md#references) to the component.
+
+For better encapsulation, child specs may limit the components they expose with the `$exports` keyword.  Before returning a child context to the parent, the wire factory looks for a component named `$exports` on the child context.  If it finds one, it will only export the `$exports` component to the parent, rather than the entire spec.
+
+### $exports example
+
+In the following example, only the `controller` component is exported to a parent context:
+
+```js
+{
+	// $exports is a reference to controller. Only it will be exported.
+	$exports: { $ref: 'controller' },
+
+	controller: {
+		create: 'MyController',
+		properties: {
+			view: { $ref: 'view' }
+		}
+	},
+
+	view: { $ref: 'id!sidebar' }
+
+	// other components and plugins...
+}
+```
+
+Notice that the `view` component is still accessible to a parent context as a property of the `controller` component.  This is a reasonable pattern.  However, there are situations in which access to multiple, top-level components is desirable.
+
+Multiple components may be exported at once by exporting an object or array.  In the following example, both `controller` and `view` are exported:
+
+```js
+{
+	// An object with both "controller" and "view" properties will be exported.
+	$exports: {
+		controller: { $ref: 'controller' },
+		view: { $ref: 'view' }
+	},
+
+	controller: {
+		create: 'MyController',
+		properties: {
+			view: { $ref: 'view' }
+		}
+	},
+
+	view: { $ref: 'id!sidebar' }
+
+	// other components and plugins...
+}
+```
+
+Note: when using wire [programmatically](wire.md#module) or injecting the [`wire!` reference resolver](wire.md#injecting-wire), `$exports` is ignored.  The entire context, including any `$exports` component, is returned.
+
 ## prototype
 
 **Deprecated:** The prototype factory is deprecated in favor of simply using the [create factory](#create).
