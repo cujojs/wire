@@ -23,6 +23,8 @@ Apps constructed with wire.js:
 * Allow application structure to be refactored independently from application logic
 * Have no explicit dependencies on DOM Ready, DOM query engines, or DOM event libraries
 
-## Example apps
+## Learn more
 
-Check out the example applications built with wire.js at [know.cujojs.com](http://know.cujojs.com/samples).
+* [Documentation](README.md). Wire.js has ample docs. The best place to start is [Understanding the concepts](concepts.md).
+* [Sample apps](http://know.cujojs.com/samples). Once you've got a feel for what you can accomplish with wire.js, install, run, and tweak these.
+* [Tutorials](http://know.cujojs.com/). New tutorials are posted every week.

@@ -9,7 +9,7 @@ To find out more, read the [full introduction](docs/introduction.md), more about
 # Documentation
 
 1. [Getting Started](docs/get.md)
-1. [Reference Documentation](docs/TOC.md)
+1. [Reference Documentation](docs/README.md)
 1. [Example Code and Apps](docs/introduction.md#example-apps)
 
 # What's new
@@ -25,7 +25,7 @@ To find out more, read the [full introduction](docs/introduction.md), more about
 ### 0.9.0
 
 * [Get it!](docs/get.md)
-* [All new documentation](docs/TOC.md)
+* [All new documentation](docs/README.md)
 * [Even more DOM support](docs/dom.md), including DOM event connections via wire/on and cloning DOM elements.
 * [Functions are first-class citizens](docs/functions.md) that can be used in very powerful ways.
 * [Transform connections](docs/connections.md#transform-connections) use functions to transform data as it flows through connections (including DOM event connections).

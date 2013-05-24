@@ -9,7 +9,7 @@
 ### 0.9.0
 
 * [Get it!](docs/get.md)
-* [All new documentation](docs/TOC.md)
+* [All new documentation](docs/README.md)
 * [Even more DOM support](docs/dom.md), including DOM event connections via wire/on and cloning DOM elements.
 * [Functions are first-class citizens](docs/functions.md) that can be used in very powerful ways.
 * [Transform connections](docs/connections.md#transform-connections) use functions to transform data as it flows through connections (including DOM event connections).
@@ -111,7 +111,7 @@
 * `create` factory now supports the `isConstructor` option, when `true`, forces an object instance to be created using `new`.
 * Improved debug output when using [wire/debug](https://github.com/cujojs/wire/wiki/wire-debug) plugin,
 * Slimmed down [wire/aop](https://github.com/cujojs/wire/wiki/wire-aop) plugin in preparation for a new version in an upcoming release,
-* Automated unit tests using [Dojo DOH](http://dojotoolkit.org/reference-guide/util/doh.html), 
+* Automated unit tests using [Dojo DOH](http://dojotoolkit.org/reference-guide/util/doh.html),
 * Semantic versioning
 
 ## 0.5
