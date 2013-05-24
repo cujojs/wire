@@ -132,7 +132,7 @@ When you feed a spec to wire.js, it will create a [context](#contexts) containin
 
 ## Contexts
 
-As the result of processing a spec, wire.js produces a **Context**.  The context is a Javascript Object that contains the all fully realized components that were specified in the wiring spec.  The context also has methods for wiring child contexts, resolving references, and destroying the context and all the objects, etc. that were created when it was wired.
+As the result of processing a spec, wire.js produces a **Context**.  The context is a Javascript Object that contains the fully realized components that were specified in the wiring spec.  The context also has methods for wiring child contexts, resolving references, and destroying the context and all the objects, etc. that were created when it was wired.
 
 ### Context example
 
@@ -223,7 +223,7 @@ The `childContext` will have properties for all the components in its parent `co
 
 ## Plugins
 
-Wire.js's core DSL is very small, but can be extended by plugins.  For example, there is no builtin handling of [DOM Nodes](dom.md#querying-the-dom) or [DOM Events](dom.md#connecting-dom-events).  That functionality is provided the bundled [DOM plugins](dom.md).
+Wire.js's core DSL is very small, but can be extended by plugins.  For example, there is no builtin handling of [DOM Nodes](dom.md#querying-the-dom) or [DOM Events](dom.md#connecting-dom-events).  That functionality is provided by the bundled [DOM plugins](dom.md).
 
 Including plugins in a [wire spec](#wire-specs) is simple.  Wire scans modules for plugins, so you can simply include them in your spec using the [module factory](components.md#module).  Although it's not necessary, a good convention is to group plugins together in a plugins array:
 

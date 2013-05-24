@@ -1,8 +1,14 @@
 # Creating Components
 
-1. [Simple Types](#simple-types)
-1. [Application Components](#application-components)
-1. [Built-in Factories](#built-in-factories)
+1. [Simple types](#simple-types)
+1. [Application components](#application-components)
+1. [Built-in factories](#built-in-factories)
+	1. [module factory](#module)
+	1. [create factory](#create)
+	1. [compose factory](#compose)
+	1. [literal factory](#literal)
+	1. [wire factory](#wire)
+	1. [prototype factory (deprecated)](#prototype)
 
 Wire provides a declarative, *extensible*, Domain Specific Language (DSL) for describing the components of your application.
 
@@ -33,7 +39,7 @@ define({
 });
 ```
 
-# Application Components
+# Application components
 
 To create more sophisticated applications components, wire.js uses *Factory plugins*.  Factory plugins extend the wire spec DSL, and provide simple syntax for creating objects and functions from AMD modules.  Developers can implement new factory plugins to create other types of components.
 
@@ -46,7 +52,7 @@ are:
 4. `literal` - wire will not parse the right-hand side, but rather use it verbatim as a component
 5. `wire` - recursively invokes wire on another wire spec
 
-## Using Factories
+## Using factories
 
 To create a component using a factory, declare a component as an object literal and include the factory name and options as a property.  Here are a few simple examples:
 
@@ -87,7 +93,7 @@ define({
 });
 ```
 
-# Built-in Factories
+# Built-in factories
 
 ## module
 
@@ -104,7 +110,7 @@ myComponent: {
 
 The create factory loads an AMD module and uses it to create a component instance by calling the module either as a constructor using `new` or as a regular function, or by begetting a new instance if the module is an object.
 
-### Full Syntax
+### Full syntax
 
 ```javascript
 myComponent: {
@@ -132,7 +138,7 @@ myComponent: {
 }
 ```
 
-### isConstructor Option Notes
+### isConstructor option notes
 
 The create factory uses a set of simple heuristics to determine automatically whether to call the module as a constructor using `new`, or as a regular function.
 
@@ -217,7 +223,7 @@ myReferenceData: {
 
 ## wire
 
-The wire factory provides a way of creating [child contexts](concepts.md#contexts).  This allows you to modularize your [wire specs](concepts.md#wire-specs), so that they can be mixed and matched.  It also allows you to modularize your application by wiring sections of your application into existence when needed, and destroying them once they are no longer needed.
+The wire factory provides a way of creating [child contexts](concepts.md#contexts).  This allows you to modularize your [wire specs](concepts.md#wire-specs) so that they can be mixed and matched.  It also allows you to modularize your application by wiring sections of your application into existence when needed, and destroying them once they are no longer needed.
 
 The `defer` option (see below) provides an especially powerful mechanism for modularizing applications.
 
@@ -235,16 +241,22 @@ childContext: {
 		// If both are set to true, defer will win.
 
 		// Wire the child immediately
-		defer: false /* default is false */
+		defer: false, /* default is false */
 
-		// If true, don't allow the child to begin wiring until after the parent
-		// has fully completed.
-		waitParent: false /* default is false */
+		// If true, don't allow the child to begin wiring until after the
+		// parent has fully completed.
+		waitParent: false, /* default is false */
+
+		// Provide components to the child.
+		provide: {
+			aSpecialValue: 42,
+			transform: { $ref: 'myTransform' }
+		}
 	}
 }
 ```
 
-### Short Syntax
+### Short syntax
 
 ```javascript
 // childContext will be a promise for the wired child context
@@ -264,11 +276,11 @@ So, to use components in the child context from the parent, you must wait for th
 
 ```javascript
 childContext.then(function(wiredChildContext) {
-	wiredChildContext.componetFromChildSpec.doSomething();
+	wiredChildContext.componentFromChildSpec.doSomething();
 });
 ```
 
-### waitParent Option
+### waitParent option
 
 **NOTE:** The `waitParent` and `defer` options are mutually exclusive.  If both are set to true, `defer` will win.
 
@@ -276,11 +288,11 @@ When the wire factory creates a child context, it will allow the child to begin 
 
 Sometimes you may need to guarantee that the child will not even start wiring until after the parent has fully completed.  For example, you may need for some components in the parent to do some startup work, such as setting up application security options, before any of the components in the child are even created.  In those situations, set `waitParent: true`, and child wiring will be guaranteed not to start until after the parent has fully finished wiring.
 
-### defer Option
+### defer option
 
 **NOTE:** The `waitParent` and `defer` options are mutually exclusive.  If both are set to true, `defer` will win.
 
-Instead of wiring a child context immediately, the `defer` option allows you to inject a *function* that, when called, will wire the child context.
+Instead of wiring a child context immediately, the `defer` option creates a *function* that, when called, will wire the child context.
 
 For example, you might choose to create a wire spec for the user preferences area of your application.  You might use the `defer` option to inject a function into a controller:
 
@@ -291,6 +303,8 @@ myController: {
 
 	// Inject properties
 	properties: {
+		// startPrefs is a function that will wire 'my/specs/preferences'
+		// and return a promise that resolves when wiring is done.
 		startPrefs: {
 			wire: {
 				spec: 'my/specs/preferences',
@@ -302,22 +316,20 @@ myController: {
 }
 ```
 
-When myController is wired, it's `startPrefs` property will be a function, that, when called, will wire the `my/specs/preferences` spec into a child context, and will return a (CommonJS Promises/A compliant) promise, which will resolve to the child context once wiring has finished.
+When myController is wired, its `startPrefs` property will be a function that, when called, will wire the `my/specs/preferences` spec into a child context and will return a (CommonJS Promises/A compliant) promise, which will resolve to the child context once wiring has finished.
 
 The child context will have a `destroy()` method that can be used to destroy the child, and thus your app's preferences area.
 
 The `startPrefs` function can be called any number of times, and each time it will wire a new child context.
 
-### defer Example
+### defer example
 
-This example uses the wire factory and `defer` option to configure a controller to show and hide the User Prefs area of a simple app.  This is based on the [Simple Notes Demo app from Dojoconf 2011](https://github.com/briancavalier/notes-demo-dojoconf-2011), and you may want to have a look at that after reading this section.
+This example uses the wire factory and `defer` option to configure a controller to show and hide the User Prefs area of a simple app.  This is based on the [Simple Notes Demo app from Dojoconf 2011](https://github.com/briancavalier/notes-demo-dojoconf-2011).
 
-First, let's create an AMD module for our controller.  Let's assume it's `_handlePrefsOptionSelected` method handles a button click or menu selection and needs to show a User Prefs view.
+First, let's create an AMD module for our controller.  Let's assume its `_handlePrefsOptionSelected` method handles a button click or menu selection and needs to show a User Prefs view.
 
 ```javascript
-define(/* 'my/Controller' */, [], function() {
-
-	function noop() {} // do-nothing function, see below
+define(/* 'my/Controller', */ [], function() {
 
 	// Simple constructor
 	function MyController() {}
@@ -328,7 +340,7 @@ define(/* 'my/Controller' */, [], function() {
 		// the user clicks or selects User Prefs.
 		_handlePrefsOptionSelected: function(e) {
 
-			// Hang onto a this ref, since we'll be nesting functions
+			// Hang onto a this ref, since we'll be nesting functions.
 			var self = this;
 
 			// _showPrefs will have been injected, so we call it
@@ -351,10 +363,10 @@ define(/* 'my/Controller' */, [], function() {
 			});
 		},
 
-		// Do-nothing show/hide methods initially
-		// _showPrefs will be overwritten with an injected wire function
+		// Do-nothing show/hide methods, initially.
+		// _showPrefs will be overwritten with an injected wire function.
 		// _hidePrefs is overridden with a function to destroy the
-		// wired prefs context
+		// wired prefs context as needed.
 		_showPrefs: noop,
 		_hidePrefs: noop,
 
@@ -363,10 +375,12 @@ define(/* 'my/Controller' */, [], function() {
 
 	return MyController;
 
+	function noop() {}
+
 });
 ```
 
-Now, let's create a [wire spec](concepts.md#wire-specs) that will create an instance of our controller and setup the _showPrefs method using the wire factory.
+Now, let's create a [wire spec](concepts.md#wire-specs) that will construct an instance of our controller and setup the _showPrefs method using the wire factory.
 
 ```javascript
 // Create our controller
@@ -389,6 +403,149 @@ myController: {
 ```
 
 Now, when the user clicks/selects User Prefs, the controller's `_showPrefs()` method will be called, and will wire the prefsContext into existence.
+
+### provide option
+
+Child contexts [inherit](concepts.md#context-hierarchy) components from their ancestors and may [reference](concepts.md#references) their ancestors' components as if they were declared in the child spec.  This is a great feature since it allows specs to be more modular.
+
+However, it's not always feasible to assume that a spec will be provided a component *of a given name* via its ancestry.  For instance, if you create a spec that decorates a `<table>` element with grid-like behavior, you can't necessarily rely on a component generically named "table" in the ancestry.  What if there are two `<table>` elements you want to decorate?  You can't name them both "table".
+
+The wire factory's `provide` option offers an alternative to inherited components.  It allows components to be injected into the child spec as it is being wired.  Each property of the `provide` option is injected as a component into the child spec.  It's a bit like providing named arguments to a function.
+
+Using a grid decorator as an example, you could use `provide` to inject two "table" components for two separate components in a spec as follows:
+
+```js
+{
+	aGrid: {
+		wire: {
+			spec: 'ui/decorators/grid',
+			// inject aTable into this child
+			provide: { table: { $ref: 'aTable' } }
+		}
+	},
+
+	anotherGrid: {
+		wire: {
+			spec: 'ui/decorators/grid',
+			// provide anotherTable into this child
+			provide: { table: { $ref: 'anotherTable' } }
+		}
+	},
+
+	aTable: { $ref: 'first!table.grid', at: 'main-container' },
+
+	anotherTable: { $ref: 'first!table.grid', at: 'sidebar' }
+
+	// other components and plugins...
+}
+```
+
+Modular spec-modules like the grid decorator are often very configurable.  They might have dozens of configuration options.  However, having to provide all of those options for every instance would be tedious.
+
+The `provide` option helps this situation by also overriding components declared in the *child* spec.  For instance, if our grid decorator spec declares a configuration value, such as `headerRows: 1`, we could override it in a parent's `provide` or just leave it as is.  The `headerRows: 1` in the grid decorator spec is the *default value*.
+
+Here's how a grid decorator spec might look and how it could be consumed by another spec:
+
+```js
+// grid decorator spec, ui/decorators/grid.js
+{
+	// Table element to decorate. Must be provided.
+	table: null,
+
+	// Configuration value defaults.
+	headerRows: 1,
+	footerRows: 0,
+	fixedColumns: 'auto',
+
+	grid: {
+		// pass configuration values to grid constructor
+		create: {
+			module: 'ui/decorators/grid/GridWidget',
+			args: {
+				headerRows: { $ref: 'headerRows' },
+				footerRows: { $ref: 'footerRows' },
+				fixedColumns: { $ref: 'fixedColumns' }
+			}
+		}
+	},
+
+	// other components and plugins...
+}
+
+// parent spec that uses ui/decorators/grid
+{
+	aGrid: {
+		wire: {
+			spec: 'ui/decorators/grid',
+			// provide aTable and configuration options
+			provide: {
+				table: { $ref: 'aTable' },
+				headerRows: 2,
+				fixedColumns: 1
+			}
+		}
+	},
+
+	aTable: { $ref: 'first!table.grid', at: 'main-container' }
+
+	// other components and plugins...
+}
+```
+
+### Exporting specific components using `$exports`
+
+By default, a component that uses the wire factory will be assigned the entire child context.  Therefore, other components may access or manipulate any part of the child context if they have a [reference](concepts.md#references) to the component.
+
+For better encapsulation, child specs may limit the components they expose with the `$exports` keyword.  Before returning a child context to the parent, the wire factory looks for a component named `$exports` on the child context.  If it finds one, it will only export the `$exports` component to the parent, rather than the entire spec.
+
+### $exports example
+
+In the following example, only the `controller` component is exported to a parent context:
+
+```js
+{
+	// $exports is a reference to controller. Only it will be exported.
+	$exports: { $ref: 'controller' },
+
+	controller: {
+		create: 'MyController',
+		properties: {
+			view: { $ref: 'view' }
+		}
+	},
+
+	view: { $ref: 'id!sidebar' }
+
+	// other components and plugins...
+}
+```
+
+Notice that the `view` component is still accessible to a parent context as a property of the `controller` component.  This is a reasonable pattern.  However, there are situations in which access to multiple, top-level components is desirable.
+
+Multiple components may be exported at once by exporting an object or array.  In the following example, both `controller` and `view` are exported:
+
+```js
+{
+	// An object with both "controller" and "view" properties will be exported.
+	$exports: {
+		controller: { $ref: 'controller' },
+		view: { $ref: 'view' }
+	},
+
+	controller: {
+		create: 'MyController',
+		properties: {
+			view: { $ref: 'view' }
+		}
+	},
+
+	view: { $ref: 'id!sidebar' }
+
+	// other components and plugins...
+}
+```
+
+Note: when using wire [programmatically](wire.md#module) or injecting the [`wire!` reference resolver](wire.md#injecting-wire), `$exports` is ignored.  The entire context, including any `$exports` component, is returned.
 
 ## prototype
 
