@@ -241,8 +241,8 @@ childContext: {
 		// parent has fully completed.
 		waitParent: false, /* default is false */
 
-		// Provide (or rename) components available to the child.
-		provides: {
+		// Provide components to the child.
+		provide: {
 			aSpecialValue: 42,
 			transform: { $ref: 'myTransform' }
 		}
@@ -398,13 +398,13 @@ myController: {
 
 Now, when the user clicks/selects User Prefs, the controller's `_showPrefs()` method will be called, and will wire the prefsContext into existence.
 
-### provides option
+### provide option
 
 Child contexts [inherit](concepts.md#context-hierarchy) components from their ancestors and may [reference](concepts.md#references) their ancestors' components as if they were declared in the child spec.  This is a great feature since it allows specs to be modular.
 
 However, it's not always feasible to assume that a spec will be provided a component of a given name via its ancestry.  For instance, if you create a spec that decorates a `<table>` element with grid-like behavior, you can't necessarily rely on a component generically named "table" in the ancestry.  What if there are two <table> elements you want to decorate?  You can't name them both "table".
 
-The wire factory's `provides` option offers an alternative to inherited components.  It allows components to be injected into the child spec as it is being wired.  Each property of the `provides` option is injected as a component into the child spec.
+The wire factory's `provide` option offers an alternative to inherited components.  It allows components to be injected into the child spec as it is being wired.  Each property of the `provide` option is injected as a component into the child spec.
 
 Using the grid-like decorator spec as an example, you could inject two "table" components for two separate components in a parent spec as follows:
 
@@ -414,7 +414,7 @@ Using the grid-like decorator spec as an example, you could inject two "table" c
 		wire: {
 			spec: 'ui/decorators/grid',
 			// inject aTable into this child
-			provides: { table: { $ref: 'aTable' } }
+			provide: { table: { $ref: 'aTable' } }
 		}
 	},
 
@@ -422,7 +422,7 @@ Using the grid-like decorator spec as an example, you could inject two "table" c
 		wire: {
 			spec: 'ui/decorators/grid',
 			// inject anotherTable into this child
-			provides: { table: { $ref: 'anotherTable' } }
+			provide: { table: { $ref: 'anotherTable' } }
 		}
 	},
 
@@ -436,7 +436,7 @@ Using the grid-like decorator spec as an example, you could inject two "table" c
 
 Modular components like the grid-like decorator are often very configurable.  They might have dozens of configuration options.  However, having to provide all of those options for every instance would tedious.
 
-The `provides` option helps this situation by also overriding components declared in the child spec.  For instance, if our grid-like decorator spec declares a component, `"header-rows": 1`, we could override it in a parent's `provides` or just leave it as is.  The `"header-rows": 1` in the grid-like decorator spec is the *default value* if we don't override it in the `provides`.
+The `provide` option helps this situation by also overriding components declared in the child spec.  For instance, if our grid-like decorator spec declares a component, `"header-rows": 1`, we could override it in a parent's `provide` or just leave it as is.  The `"header-rows": 1` in the grid-like decorator spec is the *default value* if we don't override it in the `provide`.
 
 ### Exporting specific components using `$exports`
 
