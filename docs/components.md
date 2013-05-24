@@ -402,7 +402,7 @@ Now, when the user clicks/selects User Prefs, the controller's `_showPrefs()` me
 
 Child contexts [inherit](concepts.md#context-hierarchy) components from their ancestors and may [reference](concepts.md#references) their ancestors' components as if they were declared in the child spec.  This is a great feature since it allows specs to be more modular.
 
-However, it's not always feasible to assume that a spec will be provided a component of a given name via its ancestry.  For instance, if you create a spec that decorates a `<table>` element with grid-like behavior, you can't necessarily rely on a component generically named "table" in the ancestry.  What if there are two `<table>` elements you want to decorate?  You can't name them both "table".
+However, it's not always feasible to assume that a spec will be provided a component *of a given name* via its ancestry.  For instance, if you create a spec that decorates a `<table>` element with grid-like behavior, you can't necessarily rely on a component generically named "table" in the ancestry.  What if there are two `<table>` elements you want to decorate?  You can't name them both "table".
 
 The wire factory's `provide` option offers an alternative to inherited components.  It allows components to be injected into the child spec as it is being wired.  Each property of the `provide` option is injected as a component into the child spec.  It's a bit like providing named arguments to a function.
 
@@ -436,9 +436,7 @@ Using a grid decorator as an example, you could use `provide` to inject two "tab
 
 Modular spec-modules like the grid decorator are often very configurable.  They might have dozens of configuration options.  However, having to provide all of those options for every instance would be tedious.
 
-The `provide` option helps this situation by also overriding components declared in the *child* spec.  For instance, if our grid decorator spec declares a configuration value, such as `headerRows: 1`, we could override it in a parent's `provide` or just leave it as is.  The `headerRows: 1` in the grid decorator spec is the *default value* if we don't override it in the `provide`.
-
-### provide option example
+The `provide` option helps this situation by also overriding components declared in the *child* spec.  For instance, if our grid decorator spec declares a configuration value, such as `headerRows: 1`, we could override it in a parent's `provide` or just leave it as is.  The `headerRows: 1` in the grid decorator spec is the *default value*.
 
 Here's how a grid decorator spec might look and how it could be consumed by another spec:
 
