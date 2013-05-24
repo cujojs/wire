@@ -398,7 +398,7 @@ myController: {
 
 Now, when the user clicks/selects User Prefs, the controller's `_showPrefs()` method will be called, and will wire the prefsContext into existence.
 
-## provides option
+### provides option
 
 Child contexts [inherit](concepts.md#context-hierarchy) components from their ancestors and may [reference](concepts.md#references) their ancestors' components as if they were declared in the child spec.  This is a great feature since it allows specs to be modular.
 
