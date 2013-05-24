@@ -1,8 +1,8 @@
 # Creating Components
 
-1. [Simple Types](#simple-types)
-1. [Application Components](#application-components)
-1. [Built-in Factories](#built-in-factories)
+1. [Simple types](#simple-types)
+1. [Application components](#application-components)
+1. [Built-in factories](#built-in-factories)
 
 Wire provides a declarative, *extensible*, Domain Specific Language (DSL) for describing the components of your application.
 
@@ -33,7 +33,7 @@ define({
 });
 ```
 
-# Application Components
+# Application components
 
 To create more sophisticated applications components, wire.js uses *Factory plugins*.  Factory plugins extend the wire spec DSL, and provide simple syntax for creating objects and functions from AMD modules.  Developers can implement new factory plugins to create other types of components.
 
@@ -46,7 +46,7 @@ are:
 4. `literal` - wire will not parse the right-hand side, but rather use it verbatim as a component
 5. `wire` - recursively invokes wire on another wire spec
 
-## Using Factories
+## Using factories
 
 To create a component using a factory, declare a component as an object literal and include the factory name and options as a property.  Here are a few simple examples:
 
@@ -87,7 +87,7 @@ define({
 });
 ```
 
-# Built-in Factories
+# Built-in factories
 
 ## module
 
@@ -104,7 +104,7 @@ myComponent: {
 
 The create factory loads an AMD module and uses it to create a component instance by calling the module either as a constructor using `new` or as a regular function, or by begetting a new instance if the module is an object.
 
-### Full Syntax
+### Full syntax
 
 ```javascript
 myComponent: {
@@ -132,7 +132,7 @@ myComponent: {
 }
 ```
 
-### isConstructor Option Notes
+### isConstructor option notes
 
 The create factory uses a set of simple heuristics to determine automatically whether to call the module as a constructor using `new`, or as a regular function.
 
@@ -217,7 +217,7 @@ myReferenceData: {
 
 ## wire
 
-The wire factory provides a way of creating [child contexts](concepts.md#contexts).  This allows you to modularize your [wire specs](concepts.md#wire-specs), so that they can be mixed and matched.  It also allows you to modularize your application by wiring sections of your application into existence when needed, and destroying them once they are no longer needed.
+The wire factory provides a way of creating [child contexts](concepts.md#contexts).  This allows you to modularize your [wire specs](concepts.md#wire-specs) so that they can be mixed and matched.  It also allows you to modularize your application by wiring sections of your application into existence when needed, and destroying them once they are no longer needed.
 
 The `defer` option (see below) provides an especially powerful mechanism for modularizing applications.
 
@@ -244,7 +244,7 @@ childContext: {
 }
 ```
 
-### Short Syntax
+### Short syntax
 
 ```javascript
 // childContext will be a promise for the wired child context
@@ -264,11 +264,11 @@ So, to use components in the child context from the parent, you must wait for th
 
 ```javascript
 childContext.then(function(wiredChildContext) {
-	wiredChildContext.componetFromChildSpec.doSomething();
+	wiredChildContext.componentFromChildSpec.doSomething();
 });
 ```
 
-### waitParent Option
+### waitParent option
 
 **NOTE:** The `waitParent` and `defer` options are mutually exclusive.  If both are set to true, `defer` will win.
 
@@ -276,11 +276,11 @@ When the wire factory creates a child context, it will allow the child to begin 
 
 Sometimes you may need to guarantee that the child will not even start wiring until after the parent has fully completed.  For example, you may need for some components in the parent to do some startup work, such as setting up application security options, before any of the components in the child are even created.  In those situations, set `waitParent: true`, and child wiring will be guaranteed not to start until after the parent has fully finished wiring.
 
-### defer Option
+### defer option
 
 **NOTE:** The `waitParent` and `defer` options are mutually exclusive.  If both are set to true, `defer` will win.
 
-Instead of wiring a child context immediately, the `defer` option allows you to inject a *function* that, when called, will wire the child context.
+Instead of wiring a child context immediately, the `defer` option creates a *function* that, when called, will wire the child context.
 
 For example, you might choose to create a wire spec for the user preferences area of your application.  You might use the `defer` option to inject a function into a controller:
 
@@ -291,6 +291,8 @@ myController: {
 
 	// Inject properties
 	properties: {
+		// startPrefs is a function that will wire 'my/specs/preferences'
+		// and return a promise that resolves when wiring is done.
 		startPrefs: {
 			wire: {
 				spec: 'my/specs/preferences',
@@ -302,22 +304,20 @@ myController: {
 }
 ```
 
-When myController is wired, it's `startPrefs` property will be a function, that, when called, will wire the `my/specs/preferences` spec into a child context, and will return a (CommonJS Promises/A compliant) promise, which will resolve to the child context once wiring has finished.
+When myController is wired, its `startPrefs` property will be a function that, when called, will wire the `my/specs/preferences` spec into a child context and will return a (CommonJS Promises/A compliant) promise, which will resolve to the child context once wiring has finished.
 
 The child context will have a `destroy()` method that can be used to destroy the child, and thus your app's preferences area.
 
 The `startPrefs` function can be called any number of times, and each time it will wire a new child context.
 
-### defer Example
+### defer example
 
-This example uses the wire factory and `defer` option to configure a controller to show and hide the User Prefs area of a simple app.  This is based on the [Simple Notes Demo app from Dojoconf 2011](https://github.com/briancavalier/notes-demo-dojoconf-2011), and you may want to have a look at that after reading this section.
+This example uses the wire factory and `defer` option to configure a controller to show and hide the User Prefs area of a simple app.  This is based on the [Simple Notes Demo app from Dojoconf 2011](https://github.com/briancavalier/notes-demo-dojoconf-2011).
 
-First, let's create an AMD module for our controller.  Let's assume it's `_handlePrefsOptionSelected` method handles a button click or menu selection and needs to show a User Prefs view.
+First, let's create an AMD module for our controller.  Let's assume its `_handlePrefsOptionSelected` method handles a button click or menu selection and needs to show a User Prefs view.
 
 ```javascript
-define(/* 'my/Controller' */, [], function() {
-
-	function noop() {} // do-nothing function, see below
+define(/* 'my/Controller', */ [], function() {
 
 	// Simple constructor
 	function MyController() {}
@@ -328,7 +328,7 @@ define(/* 'my/Controller' */, [], function() {
 		// the user clicks or selects User Prefs.
 		_handlePrefsOptionSelected: function(e) {
 
-			// Hang onto a this ref, since we'll be nesting functions
+			// Hang onto a this ref, since we'll be nesting functions.
 			var self = this;
 
 			// _showPrefs will have been injected, so we call it
@@ -351,10 +351,10 @@ define(/* 'my/Controller' */, [], function() {
 			});
 		},
 
-		// Do-nothing show/hide methods initially
-		// _showPrefs will be overwritten with an injected wire function
+		// Do-nothing show/hide methods, initially.
+		// _showPrefs will be overwritten with an injected wire function.
 		// _hidePrefs is overridden with a function to destroy the
-		// wired prefs context
+		// wired prefs context as needed.
 		_showPrefs: noop,
 		_hidePrefs: noop,
 
@@ -363,10 +363,12 @@ define(/* 'my/Controller' */, [], function() {
 
 	return MyController;
 
+	function noop() {}
+
 });
 ```
 
-Now, let's create a [wire spec](concepts.md#wire-specs) that will create an instance of our controller and setup the _showPrefs method using the wire factory.
+Now, let's create a [wire spec](concepts.md#wire-specs) that will construct an instance of our controller and setup the _showPrefs method using the wire factory.
 
 ```javascript
 // Create our controller
