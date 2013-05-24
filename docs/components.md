@@ -3,6 +3,12 @@
 1. [Simple types](#simple-types)
 1. [Application components](#application-components)
 1. [Built-in factories](#built-in-factories)
+	1. [module factory](#module)
+	1. [create factory](#create)
+	1. [compose factory](#compose)
+	1. [literal factory](#literal)
+	1. [wire factory](#wire)
+	1. [prototype factory (deprecated)](#prototype)
 
 Wire provides a declarative, *extensible*, Domain Specific Language (DSL) for describing the components of your application.
 
