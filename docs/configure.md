@@ -1,6 +1,7 @@
 # Configuring Components
 
 1. [Properties](#properties)
+1. [Mixins](#mixins)
 1. [Init Methods](#init-methods)
 1. [Ready Methods](#ready-methods)
 1. [Destroy Methods](#destroy-methods)
@@ -39,6 +40,35 @@ define({
 
 	// More components ...
 });
+```
+
+## Mixins
+
+The `mixin` [facet](concepts.md#facets) *introduces* properties to a component.  As in the traditional [AOP sense](http://en.wikipedia.org/wiki/Aspect-oriented_software_development#Concepts_and_terminology), the `mixin` facet non-invasively introduces behavior to a component.  If the component already has a property of a given name, the `mixin` facet will not overwrite it.  In other libraries, this is sometimes called "safe mixin".
+
+Behavior is introduced to a component via one or more other components in an array as follows:
+
+```js
+myComposedThing: {
+	create: 'aBaseThing',
+	mixin: [
+		{ $ref: 'aDecoratorThing' },
+		{ $ref: 'anotherDecorator' }
+		/*, etc... */
+	]
+}
+```
+
+### Short syntax
+
+To introduce only one component, you may skip the array.  Since a component reference is implied, you may also skip the [`$ref`](concepts.md#references).
+
+```js
+myComposedThing: {
+	create: 'aBaseThing',
+	// shortcut for `[ { $ref: 'aDecoratorThing' } ]`
+	mixin: 'aDecoratorThing'
+}
 ```
 
 # Init Methods
