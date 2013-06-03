@@ -102,13 +102,12 @@ The plugin factory function can accept an options object, and must return a plug
 
 ## Plugin instance
 
-The plugin instance returned by the plugin factory function can provide lifecycle listeners, [factories](concepts.md#factories), [facets](concepts.md#facets), [reference resolvers](concepts.md#references), [proxies](concepts.md#proxies) and listeners for various points in [context](concepts.md#contexts) and [component lifecycles](concepts.md#component-lifecycle).  A plugin can define as many or as few of these things as needed.
+The plugin instance returned by the plugin factory function can provide lifecycle listeners, [factories](concepts.md#factories), [facets](concepts.md#facets), [reference resolvers](concepts.md#references), [proxies](concepts.md#proxies) and listeners for various points in [context](concepts.md#contexts) and [component lifecycles](concepts.md#component-lifecycle).  A plugin can define as much or as little of the following interface as it needs.
 
-Here is the full format for everything a plugin instance can define:
-
+Here is the full interface a plugin instance can define.
 ```js
 // return a plugin instance
-wire$plugin: function(ready, destroyed, options) {
+function(options) {
 	return {
 		// Context lifecycle listeners
 		// These functions will be invoked when a context is being created
@@ -128,11 +127,28 @@ wire$plugin: function(ready, destroyed, options) {
 		// Component lifecycle listeners
 		// Each component declared in a wire spec will pass through these
 		// functions as it moves through its lifecycle.
-		create:     function(resolver, proxy, wire) {},
-		configure:  function(resolver, proxy, wire) {},
-		initialize: function(resolver, proxy, wire) {},
-		ready:      function(resolver, proxy, wire) {},
-		destroy:    function(resolver, proxy, wire) {},
+		create:     		 function(resolver, proxy, wire) {},
+		'create:after':      function(resolver, proxy, wire) {},
+
+		configure:  		 function(resolver, proxy, wire) {},
+		'configure:before':  function(resolver, proxy, wire) {},
+		'configure:after':   function(resolver, proxy, wire) {},
+
+		initialize: 		 function(resolver, proxy, wire) {},
+		'initialize:before': function(resolver, proxy, wire) {},
+		'initialize:after':  function(resolver, proxy, wire) {},
+
+		connect:    		 function(resolver, proxy, wire) {},
+		'connect:before':    function(resolver, proxy, wire) {},
+		'connect:after':     function(resolver, proxy, wire) {},
+
+		ready:      		 function(resolver, proxy, wire) {},
+		'ready:before':  	 function(resolver, proxy, wire) {},
+		'ready:after':   	 function(resolver, proxy, wire) {},
+
+		destroy:    		 function(resolver, proxy, wire) {},
+		'destroy:before':  	 function(resolver, proxy, wire) {},
+		'destroy:after':   	 function(resolver, proxy, wire) {},
 
 		// Reference resolvers
 		// Custom reference resolvers that will be called to resolve
@@ -172,11 +188,28 @@ wire$plugin: function(ready, destroyed, options) {
 		// during the 'configure' stage for each component with the facet's key.
 		facets: {
 			facet1: {
-				create:     function(resolver, proxy, wire) {},
-				configure:  function(resolver, proxy, wire) {},
-				initialize: function(resolver, proxy, wire) {},
-				ready:      function(resolver, proxy, wire) {},
-				destroy:    function(resolver, proxy, wire) {},
+				create:     		 function(resolver, proxy, wire) {},
+				'create:after':      function(resolver, proxy, wire) {},
+
+				configure:  		 function(resolver, proxy, wire) {},
+				'configure:before':  function(resolver, proxy, wire) {},
+				'configure:after':   function(resolver, proxy, wire) {},
+
+				initialize: 		 function(resolver, proxy, wire) {},
+				'initialize:before': function(resolver, proxy, wire) {},
+				'initialize:after':  function(resolver, proxy, wire) {},
+
+				connect:    		 function(resolver, proxy, wire) {},
+				'connect:before':    function(resolver, proxy, wire) {},
+				'connect:after':     function(resolver, proxy, wire) {},
+
+				ready:      		 function(resolver, proxy, wire) {},
+				'ready:before':  	 function(resolver, proxy, wire) {},
+				'ready:after':   	 function(resolver, proxy, wire) {},
+
+				destroy:    		 function(resolver, proxy, wire) {},
+				'destroy:before':  	 function(resolver, proxy, wire) {},
+				'destroy:after':   	 function(resolver, proxy, wire) {},
 			}
 			// ... more facests ...
 		}
@@ -186,34 +219,161 @@ wire$plugin: function(ready, destroyed, options) {
 
 ## Plugin API
 
+When wire invokes any of your plugin instance methods, it provides several parameters.  All method receive a `resolver` and a `wire` instance.  Certain plugin methods also receive additional parameters.  All the parameters are documented below.
+
 ### `resolver`
 
-### `wire`
+Wire is a highly asynchronous environment, and your plugin may need to do some work asynchronously itself.  The `resolver` is an object with two methods that your plugin method uses to signal that it has completed its work successfully or has failed.
 
-#### `wire.resolveRef`
+```js
+{
+	// Signals that your plugin method has completed its work successfully.
+	resolve: function(),
 
-#### `wire.loadModule`
+	// Signals that your plugin method has failed
+	// error - an optional error indicating why it failed
+	reject: function(error)
+}
+```
 
-#### `wire.createChild`
+See [below](#factory-parameters) for more information on the `resolver` parameter when implementing a factory plugin method.
 
-#### `wire.getProxy`
+**NOTE:** Wiring will timeout if your plugin method does not eventually call one of `resolver.resolve` or `resolver.reject`
 
-#### `wire.addInstance`
+### `wire(componentSpec)`
 
-#### `wire.addComponent`
+A [contextualized](wire.md#contextual-ness) `wire()` function that your plugin can use to wire a component into the current context.  Returns a promise for the wired component.
 
-#### `wire.resolver`
+#### `wire.resolveRef(componentName)`
+
+Resolves a [component reference](concepts.md#references) by name.  Returns a promise for the named component.
+
+```js
+var promiseForOtherComponent = wire.resolveRef(nameOfOtherComponent);
+```
+
+#### `wire.loadModule(moduleId)`
+
+Load a module.  This delegates to the underlying platform's loader (e.g. AMD or CommonJS, etc.), and so provides an abstraction for loading modules without worrying about the particulars of the platform.
+
+#### `wire.createChild(childWireSpec)`
+
+Wire a complete [child context](concepts.md#context-hierarchy) of the current context.  Returns a promise for the child context.
+
+#### `wire.getProxy(componentNameOrInstance)`
+
+Gets a [proxy](concepts.md#proxies) for a component or any object.  When called with a component name, resolves the name to a component and returns the component's proxy.  When called with an object, attempts to create a new proxy using available plugins.  Returns a promise for the proxy.
+
+#### `wire.addInstance(instance, name)`
+
+Registers a component instance under the provided name.  The instance may then be [referenced](concepts.md#references) by the supplied `name`.  Wire *will not* pass the instance through the [component lifecycle](concepts.md#component-lifecycle).  That is, the `instance` will be registered under the supplied `name` as-is, without any additional processing.
+
+#### `wire.addComponent(component, name)`
+
+Registers a component instance under the provided name *and* passes the instance through the [component lifecycle](concepts.md#component-lifecycle), allowing it to be processed by plugins.  The instance may then be [referenced](concepts.md#references) by the supplied `name`.
 
 ### Reference resolver parameters
 
+Additional parameters passed to reference resolver plugin methods.
+
 #### `refName`
+
+The remainder of the reference string following the `'!'` in a reference.  For example, if you create a plugin with a reference resolver named `myResolverPlugin`, and use it:
+
+`{ $ref: 'myResolverPlugin!referenceNameHere' }`
+
+when wire invokes your resolver plugin method, `refName` will be `'referenceNameHere'`.
 
 #### `refObj`
 
+The entire reference object.  This allows your resolver plugin method to accept additional options, if they are supplied in the reference object.  For example, if you create a plugin with a reference resolver named `myResolverPlugin`, and use it:
+
+`{ $ref: 'myResolverPlugin!referenceNameHere', option1: 123, option2: 'xyz' }`
+
+when wire invokes your resolver plugin method, `refObj` will be the object: `{ $ref: 'myResolverPlugin!referenceNameHere', option1: 123, option2: 'xyz' }`
+
 ### Factory parameters
+
+Additional parameters passed to factory plugin methods.
+
+#### `resolver`
+
+When implementing a factory plugin method, you *must* supply the component (created by your factory) when calling `resolver.resolve`.
 
 #### `componentDef`
 
+A descriptor object containing information about the component the factory method is being asked to create.  It has the following properties:
+
+* `options` - The right-hand side (r-value) that was provided to your factory in the wire spec.  Since plugins can be [namespaced](#plugin-namespaces), you should use the `options` property instead of attempting to extract this information from the `options.spec` property (see below).
+* `spec` - The complete spec for the current component.  It should be considered read-only.
+
+**Example**
+
+```js
+{
+	factories: {
+		widget: function(resolver, componentDef, wire) {
+			var options = componentDef.options;
+
+
+
+			// Wire the options, so that any $refs are guaranteed to be fully
+			// resolved, and any nested components will have been created.
+			// Then create the widget and signal success, or signal failure
+			// if something went wrong.
+
+			wire(options)
+				.then(function(wiredOptions) {
+					// Create a new Widget using the resolved DOM Node
+					var widget = new Widget(wiredOptions.node);
+
+					return widget;
+				})
+				.then(resolver.resolve, resolver.reject);
+		}
+	}
+}
+```
+
+```js
+theWidget: {
+	// Use your widget factory to create theWidget, supplying a DOM Node
+	widget: {
+		node: { $ref: 'first!.the-widget' }
+	}
+}
+```
+
 ### Facet parameters
 
+Additional parameters passed to facet plugin methods.
+
 #### `proxy`
+
+A [proxy](concepts.md#proxies) for the component that your facet is being asked to process.  The proxy has methods for interacting with the component in a generic way, so that your facet can operate on a wide variety of components without needing to know details about them.  In cases where your facet needs access to specific details of the component, the proxy's `target` property is a reference to the actual component.
+
+Proxies have the following API:
+
+```js
+{
+	// Get the named property of the component
+	get: function(propertyName) {},
+
+	// Set the named property of the component to the supplied value
+	set: function(propertyName, value) {},
+
+	// Invoke the named method on the component, passing the supplied
+	// Array of args
+	invoke: function(method, args) {},
+
+	// Destroy the component
+	destroy: function() {},
+
+	// Attempts to clone the component.  Options:
+	// options.deep - if true, attempts to deep clone the component
+	clone: function(options) {},
+
+	// A direct reference to the actual component.
+	target: *
+}
+```

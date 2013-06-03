@@ -277,6 +277,8 @@ Proxies are closely related to factories.  For each component, wire creates a pr
 
 For example, each proxy implements a simple `get()/set()` API for getting and setting its component's properties.  This allows plugins to set properties on objects where simple property assignment is not sufficient.  For example, Dojo Dijit widgets require calling their `get()` and `set()` methods.
 
+[Read more about wire's Proxy API](extending.md#proxy)
+
 ## Component Lifecycle
 
 Each component in a [wire spec](#wire-specs) has a well-defined *lifecycle* that is managed by wire.js.  When wire.js processes the spec to create a [context](#contexts), each component will pass through the following lifecycle stages:
