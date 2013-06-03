@@ -1,4 +1,13 @@
-# Extending Wire.js
+# Extending wire.js with plugins
+
+1. [Using plugins](#using-plugins)
+	1. [Plugin options](#plugin-options)
+	1. [Plugin namespaces](#plugin-namespaces)
+1. [Authoring plugins](#authoring-plugins)
+	1. [Plugin factory function](#plugin-factory-function)
+	1. [Plugin instance](#plugin-instance)
+	1. [Plugin API](#plugin-api)
+	1. [Proxies](#proxies)
 
 Wire.js can be extended via plugins.  Plugins can extend the DSL syntax with [factories](#factories), [facets](#facets), and [reference resolvers](#references), listen for component lifecycle events, and even provide [proxy adapters](concepts.md#proxies) that allow other plugins to interact with new types of components.
 
@@ -174,6 +183,16 @@ function(options) {
 			// ... more factories ...
 		},
 
+		// Proxies
+		// Proxies wrap components to allow plugins to interact with them in
+		// a generic and safe way.  Wire creates a base proxy for all components,
+		// and these proxy functions may override and/or extend the base
+		// proxy's behavior as needed.
+		proxies: [
+			proxyFunction1: function(baseProxy) {},
+			// ... more proxy functions ...
+		],
+
 		// Facets
 		// Facets add behavior to components.  A facet will be invoked for
 		// a component when the facet's key is present in the component's wire
@@ -211,7 +230,7 @@ function(options) {
 				'destroy:before':  	 function(resolver, proxy, wire) {},
 				'destroy:after':   	 function(resolver, proxy, wire) {},
 			}
-			// ... more facests ...
+			// ... more facets ...
 		}
 	}
 }
@@ -377,3 +396,7 @@ Proxies have the following API:
 	target: *
 }
 ```
+
+## Proxies
+
+*TODO*
