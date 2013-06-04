@@ -42,5 +42,8 @@
 	1. [Connecting DOM events](dom.md#connecting-dom-events)
 	1. [Rendering DOM elements](dom.md#rendering-dom-elements)
 	1. [Notes on DOMReady](dom.md#notes-on-domready)
+1. [Extending wire.js with plugins](plugins.md)
+	1. [Using plugins](plugins.md#using-plugins)
+	1. [Authoring plugins](plugins.md#authoring-plugins)
 1. Integrating with third-party libraries
 	1. [jQuery](jquery.md)
