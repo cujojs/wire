@@ -371,7 +371,18 @@ Additional parameters passed to facet plugin methods.
 
 A [proxy](concepts.md#proxies) for the component that your facet is being asked to process.  The proxy has methods for interacting with the component in a generic way, so that your facet can operate on a wide variety of components without needing to know details about them.  In cases where your facet needs access to specific details of the component, the proxy's `target` property is a reference to the actual component.
 
-Proxies have the following API:
+See [Proxy API](#proxy-api) for the complete proxy API specification.
+
+## Proxies
+
+If you are creating a wire plugin that deals with specialized types of components, for example widgets from a particular widget library, that have specialized APIs for getting and setting properties (rather than simply `widget.property = value`, e.g. [jQuery UI widgets](jquery.md#jquery-ui-widgets), [Dijit widgets](../dojo/dijit.js#L50), etc.), or require special treatment when being destroyed, implementing a wire proxy provides some important benefits:
+
+1. It allows other facets to process these components in a generic way.  For example, the [properties facet](configure.md#properties) uses a component's proxy to set properties, and thus can correctly set properties of *any* component as long as a suitable proxy has been implemented.
+1. It allows wire to manage the component's lifecycle fully by automatically, and correctly, destroying a component when the [context](concepts.md#contexts) in which it was created is destroyed.
+
+### Proxy API
+
+All wire proxies have the following API:
 
 ```js
 {
@@ -397,6 +408,73 @@ Proxies have the following API:
 }
 ```
 
-## Proxies
+### Implementing a proxy
 
-*TODO*
+To implement a proxy, you must implement a proxy specialization function in your plugin, and add it to the `proxies` array in your plugin factory function:
+
+```js
+function specializeProxy(baseProxy) {
+	// Read on for what to do here
+}
+
+// ...
+
+var myPlugin = {
+	// ... factories, facets, etc.
+	proxies: [
+		specializeProxy
+	]
+};
+```
+
+**NOTE:** Since `proxies` is an array, you may implement as many proxies as your plugin needs.
+
+Your proxy specialization function will then typically do the following:
+
+1. Import the `wire/lib/WireProxy` [module](../lib/WireProxy.js).  It provides a `WireProxy.extend()` method that allows you to create a specialized proxy from the `baseProxy`.
+1. Test to see if `baseProxy.target` is the type of component for which your plugin should provide a specialized proxy.  You can use any test that uniquely identifies the type of components.  For example, the Dijit plugin [uses an `instanceof` to check](../dojo/dijit.js#L42) if a component is an instance of a Dijit `Widget`.
+1. If the component is the type you care about, then use `WireProxy.extend(baseProxy, specializationsObject)` to create a specialized proxy and `return` it.
+	* The `specializationsObject` may contain method overrides for any of the proxy interface methods.
+1. If the component is *not* the type you care about, you can opt to return `undefined` (explicitly, or implicitly by simply not issuing a `return` statement), or by returning `basePlugin`.
+
+Here is an example of a simple specialized wire proxy:
+
+```js
+var WireProxy = require('wire/lib/WireProxy');
+
+function specializeProxy(baseProxy) {
+	if(isCorrectTypeOfComponent(baseProxy.target)) {
+		return WireProxy.extend(baseProxy, specializations)
+	}
+}
+
+function isCorrectTypeOfComponent(component) {
+	// Implement whatever test you need
+}
+```
+
+### Proxy priority
+
+A component proxy may be specialized more than once--that is, the baseProxy may be specialized by one plugin, and then further specialized again by another plugin.  To help ensure that the order of specialization is predictable, proxy specialization functions my be given a priority.
+
+The priority is an integer from -99 to 99, and is used to sort proxy specialization order.  Lower numbers execute before higher numbers, thus higher numbers have less chance of being overridden.  If you don't specify a priority, it defaults to 0.
+
+To specify a priority, simply add a `priority` property to the proxy specialization function.  For example:
+
+```js
+var WireProxy = require('wire/lib/WireProxy');
+
+function specializeProxy(baseProxy) {
+	if(isCorrectTypeOfComponent(baseProxy.target)) {
+		return WireProxy.extend(baseProxy, specializations)
+	}
+}
+
+// Override the default priority
+specializedProxy.priority = 1;
+
+function isCorrectTypeOfComponent(component) {
+	// Implement whatever test you need
+}
+```
+
