@@ -27,6 +27,12 @@ define({
 });
 ```
 
+**NOTE:** Plugins are not inherited from parent contexts.  The primary reasons for this are simplicity, and explicitness.
+
+For example, you might have a spec that gets wired as a child of many other specs (for example, perhaps the child represents a reusable widget, like a tab container). Some parent specs may already include the necessary plugins, and some may not. When you author the tab container spec, you may not be aware of all the possible parent specs, especially if another team or a 3rd party will be using it.  By explicitly providing the necessary plugins in your tab container spec, you are guaranteed it will work the way you intend.
+
+Also, in that same situation, the parent spec may provide some or all of the necessary plugins, and they may overlap with plugins provided in the tab container spec.  In the future, we may introduce an algorithm for allowing this type of overlapping plugin inheritance, but for now, we have decided that it is simpler to explicitly include the necessary plugins.
+
 ## Plugin options
 
 Some plugins accept options.  You can supply options by using an object literal in the `$plugins` array instead of a module id string:
@@ -40,10 +46,10 @@ define({
 	// Use an object literal to pass options to plugins.  You can mix
 	// object literals and strings in $plugins.
 	$plugins: [
-		{ module: 'wire/debug', trace: true }
+		{ module: 'wire/debug', trace: true },
 		'wire/dom',
 		'wire/on',
-		{ module: 'my/custom/wirePlugin', myPluginOption1: /* value */, myPluginOption2: /* value */
+		{ module: 'my/custom/wirePlugin', myPluginOption1: /* value */, myPluginOption2: /* value */ }
 	]
 });
 ```
@@ -52,7 +58,7 @@ define({
 
 By default, all the [factories](#factories), [facets](#facets), and [reference resolvers](#references) provided by each plugin are available *un-namespaced* within the current wire spec.  For clarity, and to avoid potential naming conflicts between plugins, you can *optionally* provide a namespace for some or all plugins in your wire specs, using the `$ns` option.
 
-When namespaced, all of the  provided by the plugin must be prefixed with the namespace.
+When namespaced, all of the [factories](#factories), [facets](#facets), and [reference resolvers](#references) provided by the plugin must be prefixed with the namespace.
 
 The [Hello Wire example from the Concepts](concepts.md#context-example) assigns the namespace `dom` to the `wire/dom` plugin, and thus uses the plugin's `first!` resolver with the namespace prefix: `dom:first!`
 
@@ -83,6 +89,10 @@ define({
 ```
 
 # Authoring plugins
+
+Wire plugins provide a powerful way to extend wire's capabilities, and to allow it to integrate with other environments, frameworks, and libraries.  For example, wire's core has no knowledge of jQuery UI Widgets or Dijit Widgets, but can create, configure, manage, and destroy them via the [jquery/ui](jquery.md#jquery-ui-widgets) and [dojo/dijit](../dojo/dijit.js) plugins.  Even [DOM querying](dom.md#querying-the-dom) and [DOM events](#connecting-dom-events) are handled via plugins.
+
+Wire's rich plugin API allows developers to add a wide range of new functionality easily, while the core remains small and fast.
 
 ## Plugin factory function
 
@@ -238,7 +248,7 @@ function(options) {
 
 ## Plugin API
 
-When wire invokes any of your plugin instance methods, it provides several parameters.  All method receive a `resolver` and a `wire` instance.  Certain plugin methods also receive additional parameters.  All the parameters are documented below.
+When wire invokes any of your plugin instance methods, it provides several parameters.  All methods receive a `resolver` and a `wire` instance.  Certain plugin methods also receive additional parameters.  All the parameters are documented below.
 
 ### `resolver`
 
@@ -329,7 +339,7 @@ A descriptor object containing information about the component the factory metho
 **Example**
 
 ```js
-{
+var myPlugin = {
 	factories: {
 		widget: function(resolver, componentDef, wire) {
 			var options = componentDef.options;
@@ -351,6 +361,9 @@ A descriptor object containing information about the component the factory metho
 				.then(resolver.resolve, resolver.reject);
 		}
 	}
+
+	// ... other facets, resolvers, proxies, etc.
+
 }
 ```
 
@@ -420,7 +433,14 @@ function specializeProxy(baseProxy) {
 // ...
 
 var myPlugin = {
-	// ... factories, facets, etc.
+	factories: {
+		widget: function(resolver, componentDef, wire) {
+			// As above in "Factory parameters" ...
+		}
+	},
+	// ... other facets, resolvers, etc.
+
+	// add proxy specialization function to proxies array
 	proxies: [
 		specializeProxy
 	]
