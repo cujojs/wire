@@ -23,7 +23,7 @@ buster.testCase('wire/builder/cram', {
 				cb(specObjectToModule(spec));
 			},
 			write: function(content) {
-				assert(/^define\("test",[\s\S]+\);$/.test(content));
+				assert(/define\("test",[\s\S]+\);$/.test(content));
 				done();
 			},
 			error: function (reason) {
@@ -106,7 +106,7 @@ buster.testCase('wire/builder/cram', {
 					cb(specObjectToModule(specs[path]));
 				},
 				write: function(content) {
-					assert(/^define\("atest",[\s\S]+\);\s*define\("btest",[\s\S]+\);$/.test(content));
+					assert(/define\("atest",[\s\S]+\);\s*define\("btest",[\s\S]+\);$/.test(content));
 					done();
 				},
 				error: function (reason) {
@@ -127,11 +127,11 @@ buster.testCase('wire/builder/cram', {
 
 			builder.compile('wire', 'atest,btest', req, {
 				read: function(path, cb) {
-					cb(specObjectToModule(specs[path]));
+					cb(specObjectToModule(specs[removeJsExt(path)]));
 				},
 				write: function(content) {
-					refute.equals(content.indexOf(JSON.stringify(specs['atest.js'])), -1);
-					refute.equals(content.indexOf(JSON.stringify(specs['btest.js'])), -1);
+					refute.equals(content.indexOf(JSON.stringify(specs['atest'])), -1);
+					refute.equals(content.indexOf(JSON.stringify(specs['btest'])), -1);
 					done();
 				},
 				error: function (reason) {
@@ -139,10 +139,39 @@ buster.testCase('wire/builder/cram', {
 				}
 			});
 		}
+	},
 
+	'should transitively generate dependencies for child specs': function(done) {
+		var specs = {
+			parent: { child: { wire: 'child' }},
+			child: { modB: { module: 'b' } }
+		};
+
+		function req(moduleId, cb) {
+			cb(specs[moduleId]);
+		}
+
+		builder.compile('wire', 'parent', req, {
+			read: function(path, cb) {
+				cb(specObjectToModule(specs[removeJsExt(path)]));
+			},
+			write: function(content) {
+				// "child" and "b" should be in dependency list
+				refute.equals(content.indexOf('"child"'), -1, 'child');
+				refute.equals(content.indexOf('"b"'), -1, 'b');
+				done();
+			},
+			error: function (reason) {
+				refute(true, reason);
+			}
+		});
 	}
 });
 
-function specObjectToModule (spec) {
+function specObjectToModule(spec) {
 	return 'define(' + JSON.stringify(spec) + ');'
+}
+
+function removeJsExt(path) {
+	return path.replace(/\.js$/, '');
 }

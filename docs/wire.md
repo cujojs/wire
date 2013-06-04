@@ -43,7 +43,7 @@ var wire = require('wire');
 
 ## AMD Plugin
 
-Wire can be used as an AMD plugin in any AMD loader that supports the [AMD plugin API](https://github.com/amdjs/amdjs-api/wiki/Loader-Plugins), for example: [curl](https://github.com/cujojs/curl) [RequireJS](http://requirejs.org), and [Dojo](http://dojotoolkit.org).  This can be a very convenient way to bootstrap a front-end application.
+Wire can be used as an AMD plugin in any AMD loader that supports the [AMD plugin API](https://github.com/amdjs/amdjs-api/wiki/Loader-Plugins), for example: [curl](https://github.com/cujojs/curl), [RequireJS](http://requirejs.org), and [Dojo](http://dojotoolkit.org).  This can be a very convenient way to bootstrap a front-end application.
 
 Once you've installed wire into your AMD environment and configured your loader:
 
@@ -51,6 +51,8 @@ Once you've installed wire into your AMD environment and configured your loader:
 // Assume app/main is the main wire spec that bootstraps the application
 curl(['wire!app/main']);
 ```
+
+You should concatenate all the modules of your app before deploying it to production.  Wire's AMD plugin supports AMD bundling via cujoJS's [cram](http://know.cujojs.com/downloads#alacarte).  Other people have reported success using Pieter Vanderwerff's [wire-rjs plugin](https://github.com/pieter-vanderwerff/wire/blob/rjs-build/builder/rjs.js), which should be placed in the wire/builder folder prior to running rjs.
 
 For more examples of using wire as an AMD plugin to bootstrap applications, see the [Example Apps](introduction.md#example-apps)
 

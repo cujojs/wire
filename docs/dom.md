@@ -19,7 +19,7 @@ For simplicity, we will refer to the entire set of these plugins as wire/*/dom, 
 
 The wire/jquery/dom and wire/dojo/dom plugins support the same browsers as their underlying library.  So, for instance, if you are using jQuery 1.8.0, you can expect wire/jquery/dom to work with IE6+ and the current version of all other major browsers.
 
-The wire/sizzle plugin similarly supports the same browsers as Sizzle.  (Sizzle is the query engine used by jQuery.)
+The wire/sizzle plugin similarly supports the same browsers as Sizzle.  (Sizzle is the query engine used by jQuery and also supports IE6+.)
 
 wire/dom relies on `querySelectorAll` for some features.  Therefore, some features don't work in IE6-7.  In addition, IE8 doesn't support many CSS3 selectors.  You should probably only use wire/dom in production if you only need to support fairly recent versions of the major browsers.  Use wire/sizzle otherwise.
 
@@ -37,6 +37,21 @@ mainContainer: { $ref: 'id!main' }
 
 `dom!` is an alias for `id!`
 
+The `id!` resolver may be [injected](concepts.md#dependency-inversion) into your components.  Simply omit the id and wire will provide a function instead.  This function works identically to the browser's `document.getElementById(id)`.
+
+```js
+myComponent: {
+	create: 'MyComponent',
+	properties: {
+		// Inject a function that resolves dom nodes by id.
+		byId: { $ref: 'id!' }
+	}
+}
+
+// inside MyComponent, grab the element with the id "header"
+var nodes = this.byId('header');
+```
+
 ### `all!` (`dom.all!`, `dom.query!`)
 
 The `all!` resolver is wire's way to find nodes by CSS selector.  It's just like `document.querySelectorAll()` -- or `$()` if you're familiar with jQuery.
@@ -49,7 +64,23 @@ myClickables: { $ref: 'all!button.clickme, input[type=checkbox]' }
 
 `dom.all!` and `dom.query!` are both aliases for `all!`.
 
-> Note: There's no guarantee that the list of elements returned from `all!` will be a NodeList or an array.  It could be either, depending on the wire/*/dom plugin used or the browser.  You should probably assume that the list returned is array-like and convert it to an array like this:
+The `all!` resolver may be [injected](concepts.md#dependency-inversion) into your components.  Simply omit the css selector and wire will provide a function that behaves like `document.querySelectorAll(selector)`.  The function takes a CSS selector and an optional node to query under ("rootNode") and returns an array of dom nodes or a NodeList.
+
+```js
+myComponent: {
+	create: 'MyComponent',
+	properties: {
+		// Inject a function that find nodes by css selector.
+		// function (selector, rootNode) { return arrayOrNodelist; }
+		querySelectorAll: { $ref: 'all!' }
+	}
+}
+
+// inside MyComponent, grab all <video> elements
+var nodes = this.querySelectorAll('video');
+```
+
+Note: There's no guarantee that the list of elements returned from `all!` will be a NodeList or an array.  It could be either, depending on the wire/*/dom plugin used or the browser.  You should probably assume that the list returned is array-like and convert it to an array like this:
 
 ```js
 var nodeArray = Array.prototype.slice.call(nodeList);
@@ -65,9 +96,48 @@ deepNodeInMyView: { $ref: 'first!.my-view form.ship-to label.first-name' }
 
 `dom.first!` is an alias for `first!`
 
+The `first!` resolver may be [injected](concepts.md#dependency-inversion) into your components.  Simply omit the css selector and wire will provide a function that behaves like `document.querySelector(selector)`.  The function takes a CSS selector and an optional node to query under ("rootNode") and returns a dom node (or null if a node does not match the selector).
+
+```js
+myComponent: {
+	create: 'MyComponent',
+	properties: {
+		// Inject a function that find a node by css selector.
+		// function (selector, rootNode) { return node; }
+		querySelector: { $ref: 'first!' }
+	}
+}
+
+// inside MyComponent, grab the first <video> element with the class "intro"
+var nodes = this.querySelector('video.intro');
+```
+
+### CSS Selectors and root nodes
+
+Most of the time, you'll want to scope the CSS selector query to a particular fragment of the document.  You can specify a root node for the selector query by using the `at` option.  For instance, the following spec snippet will gather all of the buttons with a "clickme" class under the node with the id "header".
+
+```js
+myScopedClickables: { $ref: 'all!button.clickme', at: { $ref: 'id!header' } }
+```
+
+If the root node is already declared as a component in the spec (or a parent spec), you may skip the `$ref` notation and simply specify a string:
+
+
+```js
+header: { $ref: 'id!header' },
+myScopedClickables: { $ref: 'all!button.clickme', at: 'header' }
+```
+
+Note: The W3C spec indicates that selector queries should search *under* the specified root node.  This means that queries can *never match the root node*.  For instance, the following wire snippet will match exactly zero nodes in a well-formed document:
+
+```js
+// find all nodes with an id of "footer" under a node with the id "footer"
+thisWillBeEmpty: { $ref: 'all!#footer', at: { $ref: 'id!footer' } }
+```
+
 ### `element` factory
 
-The `dom!` reference resolver is the preferred way to grab a reference to a single DOM node.  However, if you plan to use [wire facets](concepts.md#references) on the DOM node, a reference resolver won't work.  Facets only run on components that are created using a [factory](concepts.md#references).  Once in a while, it's handy to use facets on DOM nodes that are already in the document.  For this reason, there's the `element` wire factory.  Here's it is in action:
+The `dom!` reference resolver is the preferred way to grab a reference to a single DOM node.  However, if you plan to use [wire facets](concepts.md#references) on the DOM node, a reference resolver won't work.  Facets only run on components that are created using a [factory](concepts.md#factories).  Once in a while, it's handy to use facets on DOM nodes that are already in the document.  For this reason, there's the `element` wire factory.  Here's it is in action:
 
 ```js
 {
@@ -99,7 +169,7 @@ The `insert` facet executes during the [initialize phase](concepts.md#component-
 * `before` -- DOM node is inserted before a reference node
 * `at` -- the DOM node replaces the entire set of child nodes of a reference element
 
-The reference node can be provided as the name of a component or as a reference using one of wire/*/dom reference resolvers.
+The reference node can be provided as the name of a component (string) or as a reference using one of wire/*/dom reference resolvers.
 
 A common use case for `insert` is moving a node:
 
@@ -150,10 +220,6 @@ The `insert` facet can also be used to insert a DOM node into multiple places at
 ```
 
 As the example suggests, the element is cloned as many times as needed to be inserted into each of the reference elements.  Each element with the class name "adopter" will have an element with the class name "adoptee" as its first child.  After cloning and inserting, the wire component refers to the original "adoptee" element.  This element will have been inserted in the first "adopter" element found in the document.  All other "adopter" elements will have a clone of the original as their first child.
-
-# Modifying CSS classes
-
-TODO
 
 # Connecting DOM events
 

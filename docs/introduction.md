@@ -2,7 +2,7 @@
 
 Wire.js is an [Inversion of Control Container](http://martinfowler.com/articles/injection.html "Inversion of Control Containers and the Dependency Injection pattern") for Javascript apps.
 
-As [cujo.js](http://cujojs.com)’s application composition layer, it provides a well-defined place for creating, configuring, and *non-invasively* connecting together the components of an application, or sections of an application.
+As [cujoJS](http://cujojs.com)’s application composition layer, it provides a well-defined place for creating, configuring, and *non-invasively* connecting together the components of an application, or sections of an application.
 
 With wire.js, you focus on coding the application logic of components and let wire.js handle the bootstrapping and the glue that connects them together.  You write simple, declarative JSON (or Javascript) that describes how components should be composed together, and wire will load, configure, and connect those components to create an application, and will clean them up later.
 
@@ -23,30 +23,8 @@ Apps constructed with wire.js:
 * Allow application structure to be refactored independently from application logic
 * Have no explicit dependencies on DOM Ready, DOM query engines, or DOM event libraries
 
-## Example Apps
+## Learn more
 
-### TodoMVC with cujo.js
-
-TodoMVC, the web's new "hello world", implemented using cujo.js shows how wire.js is used to create application components and compose them together.
-
-* [Try the cujo.js TodoMVC app](http://todomvc.com/labs/architecture-examples/cujo/index.html), or
-* [Look at the code](https://github.com/cujojs/todomvc/tree/master/labs/architecture-examples/cujo)
-
-### Hello Wire
-
-Hello Wire is a very simple introduction to wire.js.  You can fork and run the application, look at the code, and read the walkthrough.
-
-* [Hello Wire on github](https://github.com/briancavalier/hello-wire.js)
-* [Walkthrough in the README](https://github.com/briancavalier/hello-wire.js#hello-wirejs)
-
-### "Monty Hall" Game
-
-The UI for this "Monty Hall Problem" game is built with cujo.js.  The application was used as a demo during several talks at [SpringOne 2GX](http://springone2gx.com/conference/washington/2012/10/home).
-
-* [Monty Hall UI on github](https://github.com/five-eleven/monty-hall-ui)
-
-### Notes demo
-
-This is a simple notes app built as a demo for Dojoconf 2011 using cujo.js.  It shows several more advanced aspects of wire.js, such as dividing an application into sections that can be wired on-demand, Aspect Oriented Programming (AOP), and Dojo integration via wire.js plugins.
-
-* [Notes demo on github](https://github.com/briancavalier/notes-demo-dojoconf-2011)
+* [Documentation](README.md). Wire.js has ample docs. The best place to start is [Understanding the concepts](concepts.md).
+* [Sample apps](http://know.cujojs.com/samples). Once you've got a feel for what you can accomplish with wire.js, install, run, and tweak these.
+* [Tutorials](http://know.cujojs.com/). New tutorials are posted every week.

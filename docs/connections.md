@@ -1,18 +1,18 @@
 # Connections
 
-1. [Connection Types](#connection-types)
+1. [Connection types](#connection-types)
 1. [Dependency Injection](#dependency-injection)
-1. [DOM Events](#dom-events)
+1. [DOM events](#dom-events)
 1. [Javascript to Javascript](#javascript-to-javascript)
 1. [Aspect Oriented Programming (AOP)](#aspect-oriented-programming-aop)
 1. [Promise-aware AOP](#promise-aware-aop)
-1. [Transform Connections](#transform-connections)
+1. [Transform connections](#transform-connections)
 
 Any software system or application consists of components that must collaborate to do the really useful stuff.  Once you've [created  components](./components.md), you can connect them together in various ways so that they can collaborate.
 
 Similarly to [factories](./concepts.md#factories) used to [create components](./components.md#factories), wire uses plugin [facets](./concepts.md#facets) to apply new behavior to components after they have been created.  There are several facets that are used to make connections between components.  For example, you can connect a Javascript controller to DOM events on an HTML view.
 
-# Connection Types
+# Connection types
 
 Wire itself, plus its bundled plugins support 4 types of connections:
 
@@ -171,6 +171,46 @@ define({
 		create: // ...
 	}
 });
+```
+
+## Injecting the `on` facet as a function
+
+The function that powers the `on` facet may be [injected](concepts.md#dependency-inversion) into your components directly.  This allows you to use the exact same event handling code in your wire specs and your procedural code.  To obtain this function, use the `on!` [reference resolver](concepts.md#references).  The `on!` resolver will return a function that generates event handlers.
+
+When used without a reference identifier (the part after the "!"), the `on!` facet will return a function that takes a node, an event name, an event handler, and an optional CSS selector to target child nodes: `function on (node, event, handler, selector) {}`.  This function works similarly to jQuery's `on` and dojo's `on` functions.
+
+```js
+// injecting the `on!` facet in a wire spec
+myComponent: {
+	create: 'MyComponent',
+	properties: {
+		on: { $ref: 'on!' }
+	},
+	init: 'init'
+}
+
+// using the `on!` facet in myComponent
+MyComponent.prototype.init = function () {
+	// listen for mouseover events on all A elements with the 'jit' class
+	this.on(document, 'mouseover', this.onMouseOver.bind(this), 'a.jit');
+}
+```
+
+When used with a event-selector string as the reference identifier, the `on!` resolver will return a function that takes fewer parameters.  You just supply an optional node parameter (default is the document) and an event handler.  The event names and the CSS selector are pre-configured and are automatically applied.
+
+```js
+// injecting the `on!` facet in a wire spec
+myComponent: {
+	create: 'MyComponent',
+	properties: {
+		on: { $ref: 'on!mouseover:a.jit' }
+	}
+}
+
+// using the `on!` facet inside myComponent
+// the mouseover event and the 'a.jit' selector have been pre-configured
+// document is the default, so it is not required
+this.on(/* document, */ this.onMouseOver.bind(this));
 ```
 
 # Javascript to Javascript
@@ -346,7 +386,7 @@ define({
 	}
 })
 ```
-# Transform Connections
+# Transform connections
 
 Connections can transform the data that flows through them.  This allows you to write components without including data transformation logic.  They can expect to receive only the data format they really need, and you use a connection to transform data into the expected format.
 
