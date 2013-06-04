@@ -213,7 +213,7 @@ You may also render a single node by specifying the element name.  Here are some
 	p2: { render: { template: 'p' } },
 
 	// include the wire/dom/render plugin to use the render facet
-	plugins: [
+	$plugins: [
 		{ module: 'wire/dom/render' }
 	]
 }

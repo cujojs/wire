@@ -63,9 +63,7 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget', '../lib/WireProxy'], fu
 	};
 
     function proxyDijit(proxy) {
-		var object = proxy.target;
-
-        if (isDijit(object)) {
+        if (isDijit(proxy.target)) {
 			return WireProxy.extend(proxy, dijitProxy);
         }
     }

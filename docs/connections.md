@@ -90,7 +90,7 @@ This example connects to the `click` events of links and buttons within a node t
 
 ```js
 define({
-	plugins: [
+	$plugins: [
 		{ module: 'wire/on' },
 		{ module: 'wire/dom' },
 	    // other plugins ...
@@ -116,7 +116,7 @@ Similarly, connecting to events within a DOM node created using the [render fact
 
 ```js
 define({
-	plugins: [
+	$plugins: [
 		{ module: 'wire/on' },
 		{ module: 'wire/dom' },
 		{ module: 'wire/dom/render' },
@@ -148,7 +148,7 @@ When you have components that are DOM nodes, for example, those created using th
 
 ```js
 define({
-	plugins: [
+	$plugins: [
 		{ module: 'wire/on'},
 	    // other plugins ...
 	],
@@ -181,7 +181,7 @@ These plugins allow you to make simple Javascript to Javascript connections.  Yo
 
 ```js
 define({
-	plugins: [
+	$plugins: [
 		{ module: 'wire/connect'},
 	    // other plugins ...
 	],
@@ -206,7 +206,7 @@ Connections can be made in either direction.  For example, the following example
 
 ```js
 define({
-	plugins: [
+	$plugins: [
 		{ module: 'wire/connect'},
 	    // other plugins ...
 	],
@@ -236,7 +236,7 @@ The wire/aop plugin lets you make Javascript to Javascript connections similar t
 ```js
 define({
 	// Include the wire/aop plugin
-	plugins: [
+	$plugins: [
 	    { module: 'wire/aop' },
 	    // other plugins ...
 	],
@@ -304,7 +304,7 @@ Wire uses [when](http://github.com/cujojs/when) to provide *promise-aware* AOP a
 ```js
 define({
 	// Include the wire/aop plugin
-	plugins: [
+	$plugins: [
 	    { module: 'wire/aop' },
 	    // other plugins ...
 	],
