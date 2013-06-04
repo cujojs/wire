@@ -455,7 +455,7 @@ function isCorrectTypeOfComponent(component) {
 
 ### Proxy priority
 
-A component proxy may be specialized more than once--that is, the baseProxy may be specialized by one plugin, and then further specialized again by another plugin.  To help ensure that the order of specialization is predictable, proxy specialization functions my be given a priority.
+A component proxy may be specialized more than once--that is, the baseProxy may be specialized by one plugin, and then further specialized again by another plugin.  Typically, you will not need to worry about priority when implementing a proxy, but in some cases you may need to ensure the order of proxy specialization.  In such cases, proxy specialization functions my be given a priority.
 
 The priority is an integer from -99 to 99, and is used to sort proxy specialization order.  Lower numbers execute before higher numbers, thus higher numbers have less chance of being overridden.  If you don't specify a priority, it defaults to 0.
 
