@@ -1,4 +1,4 @@
-# Creating Components
+# Creating components
 
 1. [Simple types](#simple-types)
 1. [Application components](#application-components)
