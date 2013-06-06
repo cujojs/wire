@@ -14,6 +14,16 @@ To find out more, read the [full introduction](docs/introduction.md), more about
 
 # What's new
 
+### 0.10.0
+
+* New [docs for using and creating](docs/plugins.md) wire plugins.
+* Many other [documentation](docs) additions and improvements.
+* New APIs available to plugins for monitoring the overall state of wiring, insert components into the current context, and more.
+* Many internal improvements:
+	* Reduced overall memory usage
+	* Improved wiring performance
+	* Preparing for a bunch of new awesomeness in upcoming releases
+
 ### 0.9.4
 
 * Fix for [render factory](docs/dom.md#rendering-dom-elements) in IE8.
