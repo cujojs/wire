@@ -1,4 +1,4 @@
-/** @license MIT License (c) copyright B Cavalier & J Hann */
+/** @license MIT License (c) copyright 2011-2013 original author or authors */
 
 /*jshint sub:true*/
 
@@ -11,6 +11,8 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  *
+ * @author Brian Cavalier
+ * @author John Hann
  * @version 0.10.0
  */
 (function(rootSpec, define){ 'use strict';
