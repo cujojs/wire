@@ -18,7 +18,7 @@ define(function(require) {
 
 	var createContext, rootContext, rootOptions;
 
-	wire.version = '0.9.2';
+	wire.version = '0.10.0';
 
 	createContext = require('./lib/context');
 
