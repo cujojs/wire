@@ -11,7 +11,7 @@
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
  *
- * @version 0.9.2
+ * @version 0.10.0
  */
 (function(rootSpec, define){ 'use strict';
 define(function(require) {
