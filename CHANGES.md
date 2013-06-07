@@ -1,5 +1,7 @@
 ### 0.10.0
 
+* Support for creating and managing jQuery UI Widgets (much like the existing Dijit widget support).
+* More compact syntax for including plugins.
 * New [docs for using and creating](docs/plugins.md) wire plugins.
 * Many other [documentation](docs) additions and improvements.
 * New APIs available to plugins for monitoring the overall state of wiring, insert components into the current context, and more.
