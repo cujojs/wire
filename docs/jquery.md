@@ -18,9 +18,10 @@ DOM" listening of DOM events.
 
 ## jQuery UI widgets
 
-Wire.js has built-in support for [jQuery UI](http://api.jqueryui.com/) widgets
-via the wire/jquery/ui plugin.  Other widget libraries that are built on top of
-jQuery UI, such as [wijmo](http://wijmo.com/) widgets, are supported, as well.
+Wire.js has built-in support for [jQuery UI](http://api.jqueryui.com/)
+widgets via the wire/jquery/ui plugin.  Other widget libraries that are built
+on top of jQuery UI, such as [wijmo](http://wijmo.com/) widgets,
+are supported, as well.
 
 To create a jQuery UI widget, use the "widget" factory included in the
 wire/jquery/ui plugin.  The factory requires that you specify the widget's
@@ -46,10 +47,7 @@ define({
 			}
 		}
 	},
-	$plugins: [
-		{ module: 'wire/jquery/ui' },
-		{ module: 'wire/jquery/dom' }
-	]
+	$plugins: ['wire/jquery/ui', 'wire/jquery/dom']
 });
 ```
 
@@ -155,11 +153,7 @@ define({
 		ready: 'pageChanged'
 	},
 
-	$plugins: [
-		{ module: 'wire/jquery/ui' },
-		{ module: 'wire/jquery/on' },
-		{ module: 'wire/jquery/dom' }
-	]
+	$plugins: ['wire/jquery/ui', 'wire/jquery/on', 'wire/jquery/dom']
 
 });
 ```

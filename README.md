@@ -1,10 +1,19 @@
 # wire.js
 
-Wire is an [Inversion of Control Container](http://martinfowler.com/articles/injection.html "Inversion of Control Containers and the Dependency Injection pattern") for Javascript apps, and acts as the Application Composition layer for [cujo.js](http://cujojs.com).
+Wire is an [Inversion of Control Container](http://martinfowler
+.com/articles/injection.html "Inversion of Control Containers and the
+Dependency Injection pattern") for Javascript apps,
+and acts as the Application Composition layer for [cujoJS](http://cujojs.com).
 
-Wire provides architectural plumbing that allows you to create and manage application components, and to connect those components together in loosely coupled and non-invasive ways.  Consequently, your components will be more modular, easier to unit test and refactor, and your application will be easier to evolve and maintain.
+Wire provides architectural plumbing that allows you to create and manage
+application components, and to connect those components together in loosely
+coupled and non-invasive ways.  Consequently, your components will be more
+modular, easier to unit test and refactor, and your application will be
+easier to evolve and maintain.
 
-To find out more, read the [full introduction](docs/introduction.md), more about the [concepts behind wire](docs/concepts.md), and check out a few [example applications](docs/introduction.md#example-apps).
+To find out more, read the [full introduction](docs/introduction.md),
+more about the [concepts behind wire](docs/concepts.md),
+and check out a few [example applications](docs/introduction.md#example-apps).
 
 # Documentation
 
@@ -16,8 +25,8 @@ To find out more, read the [full introduction](docs/introduction.md), more about
 
 ### 0.10.0
 
-* Support for creating and managing jQuery UI Widgets (much like the existing Dijit widget support).
-* More compact syntax for including plugins.
+* Support for creating and managing [jQuery UI Widgets](docs/jquery.md#jquery-ui-widgets) (much like the existing Dijit widget support).
+* More compact syntax for including plugins: just [include the module id](docs/plugins.md#using-plugins) as a string!
 * New [docs for using and creating](docs/plugins.md) wire plugins.
 * Many other [documentation](docs) additions and improvements.
 * New APIs available to plugins for monitoring the overall state of wiring, insert components into the current context, and more.
