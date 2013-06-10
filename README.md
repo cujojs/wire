@@ -29,7 +29,7 @@ and check out a few [example applications](docs/introduction.md#example-apps).
 * More compact syntax for including plugins: just [include the module id](docs/plugins.md#using-plugins) as a string!
 * New [docs for using and creating](docs/plugins.md) wire plugins.
 * Many other [documentation](docs) additions and improvements.
-* New APIs available to plugins for monitoring the overall state of wiring, insert components into the current context, and more.
+* [New APIs available to plugins](docs/plugins.md#plugin-api) for monitoring the overall state of wiring, insert components into the current context, and more.
 * Many internal improvements:
 	* Reduced overall memory usage
 	* Improved wiring performance
