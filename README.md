@@ -1,9 +1,9 @@
 # wire.js
 
-Wire is an [Inversion of Control Container](http://martinfowler
-.com/articles/injection.html "Inversion of Control Containers and the
-Dependency Injection pattern") for Javascript apps,
-and acts as the Application Composition layer for [cujoJS](http://cujojs.com).
+Wire is an [Inversion of Control Container](http://martinfowler.com/articles/injection.html "Inversion of Control Containers and the
+Dependency Injection pattern")
+for Javascript apps, and acts as the Application Composition layer for
+[cujoJS](http://cujojs.com).
 
 Wire provides architectural plumbing that allows you to create and manage
 application components, and to connect those components together in loosely
