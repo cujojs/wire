@@ -66,7 +66,7 @@ and check out a few [example applications](docs/introduction.md#example-apps).
 	* [meld](https://github.com/cujojs/meld) >= 1.0.0
 	* [poly](https://github.com/cujojs/poly) >= 0.5.0
 
-[Full Changelog](https://github.com/cujojs/wire/wiki/Changelog)
+[Full Changelog](CHANGES.md)
 
 # License
 
