@@ -9,6 +9,8 @@
 	* Reduced overall memory usage
 	* Improved wiring performance
 	* Preparing for a bunch of new awesomeness in upcoming releases
+* Compatibility with when.js 1.5.0 - 2.x.
+	* **NOTE:** wire 0.10.x is the last set of releases that will be compatible with when < 2.0.
 
 ### 0.9.4
 
@@ -33,7 +35,7 @@
 * [Even more DOM support](docs/dom.md), including DOM event connections via wire/on and cloning DOM elements.
 * [Functions are first-class citizens](docs/functions.md) that can be used in very powerful ways.
 * [Transform connections](docs/connections.md#transform-connections) use functions to transform data as it flows through connections (including DOM event connections).
-* Built on latest [cujo.js](http://cujojs.com) platform:
+* Built on latest [cujoJS](http://cujojs.com) platform:
 	* [curl](https://github.com/cujojs/curl) >= 0.7.1, or 0.6.8
 	* [when](https://github.com/cujojs/when) >= 1.5.0
 	* [meld](https://github.com/cujojs/meld) >= 1.0.0

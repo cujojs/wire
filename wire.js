@@ -6,7 +6,7 @@
  * wire
  * Javascript IOC Container
  *
- * wire is part of the cujo.js family of libraries (http://cujojs.com/)
+ * wire is part of the cujoJS family of libraries (http://cujojs.com/)
  *
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php

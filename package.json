@@ -41,7 +41,7 @@
 	],
 	"dependencies": {
 		"meld": "~1",
-		"when": ">=1.5.0 || ~2.0"
+		"when": ">=1.5.0 || ~2"
 	},
 	"devDependencies": {
 		"buster": "~0.6",
