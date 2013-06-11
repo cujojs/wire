@@ -29,11 +29,13 @@ and check out a few [example applications](docs/introduction.md#example-apps).
 * More compact syntax for including plugins: just [include the module id](docs/plugins.md#using-plugins) as a string! The [object syntax](docs/plugins.md#plugin-options) is still supported as well.
 * New [docs for using and creating](docs/plugins.md) wire plugins.
 * Many other [documentation](docs) additions and improvements.
-* [New APIs available to plugins](docs/plugins.md#plugin-api) for monitoring the overall state of wiring, insert components into the current context, and more.
+* [New APIs available to plugins](docs/plugins.md#plugin-api) for monitoring the overall state of wiring, inserting components into the current context, and more.
 * Many internal improvements:
 	* Reduced overall memory usage
 	* Improved wiring performance
 	* Preparing for a bunch of new awesomeness in upcoming releases
+* Compatibility with when.js 1.5.0 - 2.x.
+	* **NOTE:** wire 0.10.x is the last set of releases that will be compatible with when < 2.0.
 
 ### 0.9.4
 

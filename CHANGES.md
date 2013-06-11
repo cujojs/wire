@@ -4,7 +4,7 @@
 * More compact syntax for including plugins: just [include the module id](docs/plugins.md#using-plugins) as a string! The [object syntax](docs/plugins.md#plugin-options) is still supported as well.
 * New [docs for using and creating](docs/plugins.md) wire plugins.
 * Many other [documentation](docs) additions and improvements.
-* [New APIs available to plugins](docs/plugins.md#plugin-api) for monitoring the overall state of wiring, insert components into the current context, and more.
+* [New APIs available to plugins](docs/plugins.md#plugin-api) for monitoring the overall state of wiring, inserting components into the current context, and more.
 * Many internal improvements:
 	* Reduced overall memory usage
 	* Improved wiring performance
