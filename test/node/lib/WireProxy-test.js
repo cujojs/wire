@@ -65,6 +65,88 @@ buster.testCase('proxy', {
 
 	},
 
+	advise: {
+		'should advise named methods': function() {
+			var p, method, before, after;
+
+			method = this.spy(function() { return 3; });
+			before = this.spy();
+			after = this.spy();
+
+			p = WireProxy.create({ method: method });
+			p.advise('method', { before: before, after: after });
+
+			p.target.method(1, 2);
+
+			assert.calledOnceWith(before, 1, 2);
+			assert.calledOnceWith(method, 1, 2);
+			assert.calledOnceWith(after, 3);
+			assert.callOrder(before, method, after);
+		},
+
+		'should work with proxy.invoke': function() {
+			var p, method, before;
+
+			method = this.spy();
+			before = this.spy();
+
+			p = WireProxy.create({ method: method });
+			p.advise('method', { before: before });
+
+			p.invoke('method', [1, 2]);
+
+			assert.calledOnceWith(before, 1, 2);
+			assert.calledOnceWith(method, 1, 2);
+			assert.callOrder(before, method);
+		},
+
+		'should return an aspect remover': function() {
+			var p, method, before, aspect;
+
+			method = this.spy();
+			before = this.spy();
+
+			p = WireProxy.create({ method: method });
+			aspect = p.advise('method', { before: before });
+
+			p.target.method(1, 2);
+
+			assert.calledOnceWith(before, 1, 2);
+			assert.calledOnceWith(method, 1, 2);
+			assert.callOrder(before, method);
+
+			aspect.remove();
+
+			p.target.method(3, 4);
+
+			refute.calledTwice(before);
+			assert.calledTwice(method);
+		},
+
+		'should remove aspects when proxy is destroyed': function() {
+			var p, method, before;
+
+			method = this.spy();
+			before = this.spy();
+
+			p = WireProxy.create({ method: method });
+			p.advise('method', { before: before });
+
+			p.target.method(1, 2);
+
+			assert.calledOnceWith(before, 1, 2);
+			assert.calledOnceWith(method, 1, 2);
+			assert.callOrder(before, method);
+
+			p.destroy();
+
+			p.target.method(3, 4);
+
+			refute.calledTwice(before);
+			assert.calledTwice(method);
+		}
+	},
+
 	clone: {
 		'should return primitives': function() {
 			assert.equals(1, WireProxy.create(1).clone());
