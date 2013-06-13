@@ -1,4 +1,4 @@
-/** @license MIT License (c) copyright B Cavalier & J Hann */
+/** @license MIT License (c) copyright 2011-2013 original author or authors */
 
 /**
  * wire/connect plugin
@@ -38,18 +38,27 @@
  *
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
+ *
+ * @author Brian Cavalier
+ * @author John Hann
  */
 
-(function(define) {
-define(['when', 'meld', './lib/functional', './lib/connection'],
-function(when, meld, functional, connection) {
+(function(define) { 'use strict';
+define(function(require) {
 
-	return function eventsPlugin(/* options */) {
+	var when, meld, functional, connection;
+
+	when = require('when');
+	meld = require('meld');
+	functional = require('./lib/functional');
+	connection = require('./lib/connection');
+
+	return function connectPlugin(/* options */) {
 
 		var connectHandles = [];
 
-		function handleConnection(instance, methodName, handler) {
-			connectHandles.push(meld.on(instance, methodName, handler));
+		function handleConnection(sourceProxy, methodName, handler) {
+			connectHandles.push(meld.on(sourceProxy.target, methodName, handler));
 		}
 
 		function doConnect(proxy, connect, options, wire) {
@@ -88,12 +97,5 @@ function(when, meld, functional, connection) {
 		};
     };
 });
-})(typeof define == 'function'
-	? define
-	: function(deps, factory) {
-		module.exports = factory.apply(this, deps.map(function(x) {
-			return require(x);
-		}));
-	}
-);
+}(typeof define == 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 

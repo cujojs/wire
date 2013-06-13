@@ -69,9 +69,9 @@ define(function(require) {
 
 	function addSingleAdvice(addAdviceFunc, advices, proxy, advice, options, wire) {
 
-		function handleAopConnection(srcObject, srcMethod, adviceHandler) {
-			checkAdvisable(srcObject, srcMethod);
-			advices.push(addAdviceFunc(srcObject, srcMethod, adviceHandler));
+		function handleAopConnection(srcProxy, srcMethod, adviceHandler) {
+			checkAdvisable(srcProxy.target, srcMethod);
+			advices.push(addAdviceFunc(srcProxy, srcMethod, adviceHandler));
 		}
 
 		return connection.parse(proxy, advice, options, wire, handleAopConnection);
@@ -84,27 +84,30 @@ define(function(require) {
 	}
 
 	function makeSingleAdviceAdd(adviceType) {
-		return function (source, sourceMethod, advice) {
-			return meld[adviceType](source, sourceMethod, advice);
+		return function (srcProxy, sourceMethod, advice) {
+			return meld[adviceType](srcProxy.target, sourceMethod, advice);
 		};
 	}
 
-	function addAfterFulfillingAdvice(source, sourceMethod, advice) {
-		return meld.afterReturning(source, sourceMethod, function(promise) {
-			return when(promise, advice);
-		});
+	function addAfterFulfillingAdvice(srcProxy, sourceMethod, advice) {
+		return meld.afterReturning(srcProxy.target, sourceMethod,
+			function(promise) {
+				return when(promise, advice);
+			});
 	}
 
-	function addAfterRejectingAdvice(source, sourceMethod, advice) {
-		return meld.afterReturning(source, sourceMethod, function(promise) {
-			return when(promise, null, advice);
-		});
+	function addAfterRejectingAdvice(srcProxy, sourceMethod, advice) {
+		return meld.afterReturning(srcProxy.target, sourceMethod,
+			function(promise) {
+				return when(promise, null, advice);
+			});
 	}
 
-	function addAfterPromiseAdvice(source, sourceMethod, advice) {
-		return meld.after(source, sourceMethod, function(promise) {
-			return when(promise, advice, advice);
-		});
+	function addAfterPromiseAdvice(srcProxy, sourceMethod, advice) {
+		return meld.after(srcProxy.target, sourceMethod,
+			function(promise) {
+				return when(promise, advice, advice);
+			});
 	}
 
 	function makeAdviceFacet(addAdviceFunc, advices) {
@@ -258,8 +261,4 @@ define(function(require) {
 		return plugin;
 };
 });
-})(typeof define == 'function'
-	// use define for AMD if available
-	? define
-    : function(factory) { module.exports = factory(require); }
-);
+}(typeof define == 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
