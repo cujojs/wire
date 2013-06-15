@@ -251,7 +251,7 @@ Plugins may have options which can be included as properties by using an object 
 	]
 ```
 
-For more information about using plugins, see the [Plugins documentation](extending.md).
+For more information about using plugins, see the [Plugins documentation](plugins.md).
 
 ## Components
 
@@ -277,7 +277,7 @@ Proxies are closely related to factories.  For each component, wire creates a pr
 
 For example, each proxy implements a simple `get()/set()` API for getting and setting its component's properties.  This allows plugins to set properties on objects where simple property assignment is not sufficient.  For example, Dojo Dijit widgets require calling their `get()` and `set()` methods.
 
-[Read more about wire's Proxy API](extending.md#proxy)
+[Read more about wire's Proxy API](plugins.md#proxy)
 
 ## Component lifecycle
 
