@@ -328,7 +328,7 @@ myView: {
 
 ### Why logic-less templates?
 
-We include a logic-less template engine mainly for better separation of concerns, but also for better [encapsulation, reuse, and maintainability](http://www.cs.usfca.edu/~parrt/papers/mvc.templates.pdf Enforcing Strict Model-View Separation in Template Engines). Most of the use cases for using logic in templates fall into the following categories:
+We include a logic-less template engine mainly for better separation of concerns, but also for better [encapsulation, reuse, and maintainability](http://www.cs.usfca.edu/~parrt/papers/mvc.templates.pdf "Enforcing Strict Model-View Separation in Template Engines"). Most of the use cases for using logic in templates fall into the following categories:
 
 * conditional visibility of sub-views
 * creation of a collection of sub-views in a loop
