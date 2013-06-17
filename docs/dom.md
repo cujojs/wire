@@ -334,7 +334,7 @@ We include a logic-less template engine mainly for better separation of concerns
 * creation of a collection of sub-views in a loop
 * transformation or formatting of data
 
-Conditional visibility can often be better solved by toggling CSS state classes at the top element of a view.  [wire/dom/transform](#modifying-css-classes) has several helper functions that can be easily composed into your wire specs.
+Conditional visibility can often be better solved by toggling CSS state classes at the top element of a view.  `wire/dom/transform` has several helper functions that can be easily composed into your wire specs.
 
 Creating several sub-views in a loop is a sure sign that your view is data-driven.  Consider using a data-binding library, such as [cola.js](https://github.com/cujojs/cola).  Similarly, data formatting can typically be handled more elegantly in a wire spec than in a template language.  You could easily use [Transform Connections](functions.md#transform-connections) instead.
 
