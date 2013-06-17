@@ -4,7 +4,7 @@
 1. [Cloning DOM nodes](#cloning-dom-nodes)
 1. [Inserting DOM nodes](#inserting-dom-nodes)
 1. [Connecting DOM events](#connecting-dom-events)
-1. [Rendering DOM elements](#rendering-dom-elements)
+1. [Rendering DOM nodes](#rendering-dom-nodes)
 	1. [Creating DOM components](#creating-dom-components)
 1. [Notes on DOMReady](#notes-on-domready)
 
