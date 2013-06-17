@@ -158,7 +158,7 @@ clonedButton: { clone: { $ref: 'id!orig-button' } }
 
 # Inserting DOM nodes
 
-Once you have a node as a component using either the [`element` factory](#element-factory), [`clone` factory](#Cloning-DOM-nodes), or [`render` factory](#Rendering-DOM-nodes), you can use the `insert` facet.
+Once you have a node as a component using either the [`element` factory](#element-factory), [`clone` factory](#cloning-dom-nodes), or [`render` factory](#rendering-dom-nodes), you can use the `insert` facet.
 
 The `insert` facet executes during the [initialize phase](concepts.md#component-lifecycle) and takes a single option, which can be any of the following:
 
@@ -228,7 +228,7 @@ See the [DOM events](./connections.md#dom-events) section of [Connections](./con
 
 ## `render` factory
 
-Wire includes a DOM rendering plugin, wire/dom/render that exposes a wire factory.  The `render` factory creates a DOM fragment from a logic-less HTML template.  You may specify an accompanying CSS file, an i18n string bundle, and a DOM element onto which to merge the rendered DOM fragment.  See the [Creating DOM components](#Creating-DOM-components) section for more information about these advanced options.  To place the rendered DOM fragment into the document, you can also use the [`insert` facet](#inserting-dom-nodes).
+Wire includes a DOM rendering plugin, wire/dom/render that exposes a wire factory.  The `render` factory creates a DOM fragment from a logic-less HTML template.  You may specify an accompanying CSS file, an i18n string bundle, and a DOM element onto which to merge the rendered DOM fragment.  See the [Creating DOM components](#creating-dom-components) section for more information about these advanced options.  To place the rendered DOM fragment into the document, you can also use the [`insert` facet](#inserting-dom-nodes).
 
 The `render` factory can render a DOM fragment from a template defined by a string or an AMD text module.  This DOM fragment must be rooted at a single node.  In other words, there can only be one element at the top level of the HTML.  This is valid:
 
