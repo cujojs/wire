@@ -218,6 +218,35 @@ require(['wire'], function(wire) {
 
 					return dohd;
 				},
+				function atShouldResolveInParent(doh) {
+					var dohd = new doh.Deferred();
+
+					wire({
+						$plugins: [pluginName, 'wire/debug'],
+						root: { $ref: 'first!.root' },
+						child: {
+							wire: {
+								spec: {
+									root: { $ref: 'first!.fake' },
+									$plugins: [pluginName, 'wire/debug']
+								},
+								provide: {
+									node: { $ref: 'first!.at-test', at: 'root' }
+								}
+							}
+						}
+					}).then(
+						function(context) {
+							var node = context.child.node;
+							dohd.callback(/ok/.test(node.className));
+						},
+						function(e) {
+							doh.errback(e);
+						}
+					);
+
+					return dohd;
+				},
 				function testAddRemoveClass(doh) {
 					var dohd = new doh.Deferred();
 
