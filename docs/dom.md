@@ -3,7 +3,6 @@
 1. [Querying the DOM](#querying-the-dom)
 1. [Cloning DOM nodes](#cloning-dom-nodes)
 1. [Inserting DOM nodes](#inserting-dom-nodes)
-1. [Modifying CSS classes](#modifying-css-classes)
 1. [Connecting DOM events](#connecting-dom-events)
 1. [Rendering DOM elements](#rendering-dom-elements)
 	1. [Creating DOM components](#creating-dom-components)
