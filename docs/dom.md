@@ -150,7 +150,7 @@ The `dom!` reference resolver is the preferred way to grab a reference to a sing
 
 # Cloning DOM nodes
 
-The clone [factory](concepts.md#factories) is designed to clone Javascript object, but also works with DOM nodes. It's as simple as this:
+The clone [factory](concepts.md#factories) is designed to clone Javascript objects, but also works with DOM nodes. It's as simple as this:
 
 ```js
 clonedButton: { clone: { $ref: 'id!orig-button' } }
