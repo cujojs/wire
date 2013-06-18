@@ -3,9 +3,8 @@
 1. [Querying the DOM](#querying-the-dom)
 1. [Cloning DOM nodes](#cloning-dom-nodes)
 1. [Inserting DOM nodes](#inserting-dom-nodes)
-1. [Modifying CSS classes](#modifying-css-classes)
 1. [Connecting DOM events](#connecting-dom-events)
-1. [Rendering DOM elements](#rendering-dom-elements)
+1. [Rendering DOM nodes](#rendering-dom-nodes)
 	1. [Creating DOM components](#creating-dom-components)
 1. [Notes on DOMReady](#notes-on-domready)
 
@@ -159,7 +158,7 @@ clonedButton: { clone: { $ref: 'id!orig-button' } }
 
 # Inserting DOM nodes
 
-Once you have a node as a component using either the [`element` factory](#element-factory), [`clone` factory](#Cloning-DOM-nodes), or [`render` factory](#Rendering-DOM-nodes), you can use the `insert` facet.
+Once you have a node as a component using either the [`element` factory](#element-factory), [`clone` factory](#cloning-dom-nodes), or [`render` factory](#rendering-dom-nodes), you can use the `insert` facet.
 
 The `insert` facet executes during the [initialize phase](concepts.md#component-lifecycle) and takes a single option, which can be any of the following:
 
@@ -229,7 +228,7 @@ See the [DOM events](./connections.md#dom-events) section of [Connections](./con
 
 ## `render` factory
 
-Wire includes a DOM rendering plugin, wire/dom/render that exposes a wire factory.  The `render` factory creates a DOM fragment from a logic-less HTML template.  You may specify an accompanying CSS file, an i18n string bundle, and a DOM element onto which to merge the rendered DOM fragment.  See the [Creating DOM components](#Creating-DOM-components) section for more information about these advanced options.  To place the rendered DOM fragment into the document, you can also use the [`insert` facet](#inserting-dom-nodes).
+Wire includes a DOM rendering plugin, wire/dom/render that exposes a wire factory.  The `render` factory creates a DOM fragment from a logic-less HTML template.  You may specify an accompanying CSS file, an i18n string bundle, and a DOM element onto which to merge the rendered DOM fragment.  See the [Creating DOM components](#creating-dom-components) section for more information about these advanced options.  To place the rendered DOM fragment into the document, you can also use the [`insert` facet](#inserting-dom-nodes).
 
 The `render` factory can render a DOM fragment from a template defined by a string or an AMD text module.  This DOM fragment must be rooted at a single node.  In other words, there can only be one element at the top level of the HTML.  This is valid:
 
@@ -329,13 +328,13 @@ myView: {
 
 ### Why logic-less templates?
 
-We include a logic-less template engine mainly for better separation of concerns, but also for better [encapsulation, reuse, and maintainability](http://www.cs.usfca.edu/~parrt/papers/mvc.templates.pdf Enforcing Strict Model-View Separation in Template Engines). Most of the use cases for using logic in templates fall into the following categories:
+We include a logic-less template engine mainly for better separation of concerns, but also for better [encapsulation, reuse, and maintainability](http://www.cs.usfca.edu/~parrt/papers/mvc.templates.pdf "Enforcing Strict Model-View Separation in Template Engines"). Most of the use cases for using logic in templates fall into the following categories:
 
 * conditional visibility of sub-views
 * creation of a collection of sub-views in a loop
 * transformation or formatting of data
 
-Conditional visibility can often be better solved by toggling CSS state classes at the top element of a view.  [wire/dom/transform](#modifying-css-classes) has several helper functions that can be easily composed into your wire specs.
+Conditional visibility can often be better solved by toggling CSS state classes at the top element of a view.  `wire/dom/transform` has several helper functions that can be easily composed into your wire specs.
 
 Creating several sub-views in a loop is a sure sign that your view is data-driven.  Consider using a data-binding library, such as [cola.js](https://github.com/cujojs/cola).  Similarly, data formatting can typically be handled more elegantly in a wire spec than in a template language.  You could easily use [Transform Connections](functions.md#transform-connections) instead.
 
