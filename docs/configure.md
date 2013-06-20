@@ -211,7 +211,7 @@ define({
 			// ...
 		},
 		// Invoke aComponent.doCleanup()
-		ready: 'doCleanup'
+		destroy: 'doCleanup'
 	},
 
 	// More components ...
