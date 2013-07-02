@@ -1,4 +1,4 @@
-/** @license MIT License (c) copyright B Cavalier & J Hann */
+/** @license MIT License (c) copyright 2011-2013 original author or authors */
 
 /**
  * wire/connect plugin
@@ -38,22 +38,25 @@
  *
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
+ *
+ * @author Brian Cavalier
+ * @author John Hann
  */
 
-(function(define) {
-define(['when', 'meld', './lib/functional', './lib/connection'],
-function(when, meld, functional, connection) {
+(function(define) { 'use strict';
+define(function(require) {
 
-	return function eventsPlugin(/* options */) {
+	var all, connection;
 
-		var connectHandles = [];
+	all = require('when').all;
+	connection = require('./lib/connection');
 
-		function handleConnection(instance, methodName, handler) {
-			connectHandles.push(meld.on(instance, methodName, handler));
-		}
+	return function connectPlugin(/* options */) {
 
-		function doConnect(proxy, connect, options, wire) {
-			return connection.parse(proxy, connect, options, wire, handleConnection);
+		var connections = [];
+
+		function makeConnection(sourceProxy, methodName, handler) {
+			connections.push(sourceProxy.advise(methodName, { on: handler }));
 		}
 
 		function connectFacet(wire, facet) {
@@ -61,18 +64,17 @@ function(when, meld, functional, connection) {
 
 			connects = facet.options;
 			promises = Object.keys(connects).map(function(key) {
-				return doConnect(facet, key, connects[key], wire);
+				return connection.parse(
+					facet, key, connects[key], wire, makeConnection);
 			});
 
-			return when.all(promises);
+			return all(promises);
 		}
 
 		return {
 			context: {
 				destroy: function(resolver) {
-					connectHandles.forEach(function(handle) {
-						handle.remove();
-					});
+					connection.removeAll(connections);
 					resolver.resolve();
 				}
 			},
@@ -88,12 +90,5 @@ function(when, meld, functional, connection) {
 		};
     };
 });
-})(typeof define == 'function'
-	? define
-	: function(deps, factory) {
-		module.exports = factory.apply(this, deps.map(function(x) {
-			return require(x);
-		}));
-	}
-);
+}(typeof define == 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 

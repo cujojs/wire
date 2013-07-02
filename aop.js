@@ -67,11 +67,11 @@ define(function(require) {
 	// Simple advice
 	//
 
-	function addSingleAdvice(addAdviceFunc, advices, proxy, advice, options, wire) {
+	function addSingleAdvice(addAdviceFunc, proxy, advice, options, wire, advices) {
 
-		function handleAopConnection(srcObject, srcMethod, adviceHandler) {
-			checkAdvisable(srcObject, srcMethod);
-			advices.push(addAdviceFunc(srcObject, srcMethod, adviceHandler));
+		function handleAopConnection(srcProxy, srcMethod, adviceHandler) {
+			checkAdvisable(srcProxy.target, srcMethod);
+			advices.push(addAdviceFunc(srcProxy, srcMethod, adviceHandler));
 		}
 
 		return connection.parse(proxy, advice, options, wire, handleAopConnection);
@@ -84,30 +84,38 @@ define(function(require) {
 	}
 
 	function makeSingleAdviceAdd(adviceType) {
-		return function (source, sourceMethod, advice) {
-			return meld[adviceType](source, sourceMethod, advice);
+		return function (srcProxy, sourceMethod, advice) {
+			var aspect = {};
+			aspect[adviceType] = advice;
+			return srcProxy.advise(sourceMethod, aspect);
 		};
 	}
 
-	function addAfterFulfillingAdvice(source, sourceMethod, advice) {
-		return meld.afterReturning(source, sourceMethod, function(promise) {
-			return when(promise, advice);
+	function addAfterFulfillingAdvice(srcProxy, sourceMethod, advice) {
+		return srcProxy.advise(sourceMethod, {
+			afterReturning: function(promise) {
+				return when(promise, advice);
+			}
 		});
 	}
 
-	function addAfterRejectingAdvice(source, sourceMethod, advice) {
-		return meld.afterReturning(source, sourceMethod, function(promise) {
-			return when(promise, null, advice);
+	function addAfterRejectingAdvice(srcProxy, sourceMethod, advice) {
+		return srcProxy.advise(sourceMethod, {
+			afterReturning: function(promise) {
+				return when(promise, null, advice);
+			}
 		});
 	}
 
-	function addAfterPromiseAdvice(source, sourceMethod, advice) {
-		return meld.after(source, sourceMethod, function(promise) {
-			return when(promise, advice, advice);
+	function addAfterPromiseAdvice(srcProxy, sourceMethod, advice) {
+		return srcProxy.advise(sourceMethod, {
+			after: function(promise) {
+				return when(promise, advice, advice);
+			}
 		});
 	}
 
-	function makeAdviceFacet(addAdviceFunc, advices) {
+	function makeAdviceFacet(advices, addAdviceFunc) {
 		return function(resolver, facet, wire) {
 			var advice, target, advicesToAdd, promises;
 
@@ -116,8 +124,8 @@ define(function(require) {
 			promises = [];
 
 			for(advice in advicesToAdd) {
-				promises.push(addSingleAdvice(addAdviceFunc, advices,
-					target, advice, advicesToAdd[advice], wire));
+				promises.push(addSingleAdvice(addAdviceFunc,
+					target, advice, advicesToAdd[advice], wire, advices));
 			}
 
 			resolver.resolve(when.all(promises));
@@ -128,19 +136,19 @@ define(function(require) {
     // Aspect Weaving
     //
 
-    function applyAspectCombined(target, aspect, wire, add) {
+    function applyAspectCombined(targetProxy, aspect, wire, aspects) {
         return when(wire.resolveRef(aspect), function (aspect) {
             var pointcut = aspect.pointcut;
 
             if (pointcut) {
-                add(target, pointcut, aspect);
+                aspects.push(targetProxy.advise(pointcut, aspect));
             }
 
-            return target;
+            return targetProxy;
         });
     }
 
-    function applyAspectSeparate(target, aspect, wire, add) {
+    function applyAspectSeparate(targetProxy, aspect, wire, aspects) {
         var pointcut, advice;
 
         pointcut = aspect.pointcut;
@@ -148,8 +156,8 @@ define(function(require) {
 
         function applyAdvice(pointcut) {
             return when(wire.resolveRef(advice), function (aspect) {
-                add(target, pointcut, aspect);
-                return target;
+                aspects.push(targetProxy.advise(pointcut, aspect));
+                return targetProxy;
             });
         }
 
@@ -158,7 +166,7 @@ define(function(require) {
             : applyAdvice(pointcut);
     }
 
-    function weave(resolver, proxy, wire, options, add) {
+    function weave(proxy, wire, options, wovenAspects) {
 		// TODO: Refactor weaving to use proxy.invoke
 
         var target, path, aspects, applyAdvice;
@@ -166,8 +174,7 @@ define(function(require) {
         aspects = options.aspects;
         path = proxy.path;
 
-        if (!aspects || path === undef) {
-            resolver.resolve();
+        if (path === undef) {
             return;
         }
 
@@ -175,7 +182,7 @@ define(function(require) {
         applyAdvice = applyAspectCombined;
 
         // Reduce will preserve order of aspects being applied
-        resolver.resolve(when.reduce(aspects, function(target, aspect) {
+        return when.reduce(aspects, function(proxy, aspect) {
             var aspectPath;
 
             if (aspect.advice) {
@@ -186,10 +193,10 @@ define(function(require) {
             }
 
             return typeof aspectPath === 'string' && aspectPath !== path
-                ? applyAdvice(target, aspect, wire, add)
-                : target;
+                ? applyAdvice(proxy, aspect, wire, wovenAspects)
+                : proxy;
 
-        }, target));
+        }, proxy);
     }
 
 	/**
@@ -199,21 +206,40 @@ define(function(require) {
 	 */
     return function(options) {
 
-		// Track aspects so they can be removed when the context is destroyed
-		var woven, plugin, i, len, adviceType;
+		var plugin, aspects, makeAdvice;
 
-		woven = [];
+		aspects = [];
+		makeAdvice = makeAdviceFacet.bind(null, aspects);
 
-		/**
-		 * Function to add an aspect and remember it in the current context
-		 * so that it can be removed when the context is destroyed.
-		 * @param target
-		 * @param pointcut
-		 * @param aspect
-		 */
-		function add(target, pointcut, aspect) {
-			woven.push(meld.add(target, pointcut, aspect));
+		plugin = {
+			context: {
+				destroy: function(resolver) {
+					connection.removeAll(aspects);
+					resolver.resolve();
+				}
+			},
+			facets: {
+				decorate:       makeFacet('configure:after', decorateFacet),
+				afterFulfilling: makeFacet(adviceStep, makeAdvice(addAfterFulfillingAdvice)),
+				afterRejecting:  makeFacet(adviceStep, makeAdvice(addAfterRejectingAdvice)),
+				after: makeFacet(adviceStep, makeAdvice(addAfterPromiseAdvice))
+			}
+		};
+
+		if(options.aspects) {
+			plugin.create = function(resolver, proxy, wire) {
+				var woven = weave(proxy, wire, options, aspects);
+				resolver.resolve(woven);
+			};
 		}
+
+		// Add all regular single advice facets
+		adviceTypes.forEach(function(adviceType) {
+			plugin.facets[adviceType] = makeFacet(adviceStep,
+				makeAdvice(makeSingleAdviceAdd(adviceType)));
+		});
+
+		return plugin;
 
 		function makeFacet(step, callback) {
 			var facet = {};
@@ -225,41 +251,6 @@ define(function(require) {
 			return facet;
 		}
 
-		// Plugin
-		plugin = {
-			context: {
-				destroy: function(resolver) {
-					woven.forEach(function(aspect) {
-						aspect.remove();
-					});
-					resolver.resolve();
-				}
-			},
-			facets: {
-				decorate:       makeFacet('configure:after', decorateFacet),
-				afterFulfilling: makeFacet(adviceStep, makeAdviceFacet(addAfterFulfillingAdvice, woven)),
-				afterRejecting:  makeFacet(adviceStep, makeAdviceFacet(addAfterRejectingAdvice, woven)),
-				after: makeFacet(adviceStep, makeAdviceFacet(addAfterPromiseAdvice, woven))
-			}
-		};
-
-		if(options.aspects) {
-			plugin.create = function(resolver, proxy, wire) {
-				weave(resolver, proxy, wire, options, add);
-			};
-		}
-
-		// Add all regular single advice facets
-		for(i = 0, len = adviceTypes.length; i<len; i++) {
-			adviceType = adviceTypes[i];
-			plugin.facets[adviceType] = makeFacet(adviceStep, makeAdviceFacet(makeSingleAdviceAdd(adviceType), woven));
-		}
-
-		return plugin;
-};
+	};
 });
-})(typeof define == 'function'
-	// use define for AMD if available
-	? define
-    : function(factory) { module.exports = factory(require); }
-);
+}(typeof define == 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));

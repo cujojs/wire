@@ -32,7 +32,7 @@
 					jquery: 'components/jquery/jquery'
 				},
 				preloads: [
-					'poly/all',
+					'poly/es5',
 					'curl/shim/dojo16'
 				]
 			}

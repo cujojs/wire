@@ -1,4 +1,4 @@
-/** @license MIT License (c) copyright B Cavalier & J Hann */
+/** @license MIT License (c) copyright 2011-2013 original author or authors */
 
 /**
  * wire/dojo/events plugin
@@ -7,22 +7,25 @@
  * This implementation uses dojo.connect and dojo.disconnect to do
  * the work of connecting and disconnecting event handlers.
  *
- * wire is part of the cujo.js family of libraries (http://cujojs.com/)
+ * wire is part of the cujoJS family of libraries (http://cujojs.com/)
  *
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
+ *
+ * @author Brian Cavalier
+ * @author John Hann
  */
 
 define(['when', '../lib/connection', 'dojo', 'dojo/_base/event'],
 function(when, connection, events) {
 
 	return {
-		wire$plugin: function eventsPlugin(/*, options*/) {
+		wire$plugin: function dojoEventsPlugin(/*, options*/) {
 			
 			var connectHandles = [];
 
-			function handleConnection(source, eventName, handler) {
-				connectHandles.push(events.connect(source, eventName, handler));
+			function handleConnection(sourceProxy, eventName, handler) {
+				connectHandles.push(events.connect(sourceProxy.target, eventName, handler));
 			}
 
 			function connect(source, connect, options, wire) {
