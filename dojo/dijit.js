@@ -115,7 +115,7 @@ define(['dojo', 'dojo/parser', 'dijit', 'dijit/_Widget', '../lib/WireProxy'], fu
                     }
                 );
             } else {
-                resolver.reject("Not a dijit: " + proxy.path);
+                resolver.reject(new Error("Not a dijit: " + proxy.path));
             }
         }
     };
