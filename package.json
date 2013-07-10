@@ -43,7 +43,8 @@
 	},
 	"devDependencies": {
 		"buster": "~0.6",
-		"bower": "~0"
+		"bower": "~0",
+		"gent": "~0.3"
 	},
 	"main": "./wire",
 	"directories": {

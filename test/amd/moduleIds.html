@@ -1,0 +1,160 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <title>AMD module test</title>
+
+    <script src="../test-config.js"></script>
+
+    <script type="text/javascript">
+        define('a/b/c', function() {
+            return 'a/b/c';
+        });
+
+        define('a/b/object', function() {
+            return {
+                test: 'a/b/object'
+            };
+        });
+
+        define('a/spec-module', {
+            // Already in a
+            test: { module: './b/c' }
+        });
+
+        define('a/spec-create', {
+            // Already in a
+            component: {
+                create: { module: './b/object' }
+            }
+        });
+
+        define('a/spec-nested', {
+            // Already in a
+            outer: {
+                test: { module: './b/c' }
+            }
+        });
+
+        define('a/spec-facet', {
+            // Already in a
+            component: {
+                literal: {},
+                properties: {
+                    test: { module : './b/c' }
+                }
+            }
+        });
+
+        define('z/spec', {
+            // In z, must back up to root, then descend to a/b/c
+            test: { module: '../a/b/c' }
+        });
+
+        define('z/spec-absolute', {
+            // Already in a
+            test: { module: 'a/b/c' }
+        });
+
+        require(['wire'], function(wire) {
+            doh.register('amd/moduleIds', [
+                function shouldResolveRelativeIdsInSamePackage(doh) {
+                    var d = new doh.Deferred();
+                    wire('a/spec-module').then(
+                        function(c) {
+                            d.callback(c.test === 'a/b/c');
+                        },
+                        function(e) {
+                            console.error(e.stack);
+                            doh.errback(e);
+                        }
+                    );
+
+                    return d;
+                },
+
+                function shouldResolveRelativeIdsFromCreate(doh) {
+                    var d = new doh.Deferred();
+                    wire('a/spec-create').then(
+                            function(c) {
+                                d.callback(c.component.test === 'a/b/object');
+                            },
+                            function(e) {
+                                console.error(e.stack);
+                                doh.errback(e);
+                            }
+                    );
+
+                    return d;
+                },
+
+                function shouldResolveRelativeIdsFromNestedScope(doh) {
+                    var d = new doh.Deferred();
+                    wire('a/spec-nested').then(
+                            function(c) {
+                                d.callback(c.outer.test === 'a/b/c');
+                            },
+                            function(e) {
+                                console.error(e.stack);
+                                doh.errback(e);
+                            }
+                    );
+
+                    return d;
+                },
+
+                function shouldResolveRelativeIdsFromFacet(doh) {
+                    var d = new doh.Deferred();
+                    wire('a/spec-facet').then(
+                            function(c) {
+                                d.callback(c.component.test === 'a/b/c');
+                            },
+                            function(e) {
+                                console.error(e.stack);
+                                doh.errback(e);
+                            }
+                    );
+
+                    return d;
+                },
+
+                function shouldResolveRelativeIdsInOthePackage(doh) {
+                    var d = new doh.Deferred();
+                    wire('z/spec').then(
+                            function(c) {
+                                d.callback(c.test === 'a/b/c');
+                            },
+                            function(e) {
+                                console.error(e.stack);
+                                doh.errback(e);
+                            }
+                    );
+
+                    return d;
+                },
+
+                function shouldResolveAbsoluteIds(doh) {
+                    var d = new doh.Deferred();
+                    wire('z/spec-absolute').then(
+                            function(c) {
+                                d.callback(c.test === 'a/b/c');
+                            },
+                            function(e) {
+                                console.error(e.stack);
+                                doh.errback(e);
+                            }
+                    );
+
+                    return d;
+                },
+
+
+            ]);
+
+            doh.run();
+        });
+    </script>
+</head>
+<body>
+</body>
+</html>

@@ -28,10 +28,8 @@
 			var wired, dfds = [], undef;
 
 			wired = wire({
-				plugins: [
-//					{ module: 'wire/debug' },
-					{ module: 'wire/dom' },
-					{ module: 'wire/dom/render' }
+				plugins: ['wire/debug',
+                    'wire/dom', 'wire/dom/render'
 				],
 				node1: {
 					create: {

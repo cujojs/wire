@@ -10,6 +10,7 @@
 
 	// AMD
 	doh.registerUrl('amd/module', '../../amd/module.html' + hash);
+	doh.registerUrl('amd/moduleIds', '../../amd/moduleIds.html' + hash);
 	doh.registerUrl('amd/plugin', '../../amd/plugin.html' + hash);
 
 	// wire/dom

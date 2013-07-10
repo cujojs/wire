@@ -15,31 +15,41 @@ function createContext(spec) {
 
 buster.testCase('context', {
 
+	'module loading': {
+		'should allow spec-relative module ids': function() {
+			return createContext('./fixtures/relativeSpec').then(
+				function(context) {
+					assert(!!context.component);
+				}
+			);
+		}
+	},
+
 	'array of specs': {
-		'should be merged': function(done) {
-			createContext([{ a: 1 }, { b: 2 }]).then(
+		'should be merged': function() {
+			return createContext([{ a: 1 }, { b: 2 }]).then(
 				function(context) {
 					assert.equals(context.a, 1);
 					assert.equals(context.b, 2);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should allow overriding': function(done) {
-			createContext([{ a: 1 }, { a: 2 }]).then(
+		'should allow overriding': function() {
+			return createContext([{ a: 1 }, { a: 2 }]).then(
 				function(context) {
 					assert.equals(context.a, 2);
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	},
 
 	'initializers': {
-		'should execute when context is created': function(done) {
+		'should execute when context is created': function() {
 			var executed = false;
-			context({}, null, {
+			return context({}, null, {
 				require: require,
 				initializers: [
 					function() { executed = true; }
@@ -49,7 +59,7 @@ buster.testCase('context', {
 					assert(executed);
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	},
 
@@ -118,7 +128,7 @@ buster.testCase('context', {
 
 	'lifecycle': {
 		'destroy': {
-			'should propagate errors if component destroy fails': function(done) {
+			'should propagate errors if component destroy fails': function() {
 				function plugin() {
 					return { proxies: [proxy] };
 				}
@@ -127,7 +137,7 @@ buster.testCase('context', {
 					p.destroy = function() { throw sentinel; };
 				}
 
-				createContext({
+				return createContext({
 					a: { literal: { name: 'a' } },
 					plugins: [plugin]
 				}).then(function(context) {
@@ -137,12 +147,12 @@ buster.testCase('context', {
 					function(e) {
 						assert.same(e, sentinel);
 					}
-				).then(done, done);
+				);
 			},
 
 			'child': {
-				'should be destroyed before parent is destroyed': function(done) {
-					createContext({ a: 0 }).then(function(parent) {
+				'should be destroyed before parent is destroyed': function() {
+					return createContext({ a: 0 }).then(function(parent) {
 						return parent.wire({ a: 1 }).then(function(child) {
 							return child.wire({ a: 2 }).then(function(grandchild) {
 
@@ -165,7 +175,7 @@ buster.testCase('context', {
 
 							});
 						});
-					}).then(done, done);
+					});
 				}
 			}
 		}
@@ -173,7 +183,7 @@ buster.testCase('context', {
 
 	'plugin api': {
 		'addInstance': {
-			'should add instance by name': function(done) {
+			'should add instance by name': function() {
 				function plugin() {
 					return {
 						context: {
@@ -185,7 +195,7 @@ buster.testCase('context', {
 					}
 				}
 
-				createContext({
+				return createContext({
 					plugins: [plugin],
 					test: { $ref: 'instance' }
 				}).then(
@@ -193,10 +203,10 @@ buster.testCase('context', {
 						assert.same(context.test, sentinel);
 					},
 					fail
-				).then(done, done);
+				);
 			},
 
-			'should not process instance lifecycle': function(done) {
+			'should not process instance lifecycle': function() {
 				var spy = this.spy(function(resolver) {
 					resolver.resolve();
 				});
@@ -213,19 +223,19 @@ buster.testCase('context', {
 					}
 				}
 
-				createContext({
+				return createContext({
 					plugins: [plugin]
 				}).then(
 					function() {
 						refute.called(spy);
 					},
 					fail
-				).then(done, done);
+				);
 			}
 		},
 
 		'addComponent': {
-			'should add instance by name': function(done) {
+			'should add instance by name': function() {
 				function plugin() {
 					return {
 						context: {
@@ -237,7 +247,7 @@ buster.testCase('context', {
 					}
 				}
 
-				createContext({
+				return createContext({
 					plugins: [plugin],
 					test: { $ref: 'instance' }
 				}).then(
@@ -245,10 +255,10 @@ buster.testCase('context', {
 						assert.equals(context.test, 1);
 					},
 					fail
-				).then(done, done);
+				);
 			},
 
-			'should process component lifecycle': function(done) {
+			'should process component lifecycle': function() {
 				var spy = this.spy(function(resolver) {
 					resolver.resolve();
 				});
@@ -265,14 +275,14 @@ buster.testCase('context', {
 					}
 				}
 
-				createContext({
+				return createContext({
 					plugins: [plugin]
 				}).then(
 					function() {
 						assert.called(spy);
 					},
 					fail
-				).then(done, done);
+				);
 			}
 		}
 	}

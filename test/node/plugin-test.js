@@ -1,4 +1,4 @@
-(function(buster, delay, wire, pluginModule, pluginModule2) {
+(function(buster, delay, wire) {
 "use strict";
 
 var assert, refute, plugin, fail, sentinel;
@@ -32,12 +32,12 @@ function fakePlugin() {
 buster.testCase('plugin', {
 	'sync-init': {
 
-		'should initialize': function(done) {
+		'should initialize': function() {
 			function pluginFactory() {
 				return plugin;
 			}
 
-			wire({
+			return wire({
 				plugins: [pluginFactory],
 				fixture: { literal: {} }
 			}).then(
@@ -45,18 +45,18 @@ buster.testCase('plugin', {
 					assert(context.fixture.success);
 				},
 				fail
-			).then(done, done);
+			);
 		}
 
 	},
 
 	'async-init': {
-		'should initialize': function(done) {
+		'should initialize': function() {
 			function pluginFactory() {
 				return delay(plugin, 0);
 			}
 
-			wire({
+			return wire({
 				plugins: [pluginFactory],
 				fixture: { literal: {} }
 			}).then(
@@ -64,14 +64,14 @@ buster.testCase('plugin', {
 					assert(context.fixture.success);
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	},
 
 	'namespace': {
 
-		'should be in global namespace when not specified': function(done) {
-			wire({
+		'should be in global namespace when not specified': function() {
+			return wire({
 				plugins: [fakePlugin],
 				fixture: {
 					literal: {},
@@ -82,11 +82,11 @@ buster.testCase('plugin', {
 					assert(context.fixture.success);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should not be in global namespace when namespace provided': function(done) {
-			wire({
+		'should not be in global namespace when namespace provided': function() {
+			return wire({
 				plugins: { testNamespace: fakePlugin },
 				fixture: {
 					literal: {},
@@ -97,11 +97,11 @@ buster.testCase('plugin', {
 				function(e) {
 					assert.defined(e);
 				}
-			).then(done, done);
+			);
 		},
 
-		'should be in provided namespace': function(done) {
-			wire({
+		'should be in provided namespace': function() {
+			return wire({
 				plugins: { testNamespace: fakePlugin },
 				fixture: {
 					literal: {},
@@ -112,11 +112,11 @@ buster.testCase('plugin', {
 					assert(context.fixture.success);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should fail wiring if non-unique': function(done) {
-			wire({
+		'should fail wiring if non-unique': function() {
+			return wire({
 				plugins: [
 					{ wire$plugin: fakePlugin, $ns: 'namespace' },
 					{ wire$plugin: function() { return fakePlugin(); }, $ns: 'namespace' }
@@ -126,14 +126,12 @@ buster.testCase('plugin', {
 				function(e) {
 					assert.defined(e);
 				}
-			).then(done, done);
+			);
 		}
 	}
 });
 })(
 	require('buster'),
 	require('when/delay'),
-	require('../..'),
-	require('./fixtures/object'),
-	require('./fixtures/object2')
+	require('../../wire')
 );
