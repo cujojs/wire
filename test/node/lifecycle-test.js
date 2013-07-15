@@ -34,7 +34,7 @@ function lifecycleTrackerPlugin() {
 	return instance;
 }
 
-buster.testCase('=>lifecycle', {
+buster.testCase('lifecycle', {
 
 	'step order': {
 		'should be consistent': function() {
