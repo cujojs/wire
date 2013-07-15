@@ -77,6 +77,35 @@ buster.testCase('context', {
 					}
 				);
 			}
+		},
+
+		'destroy': {
+			'should be called when context is destroyed': function() {
+				var plugin, contextDestroyed;
+
+				plugin = {
+					context: {
+						destroy: function(resolver) {
+							contextDestroyed = true;
+							resolver.resolve();
+						}
+					}
+				};
+
+				return createContext({
+					a: 123,
+					$plugins:[function() { return plugin; }]
+				}).then(
+					function(context) {
+						return context.destroy().then(
+							function() {
+								assert(contextDestroyed);
+							}
+						);
+					}
+				);
+
+			}
 		}
 	},
 
