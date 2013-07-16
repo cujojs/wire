@@ -271,7 +271,7 @@ define({
 
 **Plugin:** wire/aop
 
-The wire/aop plugin lets you make Javascript to Javascript connections similar to wire/connect, but provides more connection types.  For example, you can have one method called before another, after another method returns, or after another method throws an exception.
+The wire/aop plugin lets you make Javascript to Javascript connections similar to wire/connect, but provides more connection types.  For example, you can have one method called before another, after another method returns, or after another method throws an exception. You can find more information on AOP concepts at [cujojs/meld](https://github.com/cujojs/meld).
 
 ```js
 define({
@@ -320,9 +320,35 @@ define({
 	        // or throws.  The return value OR exception of component2.doSomething
 	        // will be passed to component1.alwaysDoSomethingAfter
 	        doSomething: 'component1.alwaysDoSomethingAfter'
+	    },
+	    
+	    around: {
+	        // component1.aroundSomethingElse will be invoked before
+	        // component2.doSomething, receiving a joinpoint as an argument.
+	        // It will decide whether to invoke component1.aroundSomethingElse
+	        // and with what arguments
+	        doSomething: 'component1.aroundSomethingElse'
 	    }
 	}
 })
+```
+
+The 'around' advice differs from the others in that it receives a *joinpoint* as an argument, and it controls whether the original method will be called at all, and with what arguments. Here's an example implementation:
+
+```js
+	component2.aroundSomethingElse = function(joinpoint) {
+	    // A simple example of using "around" advice.
+	    // Clone the original arguments
+	    var newArgs = joinpoint.args.slice();
+	    // Add more arguments
+	    newArgs.push("a new arg", "another new arg");
+	    // We're calling the original function with the new args!!!
+	    var result = joinpoint.proceedApply(newArgs);
+	    // Then do some further processing of the result
+        var newResult = computeNewResult(result);
+        // Finally, return the new result to the caller
+	    return newResult;
+	}
 ```
 
 # Promise-aware AOP

@@ -23,6 +23,10 @@ and check out a few [example applications](docs/introduction.md#example-apps).
 
 # What's new
 
+### 0.10.1
+
+* Fix for using wire factory within a nested component. (#123)
+
 ### 0.10.0
 
 * Support for creating and managing [jQuery UI Widgets](docs/jquery.md#jquery-ui-widgets) (much like the existing Dijit widget support).
