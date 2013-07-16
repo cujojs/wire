@@ -79,13 +79,19 @@ buster.testCase('context', {
 			}
 		},
 
-		'destroy': {
-			'should be called when context is destroyed': function() {
-				var plugin, contextDestroyed;
+		'destroying a context': {
+			'should trigger shutdown then destroy': function() {
+				var plugin, contextShutdown, contextDestroyed;
 
 				plugin = {
 					context: {
+						shutdown: function(resolver) {
+							refute(contextDestroyed);
+							contextShutdown = true;
+							resolver.resolve();
+						},
 						destroy: function(resolver) {
+							assert(contextShutdown);
 							contextDestroyed = true;
 							resolver.resolve();
 						}
@@ -97,6 +103,7 @@ buster.testCase('context', {
 					$plugins:[function() { return plugin; }]
 				}).then(
 					function(context) {
+						refute(contextShutdown);
 						return context.destroy().then(
 							function() {
 								assert(contextDestroyed);
