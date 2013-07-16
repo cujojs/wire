@@ -49,8 +49,8 @@ Thing.prototype = {
 
 buster.testCase('lib/plugin/basePlugin', {
 	'module factory': {
-		'should use module exports value as component': function(done) {
-			createContext({
+		'should use module exports value as component': function() {
+			return createContext({
 				test: {
 					module: '../../fixtures/module'
 				}
@@ -59,13 +59,13 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert(context.test.success);
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	},
 
 	'literal factory': {
-		'should use value verbatim': function(done) {
-			createContext({
+		'should use value verbatim': function() {
+			return createContext({
 				test: {
 					literal: { module: 'fake' }
 				}
@@ -74,11 +74,11 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(context.test.module, 'fake')
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should not resolve references': function(done) {
-			createContext({
+		'should not resolve references': function() {
+			return createContext({
 				test: {
 					literal: { x: { $ref: 'fake' } }
 				}
@@ -87,13 +87,13 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(context.test.x.$ref, 'fake')
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	},
 
 	'clone factory': {
-		'should return same type of object': function(done) {
-			createContext({
+		'should return same type of object': function() {
+			return createContext({
 				object: { literal: {} },
 				array: { literal : [] },
 				date: { literal: new Date('12/01/2007') },
@@ -118,12 +118,12 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(({}).toString.call(context.rx1), '[object RegExp]');
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should make copies of deep objects when deep == true': function(done) {
+		'should make copies of deep objects when deep == true': function() {
 			// TODO
-			createContext({
+			return createContext({
 				orig: {
 					literal: {
 						foo: {
@@ -170,11 +170,11 @@ buster.testCase('lib/plugin/basePlugin', {
 					refute.same(context.arr[3], context.arr1[3], 'nested array element');
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should copy all enumerable properties of an object': function (done) {
-			createContext({
+		'should copy all enumerable properties of an object': function () {
+			return createContext({
 				orig: {
 					literal: {
 						foo: 'foo',
@@ -191,17 +191,18 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.defined(context.copy.bar, 'copy.bar exists');
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should call constructor when cloning an object with a constructor': function(done) {
+		'should call constructor when cloning an object with a constructor': function() {
 			function Fabulous () {
 				this.instanceProp = 'instanceProp';
 			}
 			Fabulous.prototype = {
 				prototypeProp: 'prototypeProp'
 			};
-			createContext({
+
+			return createContext({
 				fab: {
 					create: Fabulous
 				},
@@ -216,13 +217,13 @@ buster.testCase('lib/plugin/basePlugin', {
 					refute.same(context.copy, context.fab);
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	},
 
 	'mixin facet': {
-		'should mixin': function(done) {
-			createContext({
+		'should mixin': function() {
+			return createContext({
 				target: {
 					literal: { a: 0 },
 					mixin: [{ $ref: 'mixin1' }]
@@ -236,11 +237,11 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(context.target.b, 1);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should allow mixins to override': function(done) {
-			createContext({
+		'should allow mixins to override': function() {
+			return createContext({
 				target: {
 					literal: { a: 0 },
 					mixin: [{ $ref: 'mixin1' }]
@@ -253,13 +254,13 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(context.target.a, 1);
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	},
 
 	'properties facet': {
-		'should set object properties': function(done) {
-			createContext({
+		'should set object properties': function() {
+			return createContext({
 				c: {
 					literal: {},
 					properties: {
@@ -271,14 +272,14 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert(context.c.success);
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	},
 
 	'create factory': {
-		'should call non-constructor functions': function(done) {
+		'should call non-constructor functions': function() {
 			var spy = this.spy();
-			createContext({
+			return createContext({
 				test: {
 					create: spy
 				}
@@ -288,12 +289,12 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert('test' in context);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should call function with single arg': function(done) {
+		'should call function with single arg': function() {
 			var spy = this.stub().returns(2);
-			createContext({
+			return createContext({
 				test: {
 					create: {
 						module: spy,
@@ -306,12 +307,12 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(context.test, 2);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should call function with multiple arg': function(done) {
+		'should call function with multiple arg': function() {
 			var spy = this.stub().returns(3);
-			createContext({
+			return createContext({
 				test: {
 					create: {
 						module: spy,
@@ -324,11 +325,11 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(context.test, 3);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should call constructor functions using new': function(done) {
-			createContext({
+		'should call constructor functions using new': function() {
+			return createContext({
 				test: {
 					create: Constructor
 				}
@@ -337,11 +338,11 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert(context.test instanceof Constructor);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should call constructor functions with args': function(done) {
-			createContext({
+		'should call constructor functions with args': function() {
+			return createContext({
 				test: {
 					create: {
 						module: Constructor,
@@ -354,17 +355,17 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(context.test.value, 1);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should wire args': function(done) {
+		'should wire args': function() {
 			var stub1, stub2, stub3;
 
 			stub1 = this.stub().returns(1);
 			stub2 = this.stub().returns(2);
 			stub3 = this.stub().returns(3);
 
-			createContext({
+			return createContext({
 				test: {
 					create: {
 						module: stub3,
@@ -392,11 +393,11 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(context.test, 3);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should beget new object when used with object module': function(done) {
-			createContext({
+		'should beget new object when used with object module': function() {
+			return createContext({
 				child: {
 					create: {
 						module: new Constructor(1)
@@ -406,13 +407,14 @@ buster.testCase('lib/plugin/basePlugin', {
 				function(context) {
 					assert(context.child instanceof Constructor);
 					assert.equals(context.child.value, 1);
-					refute(context.child.hasOwnPropety('value'));
-				}
-			).then(done, done);
+					refute(context.child.hasOwnProperty('value'));
+				},
+				fail
+			);
 		},
 
-		'should beget new object when used with constructed object ref': function(done) {
-			createContext({
+		'should beget new object when used with constructed object ref': function() {
+			return createContext({
 				parent: {
 					create: {
 						module: Constructor,
@@ -426,15 +428,16 @@ buster.testCase('lib/plugin/basePlugin', {
 				function(context) {
 					assert(context.child instanceof Constructor);
 					assert.equals(context.child.value, 1);
-					refute(context.child.hasOwnPropety('value'));
-				}
-			).then(done, done);
+					refute(context.child.hasOwnProperty('value'));
+				},
+				fail
+			);
 		},
 
 		'isConstructor': {
-			'should call prototype-less constructor using new': function(done) {
+			'should call prototype-less constructor using new': function() {
 				var Constructor = this.spy();
-				createContext({
+				return createContext({
 					test: {
 						create: {
 							module: Constructor,
@@ -447,12 +450,12 @@ buster.testCase('lib/plugin/basePlugin', {
 						assert(Constructor.calledWithNew());
 					},
 					fail
-				).then(done, done)
+				)
 			},
 
-			'should not call prototype-less constructor using new when not specified': function(done) {
+			'should not call prototype-less constructor using new when not specified': function() {
 				var Constructor = this.spy();
-				createContext({
+				return createContext({
 					test: {
 						create: {
 							module: Constructor
@@ -464,15 +467,15 @@ buster.testCase('lib/plugin/basePlugin', {
 						refute(Constructor.calledWithNew());
 					},
 					fail
-				).then(done, done)
+				)
 			}
 		}
 	},
 
 	'init facet': {
-		'should call method with arguments': function(done) {
+		'should call method with arguments': function() {
 			var result;
-			createContext({
+			return createContext({
 				test: {
 					literal: {
 						init: function(val) { result = val; }
@@ -484,11 +487,11 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(result, 2);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should abort if method throws': function(done) {
-			createContext({
+		'should abort if method throws': function() {
+			return createContext({
 				test: {
 					literal: {
 						init: function() { throw sentinel; }
@@ -500,12 +503,12 @@ buster.testCase('lib/plugin/basePlugin', {
 				function(e) {
 					assert.same(e, sentinel);
 				}
-			).then(done, done);
+			);
 		},
 
-		'should allow returning a promise': function(done) {
+		'should allow returning a promise': function() {
 			var result;
-			createContext({
+			return createContext({
 				test: {
 					literal: {
 						init: function() {
@@ -519,12 +522,12 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(result, sentinel);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should abort if method returns a rejected promise': function(done) {
+		'should abort if method returns a rejected promise': function() {
 			var result;
-			createContext({
+			return createContext({
 				test: {
 					literal: {
 						init: function() {
@@ -538,14 +541,14 @@ buster.testCase('lib/plugin/basePlugin', {
 				function() {
 					assert.equals(result, sentinel);
 				}
-			).then(done, done);
+			);
 		}
 	},
 
 	'ready facet': {
-		'should call method with arguments': function(done) {
+		'should call method with arguments': function() {
 			var result;
-			createContext({
+			return createContext({
 				test: {
 					literal: {
 						ready: function(val) { result = val; }
@@ -557,11 +560,11 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(result, 2);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should abort if method throws': function(done) {
-			createContext({
+		'should abort if method throws': function() {
+			return createContext({
 				test: {
 					literal: {
 						ready: function() { throw sentinel; }
@@ -573,12 +576,12 @@ buster.testCase('lib/plugin/basePlugin', {
 				function(e) {
 					assert.same(e, sentinel);
 				}
-			).then(done, done);
+			);
 		},
 
-		'should allow returning a promise': function(done) {
+		'should allow returning a promise': function() {
 			var result;
-			createContext({
+			return createContext({
 				test: {
 					literal: {
 						ready: function() {
@@ -592,12 +595,12 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(result, sentinel);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should abort if method returns a rejected promise': function(done) {
+		'should abort if method returns a rejected promise': function() {
 			var result;
-			createContext({
+			return createContext({
 				test: {
 					literal: {
 						ready: function() {
@@ -611,14 +614,14 @@ buster.testCase('lib/plugin/basePlugin', {
 				function() {
 					assert.equals(result, sentinel);
 				}
-			).then(done, done);
+			);
 		}
 	},
 
 	'destroy facet': {
-		'should call method with arguments': function(done) {
+		'should call method with arguments': function() {
 			var result;
-			createContext({
+			return createContext({
 				test: {
 					literal: {
 						destroy: function(val) { result = val; }
@@ -634,13 +637,13 @@ buster.testCase('lib/plugin/basePlugin', {
 				function() {
 					assert.equals(result, 1);
 				}
-			).otherwise(fail).then(done, done);
+			).otherwise(fail);
 		}
 	},
 
 	'compose factory': {
-		'should compose array of functions': function(done) {
-			createContext({
+		'should compose array of functions': function() {
+			return createContext({
 				f1: plusOne,
 				f2: plusOne,
 				composed: {
@@ -653,11 +656,11 @@ buster.testCase('lib/plugin/basePlugin', {
 				function(c) {
 					assert.equals(c.composed(1), 3);
 				}
-			).then(done, done);
+			);
 		},
 
-		'should return a promise when array introduces a promise': function(done) {
-			createContext({
+		'should return a promise when array introduces a promise': function() {
+			return createContext({
 				f1: plusOne,
 				f2: promisedPlusOne,
 				f3: plusOne,
@@ -676,11 +679,11 @@ buster.testCase('lib/plugin/basePlugin', {
 						assert.equals(result, 4);
 					});
 				}
-			).then(done, done);
+			);
 		},
 
-		'should compose a string specification': function(done) {
-			createContext({
+		'should compose a string specification': function() {
+			return createContext({
 				f1: plusOne,
 				f2: plusOne,
 				composed: {
@@ -690,11 +693,11 @@ buster.testCase('lib/plugin/basePlugin', {
 				function(c) {
 					assert.equals(c.composed(1), 3);
 				}
-			).then(done, done);
+			);
 		},
 
-		'should return a promise when pipeline introduces a promise': function(done) {
-			createContext({
+		'should return a promise when pipeline introduces a promise': function() {
+			return createContext({
 				f1: plusOne,
 				f2: promisedPlusOne,
 				f3: plusOne,
@@ -709,11 +712,11 @@ buster.testCase('lib/plugin/basePlugin', {
 						assert.equals(result, 4);
 					});
 				}
-			).then(done, done);
+			);
 		},
 
-		'should allow multiple args when composing a string specification': function(done) {
-			createContext({
+		'should allow multiple args when composing a string specification': function() {
+			return createContext({
 				f1: plus,
 				f2: plusOne,
 				composed: {
@@ -723,11 +726,11 @@ buster.testCase('lib/plugin/basePlugin', {
 				function(c) {
 					assert.equals(c.composed(1, 2), 4);
 				}
-			).then(done, done);
+			);
 		},
 
-		'should compose a string specification with single function': function(done) {
-			createContext({
+		'should compose a string specification with single function': function() {
+			return createContext({
 				f1: plusOne,
 				composed: {
 					compose: 'f1'
@@ -736,11 +739,11 @@ buster.testCase('lib/plugin/basePlugin', {
 				function(c) {
 					assert.equals(c.composed(1), 2);
 				}
-			).then(done, done);
+			);
 		},
 
-		'should compose a string specification with contexts': function(done) {
-			createContext({
+		'should compose a string specification with contexts': function() {
+			return createContext({
 				f1: plusOne,
 				t1: { literal: new Thing(1) },
 				t2: { literal: new Thing(1) },
@@ -752,10 +755,10 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.equals(c.composed(1), 4);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should support reference resolvers in pipelines': function(done) {
+		'should support reference resolvers in pipelines': function() {
 			var plugin, spy;
 
 			spy = this.stub().returns(plusOne);
@@ -769,7 +772,7 @@ buster.testCase('lib/plugin/basePlugin', {
 				}
 			};
 
-			createContext({
+			return createContext({
 				f1: plus,
 				composed: {
 					compose: 'f1 | test!blah'
@@ -779,11 +782,11 @@ buster.testCase('lib/plugin/basePlugin', {
 				function() {
 					assert.calledOnce(spy);
 				}
-			).then(done, done);
+			);
 		},
 
-		'unresolvable ref in pipeline should fail wiring': function(done) {
-			createContext({
+		'unresolvable ref in pipeline should fail wiring': function() {
+			return createContext({
 				f1: plus,
 				composed: {
 					compose: 'f1 | test!blah'
@@ -793,14 +796,14 @@ buster.testCase('lib/plugin/basePlugin', {
 				function(e) {
 					assert.defined(e);
 				}
-			).then(done, done);
+			);
 		}
 
 	},
 
 	'invoker factory': {
-		'should wire to a function': function(done) {
-			createContext({
+		'should wire to a function': function() {
+			return createContext({
 				i1: {
 					invoker: {
 						method: 'f', args: []
@@ -811,16 +814,16 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.isFunction(c.i1);
 				},
 				fail
-			).then(done, done);
+			);
 		},
 
-		'should invoke method on target': function(done) {
+		'should invoke method on target': function() {
 			var spy, expected;
 
 			spy = this.spy();
 			expected = 1;
 
-			createContext({
+			return createContext({
 				i1: {
 					invoker: {
 						method: 'f', args: [expected]
@@ -846,7 +849,7 @@ buster.testCase('lib/plugin/basePlugin', {
 					assert.calledOnceWith(spy, expected);
 				},
 				fail
-			).then(done, done);
+			);
 		}
 	}
 });

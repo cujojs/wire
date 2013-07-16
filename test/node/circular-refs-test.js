@@ -34,7 +34,7 @@ buster.testCase('circular-refs', {
 		delete plugin.wire$plugin;
 	},
 
-	'should resolve circular deps after init has finished': function(done) {
+	'should resolve circular deps after init has finished': function() {
 		var promise = timeout(wire({
 			plugins: [{ module: './test/node/fixtures/object' }],
 			component1: {
@@ -47,13 +47,13 @@ buster.testCase('circular-refs', {
 			}
 		}), 100);
 
-		promise.then(
+		return promise.then(
 			function(context) {
 				assert.defined(context.component1);
 				assert.defined(context.component2);
 			},
 			fail
-		).then(done, done);
+		);
 	},
 
 	'should not resolve circular deps before init has finished': function() {

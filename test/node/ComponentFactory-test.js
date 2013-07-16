@@ -12,7 +12,7 @@ sentinel = {};
 buster.testCase('lib/ComponentFactory', {
 
 	"create": {
-		'should call factory': function(done) {
+		'should call factory': function() {
 			var cf, factory, options;
 
 			cf = new ComponentFactory({}, {}, { contextualize: this.stub().returns({}) });
@@ -27,11 +27,11 @@ buster.testCase('lib/ComponentFactory', {
 			options = {};
 			cf.getFactory = this.stub().returns({ factory: factory, options: options });
 
-			cf.create({}).then(
+			return cf.create({}).then(
 				function(instance) {
 					assert.same(instance, sentinel);
 				}
-			).then(done, done);
+			);
 		}
 	},
 

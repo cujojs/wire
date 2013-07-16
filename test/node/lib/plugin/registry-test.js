@@ -10,7 +10,7 @@ sentinel = {};
 
 buster.testCase('lib/plugin/registry', {
 	'scanModule': {
-		'should recognize legacy wire$plugin format': function(done) {
+		'should recognize legacy wire$plugin format': function() {
 			var registry, plugin;
 
 			plugin = {
@@ -18,24 +18,24 @@ buster.testCase('lib/plugin/registry', {
 			};
 
 			registry = new PluginRegistry({});
-			registry.scanModule(plugin, sentinel).then(
+			return registry.scanModule(plugin, sentinel).then(
 				function() {
 					assert.calledOnceWith(plugin.wire$plugin, sentinel);
 				}
-			).then(done, done);
+			);
 		},
 
-		'should recognize a function as a plugin factory': function(done) {
+		'should recognize a function as a plugin factory': function() {
 			var registry, pluginFactory;
 
 			pluginFactory = this.spy();
 
 			registry = new PluginRegistry({});
-			registry.scanModule(pluginFactory, sentinel).then(
+			return registry.scanModule(pluginFactory, sentinel).then(
 				function() {
 					assert.calledOnceWith(pluginFactory, sentinel);
 				}
-			).then(done, done);
+			);
 		}
 
 	},
