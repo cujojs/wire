@@ -157,7 +157,7 @@ buster.testCase('lib/plugin/wirePlugin', {
 		},
 
 		'nesting': {
-			'=>should be sane': function() {
+			'should be sane': function() {
 				var initCalled = 0;
 				return createContext({
 					outer: {
