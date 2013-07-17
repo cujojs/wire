@@ -1,6 +1,6 @@
 ### 0.10.1
 
-* Fix for using wire factory within a nested component. (#123)
+* Fixes for using wire factory within a nested component. ([#123](https://github.com/cujojs/wire/issues/123), [#128](https://github.com/cujojs/wire/issues/128))
 
 ### 0.10.0
 
