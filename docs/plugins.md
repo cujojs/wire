@@ -199,7 +199,7 @@ function(options) {
 		// and these proxy functions may override and/or extend the base
 		// proxy's behavior as needed.
 		proxies: [
-			proxyFunction1: function(baseProxy) {},
+			function proxyFunction1(baseProxy) {},
 			// ... more proxy functions ...
 		],
 
