@@ -40,8 +40,8 @@
 				}, nonEmptyNormalizedId, id);
 			},
 
-			'should return base when id is omitted or is .': function() {
-				var id = gent.sequence([undef, gent.integer(), '', '.', './']);
+			'should return base when id is falsy or .': function() {
+				var id = gent.sequence([gent.falsy(), '', '.', './']);
 
 				assert.claim(function (base, id) {
 					return moduleId.resolve(base, id) === base;
