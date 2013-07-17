@@ -151,6 +151,30 @@ buster.testCase('lib/plugin/wirePlugin', {
 			}
 		},
 
+		'nesting': {
+			'=>should be sane': function() {
+				var initCalled = 0;
+				return createContext({
+					outer: {
+						wire: {
+							spec: {
+								test: {
+									literal: {
+										init: function() {
+											initCalled++;
+										}
+									},
+									init: 'init'
+								}
+							}
+						}
+					}
+				}).then(function() {
+					assert.equals(initCalled, 1);
+				});
+			}
+		},
+
 		'$exports': {
 			'should export only the value of $exports': function(done) {
 				createContext({
