@@ -25,7 +25,8 @@ and check out a few [example applications](docs/introduction.md#example-apps).
 
 ### 0.10.1
 
-* Fixes for using wire factory within a nested component. ([#123](https://github.com/cujojs/wire/issues/123), [#128](https://github.com/cujojs/wire/issues/128))
+* Fixes for using wire factory within a nested component. ([#123](https://github.com/cujojs/wire/issues/123), [#128](https://github.com/cujojs/wire/issues/128), thanks [@halfninety](https://github.com/halfninety))
+* Community contributed documentation updates and fixes ([#113](https://github.com/cujojs/wire/issues/113), [#114](https://github.com/cujojs/wire/issues/114), thanks [@skiadas](https://github.com/skiadas))
 
 ### 0.10.0
 
