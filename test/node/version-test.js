@@ -10,7 +10,7 @@
 	bowerJson = require('../../bower');
 	packageJson = require('../../package');
 
-	buster.testCase('rest/version', {
+	buster.testCase('wire/version', {
 		'should have the same name for package.json and component.json': function () {
 			assert.same(bowerJson.name, packageJson.name);
 		},
