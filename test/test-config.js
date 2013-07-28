@@ -96,7 +96,7 @@
 	addPackage({ name: 'meld', location: 'components/meld' });
 	addPackage({ name: 'when', location: 'components/when' });
 	addPackage({ name: 'poly', location: 'components/poly' });
-	addPackage({ name: 'sizzle', location: 'components/sizzle' });
+	addPackage({ name: 'sizzle', location: 'components/sizzle/dist' });
 	addPackage({ name: 'dojo', location: 'components/dojo', main: 'main' });
 	addPackage({ name: 'dijit', location: 'components/dijit' });
 	addPackage({ name: 'jquery', location: 'components/jquery', main: 'jquery' });
