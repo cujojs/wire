@@ -89,7 +89,7 @@ define({
 	helloWired: {
 
 		create: {
-			module: 'app/HelloWire',
+			module: 'app/HelloWired',
 			args: { $ref: 'dom:first!.hello' }
 		},
 
@@ -146,7 +146,7 @@ define({
 	helloWired: {
 
 		create: {
-			module: 'app/HelloWire',
+			module: 'app/HelloWired',
 			args: { $ref: 'dom:first!.hello' }
 		},
 
