@@ -153,6 +153,29 @@ buster.testCase('lib/plugin/wirePlugin', {
 					},
 					fail
 				);
+			},
+
+			'should retain parent-child relationship': function() {
+				var sentinel = {};
+
+				return createContext({
+					x: sentinel,
+					child: {
+						wire: {
+							defer: true,
+							spec: {
+								y: { $ref: 'x' }
+							}
+						}
+					}
+				}).then(
+					function(parent) {
+						return parent.child().then(function(child) {
+							assert.same(child.x, child.y);
+						})
+					},
+					fail
+				);
 			}
 		},
 
