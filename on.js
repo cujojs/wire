@@ -11,82 +11,101 @@
  * http://www.opensource.org/licenses/mit-license.php
  */
 (function (define) {
-define(['./lib/plugin-base/on', './lib/dom/base'], function (createOnPlugin, base) {
-'use strict';
+define(function (require) {
+"use strict";
 
-	var contains;
+	var when, functional, connection;
 
-	/**
-	 * Listens for dom events at the given node.  If a selector is provided,
-	 * events are filtered to only nodes matching the selector.  Note, however,
-	 * that children of the matching nodes can also fire events that bubble.
-	 * To determine the matching node, use the event object's selectorTarget
-	 * property instead of it's target property.
-	 * @param node {HTMLElement} element at which to listen
-	 * @param event {String} event name ('click', 'mouseenter')
-	 * @param handler {Function} handler function with the following signature: function (e) {}
-	 * @param [selector] {String} optional css query string to use to
-	 * @return {Function} removes the event handler
-	 */
-	function on (node, event, handler /*, selector */) {
-		var selector = arguments[3];
+	when = require('when');
+	functional = require('./lib/functional');
+	connection = require('./lib/connection');
 
-		if (selector) {
-			handler = filteringHandler(node, selector, handler);
+	return function onPlugin (options) {
+
+		var removers = [];
+
+		function createConnection(nodeProxy, eventsString, handler) {
+			removers = removers.concat(nodeProxy.on(eventsString, handler));
 		}
 
-		node.addEventListener(event, handler, false);
+		function onFacet(wire, facet) {
+			var promises, connects;
 
-		return function remove () {
-			node.removeEventListener(node, handler, false);
-		};
-	}
+			connects = facet.options;
+			promises = Object.keys(connects).map(function(key) {
+				return connection.parse(
+					facet, key, connects[key], wire, createConnection);
+			});
 
-	on.wire$plugin = createOnPlugin({
-		on: on
-	});
+			return when.all(promises);
+		}
 
-	if (document && document.compareDocumentPosition) {
-		contains = function w3cContains (refNode, testNode) {
-			return (refNode.compareDocumentPosition(testNode) & 16) == 16;
-		};
-	}
-	else {
-		contains = function oldContains (refNode, testNode) {
-			return refNode.contains(testNode);
-		};
-	}
-
-	return on;
-
-	/**
-	 * This is a brute-force method of checking if an event target
-	 * matches a query selector.
-	 * @private
-	 * @param node {Node}
-	 * @param selector {String}
-	 * @param handler {Function} function (e) {}
-	 * @returns {Function} function (e) {}
-	 */
-	function filteringHandler (node, selector, handler) {
-		return function (e) {
-			var target, matches, i, len, match;
-			// if e.target matches the selector, call the handler
-			target = e.target;
-			matches = base.querySelectorAll(selector, node);
-			for (i = 0, len = matches.length; i < len; i++) {
-				match = matches[i];
-				if (target == match || contains(match, target)) {
-					e.selectorTarget = match;
-					return handler(e);
+		return {
+			context: {
+				destroy: function(resolver) {
+					removers.forEach(function(remover) {
+						remover();
+					});
+					resolver.resolve();
+				}
+			},
+			facets: {
+				on: {
+					connect: function (resolver, facet, wire) {
+						resolver.resolve(onFacet(wire, facet));
+					}
+				}
+			},
+			resolvers: {
+				on: function(resolver, name, refObj, wire) {
+					resolver.resolve(createOnResolver(name, wire));
 				}
 			}
+		};
+	};
+
+	/**
+	 * Returns a function that creates event handlers.  The event handlers
+	 * are pre-configured with one or more selectors and one
+	 * or more event types.  The syntax is identical to the "on" facet.
+	 * Note that the returned handler does not auto-magically call
+	 * event.preventDefault() or event.stopPropagation() like the "on"
+	 * facet does.
+	 * @private
+	 * @param eventSelector {String} event/selector string that can be
+	 *   parsed by splitEventSelectorString()
+	 * @return {Function} a function that can be used to create event
+	 *   handlers. It returns an "unwatch" function and takes any of
+	 *   the following argument signatures:
+	 *     function (handler) {}
+	 *     function (rootNode, handler) {}
+	 */
+	function createOnResolver (eventSelector, wire) {
+		return function () {
+			var args, target, handler, unwatches;
+
+			// resolve arguments
+			args = Array.prototype.slice.call(arguments, 0, 3);
+
+			target = args.length > 1 ? wire.getProxy(args.shift()) : document;
+			if(!eventSelector) {
+				eventSelector = args.shift();
+			}
+
+			handler = args[0];
+
+			unwatches = when(target, function(targetProxy) {
+				return targetProxy.on(eventSelector, handler);
+			});
+
+			// return unwatcher of all events
+			return function unwatch() {
+				return unwatches.then(function(unwatches) {
+					unwatches.forEach(function (unwatch) { unwatch(); });
+				});
+			};
 		};
 	}
 
 });
-}(
-	typeof define == 'function' && define.amd
-		? define
-		: function (deps, factory) { module.exports = factory.apply(this, deps.map(require)); }
-));
+}(typeof define == 'function' && define.amd ? define : function (factory) { module.exports = factory(require); }));

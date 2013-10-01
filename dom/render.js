@@ -69,10 +69,12 @@ define(['./../lib/dom/base', 'when'], function (base, when) {
 	pluginInstance = {
 		factories: {
 			render: domRenderFactory
-		},
-		proxies: [
-			base.proxyNode
-		]
+		}
+		// FIXME: wire/dom/render needs to provide a dom proxy
+//		,
+//		proxies: [
+//			base.proxyNode
+//		]
 	};
 
 	render.wire$plugin = function (/* options */) {

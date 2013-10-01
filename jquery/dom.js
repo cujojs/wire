@@ -13,6 +13,7 @@
 define(['../lib/plugin-base/dom', 'jquery'], function(createDomPlugin, jquery) {
 
 	return createDomPlugin({
+		on: on,
 		query: function (selector, root) {
 			return jquery(selector, root).toArray();
 		},
@@ -62,5 +63,43 @@ define(['../lib/plugin-base/dom', 'jquery'], function(createDomPlugin, jquery) {
 			return node;
 		}
 	});
+
+	/**
+	 * Listens for dom events at the given node.  If a selector is provided,
+	 * events are filtered to only nodes matching the selector.  Note, however,
+	 * that children of the matching nodes can also fire events that bubble.
+	 * To determine the matching node, use the event object's selectorTarget
+	 * property instead of it's target property.
+	 * @param node {HTMLElement} element at which to listen
+	 * @param event {String} event name ('click', 'mouseenter')
+	 * @param handler {Function} handler function with the following signature: function (e) {}
+	 * @param [selector] {String} optional css query string to use to
+	 */
+	function on (node, event, handler /*, selector */) {
+		var selector;
+
+		selector = arguments[3];
+		handler = makeEventHandler(handler, selector);
+
+		if (selector) {
+			jquery(node).on(event, selector, handler);
+			return function () {
+				jquery(node).off(event, selector, handler);
+			}
+		}
+		else {
+			jquery(node).on(event, handler);
+			return function () {
+				jquery(node).off(event, handler);
+			}
+		}
+	}
+
+	function makeEventHandler (handler, selector) {
+		return function (e, o) {
+			if (selector) e.selectorTarget = this;
+			handler(e, o);
+		}
+	}
 
 });
