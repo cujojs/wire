@@ -14,7 +14,7 @@
 define(function(require) {
 
 	var when, unfold, defaultModuleRegex, defaultSpecRegex, replaceIdsRegex,
-		removeCommentsRx, splitSpecsRegex;
+		removeCommentsRx, splitSpecsRegex, stringWithCommentsRegex;
 
 	when = require('when');
 	unfold = require('when/unfold');
@@ -27,6 +27,7 @@ define(function(require) {
 	replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]*)\]\s*,)?/;
 	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?[\n\r]/g;
 	splitSpecsRegex = /\s*,\s*/;
+    stringWithCommentsRegex = /"([^"\\]*(\\.[^"\\]*)*)"|'([^'\\]*(\\.[^'\\]*)*)'/g;
 
 	return {
 		normalize: normalize,
@@ -213,17 +214,33 @@ define(function(require) {
 	}
 
 	function injectIds (moduleText, absId, moduleIds) {
+        var tmp, stringWithComments, index;
+
+        tmp = "_cram_tmp_string_";
+        stringWithComments = [];
+        index = 0;
+
 		// note: replaceIdsRegex removes commas, parens, and brackets
-		return moduleText.replace(removeCommentsRx, '').replace(replaceIdsRegex, function (m, def, mid, depIds) {
+        return moduleText
+            .replace(stringWithCommentsRegex, function(m) {
+                // store string containing comments
+                stringWithComments[index] = m;
+                // replace with tmp variable + index
+                return tmp + index++;
+            }).replace(removeCommentsRx, '')
+            .replace(RegExp(tmp + '(\\d+)', 'g'), function(m, n) {
+                // restore the original string with comments
+                return stringWithComments[n];
+            }).replace(replaceIdsRegex, function (m, def, mid, depIds) {
+                // merge deps, but not args since they're not referenced in module
+                if (depIds) moduleIds = moduleIds.concat(depIds);
 
-			// merge deps, but not args since they're not referenced in module
-			if (depIds) moduleIds = moduleIds.concat(depIds);
+                moduleIds = moduleIds.map(quoted).join(', ');
+                if (moduleIds) moduleIds = '[' + moduleIds + '], ';
 
-			moduleIds = moduleIds.map(quoted).join(', ');
-			if (moduleIds) moduleIds = '[' + moduleIds + '], ';
-
-			return def + '(' + quoted(absId) + ', ' + moduleIds;
-		});
+                return def + '(' + quoted(absId) + ', ' + moduleIds;
+            }
+        );
 	}
 
 	function quoted (id) {
