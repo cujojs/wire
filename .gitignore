@@ -2,4 +2,13 @@ node_modules/
 components/
 experiments/
 .idea/
+*.iml
+bower_components/
+.DS_Store
 *~
+.project
+.setting
+/npm-debug.log
+/sauce_connect.log*
+.buildpath
+.classpath
