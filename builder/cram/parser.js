@@ -17,16 +17,18 @@ define(function(require) {
     // adapted from cram's scan function:
     //replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]+)\]\s*,)?\s*(function)?\s*(?:\(([^)]*)\))?/g;
     replaceIdsRx = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^]]*)]\s*,)?/;
+    removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?[\n\r]/g;
     //removeCommentsRx = /define\(([\s*\/\/|\/\*].*)[\s\S]*\{/g;
     //removeCommentsRx = /define\([\{\}\/\w\S\s]*\*\/\n\r\{/g;
-    removeCommentsRx = /define\([\{\}\/\w\S\s]*\*\/\n\{/g;
+    //removeCommentsRx = /define\([\{\}\/\w\S\s]*\*\/\n\{/g;
     return {
         injectIds: injectIds
     };
 
     function injectIds(moduleText, absId, moduleIds) {
         // note: replaceIdsRx removes commas, parens, and brackets
-        return moduleText.replace(removeCommentsRx, 'define({')
+        // return moduleText.replace(removeCommentsRx, 'define({')
+        return moduleText.replace(removeCommentsRx, '')
             .replace(replaceIdsRx, function(m, def, mid, depIds) {
                 // merge deps, but not args since they're not referenced in module
                 if (depIds) moduleIds = moduleIds.concat(depIds);
