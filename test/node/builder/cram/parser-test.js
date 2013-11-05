@@ -15,7 +15,6 @@ buster.testCase('wire/builder/cram/parser', {
         test = "test"
         spec ="{\n\ra: { test: 'a' }\n\r}";
         assert.equals(parser.injectIds(specObjectToModule(spec), test, []), specObjectToModuleWithIds(spec, test));
-        done();
     },
     'should write a named define even with a one line comment': function(done) {
         var spec, test, result;
@@ -26,7 +25,6 @@ buster.testCase('wire/builder/cram/parser', {
         spec += "a: { test: 'a' }}";
         result += "a: { test: 'a' }}";
         assert.equals(parser.injectIds(specObjectToModule(spec), test, []).replace(/(\n|\r)/g,''), specObjectToModuleWithIds(result, test).replace(/(\n|\r)/g,''));
-        done();
     },
     'should write a named define even with a comment at the end of an existing line': function(done) {
         var spec, test, result;
@@ -36,7 +34,6 @@ buster.testCase('wire/builder/cram/parser', {
         spec += "a: { test: 'a' }//This is my comment\n\r}";
         result += "a: { test: 'a' }}";
         assert.equals(parser.injectIds(specObjectToModule(spec), test, []).replace(/(\n|\r)/g,''), specObjectToModuleWithIds(result, test).replace(/(\n|\r)/g,''));
-        done();
     },
     'should write a named define even with a comment at the end of the first line': function(done) {
         var spec, test, result;
@@ -46,7 +43,6 @@ buster.testCase('wire/builder/cram/parser', {
         spec += "a: { test: 'a' }}";
         result += "a: { test: 'a' }}";
         assert.equals(parser.injectIds(specObjectToModule(spec), test, []).replace(/(\n|\r)/g,''), specObjectToModuleWithIds(result, test).replace(/(\n|\r)/g,''));
-        done();
     },
     'should write a named define even with a comment inbetween': function(done) {
         var spec, test, result;
@@ -56,7 +52,6 @@ buster.testCase('wire/builder/cram/parser', {
         spec += "a: { test: 'a' }}";
         result += "a: { test: 'a' }}";
         assert.equals(parser.injectIds(specObjectToModule(spec), test, []).replace(/(\n|\r)/g,''), specObjectToModuleWithIds(result, test).replace(/(\n|\r)/g,''));
-        done();
     },
     'should write a named define even if one value contains a comment like but is not a comment': function(done) {
         var spec, test, result;
@@ -66,7 +61,6 @@ buster.testCase('wire/builder/cram/parser', {
         spec += "a: { test: 'http://example.com' }\n\r}";
         result += "a: { test: 'http://example.com' }\n\r}";
         assert.equals(parser.injectIds(specObjectToModule(spec), test, []).replace(/(\n|\r)/g,''), specObjectToModuleWithIds(result, test).replace(/(\n|\r)/g,''));
-        done();
     }
 });
 
