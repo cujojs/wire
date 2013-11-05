@@ -13,19 +13,15 @@
 (function(define) {
 define(function(require) {
 
-	var when, unfold, defaultModuleRegex, defaultSpecRegex, replaceIdsRegex,
-		removeCommentsRx, splitSpecsRegex;
+	var when, unfold, defaultModuleRegex, defaultSpecRegex, splitSpecsRegex;
 
 	when = require('when');
 	unfold = require('when/unfold');
+	parser = require('./cram/parser');
 
 	// default dependency regex
 	defaultModuleRegex = /\.(module|create)$/;
 	defaultSpecRegex = /\.(wire\.spec|wire)$/;
-	// adapted from cram's scan function:
-	//replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]+)\]\s*,)?\s*(function)?\s*(?:\(([^)]*)\))?/g;
-	replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]*)\]\s*,)?/;
-	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?[\n\r]/g;
 	splitSpecsRegex = /\s*,\s*/;
 
 	return {
@@ -174,7 +170,7 @@ define(function(require) {
 			dfd = when.defer();
 
 			io.read(ensureExtension(specId, 'js'), function(specText) {
-				buffer = injectIds(specText, specId, dependencies);
+				buffer = parser.injectIds(specText, specId, dependencies);
 
 				defines.push(buffer);
 				dfd.resolve();
@@ -210,24 +206,6 @@ define(function(require) {
 		return id.lastIndexOf('.') <= id.lastIndexOf('/')
 			? id + '.' + ext
 			: id;
-	}
-
-	function injectIds (moduleText, absId, moduleIds) {
-		// note: replaceIdsRegex removes commas, parens, and brackets
-		return moduleText.replace(removeCommentsRx, '').replace(replaceIdsRegex, function (m, def, mid, depIds) {
-
-			// merge deps, but not args since they're not referenced in module
-			if (depIds) moduleIds = moduleIds.concat(depIds);
-
-			moduleIds = moduleIds.map(quoted).join(', ');
-			if (moduleIds) moduleIds = '[' + moduleIds + '], ';
-
-			return def + '(' + quoted(absId) + ', ' + moduleIds;
-		});
-	}
-
-	function quoted (id) {
-		return '"' + id + '"';
 	}
 
 	function endOfList(ids) {
