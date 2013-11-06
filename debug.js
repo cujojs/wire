@@ -78,8 +78,10 @@
  * }
  */
 (function(global, define) {
-define(['meld'], function(meld) {
-	var timer, defaultTimeout, logger, createTracer, ownProp;
+define(function(require) {
+	var meld, timer, defaultTimeout, logger, createTracer, ownProp;
+
+	meld = require('meld');
 
 	function noop() {}
 
@@ -554,12 +556,6 @@ define(['meld'], function(meld) {
 	};
 
 });
-})(this, typeof define == 'function'
-	// use define for AMD if available
-	? define
-	: function(deps, factory) {
-		module.exports = factory.apply(this, deps.map(function(x) {
-			return require(x);
-		}));
-	}
+})(this, typeof define == 'function' && define.amd
+	? define : function(factory) { module.exports = factory(require); }
 );

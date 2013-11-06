@@ -63,21 +63,25 @@ define(function(require) {
 	/**
 	 * AMD Loader plugin API
 	 * @param name {String} spec module id, or comma-separated list of module ids
-	 * @param require {Function} loader-provide local require function
-	 * @param callback {Function} callback to call when wiring is completed. May have
-	 *  and error property that a function to call to inform the AMD loader of an error.
-	 *  See here: https://groups.google.com/forum/?fromgroups#!topic/amd-implement/u0f161drdJA
+	 * @param require {Function} loader-provided local require function
+	 * @param done {Function} loader-provided callback to call when wiring
+	 *  is completed. May have and error property that a function to call to
+	 *  inform the AMD loader of an error.
+	 *  See here:
+	 *  https://groups.google.com/forum/?fromgroups#!topic/amd-implement/u0f161drdJA
 	 */
-	wire.load = function amdLoad(name, require, callback /*, config */) {
+	wire.load = function amdLoad(name, require, done /*, config */) {
 		// If it's a string, try to split on ',' since it could be a comma-separated
 		// list of spec module ids
-		var errback = callback.error || function(e) {
+		wire(name.split(','), { require: require })
+			.then(done, done.error)
+			.otherwise(crash);
+
+		function crash(e) {
 			// Throw uncatchable exception for loaders that don't support
 			// AMD error handling.  This will propagate up to the host environment
 			setTimeout(function() { throw e; }, 0);
-		};
-
-		wire(name.split(','), { require: require }).then(callback, errback);
+		}
 	};
 
 	/**

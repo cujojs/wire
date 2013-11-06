@@ -1,5 +1,5 @@
 node_modules/
-components/
 experiments/
 .idea/
 *~
+bower_components/

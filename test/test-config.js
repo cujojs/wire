@@ -25,11 +25,11 @@
 
 	loaders = {
 		curl: {
-			script: 'components/curl/src/curl',
+			script: 'bower_components/curl/src/curl',
 			mixin: {
 				apiName: 'require',
 				paths: {
-					jquery: 'components/jquery/jquery'
+					jquery: 'bower_components/jquery/jquery'
 				},
 				preloads: [
 					'poly/es5',
@@ -38,11 +38,11 @@
 			}
 		},
 		requirejs: {
-			script: 'components/requirejs/require',
+			script: 'bower_components/requirejs/require',
 			mixin: {
 				paths: {
-					jquery: 'components/jquery/jquery',
-					domReady: 'components/requirejs-domready/domReady'
+					jquery: 'bower_components/jquery/jquery',
+					domReady: 'bower_components/requirejs-domready/domReady'
 				}
 			}
 		}
@@ -93,13 +93,13 @@
 
 	// This is needed because we're running unit tests from *within* the wire dir
 	addPackage({ name: 'wire', location: '.' });
-	addPackage({ name: 'meld', location: 'components/meld' });
-	addPackage({ name: 'when', location: 'components/when' });
-	addPackage({ name: 'poly', location: 'components/poly' });
-	addPackage({ name: 'sizzle', location: 'components/sizzle' });
-	addPackage({ name: 'dojo', location: 'components/dojo', main: 'main' });
-	addPackage({ name: 'dijit', location: 'components/dijit' });
-	addPackage({ name: 'jquery', location: 'components/jquery', main: 'jquery' });
+	addPackage({ name: 'meld', location: 'bower_components/meld' });
+	addPackage({ name: 'when', location: 'bower_components/when' });
+	addPackage({ name: 'poly', location: 'bower_components/poly' });
+	addPackage({ name: 'sizzle', location: 'bower_components/sizzle' });
+	addPackage({ name: 'dojo', location: 'bower_components/dojo', main: 'main' });
+	addPackage({ name: 'dijit', location: 'bower_components/dijit' });
+	addPackage({ name: 'jquery', location: 'bower_components/jquery', main: 'jquery' });
 
 	// Other loaders may not need this
 	loaderConfig.paths[loaderName] = loaderPath;

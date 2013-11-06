@@ -43,7 +43,7 @@
 	},
 	"devDependencies": {
 		"buster": "~0.6",
-		"bower": "~0",
+		"bower": "~1",
 		"gent": "~0.4"
 	},
 	"main": "./wire",
@@ -51,7 +51,7 @@
 		"test": "test"
 	},
 	"scripts": {
-		"test": "buster test -e node",
+		"test": "buster-test -e node",
 		"prepublish": "bower install && git submodule update --init"
 	}
 }
