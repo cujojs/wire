@@ -2,7 +2,7 @@
 	'use strict';
 
 	var assert, refute, fail, gent,
-		word, nonEmptyNormalizedId, dotsOnly, idWithLeadingDots, undef;
+		word, nonEmptyNormalizedId, pluginId, dotsOnly, idWithLeadingDots, undef;
 
 	gent = require('gent');
 
@@ -26,8 +26,20 @@
 		2, gent.sequence([dotsOnly, nonEmptyNormalizedId])
 	);
 
+	pluginId = gent.string(
+		3, gent.sequence([
+			gent.pick([idWithLeadingDots, nonEmptyNormalizedId]),
+			'!',
+			gent.pick([idWithLeadingDots, nonEmptyNormalizedId])
+		])
+	);
+
 	function isNormalizedId(id) {
 		return id === '' || /^(\w+\/)*\w+$/.test(id);
+	}
+
+	function isNormalizedPluginId(id) {
+		return id === '' || /^(\w+\/)*\w+!(\w+\/)*\w+$/.test(id);
 	}
 
 	buster.testCase('lib/loader/id', {
@@ -37,6 +49,14 @@
 
 				assert.claim(function (base, id) {
 					return isNormalizedId(moduleId.resolve(base, id));
+				}, nonEmptyNormalizedId, id);
+			},
+
+			'should normalize plugin ids': function() {
+				var id = pluginId;
+
+				assert.claim(function (base, id) {
+					return isNormalizedPluginId(moduleId.resolve(base, id));
 				}, nonEmptyNormalizedId, id);
 			},
 

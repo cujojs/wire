@@ -17,6 +17,14 @@
             };
         });
 
+        define('a/b/plugin', function() {
+            return {
+                load: function(id, req, done) {
+                    req([id], done, done.error);
+                }
+            };
+        });
+
         define('a/spec-module', {
             // Already in a
             test: { module: './b/c' }
@@ -26,6 +34,12 @@
             // Already in a
             component: {
                 create: { module: './b/object' }
+            }
+        });
+
+        define('a/spec-with-plugin', {
+            component: {
+                module: './b/plugin!./b/c'
             }
         });
 
@@ -118,7 +132,7 @@
                     return d;
                 },
 
-                function shouldResolveRelativeIdsInOthePackage(doh) {
+                function shouldResolveRelativeIdsInOtherPackage(doh) {
                     var d = new doh.Deferred();
                     wire('z/spec').then(
                             function(c) {
@@ -148,6 +162,20 @@
                     return d;
                 },
 
+                function shouldResolveRelativePluginIdAndResourceId(doh) {
+                    var d = new doh.Deferred();
+                    wire('a/b/spec-with-plugin').then(
+                            function(c) {
+                                d.callback(c.test === 'a/b/c');
+                            },
+                            function(e) {
+                                console.error(e.stack);
+                                doh.errback(e);
+                            }
+                    );
+
+                    return d;
+                }
 
             ]);
 
