@@ -1,3 +1,8 @@
+### 0.10.2
+
+* Experimental support for relative module ids in wire specs in all supported environments.
+* Fix version mismatch in `bower.json`
+
 ### 0.10.1
 
 * Fixes for using wire factory within a nested component. ([#123](https://github.com/cujojs/wire/issues/123), [#128](https://github.com/cujojs/wire/issues/128), thanks [@halfninety](https://github.com/halfninety))
