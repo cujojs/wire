@@ -164,9 +164,9 @@
 
                 function shouldResolveRelativePluginIdAndResourceId(doh) {
                     var d = new doh.Deferred();
-                    wire('a/b/spec-with-plugin').then(
+                    wire('a/spec-with-plugin').then(
                             function(c) {
-                                d.callback(c.test === 'a/b/c');
+                                d.callback(c.component === 'a/b/c');
                             },
                             function(e) {
                                 console.error(e.stack);
