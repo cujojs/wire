@@ -1,3 +1,14 @@
+### 0.10.3
+
+* Experimental support for relative AMD plugin resource ids in wire specs.  For example:
+
+```js
+myTemplate: {
+	// Find template.html relative to the current wire spec
+	module: 'text!./template.html'
+}
+```
+
 ### 0.10.2
 
 * Experimental support for relative module ids in wire specs in all supported environments.

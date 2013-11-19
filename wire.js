@@ -13,14 +13,14 @@
  *
  * @author Brian Cavalier
  * @author John Hann
- * @version 0.10.1
+ * @version 0.10.3
  */
 (function(rootSpec, define){ 'use strict';
 define(function(require) {
 
 	var createContext, rootContext, rootOptions;
 
-	wire.version = '0.10.2';
+	wire.version = '0.10.3';
 
 	createContext = require('./lib/context');
 
