@@ -817,7 +817,7 @@ buster.testCase('lib/plugin/basePlugin', {
 			);
 		},
 
-		'should invoke method on target': function() {
+		'=>should invoke method on target': function() {
 			var spy, expected;
 
 			spy = this.spy();
@@ -832,7 +832,10 @@ buster.testCase('lib/plugin/basePlugin', {
 				t1: {
 					literal: {},
 					properties: {
-						f: { literal: spy }
+						f: { literal: function(x) {
+							console.log('HERE', x);
+							spy(x);
+						} }
 					}
 				},
 				component: {
