@@ -13,11 +13,12 @@
 (function(define) {
 define(function(require) {
 
-	var when, unfold, defaultModuleRegex, defaultSpecRegex, replaceIdsRegex,
+	var when, unfold, mid, defaultModuleRegex, defaultSpecRegex, replaceIdsRegex,
 		removeCommentsRx, splitSpecsRegex;
 
 	when = require('when');
 	unfold = require('when/unfold');
+	mid = require('../lib/loader/moduleId');
 
 	// default dependency regex
 	defaultModuleRegex = /\.(module|create)$/;
@@ -70,7 +71,7 @@ define(function(require) {
 			dependencies = [];
 			ids = [specId];
 
-			addDep(wireId);
+			_addDep(wireId);
 
 			return unfold(fetchNextSpec, endOfList, scanSpec, ids)
 				.then(function() {
@@ -78,94 +79,102 @@ define(function(require) {
 				}
 			);
 
-
 			function fetchNextSpec() {
-				var id, dfd;
-
-				id = ids.shift();
-				dfd = when.defer();
-
-				require(
-					[id],
-					function(spec) { dfd.resolve([spec, ids]); },
-					dfd.reject
-				);
-
-				return dfd.promise;
+				var id = ids.shift();
+				return when.promise(function(resolve, reject) {
+					require(
+						[id],
+						function(spec) { resolve([{ spec: spec, id: id }, ids]); },
+						reject
+					);
+				});
 			}
 
-			function scanSpec(spec) {
-				scanPlugins(spec);
-				scanObj(spec);
-			}
-
-			function scanObj(obj, path) {
-				// Scan all keys.  This might be the spec itself, or any sub-object-literal
-				// in the spec.
-				for (var name in obj) {
-					scanItem(obj[name], createPath(path, name));
-				}
-			}
-
-			function scanItem(it, path) {
-				// Determine the kind of thing we're looking at
-				// 1. If it's a string, and the key is module or create, then assume it
-				//    is a moduleId, and add it as a dependency.
-				// 2. If it's an object or an array, scan it recursively
-				// 3. If it's a wire spec, add it to the list of spec ids
-				if (isSpec(path) && typeof it === 'string') {
-					addSpec(it);
-
-				} else if (isDep(path) && typeof it === 'string') {
-					// Get module def
-					addDep(it);
-
-				} else if (isStrictlyObject(it)) {
-					// Descend into subscope
-					scanObj(it, path);
-
-				} else if (Array.isArray(it)) {
-					// Descend into array
-					var arrayPath = path + '[]';
-					it.forEach(function(arrayItem) {
-						scanItem(arrayItem, arrayPath);
-					});
-				}
-			}
-
-			function scanPlugins(spec) {
-				var plugins = spec.$plugins || spec.plugins;
-
-				if(Array.isArray(plugins)) {
-					plugins.forEach(addPlugin);
-				} else if(typeof plugins === 'object') {
-					Object.keys(plugins).forEach(function(key) {
-						addPlugin(plugins[key]);
-					});
-				}
-			}
-
-			function addPlugin(plugin) {
-				if(typeof plugin === 'string') {
-					addDep(plugin);
-				} else if(typeof plugin === 'object' && plugin.module) {
-					addDep(plugin.module);
-				}
-			}
-
-			function addDep(moduleId) {
+			function _addDep(moduleId) {
 				if(!(moduleId in seenModules)) {
 					dependencies.push(moduleId);
 					seenModules[moduleId] = moduleId;
 				}
 			}
 
-			function addSpec(specId) {
-				if(!(specId in seenModules)) {
-					ids.push(specId);
+			function scanSpec(specDescriptor) {
+				var spec = specDescriptor.spec;
+
+				scanPlugins(spec);
+				scanObj(spec);
+
+				function resolveId(moduleId) {
+					return mid.resolve(specDescriptor.id, moduleId)
 				}
-				addDep(specId);
+
+				function scanObj(obj, path) {
+					// Scan all keys.  This might be the spec itself,
+					// or any sub-object-literal in the spec.
+					for (var name in obj) {
+						scanItem(obj[name], createPath(path, name));
+					}
+				}
+
+				function scanItem(it, path) {
+					// Determine the kind of thing we're looking at
+					// 1. If it's a string, and the key is module or create, then assume it
+					//    is a moduleId, and add it as a dependency.
+					// 2. If it's an object or an array, scan it recursively
+					// 3. If it's a wire spec, add it to the list of spec ids
+					if (isSpec(path) && typeof it === 'string') {
+						addSpec(it);
+
+					} else if (isDep(path) && typeof it === 'string') {
+						// Get module def
+						addDep(it);
+
+					} else if (isStrictlyObject(it)) {
+						// Descend into subscope
+						scanObj(it, path);
+
+					} else if (Array.isArray(it)) {
+						// Descend into array
+						var arrayPath = path + '[]';
+						it.forEach(function(arrayItem) {
+							scanItem(arrayItem, arrayPath);
+						});
+					}
+				}
+
+				function scanPlugins(spec) {
+					var plugins = spec.$plugins || spec.plugins;
+
+					if(Array.isArray(plugins)) {
+						plugins.forEach(addPlugin);
+					} else if(typeof plugins === 'object') {
+						Object.keys(plugins).forEach(function(key) {
+							addPlugin(plugins[key]);
+						});
+					}
+				}
+
+				function addPlugin(plugin) {
+					if(typeof plugin === 'string') {
+						addDep(plugin);
+					} else if(typeof plugin === 'object' && plugin.module) {
+						addDep(plugin.module);
+					}
+				}
+
+				function addDep(moduleId) {
+					_addDep(resolveId(moduleId));
+				}
+
+				function addSpec(specId) {
+					specId = resolveId(specId);
+					if(!(specId in seenModules)) {
+						ids.push(specId);
+					}
+					_addDep(specId);
+				}
+
 			}
+
 		}
 
 		function generateDefine(specId, dependencies) {

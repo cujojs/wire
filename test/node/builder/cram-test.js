@@ -90,6 +90,64 @@ buster.testCase('wire/builder/cram', {
 		});
 	},
 
+	'should resolve relative module ids': function(done) {
+		var spec, json, specId;
+
+		specId = 'test';
+
+		spec = {
+			a: { module: './a' }
+		};
+
+		json = JSON.stringify(spec);
+
+		function req(ids, cb) {
+			cb(spec);
+		}
+
+		builder.compile('wire', specId, req, {
+			read: function(_, cb) {
+				cb(specObjectToModule(spec));
+			},
+			write: function(content) {
+				refute.equals(content.indexOf('["wire", "test/a"]'), -1);
+				done();
+			},
+			error: function (reason) {
+				refute(true, reason);
+			}
+		});
+	},
+
+	'should resolve relative plugin and resource ids': function(done) {
+		var spec, json, specId;
+
+		specId = 'test';
+
+		spec = {
+			a: { module: './plugin!./a' }
+		};
+
+		json = JSON.stringify(spec);
+
+		function req(ids, cb) {
+			cb(spec);
+		}
+
+		builder.compile('wire', specId, req, {
+			read: function(_, cb) {
+				cb(specObjectToModule(spec));
+			},
+			write: function(content) {
+				refute.equals(content.indexOf('["wire", "test/plugin!test/a"]'), -1);
+				done();
+			},
+			error: function (reason) {
+				refute(true, reason);
+			}
+		});
+	},
+
 	'with a comma-separated list of specs': {
 		'should generate a define for each': function(done) {
 			var specs = {
