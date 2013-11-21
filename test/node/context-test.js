@@ -258,7 +258,7 @@ buster.testCase('context', {
 				);
 			},
 
-			'should process component lifecycle': function() {
+			'should process component lifecycle': function(done) {
 				var spy = this.spy(function(resolver) {
 					resolver.resolve();
 				});
@@ -267,7 +267,14 @@ buster.testCase('context', {
 					return {
 						context: {
 							initialize: function(resolver, wire) {
-								wire.addComponent({}, 'instance');
+								wire.addComponent({}, 'instance').then(
+									function() {
+										assert.called(spy);
+										done();
+									},
+									fail
+								);
+
 								resolver.resolve();
 							}
 						},
@@ -275,14 +282,7 @@ buster.testCase('context', {
 					}
 				}
 
-				return createContext({
-					plugins: [plugin]
-				}).then(
-					function() {
-						assert.called(spy);
-					},
-					fail
-				);
+				createContext({ plugins: [plugin] });
 			}
 		}
 	}
