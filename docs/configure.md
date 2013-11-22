@@ -4,7 +4,7 @@
 1. [Mixins](#mixins)
 1. [Init methods](#init-methods)
 1. [Ready methods](#ready-methods)
-1. [Init vs. Ready](#init-vs-ready)
+1. [Init vs. ready methods](#init-vs-ready-methods)
 1. [Destroy methods](#destroy-methods)
 
 After creating a component, wire moves the component through its [lifecycle](concepts.md#component-lifecycle).  During the *configure* lifecycle step, you can set properties on the component, and then during the *initialize* step that follows, you can invoke initialization methods to do further configuration, before [connections](connections.md) are made between components.
@@ -171,9 +171,9 @@ define({
 });
 ```
 
-# Init vs. Ready
+# Init vs. ready methods
 
-While (init methods)[#init-methods] and (ready methods)[#ready-methods) sound similar (and they are), there is an important difference: their order in the component lifecycle.  In short, a component's init methods are executed earlier than its ready methods.
+While [init methods](#init-methods) and [ready methods](#ready-methods) sound similar (and they are), there is an important difference: their order in the component lifecycle.  In short, a component's init methods are executed earlier than its ready methods.
 
 To be more specific, init methods are executed *before* a component is allowed to be dereferenced--any attempt to dereference it will return a pending promise.  This gives a component a chance to setup any necessary state or do any necessary work before any other components are allowed to inject or make connections to it.
 
