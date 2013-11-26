@@ -1,6 +1,7 @@
 ### 0.10.4
 
-* Support for relative module ids, including AMD plugin resource ids in wire's [cram](http://github.com/cujojs/cram) builder plugin.
+* Support for relative module ids, including AMD plugin resource ids in wire's [cram](http://github.com/cujojs/cram) builder plugin. (#142)
+* Improved performance in lifecycle processing, allowing components to proceed in parallel in more cases when there are no dependencies between them. (#141)
 
 ### 0.10.3
 
