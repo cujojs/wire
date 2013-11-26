@@ -832,7 +832,9 @@ buster.testCase('lib/plugin/basePlugin', {
 				t1: {
 					literal: {},
 					properties: {
-						f: { literal: spy }
+						f: function(x) {
+							spy(x);
+						}
 					}
 				},
 				component: {
