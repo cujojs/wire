@@ -1,3 +1,7 @@
+### 0.10.4
+
+* Support for relative module ids, including AMD plugin resource ids in wire's [cram](http://github.com/cujojs/cram) builder plugin.
+
 ### 0.10.3
 
 * Experimental support for relative AMD plugin resource ids in wire specs.  For example:
