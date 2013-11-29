@@ -116,9 +116,9 @@ Wire.js supports *spec-relative module ids*.  This means you can specify modules
 index.html
 app/
     spec.js
-    aModule.js
-    stuff/
-        anotherModule.js
+	aModule.js
+	stuff/
+	    anotherModule.js
 ...
 ```
 
