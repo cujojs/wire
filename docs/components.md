@@ -97,7 +97,7 @@ define({
 
 ## module
 
-The module factory loads an AMD module, *but does not call it*.  The module is used directly as the component.
+The module factory loads a module, *but does not call it*.  The module is used directly as the component.
 
 ### Syntax
 ```javascript
@@ -106,9 +106,46 @@ myComponent: {
 }
 ```
 
+Wire.js uses your existing module loader, such as curl.js, RequireJS, or Node.js's built-in `require` to load modules.  You can use any modules formats (AMD, CommonJS, etc.) supported by your loader, including AMD plugins in an AMD environment.
+
+### A note on module ids
+
+Wire.js supports *spec-relative module ids*.  This means you can specify modules relative to the current wire spec.  For example, if your project looks like:
+
+```text
+index.html
+app/
+    spec.js
+    aModule.js
+    stuff/
+        anotherModule.js
+...
+```
+
+In `spec.js`, you can use relative module ids to reference `aModule` and `anotherModule`:
+
+```js
+// app/spec.js
+define({
+	// Use module id relative to spec.js
+	a: {
+		module: './aModule'
+	},
+
+	// Relative ids work in create, too
+	another: {
+		create: {
+			module: './stuff/anotherModule'
+		}
+	}
+});
+```
+
+Using relative module ids can make wire specs a bit more terse, and can also ease refactoring when moving a group of related files, which may include a wire spec, around in your project.
+
 ## create
 
-The create factory loads an AMD module and uses it to create a component instance by calling the module either as a constructor using `new` or as a regular function, or by begetting a new instance if the module is an object.
+The create factory loads a module and uses it to create a component instance by calling the module either as a constructor using `new` or as a regular function, or by begetting a new instance if the module is an object.
 
 ### Full syntax
 
