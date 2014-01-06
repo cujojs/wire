@@ -52,7 +52,7 @@ Once you've installed wire into your AMD environment and configured your loader:
 curl(['wire!app/main']);
 ```
 
-You should concatenate all the modules of your app before deploying it to production.  Wire's AMD plugin supports AMD bundling via cujoJS's [cram](http://know.cujojs.com/downloads#alacarte).  Other people have reported success using Pieter Vanderwerff's [wire-rjs plugin](https://github.com/pieter-vanderwerff/wire/blob/rjs-build/builder/rjs.js), which should be placed in the wire/builder folder prior to running rjs.
+You should concatenate all the modules of your app before deploying it to production.  Wire's AMD plugin supports AMD bundling via cujoJS's [cram](http://know.cujojs.com/downloads#alacarte).  For RequireJS (r.js) people have reported success using Pieter Vanderwerff's [wire-rjs-builder plugin](https://github.com/pieter-vanderwerff/wire-rjs-builder).
 
 For more examples of using wire as an AMD plugin to bootstrap applications, see the [Example Apps](introduction.md#example-apps)
 
