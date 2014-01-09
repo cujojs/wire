@@ -1,3 +1,7 @@
+### 0.10.5
+
+* Fix for form submit handling in `wire/on` on devices supporting touch events.
+
 ### 0.10.4
 
 * Support for relative module ids, including AMD plugin resource ids in wire's [cram](http://github.com/cujojs/cram) builder plugin. (#142)
