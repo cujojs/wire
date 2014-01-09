@@ -1,6 +1,7 @@
 ### 0.10.5
 
 * Fix for form submit handling in `wire/on` on devices supporting touch events.
+* Update docs to point to [@pieter-vanderwerff's r.js builder plugin](https://github.com/pieter-vanderwerff/wire-rjs-builder)
 
 ### 0.10.4
 
