@@ -12,7 +12,7 @@
  */
 (function (define) {
 define(['./lib/plugin-base/on', './lib/dom/base'], function (createOnPlugin, base) {
-"use strict";
+'use strict';
 
 	var contains;
 

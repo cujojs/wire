@@ -1,7 +1,6 @@
 {
 	"browser": true,
 	"node": true,
-	"es5": true,
 
 	"predef": [
         "define",
@@ -21,6 +20,7 @@
 	"nonew": true,
 	"quotmark": "single",
 	"strict": false,
+	"sub": true,
 	"trailing": true,
 	"undef": true,
 	"unused": true,
