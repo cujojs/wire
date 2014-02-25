@@ -342,7 +342,7 @@ If you have existing templates that use other template engines, such as [mustach
 
 # Notes on DOMReady
 
-When you use wire to reference DOM Nodes via any of the DOM-related plugins (e.g. wire/dom, wire/dom, wire/sizzle, etc.), wire will only resolve the DOM Node reference after the DOM is ready.  You don't need to worry about DOM Ready--simply reference DOM Nodes or do DOM queries (e.g. via `id!`, `first!`, etc.), and wire will do the right thing.
+When you use wire to reference DOM Nodes via any of the DOM-related plugins (e.g. wire/dom, wire/sizzle, etc.), wire will only resolve the DOM Node reference after the DOM is ready.  You don't need to worry about DOM Ready--simply reference DOM Nodes or do DOM queries (e.g. via `id!`, `first!`, etc.), and wire will do the right thing.
 
 To achieve this, wire relies on its AMD environment to provide a `domReady!` plugin.  Alternatively, wire will detect a global `require.ready` function for backward compatibility with some loaders (e.g. dojo and older versions of RequireJS).
 
