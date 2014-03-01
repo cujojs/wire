@@ -360,7 +360,7 @@ Many of wire's built-in resolvers can be [injected](#dependency-inversion) as [p
 - [id!](dom.md#querying-the-dom)
 - [all!](dom.md#querying-the-dom)
 - [first!](dom.md#querying-the-dom)
-- [wire!](wire#injecting-wire)
+- [wire!](wire.md#injecting-wire)
 
 To inject a reference resolver, omit the reference identifier (the part after the "!") as in this example:
 

@@ -162,6 +162,9 @@ myComponent: {
 		// Optional: You'll probably NEVER need this, srsly.
 		// Force calling the module as a constructor using new.
 		// See isConstructor Option Notes section below.
+		// *Note: Explicitly setting isConstructor will skip heuristics
+		// and shave off some cpu cycles (No guessing will be done)
+		// at the cost of being more verbose.
 		isConstructor: true, // or false
 	}
 }
