@@ -5,7 +5,7 @@
  * Builder plugin for cram
  * https://github.com/cujojs/cram
  *
- * wire is part of the cujo.js family of libraries (http://cujojs.com/)
+ * wire is part of the cujoJS family of libraries (http://cujojs.com/)
  *
  * Licensed under the MIT License at:
  * http://www.opensource.org/licenses/mit-license.php
@@ -14,7 +14,7 @@
 define(function(require) {
 
 	var when, unfold, mid, defaultModuleRegex, defaultSpecRegex, replaceIdsRegex,
-		removeCommentsRx, splitSpecsRegex;
+		removeCommentsRx, splitIdsRegex;
 
 	when = require('when');
 	unfold = require('when/unfold');
@@ -25,9 +25,10 @@ define(function(require) {
 	defaultSpecRegex = /\.(wire\.spec|wire)$/;
 	// adapted from cram's scan function:
 	//replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]+)\]\s*,)?\s*(function)?\s*(?:\(([^)]*)\))?/g;
-	replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]*)\]\s*,)?/;
-	removeCommentsRx = /\/\*[\s\S]*?\*\/|\/\/.*?[\n\r]/g;
-	splitSpecsRegex = /\s*,\s*/;
+	//replaceIdsRegex = /(define)\s*\(\s*(?:\s*["']([^"']*)["']\s*,)?(?:\s*\[([^\]]*)\]\s*,)?/;
+	replaceIdsRegex = /(\bdefine)\s*\(\s*(?:\s*'([^']*)'|"([^"]*)"\s*,)?(?:\s*\[([^\]]*)\]\s*,)?/;
+	removeCommentsRx = /\/\*[\s\S]*?\*\//g;
+	splitIdsRegex = /\s*,\s*/;
 
 	return {
 		normalize: normalize,
@@ -56,7 +57,7 @@ define(function(require) {
 
 		// Grab the spec module id, *or comma separated list of spec module ids*
 		// Split in case it's a comma separated list of spec ids
-		specIds = resourceId.split(splitSpecsRegex);
+		specIds = resourceId.split(splitIdsRegex);
 
 		return when.map(specIds, function(specId) {
 			return processSpec(specId);
@@ -221,21 +222,27 @@ define(function(require) {
 			: id;
 	}
 
-	function injectIds (moduleText, absId, moduleIds) {
+	function injectIds(moduleText, absId, moduleIds) {
+		var replaced, newText;
 		// note: replaceIdsRegex removes commas, parens, and brackets
-		return moduleText.replace(removeCommentsRx, '').replace(replaceIdsRegex, function (m, def, mid, depIds) {
-
+		newText = moduleText.replace(removeCommentsRx, '').replace(replaceIdsRegex, function (m, def, mid1, mid2, depIds) {
+			replaced = true;
 			// merge deps, but not args since they're not referenced in module
-			if (depIds) moduleIds = moduleIds.concat(depIds);
+			if(depIds) {
+				moduleIds = depIds.split(splitIdsRegex).concat(moduleIds);
+			}
 
-			moduleIds = moduleIds.map(quoted).join(', ');
-			if (moduleIds) moduleIds = '[' + moduleIds + '], ';
+			moduleIds = '[' + moduleIds.map(quoted).join(', ') + '], ';
 
 			return def + '(' + quoted(absId) + ', ' + moduleIds;
 		});
+		if (!replaced) {
+			throw new Error('Unable to parse AMD define() in ' + absId);
+		}
+		return newText;
 	}
 
-	function quoted (id) {
+	function quoted(id) {
 		return '"' + id + '"';
 	}
 
