@@ -1,4 +1,4 @@
-(function(buster, timeout, wire, plugin) {
+(function(buster, when, wire, plugin) {
 "use strict";
 
 var assert, refute, fail;
@@ -35,7 +35,7 @@ buster.testCase('circular-refs', {
 	},
 
 	'should resolve circular deps after init has finished': function() {
-		var promise = timeout(wire({
+		var promise = wire({
 			plugins: [{ module: './test/node/fixtures/object' }],
 			component1: {
 				literal: {},
@@ -45,9 +45,9 @@ buster.testCase('circular-refs', {
 				literal: {},
 				shouldResolve: 'component1'
 			}
-		}), 100);
+		});
 
-		return promise.then(
+		return promise.timeout(100).then(
 			function(context) {
 				assert.defined(context.component1);
 				assert.defined(context.component2);
@@ -83,7 +83,7 @@ buster.testCase('circular-refs', {
 
 })(
 	require('buster'),
-	require('when/timeout'),
+	require('when'),
 	require('../..'),
 	require('./fixtures/object')
 );

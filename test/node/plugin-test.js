@@ -1,4 +1,4 @@
-(function(buster, delay, wire) {
+(function(buster, when, wire) {
 "use strict";
 
 var assert, refute, plugin, fail, sentinel;
@@ -53,7 +53,7 @@ buster.testCase('plugin', {
 	'async-init': {
 		'should initialize': function() {
 			function pluginFactory() {
-				return delay(plugin, 0);
+				return when(plugin);
 			}
 
 			return wire({
@@ -132,6 +132,6 @@ buster.testCase('plugin', {
 });
 })(
 	require('buster'),
-	require('when/delay'),
+	require('when'),
 	require('../../wire')
 );
