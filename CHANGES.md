@@ -1,3 +1,7 @@
+### 0.10.6
+
+* Fix semver range for `when` dependency (#155).  **Note** A clean install of wire < 0.10.6 may install when.js 3.0.0, with which wire is not yet compatible.  Version 0.10.6 fixes the semver spec in wire's `package.json` so that a compatible version of when.js 2.x will be installed.
+
 ### 0.10.5
 
 * Fix for form submit handling in `wire/on` on devices supporting touch events.
