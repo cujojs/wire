@@ -96,7 +96,7 @@
 	addPackage({ name: 'meld', location: 'bower_components/meld' });
 	addPackage({ name: 'when', location: 'bower_components/when' });
 	addPackage({ name: 'poly', location: 'bower_components/poly' });
-	addPackage({ name: 'sizzle', location: 'bower_components/sizzle' });
+	addPackage({ name: 'sizzle', location: 'bower_components/sizzle', main: 'dist/sizzle' });
 	addPackage({ name: 'dojo', location: 'bower_components/dojo', main: 'main' });
 	addPackage({ name: 'dijit', location: 'bower_components/dijit' });
 	addPackage({ name: 'jquery', location: 'bower_components/jquery', main: 'jquery' });
