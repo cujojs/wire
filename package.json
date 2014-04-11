@@ -52,6 +52,6 @@
 	},
 	"scripts": {
 		"test": "buster-test -e node",
-		"prepublish": "bower install && git submodule update --init"
+		"prepublish": "bower install"
 	}
 }
