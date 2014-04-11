@@ -1,3 +1,7 @@
+### 0.10.7
+
+* Compatibility with [when 2.6.0 - 3.x](//github.com/cujojs/when)
+
 ### 0.10.6
 
 * Fix semver range for `when` dependency (#155).  **Note** A clean install of wire < 0.10.6 may install when.js 3.0.0, with which wire is not yet compatible.  Version 0.10.6 fixes the semver spec in wire's `package.json` so that a compatible version of when.js 2.x will be installed.
