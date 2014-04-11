@@ -1,4 +1,4 @@
-(function(buster, delay, WireProxy) {
+(function(buster, WireProxy) {
 "use strict";
 
 var assert, refute, fail;
@@ -174,6 +174,5 @@ buster.testCase('lib/WireProxy', {
 });
 })(
 	require('buster'),
-	require('when/delay'),
 	require('../../../lib/WireProxy')
 );
