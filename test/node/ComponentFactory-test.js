@@ -3,7 +3,7 @@ var buster, assert, refute, fail, ComponentFactory, sentinel;
 buster = require('buster');
 assert = buster.assert;
 refute = buster.refute;
-fail = buster.assertions.fail;
+fail = buster.fail;
 
 ComponentFactory = require('../../lib/ComponentFactory');
 

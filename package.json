@@ -42,7 +42,7 @@
 		"when": "~3"
 	},
 	"devDependencies": {
-		"buster": "~0.6",
+		"buster": "~0.7",
 		"bower": "~1",
 		"gent": "~0.4"
 	},

@@ -5,7 +5,7 @@ var assert, refute, fail, toString;
 
 assert = buster.assert;
 refute = buster.refute;
-fail = buster.assertions.fail;
+fail = buster.fail;
 
 toString = Object.prototype.toString;
 
@@ -82,7 +82,7 @@ buster.testCase('types', {
 			return wire({ a: new String('a') }).then(
 				function(context) {
 					assert.equals(toString.call(context.a), '[object String]');
-					assert.equals(context.a, "a");
+					assert.equals(context.a.toString(), 'a');
 				}
 			);
 		}
@@ -130,7 +130,7 @@ buster.testCase('types', {
 			return wire({ a: new Boolean(true) }).then(
 				function(context) {
 					assert.equals(toString.call(context.a), '[object Boolean]');
-					assert.equals(context.a, true);
+					assert.equals(context.a, new Boolean(true));
 				}
 			);
 		}

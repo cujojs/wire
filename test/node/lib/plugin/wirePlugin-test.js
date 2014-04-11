@@ -10,7 +10,7 @@ var assert, refute, fail;
 
 assert = buster.assert;
 refute = buster.refute;
-fail = buster.assertions.fail;
+fail = buster.fail;
 
 function createContext(spec) {
 	return context.call(null, spec, null, { require: require });

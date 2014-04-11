@@ -5,7 +5,7 @@ var assert, refute, fail, sentinel;
 
 assert = buster.assert;
 refute = buster.refute;
-fail = buster.assertions.fail;
+fail = buster.fail;
 
 sentinel = {};
 

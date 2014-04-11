@@ -5,7 +5,7 @@ var assert, refute, fail, sentinel, other, obj1, obj2;
 
 assert = buster.assert;
 refute = buster.refute;
-fail = buster.assertions.fail;
+fail = buster.fail;
 
 sentinel = { value: 'sentinel' };
 other = { value: 'other' };

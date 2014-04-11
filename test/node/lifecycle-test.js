@@ -5,7 +5,7 @@ var assert, refute, fail, steps;
 
 assert = buster.assert;
 refute = buster.refute;
-fail = buster.assertions.fail;
+fail = buster.fail;
 
 steps = ['create', 'configure', 'initialize', 'connect', 'ready', 'destroy'].reduce(
 	function(lifecycle, step) {

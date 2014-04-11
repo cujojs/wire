@@ -4,7 +4,7 @@ var assert, refute, fail;
 
 assert = buster.assert;
 refute = buster.refute;
-fail = buster.assertions.fail;
+fail = buster.fail;
 
 function promised(val) {
 	return {
@@ -41,17 +41,21 @@ buster.testCase('lib/functional', {
 		},
 
 		'should not change context': function() {
-			function f(x) { return this; }
+			function f() { return this; }
 
-			assert.equals(functional.compose([f]).bind('a')(), 'a');
+			var context = {};
+
+			assert.equals(functional.compose([f]).bind(context)(), context);
 
 		},
 
 		'should not change context when returning a promise': function(done) {
-			function f(x) { return promised(this); }
+			function f() { return promised(this); }
 
-			functional.compose([f]).bind('a')().then(function(result) {
-				assert.equals(result, 'a');
+			var context = {};
+
+			functional.compose([f]).bind(context)().then(function(result) {
+				assert.equals(result, context);
 			}).then(done, done);
 
 		},

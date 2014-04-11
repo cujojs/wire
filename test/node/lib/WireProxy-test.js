@@ -5,7 +5,7 @@ var assert, refute, fail;
 
 assert = buster.assert;
 refute = buster.refute;
-fail = buster.assertions.fail;
+fail = buster.fail;
 
 buster.testCase('lib/WireProxy', {
 	'should create a base proxy for the supplied target': function() {

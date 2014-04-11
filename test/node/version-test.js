@@ -5,7 +5,7 @@
 
 	assert = buster.assert;
 	refute = buster.refute;
-	fail = buster.assertions.fail;
+	fail = buster.fail;
 
 	wire = require('../../wire');
 	bowerJson = require('../../bower');
