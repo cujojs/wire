@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cujojs/wire.svg?branch=master)](https://travis-ci.org/cujojs/wire)
+
 # wire.js
 
 Wire is an [Inversion of Control Container](http://martinfowler.com/articles/injection.html "Inversion of Control Containers and the
