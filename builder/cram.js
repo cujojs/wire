@@ -183,7 +183,7 @@ define(function(require) {
 
 			dfd = when.defer();
 
-			io.read(ensureExtension(specId, 'js'), function(specText) {
+			io.read(ensureExtension(require.toUrl(specId), 'js'), function(specText) {
 				buffer = injectIds(specText, specId, dependencies);
 
 				defines.push(buffer);
@@ -209,7 +209,7 @@ define(function(require) {
 	}
 
 	function createPath(path, name) {
-		return path ? (path + '.' + name) : name
+		return path ? (path + '.' + name) : name;
 	}
 
 	function isStrictlyObject(it) {
