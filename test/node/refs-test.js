@@ -100,7 +100,7 @@ buster.testCase('refs', {
 	'should fail wiring from plugin when target missing': function() {
 		return wire({
 			propTest: {
-				create: 'test',
+				create: {},
 				properties: {
 					thingProp: { $ref: 'thing' }
 				}
