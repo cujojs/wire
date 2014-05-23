@@ -46,6 +46,51 @@ buster.testCase('context', {
 		}
 	},
 
+	' / imports directive': {
+		// load a spec that imports another spec
+		' / should import one spec': function() {
+			return createContext('./fixtures/imports-test/assembly1').then(
+				function(context) {
+					assert.equals(context.comp_1_1, 'comp_1_1');
+				},
+				fail
+			);
+		},
+		// load a spec that imports three other specs
+		' / should import many spec': function() {
+			return createContext('./fixtures/imports-test/assembly2').then(
+				function(context) {
+					assert.equals(context.comp_1_1, 'comp_1_1');
+					assert.equals(context.comp_2_1, 'comp_2_1');
+					assert.equals(context.comp_3_1, 'comp_3_1');
+				},
+				fail
+			);
+		},
+		// load a spec that import another spec and re-define components
+		// defined within the imported spec
+		' / should override imported component': function() {
+			return createContext('./fixtures/imports-test/assembly3').then(
+				function(context) {
+					assert.equals(context.comp_1_1, 'override imported comp_1_1');
+					assert.equals(context.comp_1_2, 'override imported comp_1_2');
+					assert.equals(context.comp_1_3, 'comp_1_3');
+				},
+				fail
+			);
+		},
+		// load a spec that imports two specs where the last imported spec re-define
+		// a component defined in the other spec
+		' / should override component defined in two different specs': function() {
+			return createContext('./fixtures/imports-test/assembly4').then(
+				function(context) {
+					assert.equals(context.comp_1_1, 'override comp_1_1 in module4');
+				},
+				fail
+			);
+		},
+	},
+
 	'initializers': {
 		'should execute when context is created': function() {
 			var executed = false;
