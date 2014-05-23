@@ -1,6 +1,6 @@
 {
 	"name": "wire",
-	"version": "0.10.7",
+	"version": "0.10.8",
 	"description": "A light, fast, flexible Javascript IOC container.",
 	"keywords": [
 		"ioc",
@@ -44,7 +44,7 @@
 	"devDependencies": {
 		"buster": "~0.7",
 		"bower": "~1",
-		"gent": "~0.5"
+		"gent": "~0.6"
 	},
 	"main": "./wire",
 	"directories": {

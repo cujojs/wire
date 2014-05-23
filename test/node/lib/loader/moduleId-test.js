@@ -100,5 +100,6 @@
 
 })(
 	require('buster'),
-	require('../../../../lib/loader/moduleId')
+	require('../../../../lib/loader/moduleId'),
+	require('gent/test-adapter/buster')
 );
