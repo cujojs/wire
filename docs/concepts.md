@@ -132,9 +132,11 @@ When you feed a spec to wire.js, it will create a [context](#contexts) containin
 
 ### Assembling applications
 
-Wire.js allows assembling large application spec in a modular way using the `$imports` keyword.
+In addition to [Application composition](#application-composition), Wire.js helps you assemble large application from parts using the `$imports` keyword.
 
-Let's assume you are developing modules and each module has its own spec. To build an application, you will select the appropriate modules and assemble them together. To do so, all you need is import the spec of each selected module within the spec of the final application.
+You may decide to decompose your large application into domains (transacting, settling, accounting, ...). You may also decide to decompose each domain into layers (presentation, business, infrastructure, ...). Let's call a layer of a domain an *application part*. Each application part would be developed, tested and wired in isolation.
+
+To build an application, you will select the appropriate parts and assemble them together. To do so, all you need is import the spec of each selected part within the spec of the final application.
 
 The spec of the final application would be as follows:
 
@@ -142,12 +144,15 @@ The spec of the final application would be as follows:
 define({
 	$imports: [
 		'utils-spec',
-		'common-services-spec',
-		'rest-services-spec',
-		'common-uicomp-spec',
+		'commons-spec',
+		'transaction-spec',
+		'settlement-spec',
+		'accounting-spec',
 	]
 });
 ```
+
+Reading the above spec, Wire.js will first inline the content of each imported spec then process the result. 
 
 **NOTE:** The `$imports` keyword is processed only when present within the spec you feed to wire.js.
 
