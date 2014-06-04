@@ -52,6 +52,8 @@ buster.testCase('context', {
 			return createContext('./fixtures/imports-test/assembly1').then(
 				function(context) {
 					assert.equals(context.comp_1_1, 'comp_1_1');
+					assert.equals(context.comp_1_2, 'comp_1_2');
+					assert.equals(context.comp_1_3, 'comp_1_3');
 				},
 				fail
 			);
@@ -61,6 +63,8 @@ buster.testCase('context', {
 			return createContext('./fixtures/imports-test/assembly2').then(
 				function(context) {
 					assert.equals(context.comp_1_1, 'comp_1_1');
+					assert.equals(context.comp_1_2, 'comp_1_2');
+					assert.equals(context.comp_1_3, 'comp_1_3');
 					assert.equals(context.comp_2_1, 'comp_2_1');
 					assert.equals(context.comp_3_1, 'comp_3_1');
 				},
@@ -87,6 +91,87 @@ buster.testCase('context', {
 					assert.equals(context.comp_1_1, 'override comp_1_1 in module4');
 				},
 				fail
+			);
+		},
+	},
+
+	' / nested imports directive': {
+		// load a spec that import another spec which import another spec
+		' / should import nested-spec': function() {
+			return createContext('./fixtures/imports-test/nested-imports-assembly1').then(
+				function(context) {
+					assert.equals(context.comp_1_1, 'comp_1_1');
+					assert.equals(context.comp_1_2, 'comp_1_2');
+					assert.equals(context.comp_1_3, 'comp_1_3');
+				},
+				fail
+			);
+		},
+		// load a spec that import another spec which imports three other specs
+		' / should import many nested-specs': function() {
+			return createContext('./fixtures/imports-test/nested-imports-assembly2').then(
+				function(context) {
+					assert.equals(context.comp_1_1, 'comp_1_1');
+					assert.equals(context.comp_1_2, 'comp_1_2');
+					assert.equals(context.comp_1_3, 'comp_1_3');
+					assert.equals(context.comp_2_1, 'comp_2_1');
+					assert.equals(context.comp_3_1, 'comp_3_1');
+				},
+				fail
+			);
+		},
+		// load a spec that import another an arrays of specs and each one of then imports other specs
+		' / should import many nested specs in an array': function() {
+			return createContext('./fixtures/imports-test/nested-imports-assembly3').then(
+				function(context) {
+					assert.equals(context.comp_1_1, 'comp_1_1');
+					assert.equals(context.comp_1_2, 'comp_1_2');
+					assert.equals(context.comp_1_3, 'comp_1_3');
+					assert.equals(context.comp_2_1, 'comp_2_1');
+					assert.equals(context.comp_3_1, 'comp_3_1');
+				},
+				fail
+			);
+		},
+		// load a spec that import another an arrays of specs and some of then imports other specs and some of them don't
+		' / should import many nested specs in an array 2': function() {
+			return createContext('./fixtures/imports-test/nested-imports-assembly4').then(
+				function(context) {
+					assert.equals(context.comp_1_1, 'comp_1_1');
+					assert.equals(context.comp_1_2, 'comp_1_2');
+					assert.equals(context.comp_1_3, 'comp_1_3');
+					assert.equals(context.comp_2_1, 'comp_2_1');
+					assert.equals(context.comp_3_1, 'comp_3_1');
+				},
+				fail
+			);
+		},
+	},
+
+	' / circular imports directive': {
+		// self referenced assembly
+		' / should not import self referenced assembly': function() {
+			return createContext('./fixtures/imports-test/circular-imports-assembly1').then(
+				fail,
+				function(context) {
+					assert(true);
+				}
+			);
+		},
+		' / should not import two assemblies that reference each other': function() {
+			return createContext('./fixtures/imports-test/circular-imports-assembly2-1').then(
+				fail,
+				function(context) {
+					assert(true);
+				}
+			);
+		},
+		' / should not import circular import of three assemblies': function() {
+			return createContext('./fixtures/imports-test/circular-imports-assembly2-1').then(
+				fail,
+				function(context) {
+					assert(true);
+				}
 			);
 		},
 	},
