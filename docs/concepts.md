@@ -154,8 +154,6 @@ define({
 
 Reading the above spec, Wire.js will first inline the content of each imported spec then process the result. 
 
-**NOTE:** The `$imports` keyword is processed only when present within the spec you feed to wire.js.
-
 ## Contexts
 
 As the result of processing a spec, wire.js produces a **Context**.  The context is a Javascript Object that contains the fully realized components that were specified in the wiring spec.  The context also has methods for wiring child contexts, resolving references, and destroying the context and all the objects, etc. that were created when it was wired.
