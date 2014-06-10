@@ -167,7 +167,7 @@ buster.testCase('context', {
 			);
 		},
 		' / should not import circular import of three assemblies': function() {
-			return createContext('./fixtures/imports-test/circular-imports-assembly2-1').then(
+			return createContext('./fixtures/imports-test/circular-imports-assembly3-1').then(
 				fail,
 				function(context) {
 					assert(true);
