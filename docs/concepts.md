@@ -130,6 +130,30 @@ The second references the `message` String (the first item in the wire spec):
 
 When you feed a spec to wire.js, it will create a [context](#contexts) containing fully realized versions of the components in the spec.  In the Hello Wire case, the context will contain the message String, an *instance* of the `HelloWired` object from the `app/HelloWire` AMD module, and an Array with one element--the `wire/dom` plugin AMD module.
 
+### Assembling applications
+
+In addition to [Application composition](#application-composition), Wire.js helps you assemble large application from parts using the `$imports` keyword.
+
+You may decide to decompose your large application into domains (transacting, settling, accounting, ...). You may also decide to decompose each domain into layers (presentation, business, infrastructure, ...). Let's call a layer of a domain an *application part*. Each application part would be developed, tested and wired in isolation.
+
+To build an application, you will select the appropriate parts and assemble them together. To do so, all you need is import the spec of each selected part within the spec of the final application.
+
+The spec of the final application would be as follows:
+
+```javascript
+define({
+	$imports: [
+		'utils-spec',
+		'commons-spec',
+		'transaction-spec',
+		'settlement-spec',
+		'accounting-spec',
+	]
+});
+```
+
+Reading the above spec, Wire.js will first inline the content of each imported spec then process the result. 
+
 ## Contexts
 
 As the result of processing a spec, wire.js produces a **Context**.  The context is a Javascript Object that contains the fully realized components that were specified in the wiring spec.  The context also has methods for wiring child contexts, resolving references, and destroying the context and all the objects, etc. that were created when it was wired.
