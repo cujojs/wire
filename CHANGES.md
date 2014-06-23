@@ -1,3 +1,7 @@
+### 0.10.9
+
+* New `$imports` feature allows declaratively importing wire specs.  [Check out the docs](docs/concepts.md#assembling-applications) for more info.
+
 ### 0.10.8
 
 * No functional changes
