@@ -1,12 +1,9 @@
-### 0.10.9
-
-* New `$imports` feature allows declaratively importing wire specs.  [Check out the docs](docs/concepts.md#assembling-applications) for more info.
-
 ### 0.10.8
 
-* No functional changes
-* Workaround gent+buster integration issue and update to gent 0.6.x. This only affects the ability to run unit tests.
-* Fix unhandled rejection in unit test--exposed by [when.js 3.2.x's new unhandled rejection reporting](https://github.com/cujojs/when/blob/master/docs/api.md#debugging-promises), win.
+* New `$imports` feature allows declaratively importing wire specs.  [Check out the docs](docs/concepts.md#assembling-applications) for more info.
+* Minor internal unit/integration test fixes:
+	* Workaround gent+buster integration issue and update to gent 0.6.x. This only affects the ability to run unit tests.
+	* Fix unhandled rejection in unit test--exposed by [when.js 3.2.x's new unhandled rejection reporting](https://github.com/cujojs/when/blob/master/docs/api.md#debugging-promises), win.
 
 ### 0.10.7
 
