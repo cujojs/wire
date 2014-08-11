@@ -156,25 +156,15 @@ buster.testCase('refs', {
 		);
 	},
 
-	'should allow 1 level of dot traversal for nested references': function() {
+	'should allow dot traversal for nested references': function() {
 		return wire({
-			a: { b: true },
-			success: { $ref: 'a.b' }
+			a: { b: { c: true } },
+			success: { $ref: 'a.b.c' }
 		}).then(
 			function(context) {
 				assert(context.success);
 			},
 			fail
-		);
-	},
-
-	'should not allow > 1 level of dot traversal': function() {
-		return wire({
-			a: { b: { c: true } },
-			success: { $ref: 'a.b.c' }
-		}).then(
-			fail,
-			function() { assert(true); }
 		);
 	}
 
