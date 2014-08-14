@@ -1,3 +1,7 @@
+### 0.10.9
+
+* Allow arbitrarily deep dot traversal in `$ref`s.
+
 ### 0.10.8
 
 * New `$imports` feature allows declaratively importing wire specs.  [Check out the docs](docs/concepts.md#assembling-applications) for more info.
