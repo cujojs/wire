@@ -276,6 +276,99 @@ buster.testCase('lib/plugin/basePlugin', {
 		}
 	},
 
+	'partial factory': {
+		'should apply a single argument': function() {
+			var spy, add;
+
+			spy = this.spy();
+			add = function(x, y) { this(); return x + y; }.bind(spy);
+
+			return createContext({
+				increment: {
+					partial: {
+						fn: add,
+						args: 1
+					}
+				}
+			}).then(
+				function(context) {
+					var result = context.increment(4);
+					assert.calledOnce(spy);
+					assert.equals(result, 5);
+				},
+				fail
+			);
+		},
+
+		'should apply multiple arguments': function() {
+			var spy, add;
+
+			spy = this.spy();
+			add = function(x, y) { this(); return x + y; }.bind(spy);
+
+			return createContext({
+				three: {
+					partial: {
+						fn: add,
+						args: [1, 2]
+					}
+				}
+			}).then(
+				function(context) {
+					var result = context.three();
+					assert.calledOnce(spy);
+					assert.equals(result, 3);
+				},
+				fail
+			);
+		},
+
+		'should wire modules': function() {
+			return createContext({
+				increment: {
+					partial: {
+						fn: { module: '../../fixtures/function' },
+						args: 1
+					}
+				}
+			}).then(
+				function(context) {
+					assert.equals(context.increment(2), 3);
+				},
+				fail
+			);
+		},
+
+		'should wire references': function() {
+			var spy, add;
+
+			spy = this.spy();
+			add = function(x, y) { this(); return x + y; }.bind(spy);
+
+			return createContext({
+				increment: {
+					partial: {
+						fn: add,
+						args: 1
+					}
+				},
+				three: {
+					partial: {
+						fn: { $ref: 'increment' },
+						args: 2
+					}
+				}
+			}).then(
+				function(context) {
+					var result = context.three();
+					assert.calledOnce(spy);
+					assert.equals(result, 3);
+				},
+				fail
+			);
+		}
+	},
+
 	'create factory': {
 		'should call non-constructor functions': function() {
 			var spy = this.spy();

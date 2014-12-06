@@ -49,8 +49,9 @@ are:
 1. `module` - loads a module (AMD or CommonJS, depending on your environment)
 2. `create` - creates objects using a constructor function, regular function, or by using Object.create.
 3. `compose` - composes functions using a declarative syntax
-4. `literal` - wire will not parse the right-hand side, but rather use it verbatim as a component
-5. `wire` - recursively invokes wire on another wire spec
+4. `partial` - creates a partial function application with the supplied arguments
+5. `literal` - wire will not parse the right-hand side, but rather use it verbatim as a component
+6. `wire` - recursively invokes wire on another wire spec
 
 ## Using factories
 
@@ -213,6 +214,23 @@ define('my/app/ModuleWithConstructor', function() {
 Functions are first-class citizens in wire.js.  For example, you can [use them as components](functions.md#functions-as-components).  The compose factory allows you to compose function components and component methods into new functions.
 
 See [Composing Functions](functions.md#composing-functions) for more information on composing new functions with the compose factory.
+
+## partial
+
+The partial factory creates a partial function application with the supplied arguments.
+
+### Syntax
+
+```js
+myComponent: {
+	partial: {
+		fn: { module: 'my/app/ModuleA' },
+
+		// Required: use these args to create a partially applied my/app/ModuleA
+		args: [arg1, arg2, arg3...]
+	}
+}
+```
 
 ## literal
 
