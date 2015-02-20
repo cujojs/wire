@@ -492,10 +492,17 @@ buster.testCase('lib/plugin/basePlugin', {
 						$ref: 'f1',
 						args: 'two'
 					}
+				},
+				test2: {
+					create: {
+						module: { $ref: 'f1' },
+						args: 'three'
+					}
 				}
 			}).then(
 				function(context) {
 					assert.equals(context.test, { value1: 'one', value2: 'two' });
+					assert.equals(context.test2, { value1: 'one', value2: 'three' });
 				},
 				fail
 			);
