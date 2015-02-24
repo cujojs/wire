@@ -47,6 +47,15 @@ Thing.prototype = {
 	}
 };
 
+function factory1(v1) {
+	return function(v2) {
+		return {
+			value1: v1,
+			value2: v2
+		};
+	};
+}
+
 buster.testCase('lib/plugin/basePlugin', {
 	'module factory': {
 		'should use module exports value as component': function() {
@@ -71,7 +80,7 @@ buster.testCase('lib/plugin/basePlugin', {
 				}
 			}).then(
 				function(context) {
-					assert.equals(context.test.module, 'fake')
+					assert.equals(context.test.module, 'fake');
 				},
 				fail
 			);
@@ -84,7 +93,7 @@ buster.testCase('lib/plugin/basePlugin', {
 				}
 			}).then(
 				function(context) {
-					assert.equals(context.test.x.$ref, 'fake')
+					assert.equals(context.test.x.$ref, 'fake');
 				},
 				fail
 			);
@@ -450,7 +459,7 @@ buster.testCase('lib/plugin/basePlugin', {
 						assert(Constructor.calledWithNew());
 					},
 					fail
-				)
+				);
 			},
 
 			'should not call prototype-less constructor using new when not specified': function() {
@@ -467,8 +476,36 @@ buster.testCase('lib/plugin/basePlugin', {
 						refute(Constructor.calledWithNew());
 					},
 					fail
-				)
+				);
 			}
+		},
+		'should pass args to referenced module': function() {
+			return createContext({
+				f1: {
+					create: {
+						module: factory1,
+						args: 'one'
+					}
+				},
+				test: {
+					create: {
+						$ref: 'f1',
+						args: 'two'
+					}
+				},
+				test2: {
+					create: {
+						module: { $ref: 'f1' },
+						args: 'three'
+					}
+				}
+			}).then(
+				function(context) {
+					assert.equals(context.test, { value1: 'one', value2: 'two' });
+					assert.equals(context.test2, { value1: 'one', value2: 'three' });
+				},
+				fail
+			);
 		}
 	},
 
@@ -768,7 +805,7 @@ buster.testCase('lib/plugin/basePlugin', {
 						test: function(resolver) {
 							resolver.resolve(spy.apply(null, arguments));
 						}
-					}}
+					}};
 				}
 			};
 
