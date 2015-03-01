@@ -1,3 +1,7 @@
+### 0.10.10
+
+* Allow `create` to use a `$ref` to a factory function, as well as args to create components.
+
 ### 0.10.9
 
 * Allow arbitrarily deep dot traversal in `$ref`s.

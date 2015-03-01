@@ -170,6 +170,24 @@ myComponent: {
 }
 ```
 
+The create factory can also accept a reference to a function, constructor, or object to use to create the new component.
+
+```js
+factory: {
+	module: 'my/app/ModuleA'
+},
+myComponent: {
+	create: {
+		// Call factory as a constructor or function
+		// factory can be any component that is a function,
+		// constructor, or object.
+		module: { $ref: 'factory' }
+		args: [arg1, arg2, arg3...]
+	}
+}
+```
+
+
 ### Short Syntax
 ```javascript
 // This shorter syntax loads my/app/ModuleA and calls it with no args
@@ -177,6 +195,17 @@ myComponent: {
 	create: 'my/app/ModuleA'
 }
 ```
+
+```javascript
+// The shorter syntax can use a reference as well
+factory: {
+	module: 'my/app/ModuleA'
+},
+myComponent: {
+	create: { $ref: 'factory' }
+}
+```
+
 
 ### isConstructor option notes
 
