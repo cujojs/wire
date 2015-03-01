@@ -1,6 +1,6 @@
 ### 0.10.10
 
-* Allow `create` to use a `$ref` to a factory function, as well as args to create components.
+* Allow [`create` to use a `$ref`](docs/components.md#create) to a factory function, as well as args to create components.
 
 ### 0.10.9
 
