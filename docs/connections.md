@@ -267,6 +267,34 @@ define({
 });
 ```
 
+Connections can also be made to more than one method. Use an array of Strings instead of a single String to invoke multiple methods:
+
+```js
+define({
+	$plugins: [
+		{ module: 'wire/connect'},
+		// other plugins ...
+	],
+
+	component1: {
+		create: // ...
+		connect: {
+			// Whenever component2.doSomething is called,
+			// component1.doSomethingAlso1 and component1.doSomethingAlso2 will also
+			// be invoked, with the same parameters.
+			'component2.doSomething': [
+				'doSomethingAlso1',
+				'doSomethingAlso2'
+			]
+		}
+	},
+
+	component2: {
+		create: // ...
+	}
+});
+```
+
 # Aspect Oriented Programming (AOP)
 
 **Plugin:** wire/aop
@@ -304,7 +332,16 @@ define({
 	        // component2.doSomething returns (but not if it throws, see
 	        // afterThrowing below).  The return value of component2.doSomething
 	        // will be passed to component1.doSomethingAfterReturning
-	        doSomething: 'component1.doSomethingAfterReturning'
+	        doSomething: 'component1.doSomethingAfterReturning',
+
+	        // component1.doSomething1 and component1.doSomething2 will be
+	        // invoked after component2.doSomethingElse returns.  The return
+	        // value of component2.doSomething will be passed to both
+	        // component1.doSomething1 and component1.doSomething2.
+	        doSomethingElse: [
+	          'component1.doSomething1',
+	          'component1.doSomething2'
+	        ]
 	    },
 
 	    afterThrowing: {

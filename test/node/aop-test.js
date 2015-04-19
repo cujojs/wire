@@ -66,6 +66,37 @@ buster.testCase('aop', {
 				);
 			},
 
+			'should execute multiple functions before method': function() {
+				var spy1 = this.spy();
+				var spy2 = this.spy();
+
+				return wire({
+					plugins: [aopPlugin],
+					target: {
+						literal: {
+							method: function() {}
+						},
+						before: {
+							method: [
+								'handler.test1',
+								'handler.test2'
+							]
+						}
+					},
+					handler: {
+						test1: spy1,
+						test2: spy2
+					}
+				}, { require: require }).then(
+					function(context) {
+						context.target.method(sentinel);
+						assert.calledOnceWith(spy1, sentinel);
+						assert.calledOnceWith(spy2, sentinel);
+					},
+					fail
+				);
+			},
+
 			'should fail when self advised method is missing': function() {
 				var spy = this.spy();
 
@@ -180,6 +211,41 @@ buster.testCase('aop', {
 				);
 			},
 
+			'should execute multiple functions after method returns': function() {
+				var spy1 = this.spy();
+				var spy2 = this.spy();
+
+				return wire({
+					plugins: [aopPlugin],
+					target: {
+						literal: {
+							method: this.stub().returns(sentinel)
+						},
+						afterReturning: {
+							method: [
+								'handler.test1',
+								'handler.test2'
+							]
+						}
+					},
+					handler: {
+						test1: spy1,
+						test2: spy2
+					}
+				}, { require: require })
+					.then(
+					function(context) {
+						return context.target.method(sentinel);
+					}
+				).then(
+					function() {
+						assert.calledOnceWith(spy1, sentinel);
+						assert.calledOnceWith(spy2, sentinel);
+					},
+					fail
+				);
+			},
+
 			'should not execute function after method throws': function() {
 				var spy = this.spy();
 
@@ -242,6 +308,41 @@ buster.testCase('aop', {
 				);
 			},
 
+			'should execute multiple functions after method throws': function() {
+				var spy1 = this.spy();
+				var spy2 = this.spy();
+
+				return wire({
+					plugins: [aopPlugin],
+					target: {
+						literal: {
+							method: this.stub().throws(sentinel)
+						},
+						afterThrowing: {
+							method: [
+								'handler.test1',
+								'handler.test2'
+							]
+						}
+					},
+					handler: {
+						test1: spy1,
+						test2: spy2
+					}
+				}, { require: require })
+					.then(
+					function(context) {
+						context.target.method(other);
+					}
+				).then(
+					fail,
+					function() {
+						assert.calledOnceWith(spy1, sentinel);
+						assert.calledOnceWith(spy2, sentinel);
+					}
+				);
+			},
+
 			'should not execute function after method returns': function() {
 				var spy = this.spy();
 
@@ -299,6 +400,41 @@ buster.testCase('aop', {
 				);
 			},
 
+			'should execute multiple functions after method returns': function() {
+				var spy1 = this.spy();
+				var spy2 = this.spy();
+
+				return wire({
+					plugins: [aopPlugin],
+					target: {
+						literal: {
+							method: this.stub().returns(sentinel)
+						},
+						after: {
+							method: [
+								'handler.test1',
+								'handler.test2'
+							]
+						}
+					},
+					handler: {
+						test1: spy1,
+						test2: spy2
+					}
+				}, { require: require })
+					.then(
+					function(context) {
+						return context.target.method(sentinel);
+					}
+				).then(
+					function() {
+						assert.calledOnceWith(spy1, sentinel);
+						assert.calledOnceWith(spy2, sentinel);
+					},
+					fail
+				);
+			},
+
 			'should execute function after method throws': function() {
 				var spy = this.spy();
 
@@ -324,6 +460,41 @@ buster.testCase('aop', {
 					fail,
 					function() {
 						assert.calledOnceWith(spy, sentinel);
+					}
+				);
+			},
+
+			'should execute multiple functions after method throws': function() {
+				var spy1 = this.spy();
+				var spy2 = this.spy();
+
+				return wire({
+					plugins: [aopPlugin],
+					target: {
+						literal: {
+							method: this.stub().throws(sentinel)
+						},
+						after: {
+							method: [
+								'handler.test1',
+								'handler.test2'
+              ]
+						}
+					},
+					handler: {
+						test1: spy1,
+						test2: spy2
+					}
+				}, { require: require })
+					.then(
+					function(context) {
+						context.target.method(other);
+					}
+				).then(
+					fail,
+					function() {
+						assert.calledOnceWith(spy1, sentinel);
+						assert.calledOnceWith(spy2, sentinel);
 					}
 				);
 			}
@@ -356,6 +527,41 @@ buster.testCase('aop', {
 					).then(
 						function() {
 							assert.calledOnceWith(spy, sentinel);
+						},
+						fail
+					);
+				},
+
+				'should execute multiple functions after returned promise is fulfilled': function() {
+					var spy1 = this.spy();
+					var spy2 = this.spy();
+
+					return wire({
+						plugins: [aopPlugin],
+						target: {
+							literal: {
+								method: this.stub().returns(when(sentinel))
+							},
+							afterFulfilling: {
+								method: [
+									'handler.test1',
+									'handler.test2'
+								]
+							}
+						},
+						handler: {
+							test1: spy1,
+							test2: spy2
+						}
+					}, { require: require })
+						.then(
+						function(context) {
+							return context.target.method(other);
+						}
+					).then(
+						function() {
+							assert.calledOnceWith(spy1, sentinel);
+							assert.calledOnceWith(spy2, sentinel);
 						},
 						fail
 					);
@@ -421,6 +627,41 @@ buster.testCase('aop', {
 					);
 				},
 
+				'should execute multiples function after returned promise is rejected': function() {
+					var spy1 = this.spy();
+					var spy2 = this.spy();
+
+					return wire({
+						plugins: [aopPlugin],
+						target: {
+							literal: {
+								method: this.stub().returns(when.reject(sentinel))
+							},
+							afterRejecting: {
+								method: [
+									'handler.test1',
+									'handler.test2'
+								]
+							}
+						},
+						handler: {
+							test1: spy1,
+							test2: spy2
+						}
+					}, { require: require })
+						.then(
+						function(context) {
+							return context.target.method(other);
+						}
+					).then(
+						fail,
+						function() {
+							assert.calledOnceWith(spy1, sentinel);
+							assert.calledOnceWith(spy2, sentinel);
+						}
+					);
+				},
+
 				'should not execute function after returned promise is fulfilled': function() {
 					var spy = this.spy();
 
@@ -481,6 +722,41 @@ buster.testCase('aop', {
 					);
 				},
 
+				'should execute multiple functions after returned promise is fulfilled': function() {
+					var spy1 = this.spy();
+					var spy2 = this.spy();
+
+					return wire({
+						plugins: [aopPlugin],
+						target: {
+							literal: {
+								method: this.stub().returns(when(sentinel))
+							},
+							after: {
+								method: [
+									'handler.test1',
+									'handler.test2'
+								]
+							}
+						},
+						handler: {
+							test1: spy1,
+							test2: spy2
+						}
+					}, { require: require })
+						.then(
+						function(context) {
+							return context.target.method(other);
+						}
+					).then(
+						function() {
+							assert.calledOnceWith(spy1, sentinel);
+							assert.calledOnceWith(spy2, sentinel);
+						},
+						fail
+					);
+				},
+
 				'should execute function after returned promise is rejected': function() {
 					var spy = this.spy();
 
@@ -506,6 +782,41 @@ buster.testCase('aop', {
 						fail,
 						function() {
 							assert.calledOnceWith(spy, sentinel);
+						}
+					);
+				},
+
+				'should execute multiple functions after returned promise is rejected': function() {
+					var spy1 = this.spy();
+					var spy2 = this.spy();
+
+					return wire({
+						plugins: [aopPlugin],
+						target: {
+							literal: {
+								method: this.stub().returns(when.reject(sentinel))
+							},
+							after: {
+								method: [
+									'handler.test1',
+									'handler.test2'
+								]
+							}
+						},
+						handler: {
+							test1: spy1,
+							test2: spy2
+						}
+					}, { require: require })
+						.then(
+						function(context) {
+							return context.target.method(other);
+						}
+					).then(
+						fail,
+						function() {
+							assert.calledOnceWith(spy1, sentinel);
+							assert.calledOnceWith(spy2, sentinel);
 						}
 					);
 				}
