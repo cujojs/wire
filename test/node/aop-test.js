@@ -225,12 +225,12 @@ buster.testCase('aop', {
 							method: [
 								'handler.test1',
 								'handler.test2'
-              ]
+							]
 						}
 					},
 					handler: {
 						test1: spy1,
-            test2: spy2
+						test2: spy2
 					}
 				}, { require: require })
 					.then(
