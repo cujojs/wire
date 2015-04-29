@@ -1,3 +1,7 @@
+### 0.10.11
+
+* Allow incoming connections to "fan out" to multiple methods by supplying an array of method names (or pipelines).
+
 ### 0.10.10
 
 * Allow [`create` to use a `$ref`](docs/components.md#create) to a factory function, as well as args to create components.
