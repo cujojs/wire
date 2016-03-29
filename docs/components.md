@@ -166,6 +166,9 @@ myComponent: {
 		// and shave off some cpu cycles (No guessing will be done)
 		// at the cost of being more verbose.
 		isConstructor: true, // or false
+		// Optional: If object is instantiated using a named constructor,
+		// you can specify its name here, so that it will be called.
+		namedConstructor: "create",
 	}
 }
 ```

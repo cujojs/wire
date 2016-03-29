@@ -56,6 +56,35 @@ function factory1(v1) {
 	};
 }
 
+function ClassWithNamedConstructor() {
+
+}
+
+ClassWithNamedConstructor.createInstance = function(){
+	var instance = new ClassWithNamedConstructor();
+	instance.createInstanceCalled = true;
+	instance.createInstanceArgs = Array.prototype.slice.call(arguments);
+	instance.thisSetInCreateInstance = this;
+
+	return instance;
+};
+
+ClassWithNamedConstructor.createInstancePromise = function(){
+	return {
+		then: function(f) {
+			f(ClassWithNamedConstructor.createInstance());
+		}
+	};
+};
+
+ClassWithNamedConstructor.createInstanceReject = function(){
+	return {
+		then: function(f, reject) {
+			reject(new Error('test error'));
+		}
+	};
+};
+
 buster.testCase('lib/plugin/basePlugin', {
 	'module factory': {
 		'should use module exports value as component': function() {
@@ -506,6 +535,91 @@ buster.testCase('lib/plugin/basePlugin', {
 				},
 				fail
 			);
+		},
+		'constructorName': {
+			'should use static named constructor if constructorName is set': function() {
+				return createContext({
+					test: {
+						create: {
+							module: ClassWithNamedConstructor,
+							constructorName: 'createInstance'
+						}
+					}
+				}).then(function(wired){
+					assert('test' in wired);
+					assert(wired.test.createInstanceCalled);
+				});
+			},
+			'should pass arguments to named constructor': function() {
+				return createContext({
+					test: {
+						create: {
+							module: ClassWithNamedConstructor,
+							constructorName: 'createInstance',
+							args: ['foo', 'bar', 1, 1.2]
+						}
+					}
+				}).then(function(wired){
+					assert('test' in wired);
+					assert.equals(wired.test.createInstanceArgs, ['foo', 'bar', 1, 1.2]);
+				});
+			},
+			'should work with module loaded by reference': function() {
+				return createContext({
+					reference: {
+						module: ClassWithNamedConstructor,
+					},
+					test: {
+						create: {
+							module: {$ref: 'reference'},
+							constructorName: 'createInstance'
+						}
+					}
+				}).then(function(wired){
+					assert('test' in wired);
+					assert(wired.test.createInstanceCalled);
+				});
+			},
+			'this in named constructor should be the constructor on which it is called': function() {
+				return createContext({
+					test: {
+						create: {
+							module: ClassWithNamedConstructor,
+							constructorName: 'createInstance',
+						}
+					}
+				}).then(function(wired){
+					assert('test' in wired);
+					assert.equals(wired.test.thisSetInCreateInstance, ClassWithNamedConstructor);
+				});
+			},
+			'should support constructors returning promises or promise-like objects': function() {
+				return createContext({
+					test: {
+						create: {
+							module: ClassWithNamedConstructor,
+							constructorName: 'createInstancePromise',
+						}
+					}
+				}).then(function(wired){
+					assert('test' in wired);
+					assert(wired.test instanceof ClassWithNamedConstructor);
+				});
+			},
+			'should reject if named constructor rejects': function() {
+				return createContext({
+					test: {
+						create: {
+							module: ClassWithNamedConstructor,
+							constructorName: 'createInstanceReject',
+						}
+					}
+				}).then(function(){
+					throw new Error('Unexpected success');
+				}, function(err){
+					assert.equals(err.message, 'test error');
+				});
+			}
 		}
 	},
 
