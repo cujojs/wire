@@ -1,57 +1,62 @@
 {
-	"name": "wire",
-	"version": "0.10.11",
-	"description": "A light, fast, flexible Javascript IOC container.",
-	"keywords": [
-		"ioc",
-		"aop",
-		"dependency injection",
-		"dependency inversion",
-		"application composition",
-		"cujo"
-	],
-	"licenses": [
-		{
-			"type": "MIT",
-			"url": "http://www.opensource.org/licenses/mit-license.php"
-		}
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/cujojs/wire"
-	},
-	"bugs": "https://github.com/cujojs/wire/issues",
-	"maintainers": [
-		{
-			"name": "Brian Cavalier",
-			"web": "http://hovercraftstudios.com"
-		}
-	],
-	"contributors": [
-		{
-			"name": "Brian Cavalier",
-			"web": "http://hovercraftstudios.com"
-		},
-		{
-			"name": "John Hann",
-			"web": "http://unscriptable.com"
-		}
-	],
-	"dependencies": {
-		"meld": "~1",
-		"when": ">=2.6.0 <4"
-	},
-	"devDependencies": {
-		"buster": "~0.7",
-		"bower": "~1",
-		"gent": "~0.6"
-	},
-	"main": "./wire",
-	"directories": {
-		"test": "test"
-	},
-	"scripts": {
-		"test": "buster-test -e node",
-		"prepublish": "bower install"
-	}
+  "name": "wire",
+  "version": "0.10.11",
+  "description": "A light, fast, flexible Javascript IOC container.",
+  "keywords": [
+    "ioc",
+    "aop",
+    "dependency injection",
+    "dependency inversion",
+    "application composition",
+    "cujo"
+  ],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://www.opensource.org/licenses/mit-license.php"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cujojs/wire"
+  },
+  "bugs": "https://github.com/cujojs/wire/issues",
+  "maintainers": [
+    {
+      "name": "Brian Cavalier",
+      "web": "http://hovercraftstudios.com"
+    }
+  ],
+  "contributors": [
+    {
+      "name": "Brian Cavalier",
+      "web": "http://hovercraftstudios.com"
+    },
+    {
+      "name": "John Hann",
+      "web": "http://unscriptable.com"
+    }
+  ],
+  "dependencies": {
+    "meld": "~1",
+    "when": ">=2.6.0 <4"
+  },
+  "devDependencies": {
+    "bower": "~1",
+    "buster": "~0.7",
+    "buster-amd": "^0.3.1",
+    "gent": "~0.6",
+    "glob": "^7.0.3",
+    "requirejs": "^2.2.0"
+  },
+  "main": "./wire",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "buster-test -e node",
+    "start-test-server": "buster-server",
+    "browser-test": "buster-test -e browser",
+    "prepublish": "bower install"
+  }
 }

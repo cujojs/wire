@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, toggleClasses) {
 "use strict";
 
@@ -168,3 +169,4 @@ buster.testCase('dom/transform/toggleClasses', {
 	require('buster'),
 	require('../../../../dom/transform/toggleClasses')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

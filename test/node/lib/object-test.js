@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, object) {
 "use strict";
 
@@ -44,3 +45,4 @@ buster.testCase('lib/object', {
 	require('buster'),
 	require('../../../lib/object')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

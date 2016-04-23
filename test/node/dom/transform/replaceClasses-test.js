@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, replaceClasses) {
 "use strict";
 
@@ -111,3 +112,4 @@ buster.testCase('dom/transform/replaceClasses', {
 	require('buster'),
 	require('../../../../dom/transform/replaceClasses')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

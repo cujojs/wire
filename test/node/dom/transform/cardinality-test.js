@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, cardinality) {
 "use strict";
 
@@ -66,3 +67,4 @@ buster.testCase('dom/transform/cardinality', {
 	require('buster'),
 	require('../../../../dom/transform/cardinality')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

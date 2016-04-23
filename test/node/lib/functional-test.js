@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, functional) {
 
 var assert, refute, fail;
@@ -87,3 +88,4 @@ buster.testCase('lib/functional', {
 	require('buster'),
 	require('../../../lib/functional.js')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

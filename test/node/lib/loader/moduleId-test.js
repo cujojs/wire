@@ -1,3 +1,7 @@
+// deoends on gent, which does not work with AMD modules
+if(typeof exports !== 'undefined') {
+
+(function(define){define(function(require){
 (function(buster, moduleId) {
 	'use strict';
 
@@ -103,3 +107,6 @@
 	require('../../../../lib/loader/moduleId'),
 	require('gent/test-adapter/buster')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});
+
+}

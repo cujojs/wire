@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, mapTokenList) {
 "use strict";
 
@@ -58,3 +59,4 @@ buster.testCase('dom/transform/mapTokenList', {
 	require('buster'),
 	require('../../../../dom/transform/mapTokenList')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

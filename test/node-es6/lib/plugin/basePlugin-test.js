@@ -1,6 +1,8 @@
 /* jshint esversion: 6 */
-(function(buster, context) {
+(function(define){define(function(require){
 'use strict';
+
+(function(buster, context) {
 
 var assert, refute, fail, sentinel;
 
@@ -93,3 +95,5 @@ buster.testCase('es6/lib/plugin/basePlugin', {
 	require('buster'),
 	require('../../../../lib/context')
 );
+
+});})(typeof define !== 'undefined' ? define : function(factory){module.exports = factory(require);});

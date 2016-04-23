@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, PluginRegistry) {
 "use strict";
 
@@ -71,3 +72,4 @@ buster.testCase('lib/plugin/registry', {
 	require('buster'),
 	require('../../../../lib/plugin/registry')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

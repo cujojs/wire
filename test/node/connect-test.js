@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, context, connectPlugin, when) {
 'use strict';
 
@@ -184,3 +185,4 @@ buster.testCase('connect', {
 	require('../../connect'),
 	require('when')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

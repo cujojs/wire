@@ -1,3 +1,6 @@
+if(typeof process !== 'undefined'){
+
+(function(define){define(function(require){
 (function(buster) {
 	"use strict";
 
@@ -21,3 +24,6 @@
 		}
 	});
 }(require('buster')));
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});
+
+}

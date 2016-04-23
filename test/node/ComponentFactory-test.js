@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 var buster, assert, refute, fail, ComponentFactory, sentinel;
 
 buster = require('buster');
@@ -66,3 +67,4 @@ buster.testCase('lib/ComponentFactory', {
 	}
 
 });
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});
