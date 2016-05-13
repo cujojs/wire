@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 function Constructor(val) {
 	this.value = val;
 }
@@ -8,4 +9,5 @@ Constructor.prototype = {
 	}
 };
 
-module.exports = Constructor;
+return Constructor;
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

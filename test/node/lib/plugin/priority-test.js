@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, priority) {
 "use strict";
 
@@ -23,3 +24,4 @@ buster.testCase('lib/plugin/priority', {
 	require('buster'),
 	require('../../../../lib/plugin/priority')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

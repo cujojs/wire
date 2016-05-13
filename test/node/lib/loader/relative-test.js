@@ -1,10 +1,12 @@
-(function(buster, relative) {
+// deoends on gent, which does not work with AMD modules
+if(typeof exports !== 'undefined') {
+
+(function(define){define(function(require){
+(function(buster, relative, gent) {
 	'use strict';
 
-	var assert, refute, fail, gent,
+	var assert, refute, fail,
 		word, nonEmptyNormalizedId, dotsOnly, idWithLeadingDots;
-
-	gent = require('gent');
 
 	assert = buster.assert;
 	refute = buster.refute;
@@ -59,5 +61,9 @@
 
 })(
 	require('buster'),
-	require('../../../../lib/loader/relative')
+	require('../../../../lib/loader/relative'),
+	require('gent')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});
+
+}

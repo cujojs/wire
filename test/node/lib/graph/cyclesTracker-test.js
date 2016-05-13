@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, cyclesTracker, DirectedGraph) {
 'use strict';
 
@@ -114,3 +115,4 @@ buster.testCase('lib / graph / cyclesTracker', {
 	require('../../../../lib/graph/cyclesTracker'),
 	require('../../../../lib/graph/DirectedGraph')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

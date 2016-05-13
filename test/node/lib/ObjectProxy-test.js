@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, ObjectProxy, WireProxy) {
 "use strict";
 
@@ -106,3 +107,4 @@ buster.testCase('lib/ObjectProxy', {
 	require('../../../lib/ObjectProxy'),
 	require('../../../lib/WireProxy')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

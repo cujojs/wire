@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, mapClasses) {
 "use strict";
 
@@ -90,3 +91,4 @@ buster.testCase('dom/transform/mapClasses', {
 	require('buster'),
 	require('../../../../dom/transform/mapClasses')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

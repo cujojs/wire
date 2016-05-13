@@ -22,6 +22,7 @@ and check out a few [example applications](docs/introduction.md#example-apps).
 1. [Getting Started](docs/get.md)
 1. [Reference Documentation](docs/README.md)
 1. [Example Code and Apps](docs/introduction.md#example-apps)
+1. [Testing](docs/testing.md)
 1. [Full Changelog](CHANGES.md)
 
 # License

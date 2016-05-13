@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, when, timeout, wire, plugin) {
 "use strict";
 
@@ -85,6 +86,7 @@ buster.testCase('circular-refs', {
 	require('buster'),
 	require('when'),
 	require('when/timeout'),
-	require('../..'),
+	require('../../wire'),
 	require('./fixtures/object')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

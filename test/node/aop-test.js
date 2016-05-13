@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, wire, aopPlugin, when) {
 "use strict";
 
@@ -894,3 +895,4 @@ buster.testCase('aop', {
 	require('../../aop'),
 	require('when')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

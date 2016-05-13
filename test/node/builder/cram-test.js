@@ -1,3 +1,7 @@
+// test building only in node
+if(typeof process !== 'undefined') {
+
+(function(define){define(function(require){
 var buster, assert, refute, fail, builder, forEach;
 
 buster = require('buster');
@@ -232,4 +236,7 @@ function specObjectToModule(spec) {
 
 function removeJsExt(path) {
 	return path.replace(/\.js$/, '');
+}
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});
+
 }

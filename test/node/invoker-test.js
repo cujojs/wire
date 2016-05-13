@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, invoker) {
 "use strict";
 
@@ -33,3 +34,4 @@ buster.testCase('lib/invoker', {
 	require('buster'),
 	require('../../lib/invoker')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

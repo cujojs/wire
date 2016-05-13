@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, Resolver) {
 'use strict';
 
@@ -34,3 +35,4 @@ buster.testCase('lib/resolver', {
 	require('buster'),
 	require('../../../lib/resolver')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

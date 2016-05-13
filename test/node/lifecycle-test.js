@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, wire, plugin) {
 "use strict";
 
@@ -79,6 +80,7 @@ buster.testCase('lifecycle', {
 });
 })(
 	require('buster'),
-	require('../..'),
+	require('../../wire'),
 	require('./fixtures/object')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});

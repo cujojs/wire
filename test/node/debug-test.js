@@ -1,3 +1,4 @@
+(function(define){define(function(require){
 (function(buster, wire, debugPlugin) {
 'use strict';
 
@@ -29,7 +30,13 @@ buster.testCase('wire/debug', {
 			}
 		}).then(function(context) {
 			assert.isFunction(context.myComponent.constructor);
-			assert.equals(context.myComponent.constructor.name, 'myComponent');
+
+			//Function.name is non-standard! at least before ES2015
+			if (context.myComponent.constructor.name) {
+				assert.equals(context.myComponent.constructor.name, 'myComponent');
+			} else {
+				assert(/^\s*function\s+myComponent/.test(context.myComponent.constructor.toString()));
+			}
 		});
 	},
 
@@ -67,6 +74,7 @@ buster.testCase('wire/debug', {
 });
 })(
 	require('buster'),
-	require('../..'),
+	require('../../wire'),
 	require('../../debug')
 );
+});})(typeof define !== 'undefined' ? define : function(fac){module.exports = fac(require);});
